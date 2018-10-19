@@ -32,9 +32,14 @@
 #endif
 
 struct Image {
-  Image(const std::string name) : name_(name) {
+  virtual void update() = 0;
+  virtual void draw() = 0;
+};
+
+struct CvImage : public Image {
+  CvImage(const std::string name) : name_(name) {
   }
-  ~Image() {
+  ~CvImage() {
     ROS_INFO_STREAM("freeing texture " << texture_id_ << " " << name_);
     free();
   }
@@ -61,7 +66,11 @@ struct Image {
   }
 
   // if the image changes need to call this
-  void update() {
+  virtual void update() {
+    if (!dirty_)
+      return;
+    dirty_ = false;
+
     if (image_.empty()) {
       // TODO(lucasw) or make the texture 0x0 or 1x1 gray.
       return;
@@ -96,7 +105,8 @@ struct Image {
     ROS_INFO_STREAM(texture_id_ << " " << image_.size());
   }
 
-  void draw() {
+  virtual void draw() {
+    // TODO(lucasw) another dirty_ check for this?
     ImGui::Begin(name_.c_str());
     if (!image_.empty() && (texture_id_ != 0)) {
       std::stringstream ss;
@@ -110,6 +120,7 @@ struct Image {
     ImGui::End();
   }
 
+  bool dirty_ = true;
   std::string name_ = "";
 };
 
@@ -121,13 +132,11 @@ public:
     // temp test code
     std::string image_file = "";
     ros::param::get("~image", image_file);
-    std::shared_ptr<Image> image;
-    image.reset(new Image("test"));
+    std::shared_ptr<CvImage> image;
+    image.reset(new CvImage("test"));
     image->image_ = cv::imread(image_file, CV_LOAD_IMAGE_COLOR);
     image->update();
     images_.push_back(image);
-    ROS_INFO_STREAM(image_file << " " << images_[0]->texture_id_
-        << " " << images_[0]->image_.size());
   }
 
   ~ImguiRos() {
