@@ -31,25 +31,17 @@
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
 
-struct Image {
-  virtual void update() = 0;
-  virtual void draw() = 0;
-};
+struct GlImage {
+  GlImage(const std::string name) : name_(name) {
 
-struct CvImage : public Image {
-  CvImage(const std::string name) : name_(name) {
   }
-  ~CvImage() {
+  ~GlImage() {
     ROS_INFO_STREAM("freeing texture " << texture_id_ << " " << name_);
     free();
   }
-  // TODO(lucasw) or NULL or -1?
-  GLuint texture_id_ = 0;
-  // TODO(lucasw) instead of cv::Mat use a sensor_msgs Image pointer,
-  // an convert straight from that format rather than converting to cv.
-  // Or just have two implementations of Image here, the cv::Mat
-  // would be good to keep as an example.
-  cv::Mat image_;
+
+  virtual void update() = 0;
+  virtual void draw() = 0;
 
   void free() {
     if (texture_id_ > 0) {
@@ -64,6 +56,104 @@ struct CvImage : public Image {
     // next get the image into opengl (this stores it in graphics memory?)
     glGenTextures(1, &texture_id_);
   }
+
+  // TODO(lucasw) or NULL or -1?
+  GLuint texture_id_ = 0;
+  bool dirty_ = true;
+  std::string name_ = "";
+};
+
+struct RosImage : public GlImage {
+  RosImage(const std::string name, const std::string topic,
+           ros::NodeHandle& nh) : GlImage(name) {
+    ROS_INFO_STREAM("subscribing to topic " << topic);
+    sub_ = nh.subscribe(topic, 4, &RosImage::imageCallback, this);
+  }
+
+  void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
+    // TODO(lucasw) lock
+    image_ = msg;
+    dirty_ = true;
+  }
+
+  ros::Subscriber sub_;
+  sensor_msgs::ImageConstPtr image_;
+
+  // TODO(lucasw) factor this into a generic opengl function to put in parent class
+  // if the image changes need to call this
+  virtual void update() {
+    if (!dirty_)
+      return;
+    dirty_ = false;
+
+    if (!image_) {
+      // TODO(lucasw) or make the texture 0x0 or 1x1 gray.
+      return;
+    }
+
+    if (texture_id_ == 0) {
+      init();
+    } else {
+      free();
+      init();
+    }
+
+    // TODO(lucasw) this is crashing the second time through
+    ROS_INFO_STREAM("image update " << texture_id_ << " "
+        << image_->data.size() << " "
+        << image_->width << " " << image_->height);
+    glBindTexture(GL_TEXTURE_2D, texture_id_);
+
+    // Do these know which texture to use because of the above bind?
+    // TODO(lucasw) make these configurable live
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // Set texture clamping method - GL_CLAMP isn't defined
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // does this copy the data to the graphics memory?
+    // TODO(lucasw) actually look at the image encoding type and
+    // have a big switch statement here
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                 image_->width, image_->height,
+                 0, GL_BGR, GL_UNSIGNED_BYTE, &image_->data[0]);
+    // use fast 4-byte alignment (default anyway) if possible
+    glPixelStorei(GL_UNPACK_ALIGNMENT, (image_->step & 3) ? 1 : 4);
+
+    // set length of one complete row in data (doesn't need to equal image.cols)
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, image_->step / 1);  // image_.elemSize()); TODO(lucasw)
+    // ROS_INFO_STREAM(texture_id_ << " " << image_.size());
+  }
+
+  // TODO(lucasw) factor out common code
+  virtual void draw() {
+    // only updates if dirty
+    update();
+    ImGui::Begin(name_.c_str());
+    if (image_ && (texture_id_ != 0)) {
+      std::stringstream ss;
+      static int count = 0;
+      ss << texture_id_ << " " << sub_.getTopic() << " "
+          << image_->width << " " << image_->height << " " << count++;
+      // const char* text = ss.str().c_str();
+      std::string text = ss.str();
+      ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+      ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(image_->width, image_->height));
+    }
+    ImGui::End();
+  }
+};  // RosImage
+
+struct CvImage : public GlImage {
+  CvImage(const std::string name) : GlImage(name) {
+  }
+  // TODO(lucasw) instead of cv::Mat use a sensor_msgs Image pointer,
+  // an convert straight from that format rather than converting to cv.
+  // Or just have two implementations of Image here, the cv::Mat
+  // would be good to keep as an example.
+  cv::Mat image_;
 
   // if the image changes need to call this
   virtual void update() {
@@ -106,7 +196,10 @@ struct CvImage : public Image {
   }
 
   virtual void draw() {
-    // TODO(lucasw) another dirty_ check for this?
+    // only updates if dirty
+    update();
+    // TODO(lucasw) another kind of dirty_ - don't redraw if image hasn't changed,
+    // window hasn't changed?  How to detect need to redraw window?
     ImGui::Begin(name_.c_str());
     if (!image_.empty() && (texture_id_ != 0)) {
       std::stringstream ss;
@@ -120,8 +213,6 @@ struct CvImage : public Image {
     ImGui::End();
   }
 
-  bool dirty_ = true;
-  std::string name_ = "";
 };
 
 class ImguiRos {
@@ -130,13 +221,19 @@ public:
     init();
 
     // temp test code
-    std::string image_file = "";
-    ros::param::get("~image", image_file);
-    std::shared_ptr<CvImage> image;
-    image.reset(new CvImage("test"));
-    image->image_ = cv::imread(image_file, CV_LOAD_IMAGE_COLOR);
-    image->update();
-    images_.push_back(image);
+    {
+      std::string image_file = "";
+      ros::param::get("~image", image_file);
+      std::shared_ptr<CvImage> image;
+      image.reset(new CvImage("test"));
+      image->image_ = cv::imread(image_file, CV_LOAD_IMAGE_COLOR);
+      image->update();
+      images_.push_back(image);
+
+      std::shared_ptr<RosImage> ros_image;
+      ros_image.reset(new RosImage("test2", "/image_source/image_raw", nh_));
+      images_.push_back(ros_image);
+    }
   }
 
   ~ImguiRos() {
@@ -338,7 +435,7 @@ private:
   bool show_another_window = false;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-  std::vector<std::shared_ptr<Image>> images_;
+  std::vector<std::shared_ptr<GlImage> > images_;
 
   // TODO(lucasw) still need to update even if ros time is paused
   ros::Timer update_timer_;

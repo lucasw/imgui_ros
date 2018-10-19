@@ -2,6 +2,28 @@
 <launch>
   <arg name="image" default="$(find imgui_ros)/data/beach_128.png" />
 
+  <node pkg="nodelet" type="nodelet" name="manager" args="manager"
+      output="screen"/>
+
+  <group ns="image_source">
+    <group ns="image_raw">
+      <!-- http://answers.ros.org/question/255970/how-to-deactivate-image_transport-plugins/ -->
+      <rosparam param="disable_pub_plugins">
+        - 'image_transport/compressed'
+        - 'image_transport/compressedDepth'
+        - 'image_transport/theora'
+      </rosparam>
+    </group>
+  </group>
+
+  <node pkg="nodelet" type="nodelet"
+      name="image_source" output="screen"
+      args="load image_publisher/image_publisher manager" >
+    <param name="filename" value="$(find image_manip)/data/lava.jpg"/>
+    <param name="publish_rate" value="0.5"/>
+  </node>
+
+
   <node name="imgui_ros" pkg="imgui_ros" type="imgui_ros"
       output="screen" >
     <param name="image" value="$(arg image)" />
