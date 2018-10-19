@@ -10,6 +10,7 @@
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
 #include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
 #include <ros/ros.h>
 #include <SDL.h>
 #include <stdio.h>
@@ -33,7 +34,45 @@ class ImguiRos {
 public:
   ImguiRos() {
     init();
+
+    // temp test code
+    std::string image_file = "";
+    ros::param::get("~image", image_file);
+    image_ = cv::imread(image_file, CV_LOAD_IMAGE_COLOR);
+    ROS_INFO_STREAM(image_.channels());
+    // cv::imshow("test", image_);
+    // cv::waitKey(0);
+    // cv::cvtColor(image, continuousRGBA, CV_BGR2RGBA, 4);
+
+    if (!image_.empty()) {
+      // next get the image into opengl (this stores it in graphics memory?)
+      glGenTextures(1, &texture_id_);
+      ROS_INFO_STREAM(texture_id_);
+      glBindTexture(GL_TEXTURE_2D, texture_id_);
+      ROS_INFO_STREAM(texture_id_);
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+      // Set texture clamping method
+      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+      // copy the data to the graphics memory?
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                   image_.cols, image_.rows,
+                   0, GL_BGR, GL_UNSIGNED_BYTE, image_.ptr());
+      ROS_INFO_STREAM(texture_id_);
+      //use fast 4-byte alignment (default anyway) if possible
+      glPixelStorei(GL_UNPACK_ALIGNMENT, (image_.step & 3) ? 1 : 4);
+
+      //set length of one complete row in data (doesn't need to equal image.cols)
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, image_ .step / image_.elemSize());
+    }
   }
+
+  GLuint texture_id_ = 0;
+  cv::Mat image_;
 
   ~ImguiRos() {
     // Cleanup
@@ -186,6 +225,9 @@ private:
 
       ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!"
                                      // and append into it.
+
+      if (!image_.empty())
+        ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(image_.cols, image_.rows));
 
       ImGui::Text("This is some useful text."); // Display some text (you can
                                                 // use a format strings too)
