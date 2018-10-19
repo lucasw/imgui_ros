@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="image" default="$(find imgui_ros)/data/beach_128.png" />
+
+  <node name="imgui_ros" pkg="imgui_ros" type="imgui_ros"
+      output="screen" >
+    <param name="image" value="$(arg image)" />
+  </node>
+</launch>

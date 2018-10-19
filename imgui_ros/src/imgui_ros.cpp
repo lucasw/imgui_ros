@@ -12,6 +12,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <ros/ros.h>
+#include <sensor_msgs/Image.h>
 #include <SDL.h>
 #include <stdio.h>
 
@@ -30,6 +31,88 @@
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
 
+struct Image {
+  Image(const std::string name) : name_(name) {
+  }
+  ~Image() {
+    ROS_INFO_STREAM("freeing texture " << texture_id_ << " " << name_);
+    free();
+  }
+  // TODO(lucasw) or NULL or -1?
+  GLuint texture_id_ = 0;
+  // TODO(lucasw) instead of cv::Mat use a sensor_msgs Image pointer,
+  // an convert straight from that format rather than converting to cv.
+  // Or just have two implementations of Image here, the cv::Mat
+  // would be good to keep as an example.
+  cv::Mat image_;
+
+  void free() {
+    if (texture_id_ > 0) {
+      // TODO(lucasw) or keep the texture id but call glTexImage2D to
+      // make a 0x0 or 1x1 image?
+      glDeleteTextures(1, &texture_id_);
+    }
+  }
+
+  void init() {
+    free();
+    // next get the image into opengl (this stores it in graphics memory?)
+    glGenTextures(1, &texture_id_);
+  }
+
+  // if the image changes need to call this
+  void update() {
+    if (image_.empty()) {
+      // TODO(lucasw) or make the texture 0x0 or 1x1 gray.
+      return;
+    }
+
+    if (texture_id_ == 0) {
+      init();
+    }
+
+    glBindTexture(GL_TEXTURE_2D, texture_id_);
+
+    // Do these know which texture to use because of the above bind?
+    // TODO(lucasw) make these configurable live
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // Set texture clamping method - GL_CLAMP isn't defined
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // does this copy the data to the graphics memory?
+    // TODO(lucasw) actually look at the image encoding type and
+    // have a big switch statement here
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                 image_.cols, image_.rows,
+                 0, GL_BGR, GL_UNSIGNED_BYTE, image_.ptr());
+    // use fast 4-byte alignment (default anyway) if possible
+    glPixelStorei(GL_UNPACK_ALIGNMENT, (image_.step & 3) ? 1 : 4);
+
+    // set length of one complete row in data (doesn't need to equal image.cols)
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, image_.step / image_.elemSize());
+    ROS_INFO_STREAM(texture_id_ << " " << image_.size());
+  }
+
+  void draw() {
+    ImGui::Begin(name_.c_str());
+    if (!image_.empty() && (texture_id_ != 0)) {
+      std::stringstream ss;
+      static int count = 0;
+      ss << texture_id_ << " " << image_.size() << " " << count++;
+      // const char* text = ss.str().c_str();
+      std::string text = ss.str();
+      ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+      ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(image_.cols, image_.rows));
+    }
+    ImGui::End();
+  }
+
+  std::string name_ = "";
+};
+
 class ImguiRos {
 public:
   ImguiRos() {
@@ -38,41 +121,14 @@ public:
     // temp test code
     std::string image_file = "";
     ros::param::get("~image", image_file);
-    image_ = cv::imread(image_file, CV_LOAD_IMAGE_COLOR);
-    ROS_INFO_STREAM(image_.channels());
-    // cv::imshow("test", image_);
-    // cv::waitKey(0);
-    // cv::cvtColor(image, continuousRGBA, CV_BGR2RGBA, 4);
-
-    if (!image_.empty()) {
-      // next get the image into opengl (this stores it in graphics memory?)
-      glGenTextures(1, &texture_id_);
-      ROS_INFO_STREAM(texture_id_);
-      glBindTexture(GL_TEXTURE_2D, texture_id_);
-      ROS_INFO_STREAM(texture_id_);
-
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-      // Set texture clamping method
-      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-      // copy the data to the graphics memory?
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                   image_.cols, image_.rows,
-                   0, GL_BGR, GL_UNSIGNED_BYTE, image_.ptr());
-      ROS_INFO_STREAM(texture_id_);
-      //use fast 4-byte alignment (default anyway) if possible
-      glPixelStorei(GL_UNPACK_ALIGNMENT, (image_.step & 3) ? 1 : 4);
-
-      //set length of one complete row in data (doesn't need to equal image.cols)
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, image_ .step / image_.elemSize());
-    }
+    std::shared_ptr<Image> image;
+    image.reset(new Image("test"));
+    image->image_ = cv::imread(image_file, CV_LOAD_IMAGE_COLOR);
+    image->update();
+    images_.push_back(image);
+    ROS_INFO_STREAM(image_file << " " << images_[0]->texture_id_
+        << " " << images_[0]->image_.size());
   }
-
-  GLuint texture_id_ = 0;
-  cv::Mat image_;
 
   ~ImguiRos() {
     // Cleanup
@@ -226,9 +282,6 @@ private:
       ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!"
                                      // and append into it.
 
-      if (!image_.empty())
-        ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(image_.cols, image_.rows));
-
       ImGui::Text("This is some useful text."); // Display some text (you can
                                                 // use a format strings too)
       ImGui::Checkbox(
@@ -251,19 +304,11 @@ private:
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                   1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
       ImGui::End();
-    }
 
-    // 3. Show another simple window.
-    if (show_another_window) {
-      ImGui::Begin(
-          "Another Window",
-          &show_another_window); // Pass a pointer to our bool variable (the
-                                 // window will have a closing button that will
-                                 // clear the bool when clicked)
-      ImGui::Text("Hello from another window!");
-      if (ImGui::Button("Close Me"))
-        show_another_window = false;
-      ImGui::End();
+      for (size_t i = 0; i < images_.size(); ++i) {
+        images_[i]->draw();
+      }
+
     }
 
     // Rendering
@@ -283,6 +328,8 @@ private:
   bool show_demo_window = true;
   bool show_another_window = false;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+  std::vector<std::shared_ptr<Image>> images_;
 
   // TODO(lucasw) still need to update even if ros time is paused
   ros::Timer update_timer_;
