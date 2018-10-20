@@ -7,6 +7,7 @@ from imgui_ros.srv import *
 
 class ImguiDemo:
     def __init__(self):
+        rospy.wait_for_service('add_image')
         self.add_image = rospy.ServiceProxy('add_image', Image)
 
         remove = rospy.get_param("~remove", False)

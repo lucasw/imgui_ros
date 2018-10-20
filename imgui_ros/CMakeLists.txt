@@ -58,6 +58,7 @@ include_directories(
 
 add_library(${PROJECT_NAME}
   src/imgui_ros.cpp
+  src/image.cpp
   imgui/imgui.cpp
   imgui/imgui_demo.cpp
   imgui/imgui_draw.cpp

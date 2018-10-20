@@ -31,6 +31,7 @@
 #include "imgui.h"
 // #include "imgui_impl_opengl3.h"
 // #include "imgui_impl_sdl.h"
+#include <imgui_ros/image.h>
 #include <imgui_ros/Image.h>
 #include <map>
 #include <mutex>
@@ -40,68 +41,7 @@
 #include <sensor_msgs/Image.h>
 #include <SDL.h>
 
-// About OpenGL function loaders: modern OpenGL doesn't have a standard header
-// file and requires individual function pointers to be loaded manually. Helper
-// libraries are often used for this purpose! Here we are supporting a few
-// common ones: gl3w, glew, glad. You may use another loader/header of your
-// choice (glext, glLoadGen, etc.), or chose to manually implement your own.
-#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
-#include <GL/gl3w.h> // Initialize with gl3wInit()
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
-#include <GL/glew.h> // Initialize with glewInit()
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-#include <glad/glad.h> // Initialize with gladLoadGL()
-#else
-#include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#endif
 
-struct GlImage {
-  GlImage(const std::string name);
-  ~GlImage();
-  virtual bool updateTexture() = 0;
-  virtual void draw() = 0;
-protected:
-  // TODO(lucasw) or NULL or -1?
-  GLuint texture_id_ = 0;
-  bool dirty_ = true;
-  std::string name_ = "";
-  std::mutex mutex_;
-  size_t width_;
-  size_t height_;
-};
-
-struct RosImage : public GlImage {
-  RosImage(const std::string name, const std::string topic,
-           ros::NodeHandle& nh);
-
-  void imageCallback(const sensor_msgs::ImageConstPtr& msg);
-
-  // TODO(lucasw) factor this into a generic opengl function to put in parent class
-  // if the image changes need to call this
-  virtual bool updateTexture();
-
-  // TODO(lucasw) factor out common code
-  virtual void draw();
-
-private:
-  ros::Subscriber sub_;
-  sensor_msgs::ImageConstPtr image_;
-};  // RosImage
-
-struct CvImage : public GlImage {
-  CvImage(const std::string name);
-  // TODO(lucasw) instead of cv::Mat use a sensor_msgs Image pointer,
-  // an convert straight from that format rather than converting to cv.
-  // Or just have two implementations of Image here, the cv::Mat
-  // would be good to keep as an example.
-  cv::Mat image_;
-
-  // if the image changes need to call this
-  virtual bool updateTexture();
-  virtual void draw();
-};
-
-///////////////////////////////////////////////////////////////////////////////
 namespace imgui_ros {
 class ImguiRos : public nodelet::Nodelet {
 public:
