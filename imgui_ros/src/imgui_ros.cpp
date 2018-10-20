@@ -9,6 +9,8 @@
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
+#include <imgui_ros/Image.h>
+#include <map>
 #include <mutex>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
@@ -215,12 +217,14 @@ struct CvImage : public GlImage {
 
 };
 
+///////////////////////////////////////////////////////////////////////////////
 class ImguiRos {
 public:
   ImguiRos() {
     init();
 
     // temp test code
+#if 0
     {
       std::string image_file = "";
       ros::param::get("~image", image_file);
@@ -234,6 +238,7 @@ public:
       ros_image.reset(new RosImage("test2", "/image_source/image_raw", nh_));
       images_.push_back(ros_image);
     }
+#endif
   }
 
   ~ImguiRos() {
@@ -280,8 +285,10 @@ private:
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
+    std::string title = "imgui_ros";
+    ros::param::get("~title", title);
     window = SDL_CreateWindow(
-        "Dear ImGui SDL2+OpenGL3 example", SDL_WINDOWPOS_CENTERED,
+        title.c_str(), SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED, 1280, 720,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE); // | SDL_WINDOW_BORDERLESS);
     gl_context = SDL_GL_CreateContext(window);
@@ -339,8 +346,25 @@ private:
     // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f,
     // NULL, io.Fonts->GetGlyphRangesJapanese()); IM_ASSERT(font != NULL);
 
+    // ros init
+    add_image_ = nh_.advertiseService("add_image", &ImguiRos::addImage, this);
     update_timer_ = nh_.createTimer(ros::Duration(1.0 / 30.0),
         &ImguiRos::update, this);
+  }
+
+  bool addImage(imgui_ros::Image::Request& req,
+                imgui_ros::Image::Response& res) {
+    res.success = true;
+    if (req.remove) {
+      if (images_.count(req.name) > 0) {
+        images_.erase(req.name);
+      }
+      return true;;
+    }
+    std::shared_ptr<RosImage> ros_image;
+    ros_image.reset(new RosImage(req.name, req.topic, nh_));
+    images_[req.name] = ros_image;
+    return true;;
   }
 
   void update(const ros::TimerEvent& e) {
@@ -382,8 +406,8 @@ private:
                   1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
       ImGui::End();
 
-      for (size_t i = 0; i < images_.size(); ++i) {
-        images_[i]->draw();
+      for (auto& image : images_) {
+        image.second->draw();
       }
     }
 
@@ -405,10 +429,12 @@ private:
   bool show_another_window = false;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-  std::vector<std::shared_ptr<GlImage> > images_;
+  std::map<std::string, std::shared_ptr<GlImage> > images_;
 
   // TODO(lucasw) still need to update even if ros time is paused
   ros::Timer update_timer_;
+
+  ros::ServiceServer add_image_;
 };
 
 int main(int argc, char* argv[]) {

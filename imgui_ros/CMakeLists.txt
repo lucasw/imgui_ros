@@ -29,16 +29,16 @@ find_package(SDL2 REQUIRED)
 #   AudioSource.msg
 # )
 
-# add_service_files(
-#   FILES
-#   AddAssembly.srv
-# )
+add_service_files(
+  FILES
+  Image.srv
+)
 
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-#   geometry_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+)
 
 catkin_package(
   # INCLUDE_DIRS include
@@ -55,7 +55,6 @@ include_directories(
   ${SDL2_INCLUDE_DIRS}
 )
 
-# add_dependencies(lambda_synth ${PROJECT_NAME}_gencpp)
 
 add_executable(${PROJECT_NAME} src/imgui_ros.cpp
   imgui/imgui.cpp
@@ -67,6 +66,7 @@ add_executable(${PROJECT_NAME} src/imgui_ros.cpp
   imgui/examples/libs/gl3w/GL/gl3w.c
 )
 # add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES}
   ${SDL2_LIBRARIES}
   GL
