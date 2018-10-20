@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
   <!--arg name="image" default="$(find imgui_ros)/data/beach_128.png" /-->
-  <arg name="standalone" default="true" doc="running as a nodelet not currently working" />
+  <arg name="standalone" default="false" doc="if false run imgui in nodelet manager" />
 
   <include file="$(find image_manip)/launch/rotozoom.launch" >
   </include>
@@ -14,10 +14,25 @@
       reading it from its private namespace -->
   </node>
 
+  <group if="$(arg standalone)">
+    <node name="nodelet_manager" pkg="nodelet" type="nodelet"
+          args="manager" output="screen">
+    </node>
+
+    <node pkg="nodelet" type="nodelet"
+        name="imgui_ros"
+        args="load imgui_ros/ImguiRos nodelet_manager" >
+      <!-- this is where the param ought to be read, but image_publisher isn't
+        reading it from its private namespace -->
+    </node>
+  </group>
+
+  <!--
   <node name="imgui_ros" pkg="imgui_ros" type="imgui_ros_node"
       output="screen" 
       if="$(arg standalone)" >
   </node>
+  -->
 
   <group ns="imgui_ros">
     <node name="imgui_demo" pkg="imgui_ros" type="demo.py"

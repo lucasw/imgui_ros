@@ -52,6 +52,11 @@
   }
 
   void RosImage::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
+    ROS_DEBUG_STREAM("image callback "
+        << msg->header.stamp << " "
+        << msg->data.size() << " "
+        << msg->width << " " << msg->height << ", "
+        << sub_.getTopic());
     std::lock_guard<std::mutex> lock(mutex_);
     image_ = msg;
     dirty_ = true;
