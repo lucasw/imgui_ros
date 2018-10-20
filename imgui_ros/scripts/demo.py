@@ -9,12 +9,21 @@ class ImguiDemo:
     def __init__(self):
         self.add_image = rospy.ServiceProxy('add_image', Image)
 
+        remove = rospy.get_param("~remove", False)
+
         try:
             req = ImageRequest()
-            req.name = "foo2"
+            req.name = "source"
             req.topic = "/image_source/image_raw"
-            req.remove = rospy.get_param("~remove", False)
+            req.remove = remove
             self.add_image(req)
+
+            req = ImageRequest()
+            req.name = "rotated"
+            req.topic = "/image_source/rotated"
+            req.remove = remove
+            self.add_image(req)
+
         except rospy.service.ServiceException as e:
             rospy.logerr(e)
 
