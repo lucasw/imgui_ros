@@ -9,6 +9,7 @@
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
+#include <mutex>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <ros/ros.h>
@@ -40,7 +41,7 @@ struct GlImage {
     free();
   }
 
-  virtual void update() = 0;
+  virtual bool updateTexture() = 0;
   virtual void draw() = 0;
 
   void free() {
@@ -48,19 +49,26 @@ struct GlImage {
       // TODO(lucasw) or keep the texture id but call glTexImage2D to
       // make a 0x0 or 1x1 image?
       glDeleteTextures(1, &texture_id_);
+      texture_id_ = 0;
     }
   }
 
-  void init() {
-    free();
+  bool init() {
+    if (texture_id_ != 0) {
+      ROS_ERROR_STREAM("texture_id already set " << texture_id_);
+      return false;
+    }
+    // free();
     // next get the image into opengl (this stores it in graphics memory?)
     glGenTextures(1, &texture_id_);
+    return texture_id_ != 0;
   }
 
   // TODO(lucasw) or NULL or -1?
   GLuint texture_id_ = 0;
   bool dirty_ = true;
   std::string name_ = "";
+  std::mutex mutex_;
 };
 
 struct RosImage : public GlImage {
@@ -71,7 +79,11 @@ struct RosImage : public GlImage {
   }
 
   void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
-    // TODO(lucasw) lock
+    // TODO(lucasw) temp - just accept the first image
+    if (image_)
+      return;
+    std::lock_guard<std::mutex> lock(mutex_);
+    free();
     image_ = msg;
     dirty_ = true;
   }
@@ -81,25 +93,29 @@ struct RosImage : public GlImage {
 
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
-  virtual void update() {
+  virtual bool updateTexture() {
     if (!dirty_)
-      return;
+      return true;
     dirty_ = false;
 
     if (!image_) {
       // TODO(lucasw) or make the texture 0x0 or 1x1 gray.
-      return;
+      return false;
     }
 
-    if (texture_id_ == 0) {
-      init();
-    } else {
-      free();
-      init();
+    if (texture_id_ != 0) {
+      // if this has happened then probably a crash is going to happen,
+      // the memory used to create the texture has been freed?
+      ROS_ERROR_STREAM("can't update with non-zero texture_id " << texture_id_);
+      return false;
     }
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!init())
+      return false;
 
     // TODO(lucasw) this is crashing the second time through
     ROS_INFO_STREAM("image update " << texture_id_ << " "
+        << image_->header.stamp << " "
         << image_->data.size() << " "
         << image_->width << " " << image_->height);
     glBindTexture(GL_TEXTURE_2D, texture_id_);
@@ -125,12 +141,13 @@ struct RosImage : public GlImage {
     // set length of one complete row in data (doesn't need to equal image.cols)
     glPixelStorei(GL_UNPACK_ROW_LENGTH, image_->step / 1);  // image_.elemSize()); TODO(lucasw)
     // ROS_INFO_STREAM(texture_id_ << " " << image_.size());
+    return true;
   }
 
   // TODO(lucasw) factor out common code
   virtual void draw() {
     // only updates if dirty
-    update();
+    updateTexture();
     ImGui::Begin(name_.c_str());
     if (image_ && (texture_id_ != 0)) {
       std::stringstream ss;
@@ -156,19 +173,20 @@ struct CvImage : public GlImage {
   cv::Mat image_;
 
   // if the image changes need to call this
-  virtual void update() {
+  virtual bool updateTexture() {
     if (!dirty_)
-      return;
+      return true;
     dirty_ = false;
 
     if (image_.empty()) {
       // TODO(lucasw) or make the texture 0x0 or 1x1 gray.
-      return;
+      return false;
     }
 
-    if (texture_id_ == 0) {
-      init();
+    if (texture_id_ != 0) {
+      return false;
     }
+    init();
 
     glBindTexture(GL_TEXTURE_2D, texture_id_);
 
@@ -193,11 +211,12 @@ struct CvImage : public GlImage {
     // set length of one complete row in data (doesn't need to equal image.cols)
     glPixelStorei(GL_UNPACK_ROW_LENGTH, image_.step / image_.elemSize());
     ROS_INFO_STREAM(texture_id_ << " " << image_.size());
+    return true;
   }
 
   virtual void draw() {
     // only updates if dirty
-    update();
+    updateTexture();
     // TODO(lucasw) another kind of dirty_ - don't redraw if image hasn't changed,
     // window hasn't changed?  How to detect need to redraw window?
     ImGui::Begin(name_.c_str());
@@ -227,7 +246,7 @@ public:
       std::shared_ptr<CvImage> image;
       image.reset(new CvImage("test"));
       image->image_ = cv::imread(image_file, CV_LOAD_IMAGE_COLOR);
-      image->update();
+      image->updateTexture();
       images_.push_back(image);
 
       std::shared_ptr<RosImage> ros_image;
