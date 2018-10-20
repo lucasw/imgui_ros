@@ -65,17 +65,21 @@
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
   bool RosImage::updateTexture() {
-    sensor_msgs::ImageConstPtr image = image_;
+    sensor_msgs::ImageConstPtr image;
     {
       std::lock_guard<std::mutex> lock(mutex_);
       if (!dirty_)
         return true;
       dirty_ = false;
-    }
 
-    if (!image) {
-      // TODO(lucasw) or make the texture 0x0 or 1x1 gray.
-      return false;
+      if (!image_) {
+        // TODO(lucasw) or make the texture 0x0 or 1x1 gray.
+        return false;
+      }
+
+      image = image_;
+      width_ = image->width;
+      height_ = image->height;
     }
 
     #if 0
@@ -111,6 +115,7 @@
                  image->width, image->height,
                  0, GL_BGR, GL_UNSIGNED_BYTE, &image->data[0]);
 
+
     // one or both of these are causing a crash
     // use fast 4-byte alignment (default anyway) if possible
     // glPixelStorei(GL_UNPACK_ALIGNMENT, (image->step & 3) ? 1 : 4);
@@ -128,15 +133,15 @@
     ImGui::Begin(name_.c_str());
     {
       std::lock_guard<std::mutex> lock(mutex_);
-      if (image_ && (texture_id_ != 0)) {
+      if (texture_id_ != 0) {
         std::stringstream ss;
         static int count = 0;
         ss << texture_id_ << " " << sub_.getTopic() << " "
-            << image_->width << " " << image_->height << " " << count++;
+            << width_ << " " << height_ << " " << count++;
         // const char* text = ss.str().c_str();
         std::string text = ss.str();
         ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
-        ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(image_->width, image_->height));
+        ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(width_, height_));
       }
     }
     ImGui::End();

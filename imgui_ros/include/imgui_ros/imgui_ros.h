@@ -66,6 +66,8 @@ protected:
   bool dirty_ = true;
   std::string name_ = "";
   std::mutex mutex_;
+  size_t width_;
+  size_t height_;
 };
 
 struct RosImage : public GlImage {
