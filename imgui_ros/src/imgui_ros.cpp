@@ -34,36 +34,16 @@
 
 struct GlImage {
   GlImage(const std::string name) : name_(name) {
-
+    glGenTextures(1, &texture_id_);
   }
   ~GlImage() {
     ROS_INFO_STREAM("freeing texture " << texture_id_ << " " << name_);
-    free();
+    glDeleteTextures(1, &texture_id_);
   }
 
   virtual bool updateTexture() = 0;
   virtual void draw() = 0;
-
-  void free() {
-    if (texture_id_ > 0) {
-      // TODO(lucasw) or keep the texture id but call glTexImage2D to
-      // make a 0x0 or 1x1 image?
-      glDeleteTextures(1, &texture_id_);
-      texture_id_ = 0;
-    }
-  }
-
-  bool init() {
-    if (texture_id_ != 0) {
-      ROS_ERROR_STREAM("texture_id already set " << texture_id_);
-      return false;
-    }
-    // free();
-    // next get the image into opengl (this stores it in graphics memory?)
-    glGenTextures(1, &texture_id_);
-    return texture_id_ != 0;
-  }
-
+protected:
   // TODO(lucasw) or NULL or -1?
   GLuint texture_id_ = 0;
   bool dirty_ = true;
@@ -79,11 +59,7 @@ struct RosImage : public GlImage {
   }
 
   void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
-    // TODO(lucasw) temp - just accept the first image
-    if (image_)
-      return;
     std::lock_guard<std::mutex> lock(mutex_);
-    free();
     image_ = msg;
     dirty_ = true;
   }
@@ -94,53 +70,59 @@ struct RosImage : public GlImage {
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
   virtual bool updateTexture() {
-    if (!dirty_)
-      return true;
-    dirty_ = false;
+    sensor_msgs::ImageConstPtr image = image_;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (!dirty_)
+        return true;
+      dirty_ = false;
+    }
 
-    if (!image_) {
+    if (!image) {
       // TODO(lucasw) or make the texture 0x0 or 1x1 gray.
       return false;
     }
 
+    #if 0
     if (texture_id_ != 0) {
       // if this has happened then probably a crash is going to happen,
       // the memory used to create the texture has been freed?
       ROS_ERROR_STREAM("can't update with non-zero texture_id " << texture_id_);
       return false;
     }
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (!init())
-      return false;
+    #endif
 
     // TODO(lucasw) this is crashing the second time through
-    ROS_INFO_STREAM("image update " << texture_id_ << " "
-        << image_->header.stamp << " "
-        << image_->data.size() << " "
-        << image_->width << " " << image_->height);
+    ROS_DEBUG_STREAM("image update " << texture_id_ << " "
+        << image->header.stamp << " "
+        << image->data.size() << " "
+        << image->width << " " << image->height);
     glBindTexture(GL_TEXTURE_2D, texture_id_);
 
-    // Do these know which texture to use because of the above bind?
+    // TODO(lucasw) only need to do these once (unless altering)
     // TODO(lucasw) make these configurable live
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
     // Set texture clamping method - GL_CLAMP isn't defined
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    // does this copy the data to the graphics memory?
+    // Copy the data to the graphics memory.
     // TODO(lucasw) actually look at the image encoding type and
     // have a big switch statement here
+    // TODO(lucasw) if the old texture is the same width and height and number of channels
+    // (and color format?) as the old one, use glTexSubImage2D
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                 image_->width, image_->height,
-                 0, GL_BGR, GL_UNSIGNED_BYTE, &image_->data[0]);
-    // use fast 4-byte alignment (default anyway) if possible
-    glPixelStorei(GL_UNPACK_ALIGNMENT, (image_->step & 3) ? 1 : 4);
+                 image->width, image->height,
+                 0, GL_BGR, GL_UNSIGNED_BYTE, &image->data[0]);
 
+    // one or both of these are causing a crash
+    // use fast 4-byte alignment (default anyway) if possible
+    // glPixelStorei(GL_UNPACK_ALIGNMENT, (image->step & 3) ? 1 : 4);
     // set length of one complete row in data (doesn't need to equal image.cols)
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, image_->step / 1);  // image_.elemSize()); TODO(lucasw)
-    // ROS_INFO_STREAM(texture_id_ << " " << image_.size());
+    // glPixelStorei(GL_UNPACK_ROW_LENGTH, image->step / 1);  // image.elemSize()); TODO(lucasw)
+
+    // ROS_INFO_STREAM(texture_id_ << " " << image.size());
     return true;
   }
 
@@ -149,15 +131,18 @@ struct RosImage : public GlImage {
     // only updates if dirty
     updateTexture();
     ImGui::Begin(name_.c_str());
-    if (image_ && (texture_id_ != 0)) {
-      std::stringstream ss;
-      static int count = 0;
-      ss << texture_id_ << " " << sub_.getTopic() << " "
-          << image_->width << " " << image_->height << " " << count++;
-      // const char* text = ss.str().c_str();
-      std::string text = ss.str();
-      ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
-      ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(image_->width, image_->height));
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (image_ && (texture_id_ != 0)) {
+        std::stringstream ss;
+        static int count = 0;
+        ss << texture_id_ << " " << sub_.getTopic() << " "
+            << image_->width << " " << image_->height << " " << count++;
+        // const char* text = ss.str().c_str();
+        std::string text = ss.str();
+        ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+        ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(image_->width, image_->height));
+      }
     }
     ImGui::End();
   }
@@ -182,11 +167,6 @@ struct CvImage : public GlImage {
       // TODO(lucasw) or make the texture 0x0 or 1x1 gray.
       return false;
     }
-
-    if (texture_id_ != 0) {
-      return false;
-    }
-    init();
 
     glBindTexture(GL_TEXTURE_2D, texture_id_);
 
