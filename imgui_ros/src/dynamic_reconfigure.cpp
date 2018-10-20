@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2017 Lucas Walter
- * June 2017
+ * Copyright (c) 2018 Lucas Walter
+ * October 2018
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,46 +28,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "imgui.h"
-// #include "imgui_impl_opengl3.h"
-// #include "imgui_impl_sdl.h"
-#include <imgui_ros/image.h>
+#include <imgui.h>
 #include <imgui_ros/dynamic_reconfigure.h>
-#include <imgui_ros/Image.h>
-#include <map>
-#include <mutex>
-#include <nodelet/nodelet.h>
-#include <opencv2/core.hpp>
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
-#include <SDL.h>
 
-
-namespace imgui_ros {
-class ImguiRos : public nodelet::Nodelet {
-public:
-  ImguiRos();
-  ~ImguiRos();
-  virtual void onInit();
-
+#if 0
+DynamicReconfigure(const std::string name, const std::string topic,
+                     ros::NodeHandle& nh);
+  ~DynamicReconfigure() {}
+  void descriptionCallback(const dynamic_reconfigure::ConfigDescriptionConstPtr& msg);
+  virtual void draw();
 private:
-  bool addImage(imgui_ros::Image::Request& req,
-                imgui_ros::Image::Response& res);
-  void update(const ros::TimerEvent& e);
+  ros::Subscriber sub_;
+  dynamic_reconfigure::ConfigDescriptionConstPtr config_description_;
 
-  SDL_Window *window;
-  ImGuiIO io;
-  SDL_GLContext gl_context;
-  bool show_demo_window = true;
-  bool show_another_window = false;
-  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-  std::map<std::string, std::shared_ptr<GlImage> > images_;
-
-  // TODO(lucasw) still need to update even if ros time is paused
-  ros::Timer update_timer_;
-
-  ros::ServiceServer add_image_;
-};
-
-}  // namespace imgui_ros
+#endif
