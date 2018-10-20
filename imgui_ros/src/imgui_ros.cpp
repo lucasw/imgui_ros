@@ -10,57 +10,26 @@
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
 #include <imgui_ros/Image.h>
-#include <map>
-#include <mutex>
-#include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
-#include <SDL.h>
-#include <stdio.h>
+#include <imgui_ros/imgui_ros.h>
+// #include <opencv2/highgui.hpp>
 
-// About OpenGL function loaders: modern OpenGL doesn't have a standard header
-// file and requires individual function pointers to be loaded manually. Helper
-// libraries are often used for this purpose! Here we are supporting a few
-// common ones: gl3w, glew, glad. You may use another loader/header of your
-// choice (glext, glLoadGen, etc.), or chose to manually implement your own.
-#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
-#include <GL/gl3w.h> // Initialize with gl3wInit()
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
-#include <GL/glew.h> // Initialize with glewInit()
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-#include <glad/glad.h> // Initialize with gladLoadGL()
-#else
-#include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#endif
-
-struct GlImage {
-  GlImage(const std::string name) : name_(name) {
+// namespace {
+  GlImage::GlImage(const std::string name) : name_(name) {
     glGenTextures(1, &texture_id_);
   }
-  ~GlImage() {
+
+  GlImage::~GlImage() {
     ROS_INFO_STREAM("freeing texture " << texture_id_ << " " << name_);
     glDeleteTextures(1, &texture_id_);
   }
 
-  virtual bool updateTexture() = 0;
-  virtual void draw() = 0;
-protected:
-  // TODO(lucasw) or NULL or -1?
-  GLuint texture_id_ = 0;
-  bool dirty_ = true;
-  std::string name_ = "";
-  std::mutex mutex_;
-};
-
-struct RosImage : public GlImage {
-  RosImage(const std::string name, const std::string topic,
-           ros::NodeHandle& nh) : GlImage(name) {
+  RosImage::RosImage(const std::string name, const std::string topic,
+             ros::NodeHandle& nh) : GlImage(name) {
     ROS_INFO_STREAM("subscribing to topic " << topic);
     sub_ = nh.subscribe(topic, 4, &RosImage::imageCallback, this);
   }
 
-  void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
+  void RosImage::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
     std::lock_guard<std::mutex> lock(mutex_);
     image_ = msg;
     dirty_ = true;
@@ -68,7 +37,7 @@ struct RosImage : public GlImage {
 
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
-  virtual bool updateTexture() {
+  bool RosImage::updateTexture() {
     sensor_msgs::ImageConstPtr image = image_;
     {
       std::lock_guard<std::mutex> lock(mutex_);
@@ -126,7 +95,7 @@ struct RosImage : public GlImage {
   }
 
   // TODO(lucasw) factor out common code
-  virtual void draw() {
+  void RosImage::draw() {
     // only updates if dirty
     updateTexture();
     ImGui::Begin(name_.c_str());
@@ -146,22 +115,11 @@ struct RosImage : public GlImage {
     ImGui::End();
   }
 
-private:
-  ros::Subscriber sub_;
-  sensor_msgs::ImageConstPtr image_;
-};  // RosImage
-
-struct CvImage : public GlImage {
-  CvImage(const std::string name) : GlImage(name) {
+  CvImage::CvImage(const std::string name) : GlImage(name) {
   }
-  // TODO(lucasw) instead of cv::Mat use a sensor_msgs Image pointer,
-  // an convert straight from that format rather than converting to cv.
-  // Or just have two implementations of Image here, the cv::Mat
-  // would be good to keep as an example.
-  cv::Mat image_;
 
   // if the image changes need to call this
-  virtual bool updateTexture() {
+  bool CvImage::updateTexture() {
     if (!dirty_)
       return true;
     dirty_ = false;
@@ -197,7 +155,7 @@ struct CvImage : public GlImage {
     return true;
   }
 
-  virtual void draw() {
+  void CvImage::draw() {
     // only updates if dirty
     updateTexture();
     // TODO(lucasw) another kind of dirty_ - don't redraw if image hasn't changed,
@@ -214,13 +172,11 @@ struct CvImage : public GlImage {
     }
     ImGui::End();
   }
-
-};
+// }
 
 ///////////////////////////////////////////////////////////////////////////////
-class ImguiRos {
-public:
-  ImguiRos() {
+namespace imgui_ros {
+  ImguiRos::ImguiRos() {
     init();
 
     // temp test code
@@ -241,7 +197,7 @@ public:
 #endif
   }
 
-  ~ImguiRos() {
+  ImguiRos::~ImguiRos() {
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -252,11 +208,10 @@ public:
     SDL_Quit();
   }
 
-private:
-  bool init() {
+  bool ImguiRos::init() {
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
-      printf("Error: %s\n", SDL_GetError());
+      ROS_ERROR_STREAM("Error: " << SDL_GetError());
       return false;
     }
 
@@ -303,7 +258,7 @@ private:
     bool err = gladLoadGL() == 0;
 #endif
     if (err) {
-      fprintf(stderr, "Failed to initialize OpenGL loader!\n");
+      ROS_ERROR_STREAM("Failed to initialize OpenGL loader!");
       return false;
     }
 
@@ -352,7 +307,7 @@ private:
         &ImguiRos::update, this);
   }
 
-  bool addImage(imgui_ros::Image::Request& req,
+  bool ImguiRos::addImage(imgui_ros::Image::Request& req,
                 imgui_ros::Image::Response& res) {
     res.success = true;
     if (req.remove) {
@@ -367,7 +322,7 @@ private:
     return true;;
   }
 
-  void update(const ros::TimerEvent& e) {
+  void ImguiRos::update(const ros::TimerEvent& e) {
     // Poll and handle events (inputs, window resize, etc.)
     // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to
     // tell if dear imgui wants to use your inputs.
@@ -420,25 +375,10 @@ private:
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
   }
-
-  ros::NodeHandle nh_;
-  SDL_Window *window;
-  ImGuiIO io;
-  SDL_GLContext gl_context;
-  bool show_demo_window = true;
-  bool show_another_window = false;
-  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-  std::map<std::string, std::shared_ptr<GlImage> > images_;
-
-  // TODO(lucasw) still need to update even if ros time is paused
-  ros::Timer update_timer_;
-
-  ros::ServiceServer add_image_;
-};
+}  // namespace imgui_ros
 
 int main(int argc, char* argv[]) {
   ros::init(argc, argv, "imgui_ros");
-  ImguiRos imgui_ros;
+  imgui_ros::ImguiRos imgui_ros;
   ros::spin();
 }

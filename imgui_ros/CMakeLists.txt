@@ -47,10 +47,10 @@ catkin_package(
 )
 
 include_directories(
-  # include
   imgui
   imgui/examples
   imgui/examples/libs/gl3w
+  include
   ${catkin_INCLUDE_DIRS}
   ${SDL2_INCLUDE_DIRS}
 )

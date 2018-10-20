@@ -28,4 +28,8 @@
       output="screen" >
     <param name="image" value="$(arg image)" />
   </node>
+
+  <node name="imgui_demo" pkg="imgui_ros" type="demo.py"
+      output="screen" >
+  </node>
 </launch>
