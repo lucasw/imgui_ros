@@ -28,9 +28,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-
+#include <dynamic_reconfigure/Config.h>
 #include <dynamic_reconfigure/ConfigDescription.h>
 #include <imgui.h>
+#include <map>
 #include <mutex>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
@@ -44,5 +45,12 @@ struct DynamicReconfigure {
   virtual void draw();
 private:
   ros::Subscriber sub_;
+  std::mutex mutex_;
   dynamic_reconfigure::ConfigDescriptionConstPtr config_description_;
+  dynamic_reconfigure::Config config_;
+
+  std::map<std::string, bool> bools_;
+  std::map<std::string, double> doubles_;
+  std::map<std::string, int> ints_;
+  const std::string name_;
 };  // DynamicReconfigure

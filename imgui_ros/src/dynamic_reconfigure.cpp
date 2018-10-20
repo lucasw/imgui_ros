@@ -28,17 +28,53 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dynamic_reconfigure/BoolParameter.h>
+#include <dynamic_reconfigure/IntParameter.h>
+#include <dynamic_reconfigure/StrParameter.h>
+#include <dynamic_reconfigure/DoubleParameter.h>
+// #include <dynamic_reconfigure/GroupState.h>
 #include <imgui.h>
 #include <imgui_ros/dynamic_reconfigure.h>
 
-#if 0
-DynamicReconfigure(const std::string name, const std::string topic,
-                     ros::NodeHandle& nh);
-  ~DynamicReconfigure() {}
-  void descriptionCallback(const dynamic_reconfigure::ConfigDescriptionConstPtr& msg);
-  virtual void draw();
-private:
-  ros::Subscriber sub_;
-  dynamic_reconfigure::ConfigDescriptionConstPtr config_description_;
+DynamicReconfigure::DynamicReconfigure(const std::string name, const std::string topic,
+    ros::NodeHandle& nh) : name_(name) {
+  sub_ = nh.subscribe(topic, 10, &DynamicReconfigure::descriptionCallback, this);
+}
 
-#endif
+void DynamicReconfigure::descriptionCallback(
+    const dynamic_reconfigure::ConfigDescriptionConstPtr& msg) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  config_description_ = msg;
+  // TODO(lucasw) clear out all the maps
+}
+
+void DynamicReconfigure::draw() {
+  ImGui::Begin(name_.c_str());
+  const std::string text = sub_.getTopic();
+  ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+  dynamic_reconfigure::ConfigDescriptionConstPtr cd;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    cd = config_description_;
+  }
+  if (!cd) {
+    ImGui::End();
+    return;
+  }
+
+  // TODO(lucasw) assume config description is properly formed for now
+  for (size_t i = 0; i < cd->dflt.bools.size(); ++i) {
+    const std::string name = cd->dflt.bools[i].name;
+    ImGui::Checkbox(name.c_str(), &bools_[name]);
+  }
+  for (size_t i = 0; i < cd->dflt.doubles.size(); ++i) {
+    const std::string name = cd->dflt.bools[i].name;
+    const double min = cd->min.doubles[i].value;
+    const double max = cd->max.doubles[i].value;
+    ImGui::Checkbox(name.c_str(), &bools_[name]);
+    ImGui::SliderScalar(name.c_str(), ImGuiDataType_Double,
+        (void *)&doubles_[name], (void*)&min, (void*)&max, "%f");
+  }
+
+  ImGui::End();
+}

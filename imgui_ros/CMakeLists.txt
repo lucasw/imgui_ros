@@ -57,6 +57,7 @@ include_directories(
 
 
 add_library(${PROJECT_NAME}
+  src/dynamic_reconfigure.cpp
   src/imgui_ros.cpp
   src/image.cpp
   imgui/imgui.cpp
