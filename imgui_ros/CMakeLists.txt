@@ -70,8 +70,12 @@ add_library(${PROJECT_NAME}
 )
 # add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencpp)
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES}
+# trailing whitespace is a problem in 16.04
+# https://stackoverflow.com/questions/45730098/cmake-leading-or-trailing-whitespace-policy-cmp0004
+string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
+target_link_libraries(${PROJECT_NAME}
   ${SDL2_LIBRARIES}
+  ${catkin_LIBRARIES}
   GL
   dl
 )
