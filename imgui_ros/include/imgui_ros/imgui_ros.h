@@ -34,6 +34,7 @@
 #include <imgui_ros/Image.h>
 #include <map>
 #include <mutex>
+#include <nodelet/nodelet.h>
 #include <opencv2/core.hpp>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
@@ -100,18 +101,17 @@ struct CvImage : public GlImage {
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace imgui_ros {
-class ImguiRos {
+class ImguiRos : public nodelet::Nodelet {
 public:
   ImguiRos();
   ~ImguiRos();
+  virtual void onInit();
 
 private:
-  bool init();
   bool addImage(imgui_ros::Image::Request& req,
                 imgui_ros::Image::Response& res);
   void update(const ros::TimerEvent& e);
 
-  ros::NodeHandle nh_;
   SDL_Window *window;
   ImGuiIO io;
   SDL_GLContext gl_context;

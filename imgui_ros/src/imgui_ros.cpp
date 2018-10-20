@@ -199,24 +199,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace imgui_ros {
   ImguiRos::ImguiRos() {
-    init();
-
-    // temp test code
-#if 0
-    {
-      std::string image_file = "";
-      ros::param::get("~image", image_file);
-      std::shared_ptr<CvImage> image;
-      image.reset(new CvImage("test"));
-      image->image_ = cv::imread(image_file, CV_LOAD_IMAGE_COLOR);
-      image->updateTexture();
-      images_.push_back(image);
-
-      std::shared_ptr<RosImage> ros_image;
-      ros_image.reset(new RosImage("test2", "/image_source/image_raw", nh_));
-      images_.push_back(ros_image);
-    }
-#endif
   }
 
   ImguiRos::~ImguiRos() {
@@ -230,11 +212,12 @@ namespace imgui_ros {
     SDL_Quit();
   }
 
-  bool ImguiRos::init() {
+  void ImguiRos::onInit() {
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
       ROS_ERROR_STREAM("Error: " << SDL_GetError());
-      return false;
+      // TODO(lucasw) throw
+      return;
     }
 
     // Decide GL+GLSL versions
@@ -281,7 +264,7 @@ namespace imgui_ros {
 #endif
     if (err) {
       ROS_ERROR_STREAM("Failed to initialize OpenGL loader!");
-      return false;
+      return;
     }
 
     // Setup Dear ImGui binding
@@ -323,9 +306,26 @@ namespace imgui_ros {
     // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f,
     // NULL, io.Fonts->GetGlyphRangesJapanese()); IM_ASSERT(font != NULL);
 
+#if 0
+    // temp test code
+    {
+      std::string image_file = "";
+      ros::param::get("~image", image_file);
+      std::shared_ptr<CvImage> image;
+      image.reset(new CvImage("test"));
+      image->image_ = cv::imread(image_file, CV_LOAD_IMAGE_COLOR);
+      image->updateTexture();
+      images_.push_back(image);
+
+      std::shared_ptr<RosImage> ros_image;
+      ros_image.reset(new RosImage("test2", "/image_source/image_raw", getNodeHandle));
+      images_.push_back(ros_image);
+    }
+#endif
+
     // ros init
-    add_image_ = nh_.advertiseService("add_image", &ImguiRos::addImage, this);
-    update_timer_ = nh_.createTimer(ros::Duration(1.0 / 30.0),
+    add_image_ = getPrivateNodeHandle().advertiseService("add_image", &ImguiRos::addImage, this);
+    update_timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0 / 30.0),
         &ImguiRos::update, this);
   }
 
@@ -336,12 +336,12 @@ namespace imgui_ros {
       if (images_.count(req.name) > 0) {
         images_.erase(req.name);
       }
-      return true;;
+      return true;
     }
     std::shared_ptr<RosImage> ros_image;
-    ros_image.reset(new RosImage(req.name, req.topic, nh_));
+    ros_image.reset(new RosImage(req.name, req.topic, getPrivateNodeHandle()));
     images_[req.name] = ros_image;
-    return true;;
+    return true;
   }
 
   void ImguiRos::update(const ros::TimerEvent& e) {
@@ -397,10 +397,7 @@ namespace imgui_ros {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
   }
-}  // namespace imgui_ros
+};  // namespace imgui_ros
 
-int main(int argc, char* argv[]) {
-  ros::init(argc, argv, "imgui_ros");
-  imgui_ros::ImguiRos imgui_ros;
-  ros::spin();
-}
+#include <pluginlib/class_list_macros.h>
+PLUGINLIB_EXPORT_CLASS(imgui_ros::ImguiRos, nodelet::Nodelet)

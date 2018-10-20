@@ -56,7 +56,8 @@ include_directories(
 )
 
 
-add_executable(${PROJECT_NAME} src/imgui_ros.cpp
+add_library(${PROJECT_NAME}
+  src/imgui_ros.cpp
   imgui/imgui.cpp
   imgui/imgui_demo.cpp
   imgui/imgui_draw.cpp
@@ -72,6 +73,9 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES}
   GL
   dl
 )
+
+add_executable(${PROJECT_NAME}_node src/imgui_ros_node.cpp)
+target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})
 
 # TODO(lucasw) is this needed?
 if(catkin_EXPORTED_LIBRARIES)

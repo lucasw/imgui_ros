@@ -30,7 +30,7 @@
   <run_depend>std_msgs</run_depend>
 
   <export>
-    <!-- nodelet plugin="${prefix}/nodelet_imgui_ros.xml" /-->
+    <nodelet plugin="${prefix}/nodelet_imgui_ros.xml" />
   </export>
 
 </package>

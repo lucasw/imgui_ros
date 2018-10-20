@@ -1,0 +1,9 @@
+<library path="lib/libimgui_ros">
+  <class name="imgui_ros/ImguiRos"
+      type="imgui_ros::ImguiRos"
+      base_class_type="nodelet::Nodelet">
+    <description>
+      Immediate mode gui for ros.
+    </description>
+  </class>
+</library>
