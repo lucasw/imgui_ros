@@ -41,6 +41,9 @@ DynamicReconfigure::DynamicReconfigure(const std::string name, const std::string
   const std::string desc_topic = topic + "/parameter_descriptions";
   descriptions_sub_ = nh.subscribe(desc_topic, 10,
       &DynamicReconfigure::descriptionCallback, this);
+  const std::string updates_topic = topic + "/parameter_updates";
+  updates_sub_ = nh.subscribe(updates_topic, 10,
+      &DynamicReconfigure::updatesCallback, this);
 }
 
 void DynamicReconfigure::descriptionCallback(
@@ -48,6 +51,20 @@ void DynamicReconfigure::descriptionCallback(
   std::lock_guard<std::mutex> lock(mutex_);
   config_description_ = msg;
   // TODO(lucasw) clear out all the maps
+  bools_.clear();
+  doubles_.clear();
+}
+
+void DynamicReconfigure::updatesCallback(
+    const dynamic_reconfigure::ConfigConstPtr& msg) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  config_ = msg;
+  for (size_t i = 0; i < config_->bools.size(); ++i) {
+    bools_[config_->bools[i].name] = config_->bools[i].value;
+  }
+  for (size_t i = 0; i < config_->doubles.size(); ++i) {
+    doubles_[config_->doubles[i].name] = config_->doubles[i].value;
+  }
 }
 
 void DynamicReconfigure::draw() {
@@ -78,7 +95,8 @@ void DynamicReconfigure::draw() {
   for (size_t i = 0; i < cd->dflt.bools.size(); ++i) {
     const std::string name = cd->dflt.bools[i].name;
     ROS_DEBUG_STREAM(name << " checkbox");
-    bools_[name] = false;
+    if (bools_.count(name) == 0)
+      bools_[name] = cd->dflt.bools[i].value;
     ImGui::Checkbox(name.c_str(), &bools_[name]);
   }
   for (size_t i = 0; i < cd->dflt.doubles.size(); ++i) {
@@ -96,7 +114,8 @@ void DynamicReconfigure::draw() {
     const double min = cd->min.doubles[i].value;
     const double max = cd->max.doubles[i].value;
     ROS_DEBUG_STREAM(name << " " << i << " double " << min << " " << max);
-    doubles_[name] = cd->dflt.doubles[i].value;
+    if (doubles_.count(name) == 0)
+      doubles_[name] = cd->dflt.doubles[i].value;
     ImGui::SliderScalar(name.c_str(), ImGuiDataType_Double,
         (void *)&doubles_[name], (void*)&min, (void*)&max, "%f");
   }

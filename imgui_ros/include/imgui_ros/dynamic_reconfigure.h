@@ -45,11 +45,13 @@ struct DynamicReconfigure : public Window {
                      ros::NodeHandle& nh);
   ~DynamicReconfigure() {}
   void descriptionCallback(const dynamic_reconfigure::ConfigDescriptionConstPtr& msg);
+  void updatesCallback(const dynamic_reconfigure::ConfigConstPtr& msg);
   virtual void draw();
 private:
   ros::Subscriber descriptions_sub_;
+  ros::Subscriber updates_sub_;
   dynamic_reconfigure::ConfigDescriptionConstPtr config_description_;
-  dynamic_reconfigure::Config config_;
+  dynamic_reconfigure::ConfigConstPtr config_;
 
   std::map<std::string, bool> bools_;
   std::map<std::string, double> doubles_;
