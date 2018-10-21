@@ -53,22 +53,15 @@ DynamicReconfigure::DynamicReconfigure(const std::string name, const std::string
 void DynamicReconfigure::descriptionCallback(
     const dynamic_reconfigure::ConfigDescriptionConstPtr& msg) {
   std::lock_guard<std::mutex> lock(mutex_);
-  config_description_ = msg;
-  // TODO(lucasw) clear out all the maps
-  bools_.clear();
-  doubles_.clear();
+  config_description_ = *msg;
 }
 
 void DynamicReconfigure::updatesCallback(
     const dynamic_reconfigure::ConfigConstPtr& msg) {
+  // TODO(lucasw) if this arrives before the updateParameters has run with changes those will
+  // get overwritten- is that good or bad?
   std::lock_guard<std::mutex> lock(mutex_);
-  config_ = msg;
-  for (size_t i = 0; i < config_->bools.size(); ++i) {
-    bools_[config_->bools[i].name] = config_->bools[i].value;
-  }
-  for (size_t i = 0; i < config_->doubles.size(); ++i) {
-    doubles_[config_->doubles[i].name] = config_->doubles[i].value;
-  }
+  config_description_.dflt = *msg;
 }
 
 void DynamicReconfigure::draw() {
@@ -78,63 +71,50 @@ void DynamicReconfigure::draw() {
   const std::string text = topic_;
   // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
   std::lock_guard<std::mutex> lock(mutex_);
-  dynamic_reconfigure::ConfigDescriptionConstPtr cd;
+  dynamic_reconfigure::ConfigDescription& cd = config_description_;
   {
     // std::lock_guard<std::mutex> lock(mutex_);
-    cd = config_description_;
-  }
-  if (!cd) {
-    ImGui::End();
-    return;
   }
   ROS_DEBUG_STREAM("bools "
-      << " " << cd->dflt.bools.size()
-      << " " << cd->min.bools.size()
-      << " " << cd->max.bools.size());
+      << " " << cd.dflt.bools.size()
+      << " " << cd.min.bools.size()
+      << " " << cd.max.bools.size());
   ROS_DEBUG_STREAM("doubles "
-      << " " << cd->dflt.doubles.size()
-      << " " << cd->min.doubles.size()
-      << " " << cd->max.doubles.size());
+      << " " << cd.dflt.doubles.size()
+      << " " << cd.min.doubles.size()
+      << " " << cd.max.doubles.size());
 
   // TODO(lucasw) assume config description is properly formed for now
-  for (size_t i = 0; i < cd->dflt.bools.size(); ++i) {
-    const std::string name = cd->dflt.bools[i].name;
+  for (size_t i = 0; i < cd.dflt.bools.size(); ++i) {
+    const std::string name = cd.dflt.bools[i].name;
     ROS_DEBUG_STREAM(name << " checkbox");
-    if (bools_.count(name) == 0)
-      bools_[name] = cd->dflt.bools[i].value;
-    const bool changed = ImGui::Checkbox(name.c_str(), &bools_[name]);
+    bool new_value = cd.dflt.bools[i].value;
+    const bool changed = ImGui::Checkbox(name.c_str(), &new_value);
+    cd.dflt.bools[i].value = new_value;
     if (changed) {
-      dynamic_reconfigure::BoolParameter prm;
-      prm.name = name;
-      prm.value = bools_[name];
-      reconfigure_.config.bools.push_back(prm);
       do_reconfigure_ = true;
     }
   }
-  for (size_t i = 0; i < cd->dflt.doubles.size(); ++i) {
-    const std::string name = cd->dflt.doubles[i].name;
-    if (i >= cd->min.doubles.size()) {
+  for (size_t i = 0; i < cd.dflt.doubles.size(); ++i) {
+    const std::string name = cd.dflt.doubles[i].name;
+    if (i >= cd.min.doubles.size()) {
       ROS_ERROR_STREAM("short min " << name << " " << i
-          << " " << cd->min.doubles.size());
+          << " " << cd.min.doubles.size());
       break;
     }
-    if (i >= cd->max.doubles.size()) {
+    if (i >= cd.max.doubles.size()) {
       ROS_ERROR_STREAM("short min " << name << " " << i
-          << " " << cd->max.doubles.size());
+          << " " << cd.max.doubles.size());
       break;
     }
-    const double min = cd->min.doubles[i].value;
-    const double max = cd->max.doubles[i].value;
+    const double min = cd.min.doubles[i].value;
+    const double max = cd.max.doubles[i].value;
     ROS_DEBUG_STREAM(name << " " << i << " double " << min << " " << max);
-    if (doubles_.count(name) == 0)
-      doubles_[name] = cd->dflt.doubles[i].value;
+    double new_value = cd.dflt.doubles[i].value;
     const bool changed = ImGui::SliderScalar(name.c_str(), ImGuiDataType_Double,
-        (void *)&doubles_[name], (void*)&min, (void*)&max, "%f");
+        (void *)&new_value, (void*)&min, (void*)&max, "%f");
     if (changed) {
-      dynamic_reconfigure::DoubleParameter prm;
-      prm.name = name;
-      prm.value = doubles_[name];
-      reconfigure_.config.doubles.push_back(prm);
+      cd.dflt.doubles[i].value = new_value;
       do_reconfigure_ = true;
     }
   }
@@ -145,12 +125,7 @@ void DynamicReconfigure::updateParameters(const ros::TimerEvent& e) {
   dynamic_reconfigure::Reconfigure rec;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    rec.request = reconfigure_;
-    reconfigure_.config.bools.clear();
-    reconfigure_.config.ints.clear();
-    reconfigure_.config.strs.clear();
-    reconfigure_.config.doubles.clear();
-    reconfigure_.config.groups.clear();
+    rec.request.config = config_description_.dflt;
     if (!do_reconfigure_)
       return;
     do_reconfigure_ = false;
@@ -158,6 +133,6 @@ void DynamicReconfigure::updateParameters(const ros::TimerEvent& e) {
   // TODO(lucasw) it's possible there are multiples of the same name in reconfigure_
   // which one will take precedence- the last one?
   // would be better to use a map then only fill out a Reconfigure here.
-  if (client_.call(rec)) {
+  if (!client_.call(rec)) {
   }
 }

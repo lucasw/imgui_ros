@@ -50,17 +50,12 @@ struct DynamicReconfigure : public Window {
   virtual void draw();
 private:
   ros::Subscriber descriptions_sub_;
-  dynamic_reconfigure::ConfigDescriptionConstPtr config_description_;
+  dynamic_reconfigure::ConfigDescription config_description_;
   ros::Subscriber updates_sub_;
   dynamic_reconfigure::ConfigConstPtr config_;
   ros::ServiceClient client_;
 
-  std::map<std::string, bool> bools_;
-  std::map<std::string, double> doubles_;
-  std::map<std::string, int> ints_;
-
   bool do_reconfigure_ = false;
-  dynamic_reconfigure::ReconfigureRequest reconfigure_;
   ros::Timer timer_;
   void updateParameters(const ros::TimerEvent& e);
 };  // DynamicReconfigure
