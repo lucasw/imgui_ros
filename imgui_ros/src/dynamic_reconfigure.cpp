@@ -32,6 +32,7 @@
 #include <dynamic_reconfigure/IntParameter.h>
 #include <dynamic_reconfigure/StrParameter.h>
 #include <dynamic_reconfigure/DoubleParameter.h>
+#include <dynamic_reconfigure/Reconfigure.h>
 // #include <dynamic_reconfigure/GroupState.h>
 #include <imgui.h>
 #include <imgui_ros/dynamic_reconfigure.h>
@@ -44,6 +45,9 @@ DynamicReconfigure::DynamicReconfigure(const std::string name, const std::string
   const std::string updates_topic = topic + "/parameter_updates";
   updates_sub_ = nh.subscribe(updates_topic, 10,
       &DynamicReconfigure::updatesCallback, this);
+  client_ = nh.serviceClient<dynamic_reconfigure::Reconfigure>(topic + "/set_parameters");
+  // TODO(lucasw) make this configurable - through optional control?
+  timer_ = nh.createTimer(ros::Duration(0.1), &DynamicReconfigure::updateParameters, this);
 }
 
 void DynamicReconfigure::descriptionCallback(
@@ -73,9 +77,10 @@ void DynamicReconfigure::draw() {
   ImGui::Begin(ss.str().c_str());
   const std::string text = topic_;
   // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+  std::lock_guard<std::mutex> lock(mutex_);
   dynamic_reconfigure::ConfigDescriptionConstPtr cd;
   {
-    std::lock_guard<std::mutex> lock(mutex_);
+    // std::lock_guard<std::mutex> lock(mutex_);
     cd = config_description_;
   }
   if (!cd) {
@@ -97,7 +102,14 @@ void DynamicReconfigure::draw() {
     ROS_DEBUG_STREAM(name << " checkbox");
     if (bools_.count(name) == 0)
       bools_[name] = cd->dflt.bools[i].value;
-    ImGui::Checkbox(name.c_str(), &bools_[name]);
+    const bool changed = ImGui::Checkbox(name.c_str(), &bools_[name]);
+    if (changed) {
+      dynamic_reconfigure::BoolParameter prm;
+      prm.name = name;
+      prm.value = bools_[name];
+      reconfigure_.config.bools.push_back(prm);
+      do_reconfigure_ = true;
+    }
   }
   for (size_t i = 0; i < cd->dflt.doubles.size(); ++i) {
     const std::string name = cd->dflt.doubles[i].name;
@@ -116,9 +128,36 @@ void DynamicReconfigure::draw() {
     ROS_DEBUG_STREAM(name << " " << i << " double " << min << " " << max);
     if (doubles_.count(name) == 0)
       doubles_[name] = cd->dflt.doubles[i].value;
-    ImGui::SliderScalar(name.c_str(), ImGuiDataType_Double,
+    const bool changed = ImGui::SliderScalar(name.c_str(), ImGuiDataType_Double,
         (void *)&doubles_[name], (void*)&min, (void*)&max, "%f");
+    if (changed) {
+      dynamic_reconfigure::DoubleParameter prm;
+      prm.name = name;
+      prm.value = doubles_[name];
+      reconfigure_.config.doubles.push_back(prm);
+      do_reconfigure_ = true;
+    }
   }
-
   ImGui::End();
+}
+
+void DynamicReconfigure::updateParameters(const ros::TimerEvent& e) {
+  dynamic_reconfigure::Reconfigure rec;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    rec.request = reconfigure_;
+    reconfigure_.config.bools.clear();
+    reconfigure_.config.ints.clear();
+    reconfigure_.config.strs.clear();
+    reconfigure_.config.doubles.clear();
+    reconfigure_.config.groups.clear();
+    if (!do_reconfigure_)
+      return;
+    do_reconfigure_ = false;
+  }
+  // TODO(lucasw) it's possible there are multiples of the same name in reconfigure_
+  // which one will take precedence- the last one?
+  // would be better to use a map then only fill out a Reconfigure here.
+  if (client_.call(rec)) {
+  }
 }
