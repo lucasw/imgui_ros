@@ -37,14 +37,15 @@
 #include <ros/ros.h>
 
 struct Window {
-  Window(const std::string name) : name_(name) {}
+  Window(const std::string name, const std::string topic) :
+      name_(name), topic_(name) {}
   ~Window() {}
-  virtual bool updateTexture() = 0;
   virtual void draw() = 0;
 protected:
   // TODO(lucasw) or NULL or -1?
   bool dirty_ = true;
   std::string name_ = "";
+  std::string topic_ = "";
   std::mutex mutex_;
 };
 

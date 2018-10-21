@@ -31,7 +31,9 @@
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
-#include <imgui_ros/Image.h>
+#include <imgui_ros/AddWindow.h>
+#include <imgui_ros/dynamic_reconfigure.h>
+#include <imgui_ros/image.h>
 #include <imgui_ros/imgui_ros.h>
 // #include <opencv2/highgui.hpp>
 
@@ -182,7 +184,9 @@ namespace imgui_ros {
       ros_image.reset(new RosImage(req.name, req.topic, getPrivateNodeHandle()));
       windows_[req.name] = ros_image;
     } else if (req.type == imgui_ros::AddWindowRequest::DYNREC) {
-      // TODO(lucasw) dynamic_reconfigure
+      std::shared_ptr<DynamicReconfigure> dr;
+      dr.reset(new DynamicReconfigure(req.name, req.topic, getPrivateNodeHandle()));
+      windows_[req.name] = dr;
     }
     return true;
   }

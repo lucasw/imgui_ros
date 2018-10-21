@@ -57,7 +57,7 @@
 #endif
 
 struct GlImage : public Window {
-  GlImage(const std::string name);
+  GlImage(const std::string name, const std::string topic);
   ~GlImage();
   virtual bool updateTexture() = 0;
   virtual void draw() = 0;

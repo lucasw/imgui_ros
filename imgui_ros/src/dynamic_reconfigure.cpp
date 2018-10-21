@@ -37,8 +37,10 @@
 #include <imgui_ros/dynamic_reconfigure.h>
 
 DynamicReconfigure::DynamicReconfigure(const std::string name, const std::string topic,
-    ros::NodeHandle& nh) : Window(name) {
-  sub_ = nh.subscribe(topic, 10, &DynamicReconfigure::descriptionCallback, this);
+    ros::NodeHandle& nh) : Window(name, topic) {
+  const std::string desc_topic = topic + "/parameter_descriptions";
+  descriptions_sub_ = nh.subscribe(desc_topic, 10,
+      &DynamicReconfigure::descriptionCallback, this);
 }
 
 void DynamicReconfigure::descriptionCallback(
@@ -49,9 +51,11 @@ void DynamicReconfigure::descriptionCallback(
 }
 
 void DynamicReconfigure::draw() {
-  ImGui::Begin(name_.c_str());
-  const std::string text = sub_.getTopic();
-  ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+  std::stringstream ss;
+  ss << name_ << " - " << topic_;
+  ImGui::Begin(ss.str().c_str());
+  const std::string text = topic_;
+  // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
   dynamic_reconfigure::ConfigDescriptionConstPtr cd;
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -61,17 +65,38 @@ void DynamicReconfigure::draw() {
     ImGui::End();
     return;
   }
+  ROS_DEBUG_STREAM("bools "
+      << " " << cd->dflt.bools.size()
+      << " " << cd->min.bools.size()
+      << " " << cd->max.bools.size());
+  ROS_DEBUG_STREAM("doubles "
+      << " " << cd->dflt.doubles.size()
+      << " " << cd->min.doubles.size()
+      << " " << cd->max.doubles.size());
 
   // TODO(lucasw) assume config description is properly formed for now
   for (size_t i = 0; i < cd->dflt.bools.size(); ++i) {
     const std::string name = cd->dflt.bools[i].name;
+    ROS_DEBUG_STREAM(name << " checkbox");
+    bools_[name] = false;
     ImGui::Checkbox(name.c_str(), &bools_[name]);
   }
   for (size_t i = 0; i < cd->dflt.doubles.size(); ++i) {
-    const std::string name = cd->dflt.bools[i].name;
+    const std::string name = cd->dflt.doubles[i].name;
+    if (i >= cd->min.doubles.size()) {
+      ROS_ERROR_STREAM("short min " << name << " " << i
+          << " " << cd->min.doubles.size());
+      break;
+    }
+    if (i >= cd->max.doubles.size()) {
+      ROS_ERROR_STREAM("short min " << name << " " << i
+          << " " << cd->max.doubles.size());
+      break;
+    }
     const double min = cd->min.doubles[i].value;
     const double max = cd->max.doubles[i].value;
-    ImGui::Checkbox(name.c_str(), &bools_[name]);
+    ROS_DEBUG_STREAM(name << " " << i << " double " << min << " " << max);
+    doubles_[name] = cd->dflt.doubles[i].value;
     ImGui::SliderScalar(name.c_str(), ImGuiDataType_Double,
         (void *)&doubles_[name], (void*)&min, (void*)&max, "%f");
   }

@@ -28,6 +28,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef IMGGUI_ROS_DYNAMIC_RECONFIGURE_H
+#define IMGGUI_ROS_DYNAMIC_RECONFIGURE_H
+
 #include <dynamic_reconfigure/Config.h>
 #include <dynamic_reconfigure/ConfigDescription.h>
 #include <imgui.h>
@@ -37,7 +40,6 @@
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
 
-
 struct DynamicReconfigure : public Window {
   DynamicReconfigure(const std::string name, const std::string topic,
                      ros::NodeHandle& nh);
@@ -45,7 +47,7 @@ struct DynamicReconfigure : public Window {
   void descriptionCallback(const dynamic_reconfigure::ConfigDescriptionConstPtr& msg);
   virtual void draw();
 private:
-  ros::Subscriber sub_;
+  ros::Subscriber descriptions_sub_;
   dynamic_reconfigure::ConfigDescriptionConstPtr config_description_;
   dynamic_reconfigure::Config config_;
 
@@ -53,3 +55,5 @@ private:
   std::map<std::string, double> doubles_;
   std::map<std::string, int> ints_;
 };  // DynamicReconfigure
+
+#endif  // IMGGUI_ROS_DYNAMIC_RECONFIGURE_H

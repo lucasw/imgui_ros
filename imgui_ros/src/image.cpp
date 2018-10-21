@@ -31,12 +31,13 @@
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
-#include <imgui_ros/Window.h>
+// #include <imgui_ros/AddWindow.h>
 #include <imgui_ros/image.h>
 // #include <opencv2/highgui.hpp>
 
 // namespace {
-  GlImage::GlImage(const std::string name) : Window(name) {
+  GlImage::GlImage(const std::string name, const std::string topic) :
+      Window(name, topic) {
     glGenTextures(1, &texture_id_);
   }
 
@@ -46,7 +47,7 @@
   }
 
   RosImage::RosImage(const std::string name, const std::string topic,
-             ros::NodeHandle& nh) : GlImage(name) {
+             ros::NodeHandle& nh) : GlImage(name, topic) {
     ROS_INFO_STREAM("subscribing to topic " << topic);
     sub_ = nh.subscribe(topic, 4, &RosImage::imageCallback, this);
   }
@@ -147,7 +148,7 @@
     ImGui::End();
   }
 
-  CvImage::CvImage(const std::string name) : GlImage(name) {
+  CvImage::CvImage(const std::string name) : GlImage(name, "") {
   }
 
   // if the image changes need to call this
