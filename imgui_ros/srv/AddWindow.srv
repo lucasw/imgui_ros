@@ -1,0 +1,12 @@
+uint8 IMAGE=0
+uint8 DYNREC=1
+# uint8 TODO(lucasw)
+string name
+string topic
+# TODO(lucasw) any number of other window properties
+geometry_msgs/Point position
+uint32 type
+bool remove
+---
+string message
+bool success

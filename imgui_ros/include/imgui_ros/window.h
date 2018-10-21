@@ -28,28 +28,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dynamic_reconfigure/Config.h>
-#include <dynamic_reconfigure/ConfigDescription.h>
-#include <imgui.h>
-#include <imgui_ros/window.h>
-#include <map>
+#ifndef IMGUI_ROS_WINDOW_H
+#define IMGUI_ROS_WINDOW_H
+
+#include "imgui.h"
+// #include <imgui_ros/Window.h>
 #include <mutex>
-#include <nodelet/nodelet.h>
 #include <ros/ros.h>
 
+struct Window {
+  Window(const std::string name) : name_(name) {}
+  ~Window() {}
+  virtual bool updateTexture() = 0;
+  virtual void draw() = 0;
+protected:
+  // TODO(lucasw) or NULL or -1?
+  bool dirty_ = true;
+  std::string name_ = "";
+  std::mutex mutex_;
+};
 
-struct DynamicReconfigure : public Window {
-  DynamicReconfigure(const std::string name, const std::string topic,
-                     ros::NodeHandle& nh);
-  ~DynamicReconfigure() {}
-  void descriptionCallback(const dynamic_reconfigure::ConfigDescriptionConstPtr& msg);
-  virtual void draw();
-private:
-  ros::Subscriber sub_;
-  dynamic_reconfigure::ConfigDescriptionConstPtr config_description_;
-  dynamic_reconfigure::Config config_;
-
-  std::map<std::string, bool> bools_;
-  std::map<std::string, double> doubles_;
-  std::map<std::string, int> ints_;
-};  // DynamicReconfigure
+#endif  // IMGUI_ROS_IMAGE_H

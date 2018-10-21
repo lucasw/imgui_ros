@@ -31,12 +31,12 @@
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
-#include <imgui_ros/Image.h>
+#include <imgui_ros/Window.h>
 #include <imgui_ros/image.h>
 // #include <opencv2/highgui.hpp>
 
 // namespace {
-  GlImage::GlImage(const std::string name) : name_(name) {
+  GlImage::GlImage(const std::string name) : Window(name) {
     glGenTextures(1, &texture_id_);
   }
 

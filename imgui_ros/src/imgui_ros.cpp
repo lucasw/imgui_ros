@@ -153,32 +153,37 @@ namespace imgui_ros {
       image.reset(new CvImage("test"));
       image->image_ = cv::imread(image_file, CV_LOAD_IMAGE_COLOR);
       image->updateTexture();
-      images_.push_back(image);
+      windows_.push_back(image);
 
       std::shared_ptr<RosImage> ros_image;
       ros_image.reset(new RosImage("test2", "/image_source/image_raw", getNodeHandle));
-      images_.push_back(ros_image);
+      windows_.push_back(ros_image);
     }
 #endif
 
     // ros init
-    add_image_ = getPrivateNodeHandle().advertiseService("add_image", &ImguiRos::addImage, this);
+    add_window_ = getPrivateNodeHandle().advertiseService("add_window",
+        &ImguiRos::addWindow, this);
     update_timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0 / 30.0),
         &ImguiRos::update, this);
   }
 
-  bool ImguiRos::addImage(imgui_ros::Image::Request& req,
-                imgui_ros::Image::Response& res) {
+  bool ImguiRos::addWindow(imgui_ros::AddWindow::Request& req,
+      imgui_ros::AddWindow::Response& res) {
     res.success = true;
     if (req.remove) {
-      if (images_.count(req.name) > 0) {
-        images_.erase(req.name);
+      if (windows_.count(req.name) > 0) {
+        windows_.erase(req.name);
       }
       return true;
     }
-    std::shared_ptr<RosImage> ros_image;
-    ros_image.reset(new RosImage(req.name, req.topic, getPrivateNodeHandle()));
-    images_[req.name] = ros_image;
+    if (req.type == imgui_ros::AddWindowRequest::IMAGE) {
+      std::shared_ptr<RosImage> ros_image;
+      ros_image.reset(new RosImage(req.name, req.topic, getPrivateNodeHandle()));
+      windows_[req.name] = ros_image;
+    } else if (req.type == imgui_ros::AddWindowRequest::DYNREC) {
+      // TODO(lucasw) dynamic_reconfigure
+    }
     return true;
   }
 
@@ -221,8 +226,8 @@ namespace imgui_ros {
                   1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
       ImGui::End();
 
-      for (auto& image : images_) {
-        image.second->draw();
+      for (auto& window : windows_) {
+        window.second->draw();
       }
     }
 

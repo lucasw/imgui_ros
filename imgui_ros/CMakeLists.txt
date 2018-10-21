@@ -31,7 +31,7 @@ find_package(SDL2 REQUIRED)
 
 add_service_files(
   FILES
-  Image.srv
+  AddWindow.srv
 )
 
 generate_messages(

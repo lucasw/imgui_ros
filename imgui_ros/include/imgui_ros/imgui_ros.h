@@ -33,7 +33,7 @@
 // #include "imgui_impl_sdl.h"
 #include <imgui_ros/image.h>
 #include <imgui_ros/dynamic_reconfigure.h>
-#include <imgui_ros/Image.h>
+#include <imgui_ros/AddWindow.h>
 #include <map>
 #include <mutex>
 #include <nodelet/nodelet.h>
@@ -51,8 +51,8 @@ public:
   virtual void onInit();
 
 private:
-  bool addImage(imgui_ros::Image::Request& req,
-                imgui_ros::Image::Response& res);
+  bool addWindow(imgui_ros::AddWindow::Request& req,
+                 imgui_ros::AddWindow::Response& res);
   void update(const ros::TimerEvent& e);
 
   SDL_Window *window;
@@ -62,12 +62,12 @@ private:
   bool show_another_window = false;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-  std::map<std::string, std::shared_ptr<GlImage> > images_;
+  std::map<std::string, std::shared_ptr<Window> > windows_;
 
   // TODO(lucasw) still need to update even if ros time is paused
   ros::Timer update_timer_;
 
-  ros::ServiceServer add_image_;
+  ros::ServiceServer add_window_;
 };
 
 }  // namespace imgui_ros

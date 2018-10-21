@@ -37,7 +37,7 @@
 #include <imgui_ros/dynamic_reconfigure.h>
 
 DynamicReconfigure::DynamicReconfigure(const std::string name, const std::string topic,
-    ros::NodeHandle& nh) : name_(name) {
+    ros::NodeHandle& nh) : Window(name) {
   sub_ = nh.subscribe(topic, 10, &DynamicReconfigure::descriptionCallback, this);
 }
 

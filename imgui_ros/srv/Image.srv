@@ -1,7 +1,0 @@
-string name
-string topic
-geometry_msgs/Point position
-bool remove
----
-string message
-bool success

@@ -28,10 +28,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef IMGGUI_ROS_IMAGE_H
+#define IMGGUI_ROS_IMAGE_H
+
 #include "imgui.h"
 // #include "imgui_impl_opengl3.h"
 // #include "imgui_impl_sdl.h"
-#include <imgui_ros/Image.h>
+#include <imgui_ros/window.h>
 #include <mutex>
 #include <nodelet/nodelet.h>
 #include <opencv2/core.hpp>
@@ -53,7 +56,7 @@
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
 
-struct GlImage {
+struct GlImage : public Window {
   GlImage(const std::string name);
   ~GlImage();
   virtual bool updateTexture() = 0;
@@ -61,9 +64,6 @@ struct GlImage {
 protected:
   // TODO(lucasw) or NULL or -1?
   GLuint texture_id_ = 0;
-  bool dirty_ = true;
-  std::string name_ = "";
-  std::mutex mutex_;
   size_t width_;
   size_t height_;
 };
@@ -99,3 +99,4 @@ struct CvImage : public GlImage {
   virtual void draw();
 };
 
+#endif  // IMGUI_ROS_IMAGE_H
