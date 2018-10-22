@@ -4,6 +4,7 @@
   <arg name="standalone" default="false" doc="if false run imgui in nodelet manager" />
 
   <include file="$(find image_manip)/launch/rotozoom.launch" >
+    <arg name="use_rqt" value="false" />
   </include>
 
   <node pkg="nodelet" type="nodelet"

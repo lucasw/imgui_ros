@@ -55,6 +55,11 @@ private:
                  imgui_ros::AddWindow::Response& res);
   void update(const ros::TimerEvent& e);
 
+  // Need to init the opengl context in same thread as the update
+  // is run in, not necessarily the same thread onInit runs in
+  void glInit();
+  std::mutex mutex_;
+  bool init_;
   SDL_Window *window;
   ImGuiIO io;
   SDL_GLContext gl_context;

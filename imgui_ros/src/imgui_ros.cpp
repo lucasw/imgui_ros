@@ -52,7 +52,7 @@ namespace imgui_ros {
     SDL_Quit();
   }
 
-  void ImguiRos::onInit() {
+  void ImguiRos::glInit() {
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
       ROS_ERROR_STREAM("Error: " << SDL_GetError());
@@ -107,6 +107,7 @@ namespace imgui_ros {
       return;
     }
 
+    std::lock_guard<std::mutex> lock(mutex_);
     // Setup Dear ImGui binding
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -162,7 +163,10 @@ namespace imgui_ros {
       windows_.push_back(ros_image);
     }
 #endif
+    init_ = true;
+  }
 
+  void ImguiRos::onInit() {
     // ros init
     add_window_ = getPrivateNodeHandle().advertiseService("add_window",
         &ImguiRos::addWindow, this);
@@ -172,6 +176,8 @@ namespace imgui_ros {
 
   bool ImguiRos::addWindow(imgui_ros::AddWindow::Request& req,
       imgui_ros::AddWindow::Response& res) {
+    // TODO(lucasw) there could be a mutex only protecting the windows_
+    std::lock_guard<std::mutex> lock(mutex_);
     res.success = true;
     if (req.remove) {
       if (windows_.count(req.name) > 0) {
@@ -192,6 +198,8 @@ namespace imgui_ros {
   }
 
   void ImguiRos::update(const ros::TimerEvent& e) {
+    if (!init_)
+      glInit();
     // Poll and handle events (inputs, window resize, etc.)
     // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to
     // tell if dear imgui wants to use your inputs.
@@ -216,6 +224,8 @@ namespace imgui_ros {
       }
     }
 
+    {
+    std::lock_guard<std::mutex> lock(mutex_);
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
@@ -230,6 +240,7 @@ namespace imgui_ros {
                   1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
       ImGui::End();
 
+      // TODO(lucasw) mutex lock just for windows
       for (auto& window : windows_) {
         window.second->draw();
       }
@@ -237,6 +248,8 @@ namespace imgui_ros {
 
     // Rendering
     ImGui::Render();
+    // TODO(lucasw) or wait until after GetDrawData() to unlock?
+    }
     SDL_GL_MakeCurrent(window, gl_context);
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
