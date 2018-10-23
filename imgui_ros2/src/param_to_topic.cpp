@@ -66,11 +66,10 @@ public:
         for (auto & changed_parameter : event->changed_parameters) {
           ss << "\n  " << changed_parameter.name;
           if (changed_parameter.name == "foo") {
-            // TODO(lucasw) how to get parameter value?
-            // for (auto & parameter : parameters_client_->get_parameters({"foo"})) {
-            //   msg_->data = parameter.as_double();
-            // }
-            // msg_->data = changed_parameter.value;
+            float val;
+            get_parameter_or("foo", val, 0.0f);
+            msg_->data = val;
+            ss << " " << val << " ";
           }
         }
         ss << "\n deleted parameters:";
