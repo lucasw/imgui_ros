@@ -35,7 +35,7 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl.h>
 #pragma GCC diagnostic pop
-// #include <imgui_ros/AddWindow.h>
+#include <imgui_ros2/srv/add_window.hpp>
 #include <imgui_ros2/image.h>
 #include <imgui_ros2/imgui_ros.h>
 // #include <opencv2/highgui.hpp>
@@ -180,10 +180,8 @@ namespace imgui_ros2 {
     init_ = true;
   }
 
-
-#if 0
-  bool ImguiRos::addWindow(imgui_ros::AddWindow::Request& req,
-      imgui_ros::AddWindow::Response& res) {
+  bool ImguiRos::addWindow(imgui_ros2::srv::AddWindow::Request& req,
+      imgui_ros2::srv::AddWindow::Response& res) {
     // TODO(lucasw) there could be a mutex only protecting the windows_
     std::lock_guard<std::mutex> lock(mutex_);
     res.success = true;
@@ -193,16 +191,16 @@ namespace imgui_ros2 {
       }
       return true;
     }
-    if (req.type == imgui_ros::AddWindowRequest::IMAGE) {
+    if (req.type == imgui_ros2::srv::AddWindow::Request::IMAGE) {
       std::shared_ptr<RosImage> ros_image;
-      ros_image.reset(new RosImage(req.name, req.topic, getPrivateNodeHandle()));
+      ros_image.reset(new RosImage(req.name, req.topic, shared_from_this()));
       windows_[req.name] = ros_image;
     } else {
       res.success = false;
+      res.message = "unsupported type";
     }
     return true;
   }
-#endif
 
   void ImguiRos::update() {
     if (!init_)

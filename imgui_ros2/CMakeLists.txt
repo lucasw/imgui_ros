@@ -21,32 +21,14 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcutils)
 find_package(rmw REQUIRED)
+find_package(rosidl_cmake REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
-add_executable(${PROJECT_NAME}
-  src/imgui_ros.cpp
-  src/image.cpp
-  imgui/imgui.cpp
-  imgui/imgui_demo.cpp
-  imgui/imgui_draw.cpp
-  imgui/imgui_widgets.cpp
-  imgui/examples/imgui_impl_sdl.cpp
-  imgui/examples/imgui_impl_opengl3.cpp
-  imgui/examples/libs/gl3w/GL/gl3w.c
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/AddWindow.srv"
 )
-ament_target_dependencies(${PROJECT_NAME}
-  "rclcpp"
-  "rcutils"
-  "sensor_msgs"
-  "std_msgs")
-target_link_libraries(${PROJECT_NAME}
-  ${SDL2_LIBRARIES}
-  GL
-  dl
-)
-
-install(TARGETS ${PROJECT_NAME} DESTINATION lib/${PROJECT_NAME})
 
 # TODO(lucasw) currently have to symlink imgui in,
 # later could make it a subrepo, or git clone it right here
@@ -58,7 +40,33 @@ include_directories(
   include
   ${SDL2_INCLUDE_DIRS}
 )
-install(TARGETS ${PROJECT_NAME} DESTINATION lib/${PROJECT_NAME})
+
+add_executable(imgui_ros
+  src/imgui_ros.cpp
+  src/image.cpp
+  imgui/imgui.cpp
+  imgui/imgui_demo.cpp
+  imgui/imgui_draw.cpp
+  imgui/imgui_widgets.cpp
+  imgui/examples/imgui_impl_sdl.cpp
+  imgui/examples/imgui_impl_opengl3.cpp
+  imgui/examples/libs/gl3w/GL/gl3w.c
+)
+set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPILE_FLAGS -Wno-pedantic)
+
+ament_target_dependencies(imgui_ros
+  "rclcpp"
+  "rcutils"
+  "sensor_msgs"
+  "std_msgs")
+rosidl_target_interfaces(imgui_ros ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_link_libraries(imgui_ros
+  ${SDL2_LIBRARIES}
+  GL
+  dl
+)
+
+install(TARGETS imgui_ros DESTINATION lib/${PROJECT_NAME})
 
 add_executable(param_to_topic src/param_to_topic.cpp)
 ament_target_dependencies(param_to_topic

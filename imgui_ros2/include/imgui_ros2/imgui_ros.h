@@ -32,7 +32,7 @@
 // #include "imgui_impl_opengl3.h"
 // #include "imgui_impl_sdl.h"
 #include <imgui_ros2/image.h>
-// #include <imgui_ros/dynamic_reconfigure.h>
+#include <imgui_ros2/srv/add_window.hpp>
 #include <map>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -48,8 +48,8 @@ public:
   ~ImguiRos();
 
 private:
-  // bool addWindow(imgui_ros::srv::AddWindow::Request& req,
-  //                imgui_ros::srv::AddWindow::Response& res);
+  bool addWindow(imgui_ros2::srv::AddWindow::Request& req,
+                 imgui_ros2::srv::AddWindow::Response& res);
   void update();
 
   // Need to init the opengl context in same thread as the update

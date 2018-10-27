@@ -38,6 +38,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 // About OpenGL function loaders: modern OpenGL doesn't have a standard header
 // file and requires individual function pointers to be loaded manually. Helper
 // libraries are often used for this purpose! Here we are supporting a few
@@ -52,6 +54,7 @@
 #else
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
+#pragma GCC diagnostic pop
 
 struct GlImage : public Window {
   GlImage(const std::string name, const std::string topic);
