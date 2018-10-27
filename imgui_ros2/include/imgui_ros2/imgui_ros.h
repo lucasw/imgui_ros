@@ -48,8 +48,8 @@ public:
   ~ImguiRos();
 
 private:
-  bool addWindow(imgui_ros2::srv::AddWindow::Request& req,
-                 imgui_ros2::srv::AddWindow::Response& res);
+  void addWindow(const std::shared_ptr<imgui_ros2::srv::AddWindow::Request> req,
+                 std::shared_ptr<imgui_ros2::srv::AddWindow::Response> res);
   void update();
 
   // Need to init the opengl context in same thread as the update
@@ -68,7 +68,7 @@ private:
   // TODO(lucasw) still need to update even if ros time is paused
   rclcpp::TimerBase::SharedPtr update_timer_;
 
-  // ros::ServiceServer add_window_;
+  rclcpp::Service<srv::AddWindow>::SharedPtr add_window_;
 };
 
 }  // namespace imgui_ros

@@ -23,6 +23,7 @@ find_package(rcutils)
 find_package(rmw REQUIRED)
 find_package(rosidl_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+# find_package(rosidl_typesupport_cpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 

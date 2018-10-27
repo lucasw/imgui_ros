@@ -41,12 +41,17 @@
 // #include <opencv2/highgui.hpp>
 
 using namespace std::chrono_literals;
+using std::placeholders::_1;
+using std::placeholders::_2;
 
 namespace imgui_ros2 {
   ImguiRos::ImguiRos() : Node("imgui_ros") {
     // ros init
     // add_window_ = getPrivateNodeHandle().advertiseService("add_window",
     //    &ImguiRos::addWindow, this);
+    add_window_ = create_service<srv::AddWindow>("add_window",
+        std::bind(&ImguiRos::addWindow, this, _1, _2));
+
     update_timer_ = this->create_wall_timer(33ms,
         std::bind(&ImguiRos::update, this));
   }
@@ -180,26 +185,26 @@ namespace imgui_ros2 {
     init_ = true;
   }
 
-  bool ImguiRos::addWindow(imgui_ros2::srv::AddWindow::Request& req,
-      imgui_ros2::srv::AddWindow::Response& res) {
+  void ImguiRos::addWindow(const std::shared_ptr<imgui_ros2::srv::AddWindow::Request> req,
+      std::shared_ptr<imgui_ros2::srv::AddWindow::Response> res) {
     // TODO(lucasw) there could be a mutex only protecting the windows_
     std::lock_guard<std::mutex> lock(mutex_);
-    res.success = true;
-    if (req.remove) {
-      if (windows_.count(req.name) > 0) {
-        windows_.erase(req.name);
+    res->success = true;
+    if (req->remove) {
+      if (windows_.count(req->name) > 0) {
+        windows_.erase(req->name);
       }
-      return true;
+      return;
     }
-    if (req.type == imgui_ros2::srv::AddWindow::Request::IMAGE) {
+    if (req->type == imgui_ros2::srv::AddWindow::Request::IMAGE) {
       std::shared_ptr<RosImage> ros_image;
-      ros_image.reset(new RosImage(req.name, req.topic, shared_from_this()));
-      windows_[req.name] = ros_image;
+      ros_image.reset(new RosImage(req->name, req->topic, shared_from_this()));
+      windows_[req->name] = ros_image;
     } else {
-      res.success = false;
-      res.message = "unsupported type";
+      res->success = false;
+      res->message = "unsupported type";
     }
-    return true;
+    return;
   }
 
   void ImguiRos::update() {
