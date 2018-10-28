@@ -124,6 +124,9 @@ using std::placeholders::_1;
     // TODO(lucasw) if the old texture is the same width and height and number of channels
     // (and color format?) as the old one, use glTexSubImage2D
     if (image->encoding == "mono8") {
+      // TODO(lucasw) need to use a fragment shader to copy the red channel
+      // to the blue and green - there is no longer a GL_LUMINANCE
+      // https://stackoverflow.com/questions/680125/can-i-use-a-grayscale-image-with-the-opengl-glteximage2d-function
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,
                    image->width, image->height,
                    0, GL_RED, GL_UNSIGNED_BYTE, &image->data[0]);
