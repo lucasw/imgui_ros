@@ -38,6 +38,7 @@
 #include <imgui_ros2/srv/add_window.hpp>
 #include <imgui_ros2/image.h>
 #include <imgui_ros2/imgui_ros.h>
+#include <imgui_ros2/pub.h>
 // #include <opencv2/highgui.hpp>
 
 using namespace std::chrono_literals;
