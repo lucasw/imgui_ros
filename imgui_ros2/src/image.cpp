@@ -56,11 +56,14 @@ using std::placeholders::_1;
 
   void RosImage::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg) {
 #if 0
-    ROS_DEBUG_STREAM("image callback "
-        << msg->header.stamp << " "
+    std::cout << "image callback "
+        << msg->header.stamp.sec << " "
+        << msg->header.stamp.nanosec << " "
         << msg->data.size() << " "
         << msg->width << " " << msg->height << ", "
-        << sub_.getTopic());
+        << topic_
+        << ", ptr " << reinterpret_cast<unsigned long int>(&msg->data[0]) << " "
+        << static_cast<unsigned int>(msg->data[0]) << "\n";
 #endif
     std::lock_guard<std::mutex> lock(mutex_);
     image_ = msg;
@@ -96,10 +99,15 @@ using std::placeholders::_1;
     }
     #endif
 
-    // RCLCPP_INFO("image update %d %d %d %d" << texture_id_ << " "
-    //    << image->header.stamp << " "
-    //    << image->data.size() << " "
-    //    << image->width << " " << image->height);
+#if 0
+    std::cout << "update texture " << texture_id_ << " "
+        << image->header.stamp.sec << " "
+        << image->header.stamp.nanosec << " "
+        << image->data.size() << " "
+        << image->width << " " << image->height
+        << ", ptr " << reinterpret_cast<unsigned long int>(&image->data[0]) << " "
+        << static_cast<unsigned int>(image->data[0]) << "\n";
+#endif
     glBindTexture(GL_TEXTURE_2D, texture_id_);
 
     // TODO(lucasw) only need to do these once (unless altering)
@@ -115,10 +123,15 @@ using std::placeholders::_1;
     // have a big switch statement here
     // TODO(lucasw) if the old texture is the same width and height and number of channels
     // (and color format?) as the old one, use glTexSubImage2D
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                 image->width, image->height,
-                 0, GL_BGR, GL_UNSIGNED_BYTE, &image->data[0]);
-
+    if (image->encoding == "mono8") {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,
+                   image->width, image->height,
+                   0, GL_RED, GL_UNSIGNED_BYTE, &image->data[0]);
+    } else {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                   image->width, image->height,
+                   0, GL_BGR, GL_UNSIGNED_BYTE, &image->data[0]);
+    }
 
     // one or both of these are causing a crash
     // use fast 4-byte alignment (default anyway) if possible
@@ -127,6 +140,7 @@ using std::placeholders::_1;
     // glPixelStorei(GL_UNPACK_ROW_LENGTH, image->step / 1);  // image.elemSize()); TODO(lucasw)
 
     // ROS_INFO_STREAM(texture_id_ << " " << image.size());
+    // std::cout << "update texture done " << texture_id_ << "\n";
     return true;
   }
 
@@ -137,13 +151,14 @@ using std::placeholders::_1;
     ImGui::Begin(name_.c_str());
     {
       std::lock_guard<std::mutex> lock(mutex_);
-      if (texture_id_ != 0) {
+      if ((texture_id_ != 0) && (width_ != 0) && (height_ != 0)) {
         std::stringstream ss;
         static int count = 0;
-        ss << texture_id_ << " " << topic_ << " "  // << sub_.getTopic() << " "
+        ss << texture_id_ << " " << topic_ << " "
             << width_ << " " << height_ << " " << count++;
         // const char* text = ss.str().c_str();
         std::string text = ss.str();
+        // std::cout << "draw " << text << "\n";
         ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
         ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(width_, height_));
       }
@@ -151,6 +166,7 @@ using std::placeholders::_1;
     ImGui::End();
   }
 
+  //////////////////////////////////////////////////////////////////////////
   CvImage::CvImage(const std::string name) : GlImage(name, "") {
   }
 

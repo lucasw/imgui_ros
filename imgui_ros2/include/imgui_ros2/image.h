@@ -64,8 +64,8 @@ struct GlImage : public Window {
 protected:
   // TODO(lucasw) or NULL or -1?
   GLuint texture_id_ = 0;
-  size_t width_;
-  size_t height_;
+  size_t width_ = 0;
+  size_t height_ = 0;
 };
 
 // TODO(lucasw) move ros specific code out, have not ros code in common
