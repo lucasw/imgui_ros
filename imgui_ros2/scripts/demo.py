@@ -28,29 +28,30 @@ class Demo(Node):
             self.get_logger().info('service not available, waiting again...')
         self.req = AddWindow.Request()
 
-    def send_request(self):
-        self.req.name = "image_raw"
-        self.req.topic = "/image_raw"
+    def send_request(self, topic):
+        self.req.name = topic + " viewer"
+        self.req.topic = topic
         self.future = self.cli.call_async(self.req)
 
+    def run(self):
+        self.send_request("/image_out")
+        while rclpy.ok():
+            rclpy.spin_once(self)
+            if self.future.done():
+                if self.future.result() is not None:
+                    response = self.future.result()
+                    self.get_logger().info(
+                        'Result %s' % (str(response)))
+                else:
+                    self.get_logger().info(
+                        'Service call failed %r' % (self.future.exception(),))
+                break
 
 def main(args=None):
     rclpy.init(args=args)
 
     demo = Demo()
-    demo.send_request()
-
-    while rclpy.ok():
-        rclpy.spin_once(demo)
-        if demo.future.done():
-            if demo.future.result() is not None:
-                response = demo.future.result()
-                demo.get_logger().info(
-                    'Result %s' % (str(response)))
-            else:
-                demo.get_logger().info(
-                    'Service call failed %r' % (demo.future.exception(),))
-            break
+    demo.run()
 
     demo.destroy_node()
     rclpy.shutdown()
