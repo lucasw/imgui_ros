@@ -26,15 +26,9 @@ class Demo(Node):
         self.cli = self.create_client(AddWindow, 'add_window')
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
-        self.req = AddWindow.Request()
 
-    def send_request(self, topic):
-        self.req.name = topic + " viewer"
-        self.req.topic = topic
-        self.future = self.cli.call_async(self.req)
-
-    def run(self):
-        self.send_request("/image_out")
+    # TODO(lucasw) can't this be a callback instead?
+    def wait_for_response(self):
         while rclpy.ok():
             rclpy.spin_once(self)
             if self.future.done():
@@ -46,6 +40,30 @@ class Demo(Node):
                     self.get_logger().info(
                         'Service call failed %r' % (self.future.exception(),))
                 break
+
+    def run(self):
+        req = AddWindow.Request()
+        req.name = "image_raw viewer"
+        req.topic = "/image_raw"
+        req.type = AddWindow.Request.IMAGE
+        self.future = self.cli.call_async(req)
+
+        req = AddWindow.Request()
+        req.name = "image_out viewer"
+        req.topic = "/image_out"
+        req.type = AddWindow.Request.IMAGE
+        self.future = self.cli.call_async(req)
+
+
+        req = AddWindow.Request()
+        req.name = "theta pub"
+        req.topic = "/theta"
+        req.type = AddWindow.Request.PUB
+        req.sub_type = AddWindow.Request.FLOAT32
+        req.value = 0.0
+        req.min = -3.2
+        req.max = 3.2
+        self.future = self.cli.call_async(req)
 
 def main(args=None):
     rclpy.init(args=args)

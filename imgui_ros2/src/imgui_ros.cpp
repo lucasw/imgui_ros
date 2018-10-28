@@ -201,9 +201,16 @@ namespace imgui_ros2 {
       std::shared_ptr<RosImage> ros_image;
       ros_image.reset(new RosImage(req->name, req->topic, shared_from_this()));
       windows_[req->name] = ros_image;
+    } else if (req->type == imgui_ros2::srv::AddWindow::Request::PUB) {
+      std::shared_ptr<Pub> pub;
+      pub.reset(new Pub(req->name, req->topic, req->sub_type, shared_from_this()));
+      windows_[req->name] = pub;
     } else {
       res->success = false;
-      res->message = "unsupported type";
+      std::stringstream ss;
+      // TODO(lucasw) typeToString()
+      ss << "unsupported type " << req->type;
+      res->message = ss.str();
     }
     return;
   }

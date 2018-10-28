@@ -45,6 +45,7 @@ include_directories(
 add_executable(imgui_ros
   src/imgui_ros.cpp
   src/image.cpp
+  src/pub.cpp
   imgui/imgui.cpp
   imgui/imgui_demo.cpp
   imgui/imgui_draw.cpp

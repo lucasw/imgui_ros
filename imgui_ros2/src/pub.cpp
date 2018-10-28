@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2017 Lucas Walter
- * June 2017
+ * Copyright (c) 2018 Lucas Walter
+ * October 2018
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,46 +28,41 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMGUI_ROS_PUB_H
-#define IMGUI_ROS_PUB_H
-
 #include <imgui.h>
-#include <imgui_ros2/srv/add_window.hpp>
-#include <imgui_ros2/window.h>
-#include <mutex>
-#include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/bool.hpp>
-#include <std_msgs/msg/float32.hpp>
-#include <std_msgs/msg/float64.hpp>
-#include <std_msgs/msg/int8.hpp>
-#include <std_msgs/msg/int16.hpp>
-#include <std_msgs/msg/int32.hpp>
-#include <std_msgs/msg/int64.hpp>
-#include <std_msgs/msg/u_int8.hpp>
-#include <std_msgs/msg/u_int16.hpp>
-#include <std_msgs/msg/u_int32.hpp>
-#include <std_msgs/msg/u_int64.hpp>
+#include <imgui_ros2/pub.h>
 
-// TODO(lucasw)
-// namespace imgui_ros2
-// TODO(lucasw) template<typename MessageT> ?
-// Or just make a subclass for each because the imgui draw code will be different
-// for each?
-struct Pub : public Window {
-  Pub(const std::string name, const std::string topic,
-      const unsigned type, std::shared_ptr<rclcpp::Node> node);
-  ~Pub();
-  virtual void draw();
-protected:
-  // TODO(lucasw) Fixed at float for now
-  float value_ = 0.0;
-  float min_ = 0.0;
-  float max_ = 1.0;
-  unsigned type_ = imgui_ros2::srv::AddWindow::Request::FLOAT32;
-  std::shared_ptr<std_msgs::msg::Float32> msg_;
-  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_;
-  std::shared_ptr<rclcpp::Node> node_;
-};
+Pub::Pub(const std::string name, const std::string topic,
+    const unsigned type, std::shared_ptr<rclcpp::Node> node) :
+    Window(name, topic), type_(type), node_(node) {
+  msg_.reset(new std_msgs::msg::Float32);
+  pub_ = node_->create_publisher<std_msgs::msg::Float32>(topic);
+}
 
-#endif  // IMGUI_ROS_PUB_H
+Pub::~Pub()  {
+
+}
+
+void Pub::draw() {
+  // TODO(lucasw) typeToString()
+  std::stringstream ss;
+  ss << name_ << " - " << topic_;
+  ImGui::Begin(ss.str().c_str());
+  // const std::string text = topic_;
+  // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (type_ == imgui_ros2::srv::AddWindow::Request::FLOAT32) {
+      float new_value = value_;
+      const bool changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_Float,
+          (void *)&new_value, (void*)&min_, (void*)&max_, "%f");
+      if (changed) {
+        value_ = new_value;
+        msg_->data = value_;
+        pub_->publish(msg_);
+      }
+    }
+  }
+  ImGui::End();
+}
+
