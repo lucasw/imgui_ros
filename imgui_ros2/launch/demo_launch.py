@@ -10,9 +10,12 @@ def generate_launch_description():
     image_manip_dir = get_package_share_directory('image_manip2')
     print('image_manip2 dir ' + image_manip_dir)
     # TODO(lucasw) include roto zoom launch
-    image_pub = launch_ros.actions.Node(
-            package='image_manip2', node_executable='image_publisher', output='screen',
-            arguments=[image_manip_dir + "/data/mosaic.jpg"])
+    # image_pub = launch_ros.actions.Node(
+    #         package='image_manip2', node_executable='image_publisher', output='screen',
+    #         arguments=[image_manip_dir + "/data/mosaic.jpg"])
+    roto_zoom = launch.actions.IncludeLaunchDescription(
+            launch.launch_description_sources.PythonLaunchDescriptionSource(
+            image_manip_dir + '/launch/roto_zoom_launch.py'))
     imgui_ros = launch_ros.actions.Node(
             package='imgui_ros2', node_executable='imgui_ros', output='screen',
             # arguments=[image_manip_dir + "/data/mosaic.jpg"])
@@ -23,7 +26,8 @@ def generate_launch_description():
     # from the the image publisher
 
     return launch.LaunchDescription([
-        image_pub,
+        roto_zoom,
+        # image_pub,
         imgui_ros,
         configure_windows,
     ])
