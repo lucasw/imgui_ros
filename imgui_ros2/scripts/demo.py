@@ -65,6 +65,16 @@ class Demo(Node):
         req.max = 3.2
         self.future = self.cli.call_async(req)
 
+        req = AddWindow.Request()
+        req.name = "phi pub"
+        req.topic = "/phi"
+        req.type = AddWindow.Request.PUB
+        req.sub_type = AddWindow.Request.FLOAT32
+        req.value = 0.0
+        req.min = -3.2
+        req.max = 3.2
+        self.future = self.cli.call_async(req)
+
 def main(args=None):
     rclpy.init(args=args)
 

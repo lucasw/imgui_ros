@@ -203,7 +203,8 @@ namespace imgui_ros2 {
       windows_[req->name] = ros_image;
     } else if (req->type == imgui_ros2::srv::AddWindow::Request::PUB) {
       std::shared_ptr<Pub> pub;
-      pub.reset(new Pub(req->name, req->topic, req->sub_type, shared_from_this()));
+      pub.reset(new Pub(req->name, req->topic, req->sub_type,
+          req->value, req->min, req->max, shared_from_this()));
       windows_[req->name] = pub;
     } else {
       res->success = false;

@@ -31,9 +31,11 @@
 #include <imgui.h>
 #include <imgui_ros2/pub.h>
 
-Pub::Pub(const std::string name, const std::string topic,
-    const unsigned type, std::shared_ptr<rclcpp::Node> node) :
-    Window(name, topic), type_(type), node_(node) {
+Pub::Pub(const std::string name, const std::string topic, const unsigned type,
+    const float value, const float min, const float max,
+    std::shared_ptr<rclcpp::Node> node) :
+    Window(name, topic), type_(type),
+    value_(value), min_(min), max_(max), node_(node) {
   msg_.reset(new std_msgs::msg::Float32);
   pub_ = node_->create_publisher<std_msgs::msg::Float32>(topic);
 }
