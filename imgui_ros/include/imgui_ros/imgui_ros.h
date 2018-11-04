@@ -32,47 +32,43 @@
 // #include "imgui_impl_opengl3.h"
 // #include "imgui_impl_sdl.h"
 #include <imgui_ros/image.h>
-#include <imgui_ros/dynamic_reconfigure.h>
-#include <imgui_ros/AddWindow.h>
+#include <imgui_ros/srv/add_window.hpp>
 #include <map>
 #include <mutex>
-#include <nodelet/nodelet.h>
 #include <opencv2/core.hpp>
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
 #include <SDL.h>
 
 
 namespace imgui_ros {
-class ImguiRos : public nodelet::Nodelet {
+class ImguiRos : public rclcpp::Node {
 public:
   ImguiRos();
   ~ImguiRos();
-  virtual void onInit();
 
 private:
-  bool addWindow(imgui_ros::AddWindow::Request& req,
-                 imgui_ros::AddWindow::Response& res);
-  void update(const ros::TimerEvent& e);
+  void addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
+                 std::shared_ptr<imgui_ros::srv::AddWindow::Response> res);
+  void update();
 
   // Need to init the opengl context in same thread as the update
   // is run in, not necessarily the same thread onInit runs in
   void glInit();
   std::mutex mutex_;
   bool init_;
+  // TODO(lucasw) std::shared_ptr
   SDL_Window *window;
   ImGuiIO io;
   SDL_GLContext gl_context;
-  bool show_demo_window = true;
-  bool show_another_window = false;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
   std::map<std::string, std::shared_ptr<Window> > windows_;
 
   // TODO(lucasw) still need to update even if ros time is paused
-  ros::Timer update_timer_;
+  rclcpp::TimerBase::SharedPtr update_timer_;
 
-  ros::ServiceServer add_window_;
+  rclcpp::Service<srv::AddWindow>::SharedPtr add_window_;
 };
 
 }  // namespace imgui_ros

@@ -28,17 +28,33 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "imgui.h"
-#include "imgui_impl_opengl3.h"
-#include "imgui_impl_sdl.h"
-#include <imgui_ros/AddWindow.h>
-#include <imgui_ros/dynamic_reconfigure.h>
+#include <chrono>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#include <imgui.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_sdl.h>
+#pragma GCC diagnostic pop
+#include <imgui_ros/srv/add_window.hpp>
 #include <imgui_ros/image.h>
 #include <imgui_ros/imgui_ros.h>
+#include <imgui_ros/pub.h>
 // #include <opencv2/highgui.hpp>
 
+using namespace std::chrono_literals;
+using std::placeholders::_1;
+using std::placeholders::_2;
+
 namespace imgui_ros {
-  ImguiRos::ImguiRos() {
+  ImguiRos::ImguiRos() : Node("imgui_ros") {
+    // ros init
+    // add_window_ = getPrivateNodeHandle().advertiseService("add_window",
+    //    &ImguiRos::addWindow, this);
+    add_window_ = create_service<srv::AddWindow>("add_window",
+        std::bind(&ImguiRos::addWindow, this, _1, _2));
+
+    update_timer_ = this->create_wall_timer(33ms,
+        std::bind(&ImguiRos::update, this));
   }
 
   ImguiRos::~ImguiRos() {
@@ -53,9 +69,11 @@ namespace imgui_ros {
   }
 
   void ImguiRos::glInit() {
+    RCLCPP_INFO(this->get_logger(), "opengl init %d", init_);
+
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
-      ROS_ERROR_STREAM("Error: " << SDL_GetError());
+      RCLCPP_ERROR(this->get_logger(), "Error: %s", SDL_GetError());
       // TODO(lucasw) throw
       return;
     }
@@ -86,7 +104,8 @@ namespace imgui_ros {
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
     std::string title = "imgui_ros";
-    ros::param::get("~title", title);
+    // ros::param::get("~title", title);
+    // TODO(lucasw) window.reset()
     window = SDL_CreateWindow(
         title.c_str(), SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED, 1280, 720,
@@ -103,7 +122,7 @@ namespace imgui_ros {
     bool err = gladLoadGL() == 0;
 #endif
     if (err) {
-      ROS_ERROR_STREAM("Failed to initialize OpenGL loader!");
+      RCLCPP_ERROR(this->get_logger(), "Failed to initialize OpenGL loader!");
       return;
     }
 
@@ -163,41 +182,41 @@ namespace imgui_ros {
       windows_.push_back(ros_image);
     }
 #endif
+
     init_ = true;
   }
 
-  void ImguiRos::onInit() {
-    // ros init
-    add_window_ = getPrivateNodeHandle().advertiseService("add_window",
-        &ImguiRos::addWindow, this);
-    update_timer_ = getPrivateNodeHandle().createTimer(ros::Duration(1.0 / 30.0),
-        &ImguiRos::update, this);
-  }
-
-  bool ImguiRos::addWindow(imgui_ros::AddWindow::Request& req,
-      imgui_ros::AddWindow::Response& res) {
+  void ImguiRos::addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
+      std::shared_ptr<imgui_ros::srv::AddWindow::Response> res) {
     // TODO(lucasw) there could be a mutex only protecting the windows_
     std::lock_guard<std::mutex> lock(mutex_);
-    res.success = true;
-    if (req.remove) {
-      if (windows_.count(req.name) > 0) {
-        windows_.erase(req.name);
+    res->success = true;
+    if (req->remove) {
+      if (windows_.count(req->name) > 0) {
+        windows_.erase(req->name);
       }
-      return true;
+      return;
     }
-    if (req.type == imgui_ros::AddWindowRequest::IMAGE) {
+    if (req->type == imgui_ros::srv::AddWindow::Request::IMAGE) {
       std::shared_ptr<RosImage> ros_image;
-      ros_image.reset(new RosImage(req.name, req.topic, getPrivateNodeHandle()));
-      windows_[req.name] = ros_image;
-    } else if (req.type == imgui_ros::AddWindowRequest::DYNREC) {
-      std::shared_ptr<DynamicReconfigure> dr;
-      dr.reset(new DynamicReconfigure(req.name, req.topic, getPrivateNodeHandle()));
-      windows_[req.name] = dr;
+      ros_image.reset(new RosImage(req->name, req->topic, shared_from_this()));
+      windows_[req->name] = ros_image;
+    } else if (req->type == imgui_ros::srv::AddWindow::Request::PUB) {
+      std::shared_ptr<Pub> pub;
+      pub.reset(new Pub(req->name, req->topic, req->sub_type,
+          req->value, req->min, req->max, shared_from_this()));
+      windows_[req->name] = pub;
+    } else {
+      res->success = false;
+      std::stringstream ss;
+      // TODO(lucasw) typeToString()
+      ss << "unsupported type " << req->type;
+      res->message = ss.str();
     }
-    return true;
+    return;
   }
 
-  void ImguiRos::update(const ros::TimerEvent& e) {
+  void ImguiRos::update() {
     if (!init_)
       glInit();
     // Poll and handle events (inputs, window resize, etc.)
@@ -213,13 +232,13 @@ namespace imgui_ros {
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL2_ProcessEvent(&event);
       if (event.type == SDL_QUIT) {
-        ros::shutdown();
+        rclcpp::shutdown();
         return;
       }
       if (event.type == SDL_WINDOWEVENT &&
           event.window.event == SDL_WINDOWEVENT_CLOSE &&
           event.window.windowID == SDL_GetWindowID(window)) {
-        ros::shutdown();
+        rclcpp::shutdown();
         return;
       }
     }
@@ -257,7 +276,17 @@ namespace imgui_ros {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
   }
-};  // namespace imgui_ros
+}  // namespace imgui_ros
 
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(imgui_ros::ImguiRos, nodelet::Nodelet)
+int main(int argc, char * argv[])
+{
+  rclcpp::init(argc, argv);
+
+  // Force flush of the stdout buffer.
+  // This ensures a correct sync of all prints
+  // even when executed simultaneously within a launch file.
+  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
+  rclcpp::spin(std::make_shared<imgui_ros::ImguiRos>());
+  rclcpp::shutdown();
+  return 0;
+}

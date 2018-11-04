@@ -17,11 +17,11 @@ def generate_launch_description():
             launch.launch_description_sources.PythonLaunchDescriptionSource(
             image_manip_dir + '/launch/roto_zoom_launch.py'))
     imgui_ros = launch_ros.actions.Node(
-            package='imgui_ros2', node_executable='imgui_ros', output='screen',
+            package='imgui_ros', node_executable='imgui_ros', output='screen',
             # arguments=[image_manip_dir + "/data/mosaic.jpg"])
             remappings=[])
     configure_windows = launch_ros.actions.Node(
-            package='imgui_ros2', node_executable='demo.py', output='screen')
+            package='imgui_ros', node_executable='demo.py', output='screen')
     # TODO(lucasw) need rclpy node that calls add_window to display the image
     # from the the image publisher
 

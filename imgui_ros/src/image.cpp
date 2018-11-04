@@ -34,6 +34,7 @@
 // #include <imgui_ros/AddWindow.h>
 #include <imgui_ros/image.h>
 // #include <opencv2/highgui.hpp>
+using std::placeholders::_1;
 
 // namespace {
   GlImage::GlImage(const std::string name, const std::string topic) :
@@ -42,22 +43,28 @@
   }
 
   GlImage::~GlImage() {
-    ROS_INFO_STREAM("freeing texture " << texture_id_ << " " << name_);
+    std::cout << "freeing texture " << texture_id_ << " " << name_ << "\n";
     glDeleteTextures(1, &texture_id_);
   }
 
   RosImage::RosImage(const std::string name, const std::string topic,
-             ros::NodeHandle& nh) : GlImage(name, topic) {
-    ROS_INFO_STREAM("subscribing to topic " << topic);
-    sub_ = nh.subscribe(topic, 4, &RosImage::imageCallback, this);
+                     std::shared_ptr<rclcpp::Node> node) : GlImage(name, topic), node_(node) {
+    std::cout << "subscribing to topic " << topic << "\n";
+    sub_ = node->create_subscription<sensor_msgs::msg::Image>(topic,
+        std::bind(&RosImage::imageCallback, this, _1));
   }
 
-  void RosImage::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
-    ROS_DEBUG_STREAM("image callback "
-        << msg->header.stamp << " "
+  void RosImage::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg) {
+#if 0
+    std::cout << "image callback "
+        << msg->header.stamp.sec << " "
+        << msg->header.stamp.nanosec << " "
         << msg->data.size() << " "
         << msg->width << " " << msg->height << ", "
-        << sub_.getTopic());
+        << topic_
+        << ", ptr " << reinterpret_cast<unsigned long int>(&msg->data[0]) << " "
+        << static_cast<unsigned int>(msg->data[0]) << "\n";
+#endif
     std::lock_guard<std::mutex> lock(mutex_);
     image_ = msg;
     dirty_ = true;
@@ -66,7 +73,7 @@
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
   bool RosImage::updateTexture() {
-    sensor_msgs::ImageConstPtr image;
+    sensor_msgs::msg::Image::SharedPtr image;
     {
       std::lock_guard<std::mutex> lock(mutex_);
       if (!dirty_)
@@ -92,11 +99,15 @@
     }
     #endif
 
-    // TODO(lucasw) this is crashing the second time through
-    ROS_DEBUG_STREAM("image update " << texture_id_ << " "
-        << image->header.stamp << " "
+#if 0
+    std::cout << "update texture " << texture_id_ << " "
+        << image->header.stamp.sec << " "
+        << image->header.stamp.nanosec << " "
         << image->data.size() << " "
-        << image->width << " " << image->height);
+        << image->width << " " << image->height
+        << ", ptr " << reinterpret_cast<unsigned long int>(&image->data[0]) << " "
+        << static_cast<unsigned int>(image->data[0]) << "\n";
+#endif
     glBindTexture(GL_TEXTURE_2D, texture_id_);
 
     // TODO(lucasw) only need to do these once (unless altering)
@@ -112,10 +123,18 @@
     // have a big switch statement here
     // TODO(lucasw) if the old texture is the same width and height and number of channels
     // (and color format?) as the old one, use glTexSubImage2D
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                 image->width, image->height,
-                 0, GL_BGR, GL_UNSIGNED_BYTE, &image->data[0]);
-
+    if (image->encoding == "mono8") {
+      // TODO(lucasw) need to use a fragment shader to copy the red channel
+      // to the blue and green - there is no longer a GL_LUMINANCE
+      // https://stackoverflow.com/questions/680125/can-i-use-a-grayscale-image-with-the-opengl-glteximage2d-function
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,
+                   image->width, image->height,
+                   0, GL_RED, GL_UNSIGNED_BYTE, &image->data[0]);
+    } else {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                   image->width, image->height,
+                   0, GL_BGR, GL_UNSIGNED_BYTE, &image->data[0]);
+    }
 
     // one or both of these are causing a crash
     // use fast 4-byte alignment (default anyway) if possible
@@ -124,6 +143,7 @@
     // glPixelStorei(GL_UNPACK_ROW_LENGTH, image->step / 1);  // image.elemSize()); TODO(lucasw)
 
     // ROS_INFO_STREAM(texture_id_ << " " << image.size());
+    // std::cout << "update texture done " << texture_id_ << "\n";
     return true;
   }
 
@@ -134,13 +154,14 @@
     ImGui::Begin(name_.c_str());
     {
       std::lock_guard<std::mutex> lock(mutex_);
-      if (texture_id_ != 0) {
+      if ((texture_id_ != 0) && (width_ != 0) && (height_ != 0)) {
         std::stringstream ss;
         static int count = 0;
-        ss << texture_id_ << " " << sub_.getTopic() << " "
+        ss << texture_id_ << " " << topic_ << " "
             << width_ << " " << height_ << " " << count++;
         // const char* text = ss.str().c_str();
         std::string text = ss.str();
+        // std::cout << "draw " << text << "\n";
         ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
         ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(width_, height_));
       }
@@ -148,6 +169,7 @@
     ImGui::End();
   }
 
+  //////////////////////////////////////////////////////////////////////////
   CvImage::CvImage(const std::string name) : GlImage(name, "") {
   }
 
@@ -184,7 +206,7 @@
 
     // set length of one complete row in data (doesn't need to equal image.cols)
     glPixelStorei(GL_UNPACK_ROW_LENGTH, image_.step / image_.elemSize());
-    ROS_INFO_STREAM(texture_id_ << " " << image_.size());
+    std::cout << texture_id_ << " " << image_.size() << "\n";
     return true;
   }
 

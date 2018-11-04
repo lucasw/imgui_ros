@@ -28,13 +28,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMGUI_ROS_WINDOW_H
-#define IMGUI_ROS_WINDOW_H
+#ifndef IMGUI_ROS2_WINDOW_H
+#define IMGUI_ROS2_WINDOW_H
 
-#include "imgui.h"
-// #include <imgui_ros/Window.h>
+#include <imgui.h>
 #include <mutex>
-#include <ros/ros.h>
 
 struct Window {
   Window(const std::string name, const std::string topic) :
@@ -42,11 +40,10 @@ struct Window {
   ~Window() {}
   virtual void draw() = 0;
 protected:
-  // TODO(lucasw) or NULL or -1?
   bool dirty_ = true;
   std::string name_ = "";
   std::string topic_ = "";
   std::mutex mutex_;
 };
 
-#endif  // IMGUI_ROS_IMAGE_H
+#endif  // IMGUI_ROS2_IMAGE_H

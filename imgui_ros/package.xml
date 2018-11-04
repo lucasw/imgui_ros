@@ -1,36 +1,23 @@
 <?xml version="1.0"?>
-<package>
+<?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>imgui_ros</name>
-  <version>0.0.1</version>
-  <description>ROS version of the lambda 2D sound wave propagation simulation
-  </description>
-
+  <version>0.0.0</version>
+  <description>imgui user interface for ros2</description>
   <maintainer email="wsacul@gmail.com">Lucas Walter</maintainer>
+  <license>BSD-3</license>
 
-  <license>BSD 3.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <url type="website">https://github.com/lucasw/imgui_ros</url>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>cv_bridge</build_depend>
-  <build_depend>dynamic_reconfigure</build_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>message_generation</build_depend>
-  <build_depend>nodelet</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <run_depend>cv_bridge</run_depend>
-  <run_depend>dynamic_reconfigure</run_depend>
-  <run_depend>geometry_msgs</run_depend>
-  <run_depend>message_generation</run_depend>
-  <run_depend>nodelet</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>std_msgs</run_depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+
+  <member_of_group>rosidl_interface_packages</member_of_group>
 
   <export>
-    <nodelet plugin="${prefix}/nodelet_imgui_ros.xml" />
+    <build_type>ament_cmake</build_type>
   </export>
-
 </package>

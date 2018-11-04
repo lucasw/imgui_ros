@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2017 Lucas Walter
- * June 2017
+ * Copyright (c) 2018 Lucas Walter
+ * October 2018
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,47 +28,43 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "imgui.h"
-// #include "imgui_impl_opengl3.h"
-// #include "imgui_impl_sdl.h"
-#include <imgui_ros2/image.h>
-#include <imgui_ros2/srv/add_window.hpp>
-#include <map>
-#include <mutex>
-#include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
-#include <SDL.h>
+#include <imgui.h>
+#include <imgui_ros/pub.h>
 
+Pub::Pub(const std::string name, const std::string topic, const unsigned type,
+    const float value, const float min, const float max,
+    std::shared_ptr<rclcpp::Node> node) :
+    Window(name, topic), type_(type),
+    value_(value), min_(min), max_(max), node_(node) {
+  msg_.reset(new std_msgs::msg::Float32);
+  pub_ = node_->create_publisher<std_msgs::msg::Float32>(topic);
+}
 
-namespace imgui_ros2 {
-class ImguiRos : public rclcpp::Node {
-public:
-  ImguiRos();
-  ~ImguiRos();
+Pub::~Pub()  {
 
-private:
-  void addWindow(const std::shared_ptr<imgui_ros2::srv::AddWindow::Request> req,
-                 std::shared_ptr<imgui_ros2::srv::AddWindow::Response> res);
-  void update();
+}
 
-  // Need to init the opengl context in same thread as the update
-  // is run in, not necessarily the same thread onInit runs in
-  void glInit();
-  std::mutex mutex_;
-  bool init_;
-  // TODO(lucasw) std::shared_ptr
-  SDL_Window *window;
-  ImGuiIO io;
-  SDL_GLContext gl_context;
-  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+void Pub::draw() {
+  // TODO(lucasw) typeToString()
+  std::stringstream ss;
+  ss << name_ << " - " << topic_;
+  ImGui::Begin(ss.str().c_str());
+  // const std::string text = topic_;
+  // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
 
-  std::map<std::string, std::shared_ptr<Window> > windows_;
+    if (type_ == imgui_ros::srv::AddWindow::Request::FLOAT32) {
+      float new_value = value_;
+      const bool changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_Float,
+          (void *)&new_value, (void*)&min_, (void*)&max_, "%f");
+      if (changed) {
+        value_ = new_value;
+        msg_->data = value_;
+        pub_->publish(msg_);
+      }
+    }
+  }
+  ImGui::End();
+}
 
-  // TODO(lucasw) still need to update even if ros time is paused
-  rclcpp::TimerBase::SharedPtr update_timer_;
-
-  rclcpp::Service<srv::AddWindow>::SharedPtr add_window_;
-};
-
-}  // namespace imgui_ros

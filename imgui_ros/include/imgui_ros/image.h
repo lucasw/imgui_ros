@@ -28,19 +28,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMGGUI_ROS_IMAGE_H
-#define IMGGUI_ROS_IMAGE_H
+#ifndef IMGUI_ROS_IMAGE_H
+#define IMGUI_ROS_IMAGE_H
 
-#include "imgui.h"
-// #include "imgui_impl_opengl3.h"
-// #include "imgui_impl_sdl.h"
+#include <imgui.h>
 #include <imgui_ros/window.h>
 #include <mutex>
-#include <nodelet/nodelet.h>
 #include <opencv2/core.hpp>
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 // About OpenGL function loaders: modern OpenGL doesn't have a standard header
 // file and requires individual function pointers to be loaded manually. Helper
 // libraries are often used for this purpose! Here we are supporting a few
@@ -55,6 +54,7 @@
 #else
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
+#pragma GCC diagnostic pop
 
 struct GlImage : public Window {
   GlImage(const std::string name, const std::string topic);
@@ -64,15 +64,19 @@ struct GlImage : public Window {
 protected:
   // TODO(lucasw) or NULL or -1?
   GLuint texture_id_ = 0;
-  size_t width_;
-  size_t height_;
+  size_t width_ = 0;
+  size_t height_ = 0;
 };
 
+// TODO(lucasw) move ros specific code out, have not ros code in common
+// location that ros1 and ros2 versions can use.
+// TODO(lucasw) should every window be a node?  Or less overhead to
+// have a single node in the imgui parent?
 struct RosImage : public GlImage {
   RosImage(const std::string name, const std::string topic,
-           ros::NodeHandle& nh);
+           std::shared_ptr<rclcpp::Node> node);
 
-  void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+  void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
 
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
@@ -82,8 +86,9 @@ struct RosImage : public GlImage {
   virtual void draw();
 
 private:
-  ros::Subscriber sub_;
-  sensor_msgs::ImageConstPtr image_;
+  std::shared_ptr<rclcpp::Node> node_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
+  sensor_msgs::msg::Image::SharedPtr image_;
 };  // RosImage
 
 struct CvImage : public GlImage {
