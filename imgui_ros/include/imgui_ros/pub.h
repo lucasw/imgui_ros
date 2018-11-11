@@ -55,20 +55,40 @@
 // Or just make a subclass for each because the imgui draw code will be different
 // for each?
 struct Pub : public Window {
-  Pub(const std::string name, const std::string topic, const unsigned type,
+  Pub(const std::string name, const std::string topic,  // const unsigned type,
+      std::shared_ptr<rclcpp::Node> node);
+  // ~Pub();
+  virtual void draw() = 0;
+protected:
+  // unsigned type_ = imgui_ros::srv::AddWindow::Request::FLOAT32;
+  std::shared_ptr<rclcpp::Node> node_;
+};
+
+struct FloatPub : public Pub {
+  FloatPub(const std::string name, const std::string topic, // const unsigned type,
       const float value, const float min, const float max,
       std::shared_ptr<rclcpp::Node> node);
-  ~Pub();
+  ~FloatPub() {}
   virtual void draw();
 protected:
   // TODO(lucasw) Fixed at float for now
-  unsigned type_ = imgui_ros::srv::AddWindow::Request::FLOAT32;
   float value_ = 0.0;
   float min_ = 0.0;
   float max_ = 1.0;
-  std::shared_ptr<rclcpp::Node> node_;
   std::shared_ptr<std_msgs::msg::Float32> msg_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_;
+};
+
+struct BoolPub : public Pub {
+  BoolPub(const std::string name, const std::string topic, // const unsigned type,
+      const bool value,
+      std::shared_ptr<rclcpp::Node> node);
+  ~BoolPub() {}
+  virtual void draw();
+protected:
+  bool value_ = 0.0;
+  std::shared_ptr<std_msgs::msg::Bool> msg_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_;
 };
 
 #endif  // IMGUI_ROS_PUB_H

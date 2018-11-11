@@ -203,8 +203,20 @@ namespace imgui_ros {
       windows_[req->name] = ros_image;
     } else if (req->type == imgui_ros::srv::AddWindow::Request::PUB) {
       std::shared_ptr<Pub> pub;
-      pub.reset(new Pub(req->name, req->topic, req->sub_type,
-          req->value, req->min, req->max, shared_from_this()));
+      if (req->sub_type == srv::AddWindow::Request::FLOAT32)
+      {
+        pub.reset(new FloatPub(req->name, req->topic,  // req->sub_type,
+            req->value, req->min, req->max, shared_from_this()));
+      } else if (req->sub_type == srv::AddWindow::Request::BOOL) {
+        bool value = req->value;
+        pub.reset(new BoolPub(req->name, req->topic,  // req->sub_type,
+            value, shared_from_this()));
+      } else {
+        res->success = false;
+        std::stringstream ss;
+        ss << "unsupported window type " << req->sub_type;
+        res->message = ss.str();
+      }
       windows_[req->name] = pub;
     } else {
       res->success = false;
@@ -261,7 +273,9 @@ namespace imgui_ros {
 
       // TODO(lucasw) mutex lock just for windows
       for (auto& window : windows_) {
-        window.second->draw();
+        if (window.second) {
+          window.second->draw();
+        }
       }
     }
 

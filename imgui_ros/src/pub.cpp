@@ -31,20 +31,25 @@
 #include <imgui.h>
 #include <imgui_ros/pub.h>
 
-Pub::Pub(const std::string name, const std::string topic, const unsigned type,
+Pub::Pub(const std::string name, const std::string topic,  // const unsigned type,
+    std::shared_ptr<rclcpp::Node> node) :
+    Window(name, topic),
+    node_(node) {
+}
+
+// Pub::~Pub()  {
+// }
+
+FloatPub::FloatPub(const std::string name, const std::string topic,  // const unsigned type,
     const float value, const float min, const float max,
     std::shared_ptr<rclcpp::Node> node) :
-    Window(name, topic), type_(type),
-    value_(value), min_(min), max_(max), node_(node) {
+    Pub(name, topic, node), value_(value), min_(min), max_(max) {
   msg_.reset(new std_msgs::msg::Float32);
+  // TODO(lucasw) bring back type for all the float types
   pub_ = node_->create_publisher<std_msgs::msg::Float32>(topic);
 }
 
-Pub::~Pub()  {
-
-}
-
-void Pub::draw() {
+void FloatPub::draw() {
   // TODO(lucasw) typeToString()
   std::stringstream ss;
   ss << name_ << " - " << topic_;
@@ -54,13 +59,47 @@ void Pub::draw() {
   {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    if (type_ == imgui_ros::srv::AddWindow::Request::FLOAT32) {
+    // } if (type_ == imgui_ros::srv::AddWindow::Request::FLOAT32) {
+    {
+      // Put into subclass?
       float new_value = value_;
       const bool changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_Float,
           (void *)&new_value, (void*)&min_, (void*)&max_, "%f");
       if (changed) {
         value_ = new_value;
         msg_->data = value_;
+        pub_->publish(msg_);
+      }
+    }
+  }
+  ImGui::End();
+}
+
+BoolPub::BoolPub(const std::string name, const std::string topic,  // const unsigned type,
+    const bool value,
+    std::shared_ptr<rclcpp::Node> node) :
+    Pub(name, topic, node), value_(value)  {
+  msg_.reset(new std_msgs::msg::Bool);
+  pub_ = node_->create_publisher<std_msgs::msg::Bool>(topic);
+}
+
+void BoolPub::draw() {
+  // TODO(lucasw) typeToString()
+  std::stringstream ss;
+  ss << name_ << " - " << topic_;
+  ImGui::Begin(ss.str().c_str());
+  // const std::string text = topic_;
+  // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    {
+      bool new_value = value_;
+      const bool changed = ImGui::Checkbox(name_.c_str(), &new_value);
+      if (changed) {
+        // TODO(lucasw) optionall keep this checked, or uncheck immediately
+        // value_ = new_value;
+        msg_->data = new_value;
         pub_->publish(msg_);
       }
     }
