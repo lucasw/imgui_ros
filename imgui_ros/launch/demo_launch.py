@@ -7,8 +7,8 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    image_manip_dir = get_package_share_directory('image_manip2')
-    print('image_manip2 dir ' + image_manip_dir)
+    image_manip_dir = get_package_share_directory('image_manip')
+    print('image_manip dir ' + image_manip_dir)
     # TODO(lucasw) include roto zoom launch
     # image_pub = launch_ros.actions.Node(
     #         package='image_manip2', node_executable='image_publisher', output='screen',
@@ -17,7 +17,7 @@ def generate_launch_description():
             launch.launch_description_sources.PythonLaunchDescriptionSource(
             image_manip_dir + '/launch/roto_zoom_launch.py'))
     imgui_ros = launch_ros.actions.Node(
-            package='imgui_ros', node_executable='imgui_ros', output='screen',
+            package='imgui_ros', node_executable='imgui_ros_node', output='screen',
             # arguments=[image_manip_dir + "/data/mosaic.jpg"])
             remappings=[])
     configure_windows = launch_ros.actions.Node(
