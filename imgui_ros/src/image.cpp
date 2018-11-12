@@ -130,10 +130,14 @@ using std::placeholders::_1;
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,
                    image->width, image->height,
                    0, GL_RED, GL_UNSIGNED_BYTE, &image->data[0]);
-    } else {
+    } else if (image->encoding == "bgr8") {
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
                    image->width, image->height,
                    0, GL_BGR, GL_UNSIGNED_BYTE, &image->data[0]);
+    } else if (image->encoding == "rgb8") {
+       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                   image->width, image->height,
+                   0, GL_RGB, GL_UNSIGNED_BYTE, &image->data[0]);
     }
 
     // one or both of these are causing a crash
