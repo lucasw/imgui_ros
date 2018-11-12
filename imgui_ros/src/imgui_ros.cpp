@@ -211,10 +211,17 @@ namespace imgui_ros {
         bool value = req->value;
         pub.reset(new BoolPub(req->name, req->topic,  // req->sub_type,
             value, shared_from_this()));
+      } else if (req->sub_type == srv::AddWindow::Request::INT32)
+      {
+        int value = req->value;
+        int min = req->min;
+        int max = req->max;
+        pub.reset(new IntPub(req->name, req->topic,  // req->sub_type,
+            value, min, max, shared_from_this()));
       } else {
         res->success = false;
         std::stringstream ss;
-        ss << "unsupported window type " << req->sub_type;
+        ss << "unsupported window type " << std::dec << req->sub_type;
         res->message = ss.str();
       }
       windows_[req->name] = pub;

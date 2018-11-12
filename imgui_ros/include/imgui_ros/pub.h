@@ -86,9 +86,23 @@ struct BoolPub : public Pub {
   ~BoolPub() {}
   virtual void draw();
 protected:
-  bool value_ = 0.0;
+  bool value_ = false;
   std::shared_ptr<std_msgs::msg::Bool> msg_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_;
+};
+
+struct IntPub : public Pub {
+  IntPub(const std::string name, const std::string topic, // const unsigned type,
+      const int value, const int min, const int max,
+      std::shared_ptr<rclcpp::Node> node);
+  ~IntPub() {}
+  virtual void draw();
+protected:
+  int value_ = 0;
+  int min_ = 0;
+  int max_ = 1;
+  std::shared_ptr<std_msgs::msg::Int32> msg_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
 };
 
 #endif  // IMGUI_ROS_PUB_H

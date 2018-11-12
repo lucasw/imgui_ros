@@ -107,3 +107,38 @@ void BoolPub::draw() {
   ImGui::End();
 }
 
+IntPub::IntPub(const std::string name, const std::string topic,  // const unsigned type,
+    const int value, const int min, const int max,
+    std::shared_ptr<rclcpp::Node> node) :
+    Pub(name, topic, node), value_(value), min_(min), max_(max) {
+  msg_.reset(new std_msgs::msg::Int32);
+  // TODO(lucasw) bring back type for all the int types
+  pub_ = node_->create_publisher<std_msgs::msg::Int32>(topic);
+}
+
+void IntPub::draw() {
+  // TODO(lucasw) typeToString()
+  std::stringstream ss;
+  ss << name_ << " - " << topic_;
+  ImGui::Begin(ss.str().c_str());
+  // const std::string text = topic_;
+  // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    // } if (type_ == imgui_ros::srv::AddWindow::Request::FLOAT32) {
+    {
+      // Put into subclass?
+      int new_value = value_;
+      const bool changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S32,
+          (void *)&new_value, (void*)&min_, (void*)&max_, "%f");
+      if (changed) {
+        value_ = new_value;
+        msg_->data = value_;
+        pub_->publish(msg_);
+      }
+    }
+  }
+  ImGui::End();
+}
+
