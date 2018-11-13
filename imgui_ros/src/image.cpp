@@ -165,8 +165,18 @@ using std::placeholders::_1;
         // const char* text = ss.str().c_str();
         std::string text = ss.str();
         // std::cout << "draw " << text << "\n";
-        ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
-        ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(width_, height_));
+        // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+        ImVec2 win_size = ImGui::GetWindowSize();
+        const double fr_x = win_size.x / width_;
+        const double fr_y = win_size.y / height_;
+        double fr = fr_x;
+        if (fr_x > fr_y) {
+          fr = fr_y;
+        }
+        win_size.x = width_ * fr;
+        // TODO(lucasw) get this vertical offset from somewhere
+        win_size.y = height_ * fr + 15;
+        ImGui::Image((void*)(intptr_t)texture_id_, win_size);
       }
     }
   }
@@ -225,7 +235,10 @@ using std::placeholders::_1;
       // const char* text = ss.str().c_str();
       std::string text = ss.str();
       ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
-      ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(image_.cols, image_.rows));
+      ImVec2 win_size = ImGui::GetWindowSize();
+      // std::cout << win_size.x << " " << win_size.y << "\n";
+      // ImVec2 win_size = ImVec2(image_.cols, image_.rows);
+      ImGui::Image((void*)(intptr_t)texture_id_, win_size);
     }
     ImGui::End();
   }
