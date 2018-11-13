@@ -197,42 +197,56 @@ namespace imgui_ros {
       }
       return;
     }
-    if (req->type == imgui_ros::srv::AddWindow::Request::IMAGE) {
+    auto window = std::make_shared<Window>(req->name);
+    for (size_t i = 0; i < req->widgets.size(); ++i) {
+      std::string message;
+      std::shared_ptr<Widget> widget;
+      const bool rv = addWidget(req->widgets[i], message, widget);
+      res->success = res->success && rv;
+      res->message += ", " + message;
+      window->widgets_[req->widgets[i].name] = widget;
+    }
+    windows_[req->name] = window;
+  }
+
+  bool ImguiRos::addWidget(const imgui_ros::msg::Widget& widget,
+      std::string& message, std::shared_ptr<Widget>& imgui_widget) {
+    if (widget.type == imgui_ros::msg::Widget::IMAGE) {
       std::shared_ptr<RosImage> ros_image;
-      ros_image.reset(new RosImage(req->name, req->topic, shared_from_this()));
-      windows_[req->name] = ros_image;
-    } else if (req->type == imgui_ros::srv::AddWindow::Request::PUB) {
+      ros_image.reset(new RosImage(widget.name, widget.topic, shared_from_this()));
+      imgui_widget = ros_image;
+      return true;
+    } else if (widget.type == imgui_ros::msg::Widget::PUB) {
       std::shared_ptr<Pub> pub;
-      if (req->sub_type == srv::AddWindow::Request::FLOAT32)
-      {
-        pub.reset(new FloatPub(req->name, req->topic,  // req->sub_type,
-            req->value, req->min, req->max, shared_from_this()));
-      } else if (req->sub_type == srv::AddWindow::Request::BOOL) {
-        bool value = req->value;
-        pub.reset(new BoolPub(req->name, req->topic,  // req->sub_type,
+      if (widget.sub_type == msg::Widget::FLOAT32) {
+        pub.reset(new FloatPub(widget.name, widget.topic,  // widget.sub_type,
+            widget.value, widget.min, widget.max, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::BOOL) {
+        bool value = widget.value;
+        pub.reset(new BoolPub(widget.name, widget.topic,  // widget.sub_type,
             value, shared_from_this()));
-      } else if (req->sub_type == srv::AddWindow::Request::INT32)
-      {
-        int value = req->value;
-        int min = req->min;
-        int max = req->max;
-        pub.reset(new IntPub(req->name, req->topic,  // req->sub_type,
+      } else if (widget.sub_type == msg::Widget::INT32) {
+        int value = widget.value;
+        int min = widget.min;
+        int max = widget.max;
+        pub.reset(new IntPub(widget.name, widget.topic,  // widget.sub_type,
             value, min, max, shared_from_this()));
       } else {
-        res->success = false;
         std::stringstream ss;
-        ss << "unsupported window type " << std::dec << req->sub_type;
-        res->message = ss.str();
+        ss << "unsupported window type " << std::dec << widget.sub_type;
+        message = ss.str();
+        return false;
       }
-      windows_[req->name] = pub;
+      imgui_widget = pub;
+      return true;
     } else {
-      res->success = false;
       std::stringstream ss;
       // TODO(lucasw) typeToString()
-      ss << "unsupported type " << req->type;
-      res->message = ss.str();
+      ss << "unsupported type " << widget.type;
+      message = ss.str();
+      return false;
     }
-    return;
+    return true;
   }
 
   void ImguiRos::update() {

@@ -38,7 +38,7 @@ using std::placeholders::_1;
 
 // namespace {
   GlImage::GlImage(const std::string name, const std::string topic) :
-      Window(name, topic) {
+      Widget(name, topic) {
     glGenTextures(1, &texture_id_);
   }
 
@@ -155,7 +155,6 @@ using std::placeholders::_1;
   void RosImage::draw() {
     // only updates if dirty
     updateTexture();
-    ImGui::Begin(name_.c_str());
     {
       std::lock_guard<std::mutex> lock(mutex_);
       if ((texture_id_ != 0) && (width_ != 0) && (height_ != 0)) {
@@ -170,7 +169,6 @@ using std::placeholders::_1;
         ImGui::Image((void*)(intptr_t)texture_id_, ImVec2(width_, height_));
       }
     }
-    ImGui::End();
   }
 
   //////////////////////////////////////////////////////////////////////////

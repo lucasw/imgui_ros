@@ -28,6 +28,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/Widget.msg"
   "srv/AddWindow.srv"
 )
 
@@ -46,6 +47,7 @@ add_executable(imgui_ros_node
   src/imgui_ros.cpp
   src/image.cpp
   src/pub.cpp
+  src/window.cpp
   imgui/imgui.cpp
   imgui/imgui_demo.cpp
   imgui/imgui_draw.cpp

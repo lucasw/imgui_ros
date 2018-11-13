@@ -32,17 +32,31 @@
 #define IMGUI_ROS2_WINDOW_H
 
 #include <imgui.h>
+#include <map>
+#include <memory>
 #include <mutex>
 
-struct Window {
-  Window(const std::string name, const std::string topic) :
+struct Widget {
+  Widget(const std::string name, const std::string topic) :
       name_(name), topic_(topic) {}
-  ~Window() {}
+  ~Widget() {}
   virtual void draw() = 0;
 protected:
   bool dirty_ = true;
   std::string name_ = "";
   std::string topic_ = "";
+  std::mutex mutex_;
+};
+
+struct Window {
+  Window(const std::string name) :
+      name_(name) {}
+  ~Window() {}
+  virtual void draw();
+  std::map<std::string, std::shared_ptr<Widget> > widgets_;
+protected:
+  bool dirty_ = true;
+  std::string name_ = "";
   std::mutex mutex_;
 };
 

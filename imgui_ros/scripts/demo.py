@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from imgui_ros.msg import Widget
 from imgui_ros.srv import AddWindow
 
 import rclpy
@@ -43,36 +44,39 @@ class Demo(Node):
 
     def run(self):
         req = AddWindow.Request()
-        req.name = "image_raw viewer"
-        req.topic = "/image_raw"
-        req.type = AddWindow.Request.IMAGE
-        self.future = self.cli.call_async(req)
 
-        req = AddWindow.Request()
-        req.name = "image_out viewer"
-        req.topic = "/image_out"
-        req.type = AddWindow.Request.IMAGE
-        self.future = self.cli.call_async(req)
+        widget = Widget()
+        widget.name = "roto image"
+        widget.topic = "/image_raw"
+        widget.type = Widget.IMAGE
+        req.widgets.append(widget)
 
+        widget = Widget()
+        widget.name = "image_out viewer"
+        widget.topic = "/image_out"
+        widget.type = Widget.IMAGE
+        req.widgets.append(widget)
 
-        req = AddWindow.Request()
-        req.name = "theta pub"
-        req.topic = "/theta"
-        req.type = AddWindow.Request.PUB
-        req.sub_type = AddWindow.Request.FLOAT32
-        req.value = 0.0
-        req.min = -3.2
-        req.max = 3.2
-        self.future = self.cli.call_async(req)
+        widget = Widget()
+        widget.name = "theta pub"
+        widget.topic = "/theta"
+        widget.type = Widget.PUB
+        widget.sub_type = Widget.FLOAT32
+        widget.value = 0.0
+        widget.min = -3.2
+        widget.max = 3.2
+        req.widgets.append(widget)
 
-        req = AddWindow.Request()
-        req.name = "phi pub"
-        req.topic = "/phi"
-        req.type = AddWindow.Request.PUB
-        req.sub_type = AddWindow.Request.FLOAT32
-        req.value = 0.0
-        req.min = -3.2
-        req.max = 3.2
+        widget = Widget()
+        widget.name = "phi pub"
+        widget.topic = "/phi"
+        widget.type = Widget.PUB
+        widget.sub_type = Widget.FLOAT32
+        widget.value = 0.0
+        widget.min = -3.2
+        widget.max = 3.2
+        req.widgets.append(widget)
+
         self.future = self.cli.call_async(req)
 
 def main(args=None):

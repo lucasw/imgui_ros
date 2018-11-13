@@ -56,7 +56,7 @@
 #endif
 #pragma GCC diagnostic pop
 
-struct GlImage : public Window {
+struct GlImage : public Widget {
   GlImage(const std::string name, const std::string topic);
   ~GlImage();
   virtual bool updateTexture() = 0;

@@ -33,7 +33,7 @@
 
 Pub::Pub(const std::string name, const std::string topic,  // const unsigned type,
     std::shared_ptr<rclcpp::Node> node) :
-    Window(name, topic),
+    Widget(name, topic),
     node_(node) {
 }
 
@@ -51,9 +51,6 @@ FloatPub::FloatPub(const std::string name, const std::string topic,  // const un
 
 void FloatPub::draw() {
   // TODO(lucasw) typeToString()
-  std::stringstream ss;
-  ss << name_ << " - " << topic_;
-  ImGui::Begin(ss.str().c_str());
   // const std::string text = topic_;
   // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
   {
@@ -72,7 +69,6 @@ void FloatPub::draw() {
       }
     }
   }
-  ImGui::End();
 }
 
 BoolPub::BoolPub(const std::string name, const std::string topic,  // const unsigned type,
@@ -85,9 +81,6 @@ BoolPub::BoolPub(const std::string name, const std::string topic,  // const unsi
 
 void BoolPub::draw() {
   // TODO(lucasw) typeToString()
-  std::stringstream ss;
-  ss << name_ << " - " << topic_;
-  ImGui::Begin(ss.str().c_str());
   // const std::string text = topic_;
   // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
   {
@@ -104,7 +97,6 @@ void BoolPub::draw() {
       }
     }
   }
-  ImGui::End();
 }
 
 IntPub::IntPub(const std::string name, const std::string topic,  // const unsigned type,
@@ -120,7 +112,7 @@ void IntPub::draw() {
   // TODO(lucasw) typeToString()
   std::stringstream ss;
   ss << name_ << " - " << topic_;
-  ImGui::Begin(ss.str().c_str());
+  // ImGui::Begin(ss.str().c_str());
   // const std::string text = topic_;
   // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
   {
@@ -139,6 +131,5 @@ void IntPub::draw() {
       }
     }
   }
-  ImGui::End();
 }
 
