@@ -44,38 +44,68 @@ class Demo(Node):
 
     def run(self):
         req = AddWindow.Request()
-
+        req.name = "input image"
         widget = Widget()
         widget.name = "roto image"
         widget.topic = "/image_raw"
         widget.type = Widget.IMAGE
         req.widgets.append(widget)
+        self.future = self.cli.call_async(req)
 
+        req = AddWindow.Request()
+        req.name = "rotated image"
         widget = Widget()
         widget.name = "image_out viewer"
         widget.topic = "/image_out"
         widget.type = Widget.IMAGE
         req.widgets.append(widget)
+        self.future = self.cli.call_async(req)
+
+        req = AddWindow.Request()
+        req.name = "rotozoom controls"
+
+        for ctrl in ["psi", "theta", "phi"]:
+            widget = Widget()
+            widget.name = ctrl + " pub"
+            widget.topic = ctrl
+            widget.type = Widget.PUB
+            widget.sub_type = Widget.FLOAT32
+            widget.value = 0.0
+            widget.min = -3.2
+            widget.max = 3.2
+            req.widgets.append(widget)
 
         widget = Widget()
-        widget.name = "theta pub"
-        widget.topic = "/theta"
+        widget.name = "z pub"
+        widget.topic = "z"
         widget.type = Widget.PUB
         widget.sub_type = Widget.FLOAT32
-        widget.value = 0.0
-        widget.min = -3.2
-        widget.max = 3.2
+        widget.value = 1.0
+        widget.min = 0.01
+        widget.max = 5.0
         req.widgets.append(widget)
 
         widget = Widget()
-        widget.name = "phi pub"
-        widget.topic = "/phi"
+        widget.name = "z_scale pub"
+        widget.topic = "z_scale"
         widget.type = Widget.PUB
         widget.sub_type = Widget.FLOAT32
-        widget.value = 0.0
-        widget.min = -3.2
-        widget.max = 3.2
+        widget.value = 0.005
+        widget.min = 0.0
+        widget.max = 0.05
         req.widgets.append(widget)
+
+        for ctrl in ["width", "height"]:
+            widget = Widget()
+            widget.name = ctrl + " pub"
+            widget.topic = ctrl
+            widget.type = Widget.PUB
+            widget.sub_type = Widget.INT32
+            # has to be float even though type above is int
+            widget.value = 0.0
+            widget.min = 0.0
+            widget.max = 2048.0
+            req.widgets.append(widget)
 
         self.future = self.cli.call_async(req)
 
