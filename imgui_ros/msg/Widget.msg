@@ -13,6 +13,7 @@ uint8 UINT8=7
 uint8 UINT16=8
 uint8 UINT32=9
 uint8 UINT64=10
+uint8 MENU=11
 # uint8 TODO(lucasw)
 string name ""
 string topic ""
@@ -22,5 +23,6 @@ bool remove False
 float64 value 0.0
 float64 min 0.0
 float64 max 1.0
+string[] items
 # TODO(lucasw) any number of other window properties
 # geometry_msgs/Point position

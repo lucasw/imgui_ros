@@ -133,3 +133,29 @@ void IntPub::draw() {
   }
 }
 
+MenuPub::MenuPub(const std::string name, const std::string topic,  // const unsigned type,
+    const int value, const std::vector<std::string>& items,
+    std::shared_ptr<rclcpp::Node> node) :
+    Pub(name, topic, node), value_(value), items_(items) {
+  msg_.reset(new std_msgs::msg::Int32);
+  for (auto item : items) {
+    items_null_ += item + '\0';
+  }
+  // TODO(lucasw) bring back type for all the int types
+  pub_ = node_->create_publisher<std_msgs::msg::Int32>(topic);
+}
+
+void MenuPub::draw() {
+  // TODO(lucasw) typeToString()
+  std::stringstream ss;
+  ss << name_ << " - " << topic_;
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  int new_value = value_;
+  const bool changed = ImGui::Combo(name_.c_str(), &new_value, items_null_.c_str());
+  if (changed) {
+    value_ = new_value;
+    msg_->data = value_;
+    pub_->publish(msg_);
+  }
+}

@@ -219,6 +219,7 @@ namespace imgui_ros {
       ros_image.reset(new RosImage(widget.name, widget.topic, shared_from_this()));
       imgui_widget = ros_image;
       return true;
+    // publisher types
     } else if (widget.type == imgui_ros::msg::Widget::PUB) {
       std::shared_ptr<Pub> pub;
       if (widget.sub_type == msg::Widget::FLOAT32) {
@@ -234,6 +235,10 @@ namespace imgui_ros {
         int max = widget.max;
         pub.reset(new IntPub(widget.name, widget.topic,  // widget.sub_type,
             value, min, max, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::MENU) {
+        int value = widget.value;
+        pub.reset(new MenuPub(widget.name, widget.topic,
+            value, widget.items, shared_from_this()));
       } else {
         std::stringstream ss;
         ss << "unsupported window type " << std::dec << widget.sub_type;
@@ -242,6 +247,7 @@ namespace imgui_ros {
       }
       imgui_widget = pub;
       return true;
+    // subscription types
     } else if (widget.type == imgui_ros::msg::Widget::SUB) {
       std::shared_ptr<Sub> sub;
       if (widget.sub_type == msg::Widget::FLOAT32) {

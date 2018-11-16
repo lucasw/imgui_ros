@@ -105,4 +105,20 @@ protected:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
 };
 
+struct MenuPub : public Pub {
+  MenuPub(const std::string name, const std::string topic, // const unsigned type,
+      const int value, const std::vector<std::string>& items,
+      std::shared_ptr<rclcpp::Node> node);
+  ~MenuPub() {}
+  virtual void draw();
+protected:
+  int value_ = 0;
+  std::vector<std::string> items_;
+  // formatted like how imgui Combo expects
+  std::string items_null_ = "";
+  std::shared_ptr<std_msgs::msg::Int32> msg_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
+};
+
+
 #endif  // IMGUI_ROS_PUB_H
