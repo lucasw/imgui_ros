@@ -35,15 +35,16 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 struct Widget {
   Widget(const std::string name, const std::string topic) :
       name_(name), topic_(topic) {}
   ~Widget() {}
   virtual void draw() = 0;
+  std::string name_ = "";
 protected:
   bool dirty_ = true;
-  std::string name_ = "";
   std::string topic_ = "";
   std::mutex mutex_;
 };
@@ -53,8 +54,11 @@ struct Window {
       name_(name) {}
   ~Window() {}
   virtual void draw();
-  std::map<std::string, std::shared_ptr<Widget> > widgets_;
+  void add(std::shared_ptr<Widget> widget);
 protected:
+  // TODO(lucasw) this sorts into alphabetical order, but want to preserve insertion order
+  std::map<std::string, std::shared_ptr<Widget> > widgets_;
+  std::vector<std::string> widget_order_;
   bool dirty_ = true;
   std::string name_ = "";
   std::mutex mutex_;

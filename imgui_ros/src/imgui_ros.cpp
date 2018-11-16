@@ -205,11 +205,13 @@ namespace imgui_ros {
       const bool rv = addWidget(req->widgets[i], message, widget);
       res->success = res->success && rv;
       res->message += ", " + message;
-      window->widgets_[req->widgets[i].name] = widget;
+      // TODO(lucasw) remove widget if requested
+      window->add(widget);
     }
     windows_[req->name] = window;
   }
 
+  // TODO(lucasw) move into widget.cpp?
   bool ImguiRos::addWidget(const imgui_ros::msg::Widget& widget,
       std::string& message, std::shared_ptr<Widget>& imgui_widget) {
     if (widget.type == imgui_ros::msg::Widget::IMAGE) {

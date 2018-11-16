@@ -32,15 +32,30 @@
 // #include "imgui_impl_opengl3.h"
 // #include "imgui_impl_sdl.h"
 // #include <imgui_ros/AddWindow.h>
+#include <algorithm>
 #include <imgui_ros/window.h>
 // #include <opencv2/highgui.hpp>
 
 void Window::draw() {
   ImGui::Begin(name_.c_str());
-  for (auto& widget : widgets_) {
-    if (widget.second) {
-      widget.second->draw();
+  // for (auto& widget : widgets_) {
+  for (auto& name : widget_order_) {
+    if (widgets_[name]) {
+      widgets_[name]->draw();
     }
   }
   ImGui::End();
+}
+
+// TODO(lucasw) add ability to insert earlier into list, or if already exists
+// then keep current position, currently only adds to end
+void Window::add(std::shared_ptr<Widget> widget) {
+  const std::string name = widget->name_;
+  if (widgets_.count(name) > 0) {
+    widget_order_.erase(std::remove(widget_order_.begin(),
+        widget_order_.end(), name),
+        widget_order_.end());
+  }
+  widgets_[name] = widget;
+  widget_order_.push_back(name);
 }
