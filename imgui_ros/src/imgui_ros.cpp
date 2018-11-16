@@ -39,6 +39,7 @@
 #include <imgui_ros/image.h>
 #include <imgui_ros/imgui_ros.h>
 #include <imgui_ros/pub.h>
+#include <imgui_ros/sub.h>
 // #include <opencv2/highgui.hpp>
 
 using namespace std::chrono_literals;
@@ -239,6 +240,28 @@ namespace imgui_ros {
       }
       imgui_widget = pub;
       return true;
+    } else if (widget.type == imgui_ros::msg::Widget::SUB) {
+      std::shared_ptr<Sub> sub;
+      if (widget.sub_type == msg::Widget::FLOAT32) {
+        sub.reset(new FloatSub(widget.name, widget.topic,  // widget.sub_type,
+            widget.value, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::BOOL) {
+        bool value = widget.value;
+        sub.reset(new BoolSub(widget.name, widget.topic,  // widget.sub_type,
+            value, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::INT32) {
+        int value = widget.value;
+        sub.reset(new IntSub(widget.name, widget.topic,  // widget.sub_type,
+            value, shared_from_this()));
+      } else {
+        std::stringstream ss;
+        ss << "unsupported window type " << std::dec << widget.sub_type;
+        message = ss.str();
+        return false;
+      }
+      imgui_widget = sub;
+      return true;
+
     } else {
       std::stringstream ss;
       // TODO(lucasw) typeToString()

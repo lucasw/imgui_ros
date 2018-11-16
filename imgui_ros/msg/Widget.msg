@@ -1,5 +1,6 @@
 uint8 IMAGE=0
 uint8 PUB=1
+uint8 SUB=2
 # pub sub types
 uint8 BOOL=0
 uint8 FLOAT32=1

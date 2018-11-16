@@ -95,6 +95,13 @@ class Demo(Node):
         widget.max = 0.05
         req.widgets.append(widget)
 
+        widget = Widget()
+        widget.name = "z_scale sub"
+        widget.topic = "z_scale"
+        widget.type = Widget.SUB
+        widget.sub_type = Widget.FLOAT32
+        req.widgets.append(widget)
+
         for ctrl in ["width", "height"]:
             widget = Widget()
             widget.name = ctrl + " pub"
