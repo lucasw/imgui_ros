@@ -203,10 +203,12 @@ namespace imgui_ros {
       std::string message;
       std::shared_ptr<Widget> widget;
       const bool rv = addWidget(req->widgets[i], message, widget);
-      res->success = res->success && rv;
+      res->success = res->success && rv && widget;
       res->message += ", " + message;
       // TODO(lucasw) remove widget if requested
-      window->add(widget);
+      if (rv && widget) {
+        window->add(widget);
+      }
     }
     windows_[req->name] = window;
   }
@@ -269,7 +271,20 @@ namespace imgui_ros {
       }
       imgui_widget = sub;
       return true;
-
+    } else if (widget.type == imgui_ros::msg::Widget::PLOT) {
+      std::shared_ptr<Sub> sub;
+      if (widget.sub_type == msg::Widget::FLOAT32) {
+        sub.reset(new FloatPlot(widget.name, widget.topic,  // widget.sub_type,
+            widget.value,
+            widget.min, widget.max,
+            shared_from_this()));
+      } else {
+        std::stringstream ss;
+        ss << "unsupported window type " << std::dec << widget.sub_type;
+        message = ss.str();
+        return false;
+      }
+      imgui_widget = sub;
     } else {
       std::stringstream ss;
       // TODO(lucasw) typeToString()

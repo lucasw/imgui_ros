@@ -31,6 +31,7 @@
 #ifndef IMGUI_ROS_SUB_H
 #define IMGUI_ROS_SUB_H
 
+#include <deque>
 #include <imgui.h>
 #include <imgui_ros/srv/add_window.hpp>
 #include <imgui_ros/window.h>
@@ -64,6 +65,7 @@ protected:
   std::shared_ptr<rclcpp::Node> node_;
 };
 
+// TODO(lucasw) use templates
 struct FloatSub : public Sub {
   FloatSub(const std::string name, const std::string topic, // const unsigned type,
       const float value,
@@ -74,7 +76,23 @@ protected:
   // TODO(lucasw) Fixed at float for now
   std::shared_ptr<std_msgs::msg::Float32> msg_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_;
-  void callback(const std_msgs::msg::Float32::SharedPtr msg);
+  virtual void callback(const std_msgs::msg::Float32::SharedPtr msg);
+};
+
+struct FloatPlot : public FloatSub {
+  FloatPlot(const std::string name, const std::string topic, // const unsigned type,
+      const float value,
+      const float min, const float max,
+      std::shared_ptr<rclcpp::Node> node);
+  ~FloatPlot() {}
+  virtual void draw();
+protected:
+  size_t max_points_ = 100;
+  // std::deque<float> data_;
+  std::vector<float> data_;
+  float min_;
+  float max_;
+  virtual void callback(const std_msgs::msg::Float32::SharedPtr msg);
 };
 
 struct BoolSub : public Sub {

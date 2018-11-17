@@ -76,6 +76,34 @@ void FloatSub::draw() {
   ImGui::Text("%s", ss.str().c_str());
 }
 
+FloatPlot::FloatPlot(const std::string name, const std::string topic, // const unsigned type,
+      const float value,
+      const float min, const float max,
+      std::shared_ptr<rclcpp::Node> node) : FloatSub(name, topic, value, node),
+        min_(min), max_(max)
+{
+  data_.push_back(value);
+  data_.push_back(value);
+}
+
+void FloatPlot::callback(const std_msgs::msg::Float32::SharedPtr msg)
+{
+  FloatSub::callback(msg);
+  std::lock_guard<std::mutex> lock(mutex_);
+  data_.push_back(msg->data);
+  if (data_.size() > max_points_) {
+    data_.erase(data_.begin(), data_.begin() + 1);
+  }
+}
+
+void FloatPlot::draw() {
+  // FloatSub::draw();
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (data_.size() > 0) {
+    ImGui::PlotLines(name_.c_str(), &data_[0], data_.size());
+  }
+}
+
 BoolSub::BoolSub(const std::string name, const std::string topic,  // const unsigned type,
     const bool value,
     std::shared_ptr<rclcpp::Node> node) :

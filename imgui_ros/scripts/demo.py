@@ -75,6 +75,13 @@ class Demo(Node):
             widget.max = 3.2
             req.widgets.append(widget)
 
+            widget = Widget()
+            widget.name = ctrl + " sub"
+            widget.topic = ctrl
+            widget.type = Widget.PLOT
+            widget.sub_type = Widget.FLOAT32
+            req.widgets.append(widget)
+
         widget = Widget()
         widget.name = "z pub"
         widget.topic = "z"
@@ -93,13 +100,6 @@ class Demo(Node):
         widget.value = 0.005
         widget.min = 0.0
         widget.max = 0.05
-        req.widgets.append(widget)
-
-        widget = Widget()
-        widget.name = "z_scale sub"
-        widget.topic = "z_scale"
-        widget.type = Widget.SUB
-        widget.sub_type = Widget.FLOAT32
         req.widgets.append(widget)
 
         for ctrl in ["width", "height"]:
