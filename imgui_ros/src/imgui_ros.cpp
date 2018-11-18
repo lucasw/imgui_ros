@@ -237,17 +237,19 @@ namespace imgui_ros {
     } else if (widget.type == imgui_ros::msg::Widget::PUB) {
       std::shared_ptr<Pub> pub;
       if (widget.sub_type == msg::Widget::FLOAT32) {
-        pub.reset(new FloatPub(widget.name, widget.topic,  // widget.sub_type,
+        pub.reset(new GenericPub<std_msgs::msg::Float32>(
+            widget.name, widget.topic,
             widget.value, widget.min, widget.max, shared_from_this()));
       } else if (widget.sub_type == msg::Widget::BOOL) {
         bool value = widget.value;
-        pub.reset(new BoolPub(widget.name, widget.topic,  // widget.sub_type,
+        pub.reset(new BoolPub(widget.name, widget.topic,
             value, shared_from_this()));
       } else if (widget.sub_type == msg::Widget::INT32) {
         int value = widget.value;
         int min = widget.min;
         int max = widget.max;
-        pub.reset(new IntPub(widget.name, widget.topic,  // widget.sub_type,
+        pub.reset(new GenericPub<std_msgs::msg::Int32>(
+            widget.name, widget.topic,
             value, min, max, shared_from_this()));
       } else if (widget.sub_type == msg::Widget::MENU) {
         int value = widget.value;

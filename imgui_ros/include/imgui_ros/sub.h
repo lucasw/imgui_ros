@@ -42,9 +42,6 @@
 
 // TODO(lucasw)
 // namespace imgui_ros
-// TODO(lucasw) template<typename MessageT> ?
-// Or just make a subclass for each because the imgui draw code will be different
-// for each?
 struct Sub : public Widget {
   Sub(const std::string name, const std::string topic,  // const unsigned type,
       std::shared_ptr<rclcpp::Node> node);

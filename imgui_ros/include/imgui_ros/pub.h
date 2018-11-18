@@ -64,19 +64,57 @@ protected:
   std::shared_ptr<rclcpp::Node> node_;
 };
 
-struct FloatPub : public Pub {
-  FloatPub(const std::string name, const std::string topic, // const unsigned type,
+template <class T>
+struct GenericPub : public Pub {
+  GenericPub(const std::string name, const std::string topic, // const unsigned type,
       const float value, const float min, const float max,
-      std::shared_ptr<rclcpp::Node> node);
-  ~FloatPub() {}
-  virtual void draw();
+      std::shared_ptr<rclcpp::Node> node) :
+    Pub(name, topic, node), value_(value), min_(min), max_(max)
+  {
+    msg_.reset(new T);
+    // TODO(lucasw) bring back type for all the float types
+    pub_ = node_->create_publisher<T>(topic);
+  }
+
+  ~GenericPub() {}
+  virtual void draw()
+  {
+    // TODO(lucasw) typeToString()
+    // const std::string text = topic_;
+    // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+    std::lock_guard<std::mutex> lock(mutex_);
+    float new_value = value_;
+    int imgui_data_type;
+    bool changed = false;
+    // switch (decltype(this)) {
+    if (std::is_same<T, std_msgs::msg::Float32>::value) {
+      changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_Float,
+        &new_value, (void*)&min_, (void*)&max_, "%f");
+    } else if (std::is_same<T, std_msgs::msg::Int32>::value) {
+      int val = value_;
+      int min = min_;
+      int max = max_;
+      changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S32,
+        &val, (void*)&min, (void*)&max, "%d");
+      new_value = val;
+    } else {
+      changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_Float,
+        &new_value, (void*)&min_, (void*)&max_, "%f");
+    }
+    if (changed) {
+      value_ = new_value;
+      msg_->data = value_;
+      pub_->publish(msg_);
+    }
+  }
+
 protected:
   // TODO(lucasw) Fixed at float for now
   float value_ = 0.0;
   float min_ = 0.0;
   float max_ = 1.0;
-  std::shared_ptr<std_msgs::msg::Float32> msg_;
-  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_;
+  std::shared_ptr<T> msg_;
+  typename rclcpp::Publisher<T>::SharedPtr pub_;
 };
 
 struct BoolPub : public Pub {
