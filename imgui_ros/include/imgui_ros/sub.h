@@ -39,16 +39,6 @@
 #include <opencv2/core.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
-#include <std_msgs/msg/float32.hpp>
-#include <std_msgs/msg/float64.hpp>
-#include <std_msgs/msg/int8.hpp>
-#include <std_msgs/msg/int16.hpp>
-#include <std_msgs/msg/int32.hpp>
-#include <std_msgs/msg/int64.hpp>
-#include <std_msgs/msg/u_int8.hpp>
-#include <std_msgs/msg/u_int16.hpp>
-#include <std_msgs/msg/u_int32.hpp>
-#include <std_msgs/msg/u_int64.hpp>
 
 // TODO(lucasw)
 // namespace imgui_ros

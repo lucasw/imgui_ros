@@ -14,6 +14,7 @@ uint8 UINT8=7
 uint8 UINT16=8
 uint8 UINT32=9
 uint8 UINT64=10
+uint8 STRING=11
 uint8 MENU=11
 # uint8 TODO(lucasw)
 string name ""

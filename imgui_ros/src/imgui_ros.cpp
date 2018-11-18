@@ -41,6 +41,18 @@
 #include <imgui_ros/pub.h>
 #include <imgui_ros/sub.h>
 // #include <opencv2/highgui.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/float64.hpp>
+#include <std_msgs/msg/int16.hpp>
+#include <std_msgs/msg/int32.hpp>
+#include <std_msgs/msg/int64.hpp>
+#include <std_msgs/msg/int8.hpp>
+#include <std_msgs/msg/string.hpp>
+#include <std_msgs/msg/u_int16.hpp>
+#include <std_msgs/msg/u_int32.hpp>
+#include <std_msgs/msg/u_int64.hpp>
+#include <std_msgs/msg/u_int8.hpp>
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -290,6 +302,10 @@ namespace imgui_ros {
             shared_from_this()));
       } else if (widget.sub_type == msg::Widget::UINT64) {
         sub.reset(new GenericSub<std_msgs::msg::UInt64>(
+            widget.name, widget.topic,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::STRING) {
+        sub.reset(new GenericSub<std_msgs::msg::String>(
             widget.name, widget.topic,
             shared_from_this()));
       } else if (widget.sub_type == msg::Widget::BOOL) {
