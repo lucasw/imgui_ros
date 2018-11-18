@@ -38,72 +38,6 @@ Sub::Sub(const std::string name, const std::string topic,  // const unsigned typ
     node_(node) {
 }
 
-// Sub::~Sub()  {
-// }
-
-FloatSub::FloatSub(const std::string name, const std::string topic,  // const unsigned type,
-    const float value,
-    std::shared_ptr<rclcpp::Node> node) :
-    Sub(name, topic, node) {
-  (void)value;
-  // msg_.reset(new std_msgs::msg::Float32);
-  // msg_.data = value;
-  // TODO(lucasw) bring back type for all the float types
-  sub_ = node_->create_subscription<std_msgs::msg::Float32>(topic,
-      std::bind(&FloatSub::callback, this, _1));
-}
-
-void FloatSub::callback(const std_msgs::msg::Float32::SharedPtr msg)
-{
-  std::lock_guard<std::mutex> lock(mutex_);
-  msg_ = msg;
-}
-
-void FloatSub::draw() {
-  // TODO(lucasw) typeToString()
-  // const std::string text = topic_;
-  // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
-  std::lock_guard<std::mutex> lock(mutex_);
-  std::stringstream ss;
-  // TODO(lucasw) Text box with label on side?
-  // or just use other number widget but disable interaction?
-  // ImGui::Value()?
-  ss << name_ << ": ";
-  if (msg_) {
-    ss << msg_->data;
-  }
-  std::string text = ss.str();
-  ImGui::Text("%s", ss.str().c_str());
-}
-
-FloatPlot::FloatPlot(const std::string name, const std::string topic, // const unsigned type,
-      const float value,
-      const float min, const float max,
-      std::shared_ptr<rclcpp::Node> node) : FloatSub(name, topic, value, node),
-        min_(min), max_(max)
-{
-  data_.push_back(value);
-  data_.push_back(value);
-}
-
-void FloatPlot::callback(const std_msgs::msg::Float32::SharedPtr msg)
-{
-  FloatSub::callback(msg);
-  std::lock_guard<std::mutex> lock(mutex_);
-  data_.push_back(msg->data);
-  if (data_.size() > max_points_) {
-    data_.erase(data_.begin(), data_.begin() + 1);
-  }
-}
-
-void FloatPlot::draw() {
-  // FloatSub::draw();
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (data_.size() > 0) {
-    ImGui::PlotLines(name_.c_str(), &data_[0], data_.size());
-  }
-}
-
 BoolSub::BoolSub(const std::string name, const std::string topic,  // const unsigned type,
     const bool value,
     std::shared_ptr<rclcpp::Node> node) :
@@ -129,32 +63,3 @@ void BoolSub::draw() {
   }
   ImGui::Text("%s", ss.str().c_str());
 }
-
-IntSub::IntSub(const std::string name, const std::string topic,  // const unsigned type,
-    const int value,
-    std::shared_ptr<rclcpp::Node> node) :
-    Sub(name, topic, node)  {
-  (void)value;
-  // msg_.reset(new std_msgs::msg::Int32);
-  // msg_->data = value;
-  // TODO(lucasw) bring back type for all the int types
-  sub_ = node_->create_subscription<std_msgs::msg::Int32>(topic,
-      std::bind(&IntSub::callback, this, _1));
-}
-
-void IntSub::callback(const std_msgs::msg::Int32::SharedPtr msg)
-{
-  std::lock_guard<std::mutex> lock(mutex_);
-  msg_ = msg;
-}
-
-void IntSub::draw() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  std::stringstream ss;
-  ss << name_ << ": ";
-  if (msg_) {
-    ss << msg_->data;
-  }
-  ImGui::Text("%s", ss.str().c_str());
-}
-

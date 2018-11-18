@@ -253,15 +253,48 @@ namespace imgui_ros {
     } else if (widget.type == imgui_ros::msg::Widget::SUB) {
       std::shared_ptr<Sub> sub;
       if (widget.sub_type == msg::Widget::FLOAT32) {
-        sub.reset(new FloatSub(widget.name, widget.topic,  // widget.sub_type,
-            widget.value, shared_from_this()));
+        sub.reset(new GenericSub<std_msgs::msg::Float32>(
+            widget.name, widget.topic,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::FLOAT64) {
+        sub.reset(new GenericSub<std_msgs::msg::Float64>(
+            widget.name, widget.topic,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::INT8) {
+        sub.reset(new GenericSub<std_msgs::msg::Int8>(
+            widget.name, widget.topic,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::INT16) {
+        sub.reset(new GenericSub<std_msgs::msg::Int16>(
+            widget.name, widget.topic,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::INT32) {
+        sub.reset(new GenericSub<std_msgs::msg::Int32>(
+            widget.name, widget.topic,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::INT64) {
+        sub.reset(new GenericSub<std_msgs::msg::Int64>(
+            widget.name, widget.topic,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::UINT8) {
+        sub.reset(new GenericSub<std_msgs::msg::UInt8>(
+            widget.name, widget.topic,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::UINT16) {
+        sub.reset(new GenericSub<std_msgs::msg::UInt16>(
+            widget.name, widget.topic,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::UINT32) {
+        sub.reset(new GenericSub<std_msgs::msg::UInt32>(
+            widget.name, widget.topic,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::UINT64) {
+        sub.reset(new GenericSub<std_msgs::msg::UInt64>(
+            widget.name, widget.topic,
+            shared_from_this()));
       } else if (widget.sub_type == msg::Widget::BOOL) {
         bool value = widget.value;
         sub.reset(new BoolSub(widget.name, widget.topic,  // widget.sub_type,
-            value, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT32) {
-        int value = widget.value;
-        sub.reset(new IntSub(widget.name, widget.topic,  // widget.sub_type,
             value, shared_from_this()));
       } else {
         std::stringstream ss;
@@ -273,10 +306,53 @@ namespace imgui_ros {
       return true;
     } else if (widget.type == imgui_ros::msg::Widget::PLOT) {
       std::shared_ptr<Sub> sub;
-      if (widget.sub_type == msg::Widget::FLOAT32) {
-        sub.reset(new FloatPlot(widget.name, widget.topic,  // widget.sub_type,
-            widget.value,
-            widget.min, widget.max,
+      if (widget.sub_type == msg::Widget::BOOL) {
+        sub.reset(new PlotSub<std_msgs::msg::Bool>(
+            widget.name, widget.topic, widget.value,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::FLOAT32) {
+        sub.reset(new PlotSub<std_msgs::msg::Float32>(
+            widget.name, widget.topic, widget.value,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::FLOAT32) {
+        sub.reset(new PlotSub<std_msgs::msg::Float32>(
+            widget.name, widget.topic, widget.value,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::FLOAT64) {
+        sub.reset(new PlotSub<std_msgs::msg::Float64>(
+            widget.name, widget.topic, widget.value,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::INT8) {
+        sub.reset(new PlotSub<std_msgs::msg::Int8>(
+            widget.name, widget.topic, widget.value,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::INT16) {
+        sub.reset(new PlotSub<std_msgs::msg::Int16>(
+            widget.name, widget.topic, widget.value,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::INT32) {
+        sub.reset(new PlotSub<std_msgs::msg::Int32>(
+            widget.name, widget.topic, widget.value,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::INT64) {
+        sub.reset(new PlotSub<std_msgs::msg::Int64>(
+            widget.name, widget.topic, widget.value,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::UINT8) {
+        sub.reset(new PlotSub<std_msgs::msg::UInt8>(
+            widget.name, widget.topic, widget.value,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::UINT16) {
+        sub.reset(new PlotSub<std_msgs::msg::UInt16>(
+            widget.name, widget.topic, widget.value,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::UINT32) {
+        sub.reset(new PlotSub<std_msgs::msg::UInt32>(
+            widget.name, widget.topic, widget.value,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::UINT64) {
+        sub.reset(new PlotSub<std_msgs::msg::UInt64>(
+            widget.name, widget.topic, widget.value,
             shared_from_this()));
       } else {
         std::stringstream ss;
@@ -288,7 +364,7 @@ namespace imgui_ros {
     } else {
       std::stringstream ss;
       // TODO(lucasw) typeToString()
-      ss << "unsupported type " << widget.type;
+      ss << "unsupported type " << widget.type << " " << widget.sub_type;
       message = ss.str();
       return false;
     }

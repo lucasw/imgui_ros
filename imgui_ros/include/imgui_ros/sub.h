@@ -61,39 +61,84 @@ struct Sub : public Widget {
   // ~Sub();
   virtual void draw() = 0;
 protected:
-  // unsigned type_ = imgui_ros::srv::AddWindow::Request::FLOAT32;
   std::shared_ptr<rclcpp::Node> node_;
 };
 
-// TODO(lucasw) use templates
-struct FloatSub : public Sub {
-  FloatSub(const std::string name, const std::string topic, // const unsigned type,
-      const float value,
-      std::shared_ptr<rclcpp::Node> node);
-  ~FloatSub() {}
-  virtual void draw();
+template <class T>
+struct GenericSub : public Sub {
+  GenericSub(const std::string name, const std::string topic,
+      std::shared_ptr<rclcpp::Node> node) : Sub(name, topic, node)
+  {
+    sub_ = node_->create_subscription<T>(topic,
+        std::bind(&GenericSub::callback, this, std::placeholders::_1));
+  }
+  ~GenericSub() {}
+  virtual void draw()
+  {
+    // TODO(lucasw) typeToString()
+    // const std::string text = topic_;
+    // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::stringstream ss;
+    // TODO(lucasw) Text box with label on side?
+    // or just use other number widget but disable interaction?
+    // ImGui::Value()?
+    ss << name_ << ": ";
+    if (msg_) {
+      // only types with data members that can be used with streams will build
+      ss << msg_->data;
+    }
+    std::string text = ss.str();
+    ImGui::Text("%s", ss.str().c_str());
+  }
 protected:
-  // TODO(lucasw) Fixed at float for now
-  std::shared_ptr<std_msgs::msg::Float32> msg_;
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_;
-  virtual void callback(const std_msgs::msg::Float32::SharedPtr msg);
+  std::shared_ptr<T> msg_;
+  typename rclcpp::Subscription<T>::SharedPtr sub_;
+  virtual void callback(const typename T::SharedPtr msg)
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    msg_ = msg;
+  }
 };
 
-struct FloatPlot : public FloatSub {
-  FloatPlot(const std::string name, const std::string topic, // const unsigned type,
-      const float value,
-      const float min, const float max,
-      std::shared_ptr<rclcpp::Node> node);
-  ~FloatPlot() {}
-  virtual void draw();
+template <class T>
+struct PlotSub : public GenericSub<T> {
+  // TODO(lucasw) how to get the type of T->data?
+  // typedef decltype(T::*data) data_type;
+  PlotSub(const std::string name, const std::string topic,
+      float value,
+      std::shared_ptr<rclcpp::Node> node) :
+      GenericSub<T>(name, topic, node)
+  {
+    data_.push_back(value);
+    data_.push_back(value);
+  }
+
+  ~PlotSub() {}
+  virtual void draw()
+  {
+    // GenericSub<T>::draw();
+    // Can't just refer to inherited mutex_
+    std::lock_guard<std::mutex> lock(GenericSub<T>::mutex_);
+    if (data_.size() > 0) {
+      ImGui::PlotLines(GenericSub<T>::name_.c_str(), &data_[0], data_.size());
+    }
+  }
 protected:
   size_t max_points_ = 100;
-  // std::deque<float> data_;
   std::vector<float> data_;
-  float min_;
-  float max_;
-  virtual void callback(const std_msgs::msg::Float32::SharedPtr msg);
-};
+  // float min_;
+  // float max_;
+  virtual void callback(const typename T::SharedPtr msg)
+  {
+    GenericSub<T>::callback(msg);
+    std::lock_guard<std::mutex> lock(GenericSub<T>::mutex_);
+    data_.push_back(msg->data);
+    if (data_.size() > max_points_) {
+      data_.erase(data_.begin(), data_.begin() + 1);
+    }
+  }
+};  // PlotSub
 
 struct BoolSub : public Sub {
   BoolSub(const std::string name, const std::string topic, // const unsigned type,
@@ -105,18 +150,6 @@ protected:
   std::shared_ptr<std_msgs::msg::Bool> msg_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr sub_;
   void callback(const std_msgs::msg::Bool::SharedPtr msg);
-};
-
-struct IntSub : public Sub {
-  IntSub(const std::string name, const std::string topic, // const unsigned type,
-      const int value,
-      std::shared_ptr<rclcpp::Node> node);
-  ~IntSub() {}
-  virtual void draw();
-protected:
-  std::shared_ptr<std_msgs::msg::Int32> msg_;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_;
-  void callback(const std_msgs::msg::Int32::SharedPtr msg);
 };
 
 #endif  // IMGUI_ROS_SUB_H

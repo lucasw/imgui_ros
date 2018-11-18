@@ -78,6 +78,13 @@ class Demo(Node):
             widget = Widget()
             widget.name = ctrl + " sub"
             widget.topic = ctrl
+            widget.type = Widget.SUB
+            widget.sub_type = Widget.FLOAT32
+            req.widgets.append(widget)
+
+            widget = Widget()
+            widget.name = ctrl + " plot"
+            widget.topic = ctrl
             widget.type = Widget.PLOT
             widget.sub_type = Widget.FLOAT32
             req.widgets.append(widget)
@@ -103,15 +110,30 @@ class Demo(Node):
         req.widgets.append(widget)
 
         for ctrl in ["width", "height"]:
+            widget_type = Widget.INT32
             widget = Widget()
             widget.name = ctrl + " pub"
             widget.topic = ctrl
             widget.type = Widget.PUB
-            widget.sub_type = Widget.INT32
+            widget.sub_type = widget_type
             # has to be float even though type above is int
             widget.value = 0.0
             widget.min = 0.0
             widget.max = 2048.0
+            req.widgets.append(widget)
+
+            widget = Widget()
+            widget.name = ctrl + " sub"
+            widget.topic = ctrl
+            widget.type = Widget.SUB
+            widget.sub_type = widget_type
+            req.widgets.append(widget)
+
+            widget = Widget()
+            widget.name = ctrl + " plot"
+            widget.topic = ctrl
+            widget.type = Widget.PLOT
+            widget.sub_type = widget_type
             req.widgets.append(widget)
 
         self.future = self.cli.call_async(req)
