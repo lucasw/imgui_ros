@@ -136,6 +136,33 @@ class Demo(Node):
             widget.sub_type = widget_type
             req.widgets.append(widget)
 
+        # string pub sub test
+        string_topic = "string"
+        widget = Widget()
+        widget.name = "string pub"
+        widget.topic = string_topic
+        widget.type = Widget.PUB
+        widget.sub_type = Widget.STRING
+        # has to be float even though type above is int
+        req.widgets.append(widget)
+
+        widget = Widget()
+        widget.name = "string menu pub"
+        widget.topic = string_topic
+        widget.type = Widget.PUB
+        widget.sub_type = Widget.STRING
+        widget.items = ['item1 foo', 'item2 bar', 'item3']
+        # has to be float even though type above is int
+        widget.value = 0.0
+        req.widgets.append(widget)
+
+        widget = Widget()
+        widget.name = "string sub"
+        widget.topic = string_topic
+        widget.type = Widget.SUB
+        widget.sub_type = Widget.STRING
+        req.widgets.append(widget)
+
         self.future = self.cli.call_async(req)
 
 def main(args=None):

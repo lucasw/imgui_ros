@@ -68,6 +68,52 @@ void BoolPub::draw() {
   }
 }
 
+StringPub::StringPub(const std::string name, const std::string topic,
+    const std::vector<std::string>& items,
+    std::shared_ptr<rclcpp::Node> node) :
+    Pub(name, topic, node), items_(items) {
+  msg_.reset(new std_msgs::msg::String);
+  if (items.size() > 0) {
+    msg_->data = items[0];
+  }
+  for (auto item : items) {
+    items_null_ += item + '\0';
+  }
+  // TODO(lucasw) bring back type for all the int types
+  pub_ = node_->create_publisher<std_msgs::msg::String>(topic);
+}
+
+void StringPub::draw() {
+  // TODO(lucasw) typeToString()
+  std::stringstream ss;
+  ss << name_ << " - " << topic_;
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  // if there are multiple items then the user can select from them,
+  // but can't type a new one in (it would be nice if they could)
+  if (items_.size() > 1) {
+    int new_value = value_;
+    const bool changed = ImGui::Combo(name_.c_str(), &new_value, items_null_.c_str());
+    if (changed) {
+      value_ = new_value;
+      msg_->data = items_[value_];
+      pub_->publish(msg_);
+    }
+  } else {
+    const size_t sz = 64;
+    char buf[sz];
+    const size_t sz2 = (msg_->data.size() > (sz - 1)) ? (sz - 1) : msg_->data.size();
+    strncpy(buf, msg_->data.c_str(), sz2);
+    buf[sz2 + 1] = '\0';
+    const bool changed = ImGui::InputText(name_.c_str(), buf, sz,
+        ImGuiInputTextFlags_EnterReturnsTrue);
+    if (changed) {
+      msg_->data = buf;
+      pub_->publish(msg_);
+    }
+  }
+}
+
 MenuPub::MenuPub(const std::string name, const std::string topic,  // const unsigned type,
     const int value, const std::vector<std::string>& items,
     std::shared_ptr<rclcpp::Node> node) :

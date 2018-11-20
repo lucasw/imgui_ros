@@ -48,6 +48,7 @@
 #include <std_msgs/msg/u_int16.hpp>
 #include <std_msgs/msg/u_int32.hpp>
 #include <std_msgs/msg/u_int64.hpp>
+#include <std_msgs/msg/string.hpp>
 
 // TODO(lucasw)
 // namespace imgui_ros
@@ -69,9 +70,10 @@ struct GenericPub : public Pub {
   GenericPub(const std::string name, const std::string topic, // const unsigned type,
       const float value, const float min, const float max,
       std::shared_ptr<rclcpp::Node> node) :
-    Pub(name, topic, node), value_(value), min_(min), max_(max)
+    Pub(name, topic, node), min_(min), max_(max)
   {
     msg_.reset(new T);
+    msg_->data = value;
     // TODO(lucasw) bring back type for all the float types
     pub_ = node_->create_publisher<T>(topic);
   }
@@ -83,36 +85,65 @@ struct GenericPub : public Pub {
     // const std::string text = topic_;
     // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
     std::lock_guard<std::mutex> lock(mutex_);
-    float new_value = value_;
-    int imgui_data_type;
     bool changed = false;
     // switch (decltype(this)) {
     if (std::is_same<T, std_msgs::msg::Float32>::value) {
+      float val = msg_->data;
+      float min = min_;
+      float max = max_;
+      // std::cout << name_ << " " << val << " " << min << " " << max << "\n";
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_Float,
-        &new_value, (void*)&min_, (void*)&max_, "%f");
-    } else if (std::is_same<T, std_msgs::msg::Int32>::value) {
-      int val = value_;
-      int min = min_;
-      int max = max_;
+        &val, &min, &max, "%f");
+      if (changed) msg_->data = val;
+    } else if (std::is_same<T, std_msgs::msg::Float64>::value) {
+      double val = msg_->data;
+      double min = min_;
+      double max = max_;
+      changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_Double,
+        &val, &min, &max, "%lf");
+      if (changed) msg_->data = val;
+    // TODO(lucasw) combine 8/16/32
+    } else if (std::is_same<T, std_msgs::msg::Int8>::value) {
+      ImS32 val = msg_->data;
+      ImS32 min = min_;
+      ImS32 max = max_;
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S32,
-        &val, (void*)&min, (void*)&max, "%d");
-      new_value = val;
+        &val, &min, &max, "%d");
+      if (changed) msg_->data = val;
+    } else if (std::is_same<T, std_msgs::msg::Int16>::value) {
+      ImS32 val = msg_->data;
+      ImS32 min = min_;
+      ImS32 max = max_;
+      changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S32,
+        &val, &min, &max, "%d");
+      if (changed) msg_->data = val;
+    } else if (std::is_same<T, std_msgs::msg::Int32>::value) {
+      ImS32 val = msg_->data;
+      ImS32 min = min_;
+      ImS32 max = max_;
+      changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S32,
+        &val, &min, &max, "%d");
+      if (changed) msg_->data = val;
+    } else if (std::is_same<T, std_msgs::msg::Int64>::value) {
+      ImS64 val = msg_->data;
+      ImS64 min = min_;
+      ImS64 max = max_;
+      changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S64,
+        &val, &min, &max, "%I64d");
+      if (changed) msg_->data = val;
     } else {
-      changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_Float,
-        &new_value, (void*)&min_, (void*)&max_, "%f");
+      // ImGui::Text(name_.c_str());
+      ImGui::Text("%.*s", static_cast<int>(name_.size()), name_.data());
     }
     if (changed) {
-      value_ = new_value;
-      msg_->data = value_;
       pub_->publish(msg_);
     }
   }
 
 protected:
-  // TODO(lucasw) Fixed at float for now
-  float value_ = 0.0;
-  float min_ = 0.0;
-  float max_ = 1.0;
+  // TODO(lucasw) Fixed at double for now
+  double min_ = 0.0;
+  double max_ = 1.0;
   std::shared_ptr<T> msg_;
   typename rclcpp::Publisher<T>::SharedPtr pub_;
 };
@@ -129,18 +160,18 @@ protected:
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_;
 };
 
-struct IntPub : public Pub {
-  IntPub(const std::string name, const std::string topic, // const unsigned type,
-      const int value, const int min, const int max,
+struct StringPub : public Pub {
+  StringPub(const std::string name, const std::string topic,
+      const std::vector<std::string>& items,
       std::shared_ptr<rclcpp::Node> node);
-  ~IntPub() {}
+  ~StringPub() {}
   virtual void draw();
 protected:
   int value_ = 0;
-  int min_ = 0;
-  int max_ = 1;
-  std::shared_ptr<std_msgs::msg::Int32> msg_;
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
+  std::string items_null_ = "";
+  std::vector<std::string> items_;
+  std::shared_ptr<std_msgs::msg::String> msg_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pub_;
 };
 
 struct MenuPub : public Pub {

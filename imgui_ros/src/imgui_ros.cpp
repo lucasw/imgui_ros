@@ -236,6 +236,9 @@ namespace imgui_ros {
     // publisher types
     } else if (widget.type == imgui_ros::msg::Widget::PUB) {
       std::shared_ptr<Pub> pub;
+      int64_t value_int = widget.value;
+      int64_t min = widget.min;
+      int64_t max = widget.max;
       if (widget.sub_type == msg::Widget::FLOAT32) {
         pub.reset(new GenericPub<std_msgs::msg::Float32>(
             widget.name, widget.topic,
@@ -244,13 +247,52 @@ namespace imgui_ros {
         bool value = widget.value;
         pub.reset(new BoolPub(widget.name, widget.topic,
             value, shared_from_this()));
+      // Templated types //////////////////////////////////
+      } else if (widget.sub_type == msg::Widget::FLOAT32) {
+        pub.reset(new GenericPub<std_msgs::msg::Float32>(
+            widget.name, widget.topic,
+            widget.value, widget.min, widget.max, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::FLOAT64) {
+        pub.reset(new GenericPub<std_msgs::msg::Float64>(
+            widget.name, widget.topic,
+            widget.value, widget.min, widget.max, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::INT8) {
+        pub.reset(new GenericPub<std_msgs::msg::Int8>(
+            widget.name, widget.topic,
+            value_int, min, max, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::INT16) {
+        pub.reset(new GenericPub<std_msgs::msg::Int16>(
+            widget.name, widget.topic,
+            value_int, min, max, shared_from_this()));
       } else if (widget.sub_type == msg::Widget::INT32) {
-        int value = widget.value;
-        int min = widget.min;
-        int max = widget.max;
         pub.reset(new GenericPub<std_msgs::msg::Int32>(
             widget.name, widget.topic,
-            value, min, max, shared_from_this()));
+            value_int, min, max, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::INT64) {
+        pub.reset(new GenericPub<std_msgs::msg::Int64>(
+            widget.name, widget.topic,
+            value_int, min, max, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::UINT8) {
+        pub.reset(new GenericPub<std_msgs::msg::UInt8>(
+            widget.name, widget.topic,
+            value_int, min, max, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::UINT16) {
+        pub.reset(new GenericPub<std_msgs::msg::UInt16>(
+            widget.name, widget.topic,
+            value_int, min, max, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::UINT32) {
+        pub.reset(new GenericPub<std_msgs::msg::UInt32>(
+            widget.name, widget.topic,
+            value_int, min, max, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::UINT64) {
+        pub.reset(new GenericPub<std_msgs::msg::UInt64>(
+            widget.name, widget.topic,
+            value_int, min, max, shared_from_this()));
+      ////////////////////////////////////////////////////
+      } else if (widget.sub_type == msg::Widget::STRING) {
+        pub.reset(new StringPub(
+            widget.name, widget.topic,
+            widget.items, shared_from_this()));
       } else if (widget.sub_type == msg::Widget::MENU) {
         int value = widget.value;
         pub.reset(new MenuPub(widget.name, widget.topic,
