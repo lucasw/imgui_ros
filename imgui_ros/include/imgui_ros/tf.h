@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2017 Lucas Walter
- * June 2017
+ * Copyright (c) 2018 Lucas Walter
+ * November 2018
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,53 +28,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "imgui.h"
-// #include "imgui_impl_opengl3.h"
-// #include "imgui_impl_sdl.h"
-#include <imgui_ros/image.h>
+#ifndef IMGUI_ROS_TF_H
+#define IMGUI_ROS_TF_H
+
+#include <imgui.h>
 #include <imgui_ros/srv/add_window.hpp>
-#include <map>
+#include <imgui_ros/window.h>
+#include <imgui_ros/sub.h>
 #include <mutex>
 #include <opencv2/core.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <tf2_ros/transform_listener.h>
-#include <SDL.h>
 
+// TODO(lucasw)
+// namespace imgui_ros
+struct TfEcho : public Sub {
+  TfEcho(const std::string name,
+      const std::string parent, const std::string child,
+      std::shared_ptr<tf2_ros::Buffer> tf_buffer,
+      std::shared_ptr<rclcpp::Node> node);
 
-namespace imgui_ros {
-class ImguiRos : public rclcpp::Node {
-public:
-  ImguiRos();
-  ~ImguiRos();
+  ~TfEcho() {}
 
-private:
-  void addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
-                 std::shared_ptr<imgui_ros::srv::AddWindow::Response> res);
-  bool addWidget(const imgui_ros::msg::Widget& widget,
-      std::string& message, std::shared_ptr<Widget>& imgui_widget);
-  void update();
-
-  // Need to init the opengl context in same thread as the update
-  // is run in, not necessarily the same thread onInit runs in
-  void glInit();
-  std::mutex mutex_;
-  bool init_;
-  // TODO(lucasw) std::shared_ptr
-  SDL_Window *window;
-  ImGuiIO io;
-  SDL_GLContext gl_context;
-  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-  std::map<std::string, std::shared_ptr<Window> > windows_;
-
-  // TODO(lucasw) still need to update even if ros time is paused
-  rclcpp::TimerBase::SharedPtr update_timer_;
-
-  rclcpp::Service<srv::AddWindow>::SharedPtr add_window_;
-
-  std::shared_ptr<tf2_ros::TransformListener> tfl_;
+  virtual void draw();
+protected:
+  std::string parent_;
+  std::string child_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
 };
 
-}  // namespace imgui_ros
+#if 0
+struct TfBroadcaster : public Widget {
+
+}
+#endif
+
+#endif  // IMGUI_ROS_TF_H

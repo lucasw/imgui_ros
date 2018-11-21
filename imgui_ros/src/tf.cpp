@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2017 Lucas Walter
- * June 2017
+ * Copyright (c) 2018 Lucas Walter
+ * November 2018
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,53 +28,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "imgui.h"
-// #include "imgui_impl_opengl3.h"
-// #include "imgui_impl_sdl.h"
-#include <imgui_ros/image.h>
-#include <imgui_ros/srv/add_window.hpp>
-#include <map>
-#include <mutex>
-#include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
-#include <tf2_ros/transform_listener.h>
-#include <SDL.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <imgui_ros/tf.h>
 
+// TODO(lucasw)
+// namespace imgui_ros
+TfEcho::TfEcho(const std::string name,
+    const std::string parent, const std::string child,
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer,
+    std::shared_ptr<rclcpp::Node> node) :
+    Sub(name, parent, node),
+    parent_(parent),
+    child_(child),
+    tf_buffer_(tf_buffer)
+{
+  RCLCPP_INFO(node->get_logger(), "new tf echo %s to %s", parent_.c_str(), child_.c_str());
+}
 
-namespace imgui_ros {
-class ImguiRos : public rclcpp::Node {
-public:
-  ImguiRos();
-  ~ImguiRos();
-
-private:
-  void addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
-                 std::shared_ptr<imgui_ros::srv::AddWindow::Response> res);
-  bool addWidget(const imgui_ros::msg::Widget& widget,
-      std::string& message, std::shared_ptr<Widget>& imgui_widget);
-  void update();
-
-  // Need to init the opengl context in same thread as the update
-  // is run in, not necessarily the same thread onInit runs in
-  void glInit();
-  std::mutex mutex_;
-  bool init_;
-  // TODO(lucasw) std::shared_ptr
-  SDL_Window *window;
-  ImGuiIO io;
-  SDL_GLContext gl_context;
-  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-  std::map<std::string, std::shared_ptr<Window> > windows_;
-
-  // TODO(lucasw) still need to update even if ros time is paused
-  rclcpp::TimerBase::SharedPtr update_timer_;
-
-  rclcpp::Service<srv::AddWindow>::SharedPtr add_window_;
-
-  std::shared_ptr<tf2_ros::TransformListener> tfl_;
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-};
-
-}  // namespace imgui_ros
+void TfEcho::draw()
+{
+  try {
+    geometry_msgs::msg::TransformStamped tf;
+    tf = tf_buffer_->lookupTransform(parent_, child_, tf2::TimePointZero);
+    std::stringstream ss;
+    ss << name_ << " tf: "
+        << tf.header.stamp.sec << "." << tf.header.stamp.nanosec
+        << " " << tf.transform.translation.x
+        << " " << tf.transform.translation.y
+        << " " << tf.transform.translation.z
+        << ", " << tf.transform.rotation.x
+        << " " << tf.transform.rotation.y
+        << " " << tf.transform.rotation.z
+        << " " << tf.transform.rotation.w;
+    ImGui::Text("%s", ss.str().c_str());
+  } catch (tf2::TransformException& ex) {
+    ImGui::Text("%s", ex.what());
+  }
+}

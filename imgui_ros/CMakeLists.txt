@@ -17,6 +17,7 @@ endif()
 
 find_package(SDL2 REQUIRED)
 find_package(ament_cmake REQUIRED)
+find_package(geometry_msgs REQUIRED)
 # find_package(example_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcutils)
@@ -26,6 +27,8 @@ find_package(rosidl_default_generators REQUIRED)
 # find_package(rosidl_typesupport_cpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Widget.msg"
@@ -48,6 +51,7 @@ add_executable(imgui_ros_node
   src/image.cpp
   src/pub.cpp
   src/sub.cpp
+  src/tf.cpp
   src/window.cpp
   imgui/imgui.cpp
   imgui/imgui_demo.cpp
@@ -60,10 +64,14 @@ add_executable(imgui_ros_node
 set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPILE_FLAGS -Wno-pedantic)
 
 ament_target_dependencies(imgui_ros_node
+  "geometry_msgs"
   "rclcpp"
   "rcutils"
   "sensor_msgs"
-  "std_msgs")
+  "std_msgs"
+  "tf2"
+  "tf2_ros"
+)
 rosidl_target_interfaces(imgui_ros_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(imgui_ros_node
   ${SDL2_LIBRARIES}

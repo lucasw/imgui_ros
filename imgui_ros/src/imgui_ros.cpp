@@ -40,6 +40,7 @@
 #include <imgui_ros/imgui_ros.h>
 #include <imgui_ros/pub.h>
 #include <imgui_ros/sub.h>
+#include <imgui_ros/tf.h>
 // #include <opencv2/highgui.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/float32.hpp>
@@ -60,9 +61,10 @@ using std::placeholders::_2;
 
 namespace imgui_ros {
   ImguiRos::ImguiRos() : Node("imgui_ros") {
-    // ros init
-    // add_window_ = getPrivateNodeHandle().advertiseService("add_window",
-    //    &ImguiRos::addWindow, this);
+
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>();
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
     add_window_ = create_service<srv::AddWindow>("add_window",
         std::bind(&ImguiRos::addWindow, this, _1, _2));
 
@@ -307,6 +309,7 @@ namespace imgui_ros {
       return true;
     // subscription types
     } else if (widget.type == imgui_ros::msg::Widget::SUB) {
+      RCLCPP_INFO(get_logger(), "new sub %s %d", widget.name.c_str(), widget.sub_type);
       std::shared_ptr<Sub> sub;
       if (widget.sub_type == msg::Widget::FLOAT32) {
         sub.reset(new GenericSub<std_msgs::msg::Float32>(
@@ -351,6 +354,19 @@ namespace imgui_ros {
       } else if (widget.sub_type == msg::Widget::STRING) {
         sub.reset(new GenericSub<std_msgs::msg::String>(
             widget.name, widget.topic,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::TF) {
+        RCLCPP_INFO(get_logger(), "new tf echo");
+        if (widget.items.size() < 2) {
+          std::stringstream ss;
+          ss << "need two widget items for tf parent and child " << widget.items.size();
+          message = ss.str();
+          return false;
+        }
+        RCLCPP_INFO(get_logger(), "new tf echo");
+        sub.reset(new TfEcho(widget.name,
+            widget.items[0], widget.items[1],
+            tf_buffer_,
             shared_from_this()));
       } else if (widget.sub_type == msg::Widget::BOOL) {
         bool value = widget.value;

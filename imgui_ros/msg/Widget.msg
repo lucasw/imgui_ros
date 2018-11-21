@@ -16,6 +16,7 @@ uint8 UINT32=9
 uint8 UINT64=10
 uint8 STRING=11
 uint8 MENU=11
+uint8 TF=12
 # uint8 TODO(lucasw)
 string name ""
 string topic ""

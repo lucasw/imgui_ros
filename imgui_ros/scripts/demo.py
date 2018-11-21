@@ -51,6 +51,7 @@ class Demo(Node):
         widget.type = Widget.IMAGE
         req.widgets.append(widget)
         self.future = self.cli.call_async(req)
+        self.wait_for_response()
 
         req = AddWindow.Request()
         req.name = "rotated image"
@@ -60,6 +61,7 @@ class Demo(Node):
         widget.type = Widget.IMAGE
         req.widgets.append(widget)
         self.future = self.cli.call_async(req)
+        self.wait_for_response()
 
         req = AddWindow.Request()
         req.name = "rotozoom controls"
@@ -151,7 +153,7 @@ class Demo(Node):
         widget.topic = string_topic
         widget.type = Widget.PUB
         widget.sub_type = Widget.STRING
-        widget.items = ['item1 foo', 'item2 bar', 'item3']
+        widget.items = ['item1 foo', 'item2 bar', 'item final']
         # has to be float even though type above is int
         widget.value = 0.0
         req.widgets.append(widget)
@@ -163,7 +165,16 @@ class Demo(Node):
         widget.sub_type = Widget.STRING
         req.widgets.append(widget)
 
+        widget = Widget()
+        widget.name = "map foo tf"
+        widget.type = Widget.SUB
+        widget.sub_type = Widget.TF
+        widget.items.append("map")
+        widget.items.append("foo")
+        req.widgets.append(widget)
+
         self.future = self.cli.call_async(req)
+        self.wait_for_response()
 
 def main(args=None):
     rclpy.init(args=args)
