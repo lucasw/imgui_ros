@@ -2,6 +2,7 @@ uint8 IMAGE=0
 uint8 PUB=1
 uint8 SUB=2
 uint8 PLOT=3
+uint8 PARAM=4
 # pub sub types
 uint8 BOOL=0
 uint8 FLOAT32=1

@@ -38,6 +38,7 @@
 #include <imgui_ros/srv/add_window.hpp>
 #include <imgui_ros/image.h>
 #include <imgui_ros/imgui_ros.h>
+#include <imgui_ros/param.h>
 #include <imgui_ros/pub.h>
 #include <imgui_ros/sub.h>
 #include <imgui_ros/tf.h>
@@ -390,10 +391,6 @@ namespace imgui_ros {
         sub.reset(new PlotSub<std_msgs::msg::Float32>(
             widget.name, widget.topic, widget.value,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::FLOAT32) {
-        sub.reset(new PlotSub<std_msgs::msg::Float32>(
-            widget.name, widget.topic, widget.value,
-            shared_from_this()));
       } else if (widget.sub_type == msg::Widget::FLOAT64) {
         sub.reset(new PlotSub<std_msgs::msg::Float64>(
             widget.name, widget.topic, widget.value,
@@ -437,6 +434,39 @@ namespace imgui_ros {
         return false;
       }
       imgui_widget = sub;
+    //////////////////////////////////////////////////////////
+    } else if (widget.type == imgui_ros::msg::Widget::PARAM) {
+      std::shared_ptr<Param> param;
+      const std::string node_name = widget.topic;
+      if (widget.items.size() < 1) {
+        std::stringstream ss;
+        ss << "Need to specify parameter name in widget items[0]";
+        message = ss.str();
+        return false;
+      }
+      // TODO(lucasw) have a better variable for this
+      const std::string parameter_name = widget.items[0];
+      if ((widget.sub_type == msg::Widget::FLOAT32) ||
+          (widget.sub_type == msg::Widget::FLOAT64)) {
+        param.reset(new Param(widget.name,
+            node_name, parameter_name,
+            rcl_interfaces::ParameterType::PARAMETER_DOUBLE,
+            shared_from_this());
+      } else if ((widget.sub_type == msg::Widget::INT8) ||
+          (widget.sub_type == msg::Widget::INT16) ||
+          (widget.sub_type == msg::Widget::INT32) ||
+          (widget.sub_type == msg::Widget::INT64)) {
+        param.reset(new Param(widget.name,
+            node_name, parameter_name,
+            rcl_interfaces::ParameterType::PARAMETER_INTEGER,
+            shared_from_this());
+      } else {
+        std::stringstream ss;
+        ss << "Need to specify parameter name in widget items[0]";
+        message = ss.str();
+        return false;
+      }
+      imgui_widget = param;
     } else {
       std::stringstream ss;
       // TODO(lucasw) typeToString()

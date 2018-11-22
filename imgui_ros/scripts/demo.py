@@ -66,6 +66,16 @@ class Demo(Node):
         req = AddWindow.Request()
         req.name = "rotozoom controls"
 
+        widget = Widget()
+        widget.name = "frame rate"
+        widget.topic = "rotozoom"
+        widget.type = Widget.PARAM
+        widget.sub_type = Widget.FLOAT32
+        widget.value = 0.0
+        widget.min = 0.0
+        widget.max = 30.0
+        req.widgets.append(widget)
+
         for ctrl in ["psi", "theta", "phi"]:
             widget = Widget()
             widget.name = ctrl + " pub"

@@ -20,6 +20,7 @@ find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 # find_package(example_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(rcutils)
 find_package(rmw REQUIRED)
 find_package(rosidl_cmake REQUIRED)
@@ -49,6 +50,7 @@ include_directories(
 add_executable(imgui_ros_node
   src/imgui_ros.cpp
   src/image.cpp
+  # src/param.cpp
   src/pub.cpp
   src/sub.cpp
   src/tf.cpp
@@ -65,6 +67,7 @@ set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPIL
 
 ament_target_dependencies(imgui_ros_node
   "geometry_msgs"
+  "rcl_interfaces"
   "rclcpp"
   "rcutils"
   "sensor_msgs"
