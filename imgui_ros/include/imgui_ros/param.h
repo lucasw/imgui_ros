@@ -110,6 +110,8 @@ struct Param : public Widget {
       double min = min_;
       double max = max_;
       double value = value_.double_value;
+      // TODO(lucasw) may want to only return changed if slider is released
+      // https://github.com/ocornut/imgui/issues/1875
       const bool changed = ImGui::SliderScalar(topic_.c_str(),
         ImGuiDataType_Double, &value, &min, &max, "%lf");
       if (changed) {
