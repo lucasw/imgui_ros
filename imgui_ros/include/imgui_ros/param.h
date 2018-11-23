@@ -49,17 +49,20 @@ struct Param : public Widget {
   Param(const std::string name,
       const std::string node_name,
       const std::string parameter_name,
+      // TODO(lucasw) this should be the Widget msg sub type, or the ParameterType?
+      // Using ParameterType for now
       uint8_t type,
       std::shared_ptr<rclcpp::Node> node) :
       Widget(name, node_name + "/" + parameter_name),
-      node_name_(node_name_),
+      node_name_(node_name),
       parameter_name_(parameter_name),
-      type_(type),
+      // type_(type),
       node_(node)
   {
+    value_.type = type;
     parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(node_, node_name_);
     param_sub_ = parameters_client_->on_parameter_event(
-        std::bind(&Param::onParameterEvent, this, _1));
+        std::bind(&Param::onParameterEvent, this, std::placeholders::_1));
   }
   // ~Param();
   virtual void draw()
@@ -73,26 +76,26 @@ struct Param : public Widget {
     // or just use other number widget but disable interaction?
     // ImGui::Value()?
     ss << name_ << ": ";
-    if (value_.type == rcl_interfaces::ParameterType::PARAMETER_BOOL) {
+    if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_BOOL) {
       ss << value_.bool_value;
-    } else if (value_.type == rcl_interfaces::ParameterType::PARAMETER_INTEGER) {
+    } else if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER) {
       ss << value_.integer_value;
-    } else if (value_.type == rcl_interfaces::ParameterType::PARAMETER_DOUBLE) {
+    } else if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE) {
       ss << value_.double_value;
-    } else if (value_.type == rcl_interfaces::ParameterType::PARAMETER_STRING) {
+    } else if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_STRING) {
       ss << value_.string_value;
     } else {
-      ss << "TODO support this type " << value_.type;
+      ss << "TODO support this type " << static_cast<int>(value_.type);
     }
     std::string text = ss.str();
     ImGui::Text("%s", ss.str().c_str());
   }
 
 protected:
-  std::shared_ptr<rclcpp::Node> node_;
   std::string node_name_;
   std::string parameter_name_;
-  uint8_t type_;
+  // uint8_t type_;
+  std::shared_ptr<rclcpp::Node> node_;
 
   rcl_interfaces::msg::ParameterValue value_;
 
@@ -109,9 +112,9 @@ protected:
 
   bool updateValue(const rcl_interfaces::msg::ParameterValue& new_value)
   {
-    if (new_value.type != type_) {
-      RCLCPP_WARN(get_logger(), "Wrong type %s %d",
-          name, new_value.type);
+    if (new_value.type != value_.type) {
+      RCLCPP_WARN(node_->get_logger(), "Wrong type %s %d != %d",
+          name_, new_value.type, value_.type);
       return false;
     }
     value_ = new_value;

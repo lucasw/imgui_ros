@@ -69,6 +69,7 @@ class Demo(Node):
         widget = Widget()
         widget.name = "frame rate"
         widget.topic = "rotozoom"
+        widget.items.append('frame_rate')
         widget.type = Widget.PARAM
         widget.sub_type = Widget.FLOAT32
         widget.value = 0.0

@@ -440,7 +440,7 @@ namespace imgui_ros {
       const std::string node_name = widget.topic;
       if (widget.items.size() < 1) {
         std::stringstream ss;
-        ss << "Need to specify parameter name in widget items[0]";
+        ss << widget.name << " Need to specify parameter name in widget items[0]";
         message = ss.str();
         return false;
       }
@@ -450,19 +450,20 @@ namespace imgui_ros {
           (widget.sub_type == msg::Widget::FLOAT64)) {
         param.reset(new Param(widget.name,
             node_name, parameter_name,
-            rcl_interfaces::ParameterType::PARAMETER_DOUBLE,
-            shared_from_this());
+            rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
+            shared_from_this()));
       } else if ((widget.sub_type == msg::Widget::INT8) ||
           (widget.sub_type == msg::Widget::INT16) ||
           (widget.sub_type == msg::Widget::INT32) ||
           (widget.sub_type == msg::Widget::INT64)) {
         param.reset(new Param(widget.name,
             node_name, parameter_name,
-            rcl_interfaces::ParameterType::PARAMETER_INTEGER,
-            shared_from_this());
+            rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER,
+            shared_from_this()));
       } else {
         std::stringstream ss;
-        ss << "Need to specify parameter name in widget items[0]";
+        ss << widget.name << " " << node_name << " " <<  parameter_name
+            << " Need to specify parameter name in widget items[0]";
         message = ss.str();
         return false;
       }
