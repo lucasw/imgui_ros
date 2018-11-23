@@ -446,11 +446,13 @@ namespace imgui_ros {
       }
       // TODO(lucasw) have a better variable for this
       const std::string parameter_name = widget.items[0];
+      // TODO(lucasw) bool
       if ((widget.sub_type == msg::Widget::FLOAT32) ||
           (widget.sub_type == msg::Widget::FLOAT64)) {
         param.reset(new Param(widget.name,
             node_name, parameter_name,
             rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
+            widget.min, widget.max,
             shared_from_this()));
       } else if ((widget.sub_type == msg::Widget::INT8) ||
           (widget.sub_type == msg::Widget::INT16) ||
@@ -459,6 +461,7 @@ namespace imgui_ros {
         param.reset(new Param(widget.name,
             node_name, parameter_name,
             rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER,
+            widget.min, widget.max,
             shared_from_this()));
       } else {
         std::stringstream ss;

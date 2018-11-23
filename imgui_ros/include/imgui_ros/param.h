@@ -52,11 +52,15 @@ struct Param : public Widget {
       // TODO(lucasw) this should be the Widget msg sub type, or the ParameterType?
       // Using ParameterType for now
       uint8_t type,
+      double min,
+      double max,
       std::shared_ptr<rclcpp::Node> node) :
       Widget(name, node_name + "/" + parameter_name),
       node_name_(node_name),
       parameter_name_(parameter_name),
       // type_(type),
+      min_(min),
+      max_(max),
       node_(node)
   {
     value_.type = type;
@@ -65,6 +69,7 @@ struct Param : public Widget {
         std::bind(&Param::onParameterEvent, this, std::placeholders::_1));
   }
   // ~Param();
+
   virtual void draw()
   {
     // TODO(lucasw) typeToString()
@@ -76,13 +81,59 @@ struct Param : public Widget {
     // or just use other number widget but disable interaction?
     // ImGui::Value()?
     ss << name_ << ": ";
+    auto fnc = std::bind(&Param::responseReceivedCallback, this, std::placeholders::_1);
     if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_BOOL) {
+      bool value = value_.bool_value;
+      // TODO(lucasw) is there a bool slider?
+      const bool changed = ImGui::Checkbox(topic_.c_str(), &value);
+      if (changed) {
+        value_.bool_value = value;
+        parameters_client_->set_parameters({
+          rclcpp::Parameter(parameter_name_, value_.bool_value),
+        }, fnc);
+      }
       ss << value_.bool_value;
     } else if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER) {
+      ImS32 min = min_;
+      ImS32 max = max_;
+      ImS32 value = value_.integer_value;
+      const bool changed = ImGui::SliderScalar(topic_.c_str(),
+        ImGuiDataType_S32, &value, &min, &max, "%d");
+      if (changed) {
+        value_.integer_value = value;
+        parameters_client_->set_parameters({
+          rclcpp::Parameter(parameter_name_, value_.integer_value),
+        }, fnc);
+      }
       ss << value_.integer_value;
     } else if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE) {
+      double min = min_;
+      double max = max_;
+      double value = value_.double_value;
+      const bool changed = ImGui::SliderScalar(topic_.c_str(),
+        ImGuiDataType_Double, &value, &min, &max, "%lf");
+      if (changed) {
+        value_.double_value = value;
+        parameters_client_->set_parameters({
+          rclcpp::Parameter(parameter_name_, value_.double_value),
+        }, fnc);
+      }
       ss << value_.double_value;
     } else if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_STRING) {
+      const std::string text = value_.string_value;
+      const size_t sz = 64;
+      char buf[sz];
+      const size_t sz2 = (text.size() > (sz - 1)) ? (sz - 1) : text.size();
+      strncpy(buf, text.c_str(), sz2);
+      buf[sz2 + 1] = '\0';
+      const bool changed = ImGui::InputText(topic_.c_str(), buf, sz,
+          ImGuiInputTextFlags_EnterReturnsTrue);
+      if (changed) {
+        value_.string_value = buf;
+        parameters_client_->set_parameters({
+          rclcpp::Parameter(parameter_name_, value_.string_value),
+        }, fnc);
+      }
       ss << value_.string_value;
     } else {
       ss << "TODO support this type " << static_cast<int>(value_.type);
@@ -95,9 +146,21 @@ protected:
   std::string node_name_;
   std::string parameter_name_;
   // uint8_t type_;
+  double min_ = 0.0;
+  double max_ = 1.0;
   std::shared_ptr<rclcpp::Node> node_;
 
   rcl_interfaces::msg::ParameterValue value_;
+
+  void responseReceivedCallback(
+      const std::shared_future<std::vector<rcl_interfaces::msg::SetParametersResult>> future)
+  {
+    for (auto & result : future.get()) {
+      if (!result.successful) {
+        RCLCPP_ERROR(node_->get_logger(), "Failed to set parameter: %s", result.reason.c_str())
+      }
+    }
+  }
 
   void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
   {
