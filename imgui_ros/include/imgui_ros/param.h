@@ -167,10 +167,14 @@ protected:
   void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
   {
     for (auto & parameter : event->new_parameters) {
-      updateValue(parameter.value);
+      if (parameter.name == parameter_name_) {
+        updateValue(parameter.value);
+      }
     }
     for (auto & parameter : event->changed_parameters) {
-      updateValue(parameter.value);
+      if (parameter.name == parameter_name_) {
+        updateValue(parameter.value);
+      }
     }
     // TODO(lucasw) do something when the parameter is deleted?
   }
