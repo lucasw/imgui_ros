@@ -184,6 +184,16 @@ class Demo(Node):
         widget.items.append("foo")
         req.widgets.append(widget)
 
+        widget = Widget()
+        widget.name = "viz2d"
+        widget.type = Widget.SUB
+        widget.sub_type = Widget.VIZ2D
+        widget.topic = "map"
+        widget.max = 100.0
+        widget.items.append("foo")
+        widget.items.append("bar")
+        req.widgets.append(widget)
+
         self.future = self.cli.call_async(req)
         self.wait_for_response()
 

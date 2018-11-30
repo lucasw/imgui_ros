@@ -16,6 +16,15 @@ def generate_launch_description():
     roto_zoom = launch.actions.IncludeLaunchDescription(
             launch.launch_description_sources.PythonLaunchDescriptionSource(
             image_manip_dir + '/launch/roto_zoom_launch.py'))
+    # this requires https://github.com/lucasw/geometry2/tree/static_tf_args_bouncy
+    static_tf = launch_ros.actions.Node(
+            package='tf2_ros',
+            node_executable='static_transform_publisher',
+            output='screen',
+            arguments=['0.1', '0.2', '0.3', '0.4', '.5', '.6', 'map', 'foo'],
+            # this doesn't work- it becomes one arg?
+            # arguments=['0.1 0.2 0.3 0.4 .5 .6 map foo'],
+            )
     imgui_ros = launch_ros.actions.Node(
             package='imgui_ros', node_executable='imgui_ros_node', output='screen',
             # arguments=[image_manip_dir + "/data/mosaic.jpg"])
@@ -27,6 +36,7 @@ def generate_launch_description():
 
     return launch.LaunchDescription([
         roto_zoom,
+        static_tf,
         # image_pub,
         imgui_ros,
         configure_windows,

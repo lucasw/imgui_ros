@@ -42,6 +42,7 @@
 #include <imgui_ros/pub.h>
 #include <imgui_ros/sub.h>
 #include <imgui_ros/tf.h>
+#include <imgui_ros/viz2d.h>
 // #include <opencv2/highgui.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/float32.hpp>
@@ -357,16 +358,27 @@ namespace imgui_ros {
             widget.name, widget.topic,
             shared_from_this()));
       } else if (widget.sub_type == msg::Widget::TF) {
-        RCLCPP_INFO(get_logger(), "new tf echo");
+        RCLCPP_DEBUG(get_logger(), "new tf echo");
         if (widget.items.size() < 2) {
           std::stringstream ss;
-          ss << "need two widget items for tf parent and child " << widget.items.size();
+          ss << widget.name << " need two widget items for tf parent and child "
+              << widget.items.size();
           message = ss.str();
           return false;
         }
-        RCLCPP_INFO(get_logger(), "new tf echo");
         sub.reset(new TfEcho(widget.name,
             widget.items[0], widget.items[1],
+            tf_buffer_,
+            shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::VIZ2D) {
+        RCLCPP_INFO(get_logger(), "new viz 2d");
+        const std::string frame_id = widget.topic;
+        // 
+        const double pixels_per_meter = widget.max;
+        sub.reset(new Viz2D(widget.name,
+            frame_id,
+            widget.items,  // all the tf frames to display, later make these configurable live
+            pixels_per_meter,
             tf_buffer_,
             shared_from_this()));
       } else if (widget.sub_type == msg::Widget::BOOL) {

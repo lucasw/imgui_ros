@@ -28,40 +28,37 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <geometry_msgs/msg/transform_stamped.hpp>
-#include <imgui_ros/tf.h>
+#ifndef IMGUI_ROS_VIZ2D_H
+#define IMGUI_ROS_VIZ2D_H
+
+#include <imgui.h>
+#include <imgui_ros/srv/add_window.hpp>
+#include <imgui_ros/window.h>
+#include <imgui_ros/sub.h>
+#include <mutex>
+#include <opencv2/core.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <tf2_ros/transform_listener.h>
 
 // TODO(lucasw)
 // namespace imgui_ros
-TfEcho::TfEcho(const std::string name,
-    const std::string parent, const std::string child,
-    std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    std::shared_ptr<rclcpp::Node> node) :
-    Sub(name, parent, node),
-    parent_(parent),
-    child_(child),
-    tf_buffer_(tf_buffer)
-{
-  RCLCPP_DEBUG(node->get_logger(), "new tf echo %s to %s", parent_.c_str(), child_.c_str());
-}
+struct Viz2D : public Sub {
+  Viz2D(const std::string name,
+      const std::string frame_id,
+      const std::vector<std::string>& frames,
+      const double pixels_per_meter,
+      std::shared_ptr<tf2_ros::Buffer> tf_buffer,
+      std::shared_ptr<rclcpp::Node> node);
 
-void TfEcho::draw()
-{
-  try {
-    geometry_msgs::msg::TransformStamped tf;
-    tf = tf_buffer_->lookupTransform(parent_, child_, tf2::TimePointZero);
-    std::stringstream ss;
-    ss << name_ << " tf: "
-        << tf.header.stamp.sec << "." << tf.header.stamp.nanosec
-        << " " << tf.transform.translation.x
-        << " " << tf.transform.translation.y
-        << " " << tf.transform.translation.z
-        << ", " << tf.transform.rotation.x
-        << " " << tf.transform.rotation.y
-        << " " << tf.transform.rotation.z
-        << " " << tf.transform.rotation.w;
-    ImGui::Text("%s", ss.str().c_str());
-  } catch (tf2::TransformException& ex) {
-    ImGui::Text("%s", ex.what());
-  }
-}
+  ~Viz2D() {}
+
+  virtual void draw();
+protected:
+  std::string frame_id_;
+  std::vector<std::string> frames_;
+  double pixels_per_meter_ = 10.0;
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+};
+
+#endif  // IMGUI_ROS_VIZ2D_H

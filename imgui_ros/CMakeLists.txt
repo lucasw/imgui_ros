@@ -54,6 +54,7 @@ add_executable(imgui_ros_node
   src/pub.cpp
   src/sub.cpp
   src/tf.cpp
+  src/viz2d.cpp
   src/window.cpp
   imgui/imgui.cpp
   imgui/imgui_demo.cpp
