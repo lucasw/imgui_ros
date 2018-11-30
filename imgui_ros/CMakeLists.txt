@@ -29,6 +29,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -74,6 +75,7 @@ ament_target_dependencies(imgui_ros_node
   "sensor_msgs"
   "std_msgs"
   "tf2"
+  "tf2_geometry_msgs"
   "tf2_ros"
 )
 rosidl_target_interfaces(imgui_ros_node ${PROJECT_NAME} "rosidl_typesupport_cpp")

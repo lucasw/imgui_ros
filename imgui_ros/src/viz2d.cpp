@@ -29,7 +29,27 @@
  */
 
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <geometry_msgs/msg/vector3_stamped.hpp>
 #include <imgui_ros/viz2d.h>
+#include <tf2_ros/buffer_interface.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
+// TODO(lucasw) overload <<
+std::string printVec(const geometry_msgs::msg::Vector3& vec)
+{
+  std::stringstream ss;
+  ss << vec.x << ", "
+      << vec.y << ", "
+      << vec.z << "  ";
+  return ss.str();
+}
+
+std::string printVec(const geometry_msgs::msg::Vector3Stamped& vec)
+{
+  std::stringstream ss;
+  ss << vec.header.frame_id << ": " << ": " << printVec(vec.vector);
+  return ss.str();
+}
 
 // TODO(lucasw)
 // namespace imgui_ros
@@ -59,6 +79,7 @@ void Viz2D::draw()
   if (canvas_size.x < 50.0f) canvas_size.x = 50.0f;
   if (canvas_size.y < 50.0f) canvas_size.y = 50.0f;
   ImVec2 corner = ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + canvas_size.y);
+  // make background and border around the canvas
   draw_list->AddRectFilledMultiColor(canvas_pos, corner,
             IM_COL32(50, 50, 50, 255), IM_COL32(50, 50, 60, 255),
             IM_COL32(60, 60, 70, 255), IM_COL32(50, 50, 60, 255));
@@ -70,10 +91,10 @@ void Viz2D::draw()
       canvas_pos.y + canvas_size.y * 0.5);
   ImVec2 origin = center;
 
-  const ImU32 connection = IM_COL32(255, 255, 0, 32);
+  const ImU32 connection_color = IM_COL32(255, 255, 0, 32);
   const ImU32 red = IM_COL32(255, 0, 0, 128);
   const ImU32 green = IM_COL32(0, 255, 0, 128);
-  // const ImU32 blue = IM_COL32(0, 0, 255, 128);
+  const ImU32 blue = IM_COL32(0, 0, 255, 128);
   float len = 16;
   draw_list->AddLine(origin, ImVec2(center.x + len, center.y), red, 2.0f);
   draw_list->AddLine(origin, ImVec2(center.x, center.y + len), green, 2.0f);
@@ -83,14 +104,52 @@ void Viz2D::draw()
     try {
       geometry_msgs::msg::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(frame_id_, frame, tf2::TimePointZero);
-      const ImVec2 pos = ImVec2(center.x + tf.transform.translation.x * pixels_per_meter_,
-          center.y + tf.transform.translation.y * pixels_per_meter_);
+      auto pos = tf.transform.translation;
+      const double sc = pixels_per_meter_;
+      const ImVec2 im_pos = ImVec2(center.x + pos.x * sc,
+          center.y + pos.y * sc);
+      draw_list->AddLine(origin, im_pos, connection_color, 1.0f);
+
       // TODO(lucasw) need to transform points extended in x and y
       // a short distance away from the frame
       // origin to capture the rotation of the frame.
-      draw_list->AddLine(origin, pos, connection, 1.0f);
-      draw_list->AddLine(pos, ImVec2(pos.x + len, pos.y), red, 2.0f);
-      draw_list->AddLine(pos, ImVec2(pos.x, pos.y + len), green, 2.0f);
+      auto tf_pos_origin = geometry_msgs::msg::Vector3Stamped();
+      tf_pos_origin.header.frame_id = frame;
+      tf_pos_origin.header.stamp = tf.header.stamp;
+      tf_pos_origin.vector.x = 0;
+      tf_pos_origin.vector.y = 0;
+      tf_pos_origin.vector.z = 0;
+      auto tf_pos_x = tf_pos_origin;
+      tf_pos_x.vector.x = 1.0;
+      auto tf_pos_y = tf_pos_origin;
+      tf_pos_y.vector.y = 1.0;
+      auto tf_pos_z = tf_pos_origin;
+      tf_pos_z.vector.z = 1.0;
+
+      geometry_msgs::msg::Vector3Stamped origin_out, x_out, y_out, z_out;
+      // origin_out should be the same as pos above- it isn't, is it because
+      // the transform only rotates?
+      // tf_buffer_->transform(
+      //    tf_pos_origin, origin_out, frame_id_);
+      // std::cout << "o " << printVec(tf_pos_origin) << " -> " << printVec(origin_out) << "\n";
+
+      tf_buffer_->transform(tf_pos_x, x_out, frame_id_);
+      // std::cout << "x " << printVec(tf_pos_x) << " -> " << printVec(x_out) << "\n";
+      const auto im_x = ImVec2(im_pos.x + x_out.vector.x * len,
+          im_pos.y + x_out.vector.y * len);
+      draw_list->AddLine(im_pos, im_x, red, 2.0f);
+
+      tf_buffer_->transform(tf_pos_y, y_out, frame_id_);
+      // std::cout << "y " << printVec(tf_pos_y) << " -> " << printVec(y_out) << "\n";
+      const auto im_y = ImVec2(im_pos.x + y_out.vector.x * len,
+          im_pos.y + y_out.vector.y * len);
+      draw_list->AddLine(im_pos, im_y, green, 2.0f);
+
+      tf_buffer_->transform(tf_pos_z, z_out, frame_id_);
+      // std::cout << "z " << printVec(tf_pos_z) << " -> " << printVec(z_out) << "\n";
+      const auto im_z = ImVec2(im_pos.x + z_out.vector.x * len,
+        im_pos.y + z_out.vector.y * len);
+      draw_list->AddLine(im_pos, im_z, blue, 2.0f);
     } catch (tf2::TransformException& ex) {
       // ImGui::Text("%s", ex.what());
     }
