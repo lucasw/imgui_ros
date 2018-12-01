@@ -35,16 +35,19 @@
 #include <imgui_ros/srv/add_window.hpp>
 #include <imgui_ros/window.h>
 #include <imgui_ros/sub.h>
+#include <map>
 #include <mutex>
 #include <opencv2/core.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <tf2_ros/transform_listener.h>
+#include <visualization_msgs/msg/marker.hpp>
 
 // TODO(lucasw)
 // namespace imgui_ros
 struct Viz2D : public Sub {
   Viz2D(const std::string name,
+      const std::string topic,
       const std::string frame_id,
       const std::vector<std::string>& frames,
       const double pixels_per_meter,
@@ -59,6 +62,10 @@ protected:
   std::vector<std::string> frames_;
   double pixels_per_meter_ = 10.0;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  rclcpp::Subscription<visualization_msgs::msg::Marker>::SharedPtr marker_sub_;
+  // TODO(lucasw) make this a service later
+  std::map<std::string, std::map<int, visualization_msgs::msg::Marker::SharedPtr> > markers_;
+  void markerCallback(const visualization_msgs::msg::Marker::SharedPtr msg);
 };
 
 #endif  // IMGUI_ROS_VIZ2D_H

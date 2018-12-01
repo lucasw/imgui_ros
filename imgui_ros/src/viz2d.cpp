@@ -54,6 +54,7 @@ std::string printVec(const geometry_msgs::msg::Vector3Stamped& vec)
 // TODO(lucasw)
 // namespace imgui_ros
 Viz2D::Viz2D(const std::string name,
+    const std::string topic,
     const std::string frame_id,
     const std::vector<std::string>& frames,
     const double pixels_per_meter,
@@ -66,6 +67,14 @@ Viz2D::Viz2D(const std::string name,
     tf_buffer_(tf_buffer)
 {
   // RCLCPP_INFO(node->get_logger(), "new tf echo %s to %s", parent_.c_str(), child_.c_str());
+  marker_sub_ = node_->create_subscription<visualization_msgs::msg::Marker>(topic,
+      std::bind(&Viz2D::markerCallback, this, std::placeholders::_1));
+}
+
+void Viz2D::markerCallback(const visualization_msgs::msg::Marker::SharedPtr msg)
+{
+  // TODO(lucasw) handle DELETE later
+  markers_[msg->ns][msg->id] = msg;
 }
 
 void Viz2D::draw()

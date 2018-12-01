@@ -386,10 +386,17 @@ namespace imgui_ros {
             shared_from_this()));
       } else if (widget.sub_type == msg::Widget::VIZ2D) {
         RCLCPP_INFO(get_logger(), "new viz 2d");
-        const std::string frame_id = widget.topic;
-        // 
+        if (widget.items.size() < 1) {
+          std::stringstream ss;
+          ss << widget.name << " need two widget items for tf parent and child "
+              << widget.items.size();
+          message = ss.str();
+          return false;
+        }
+        const std::string frame_id = widget.items[0];
         const double pixels_per_meter = widget.max;
         sub.reset(new Viz2D(widget.name,
+            widget.topic,
             frame_id,
             widget.items,  // all the tf frames to display, later make these configurable live
             pixels_per_meter,

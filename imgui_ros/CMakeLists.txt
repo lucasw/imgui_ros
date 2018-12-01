@@ -31,6 +31,7 @@ find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Widget.msg"
@@ -77,6 +78,7 @@ ament_target_dependencies(imgui_ros_node
   "tf2"
   "tf2_geometry_msgs"
   "tf2_ros"
+  "visualization_msgs"
 )
 rosidl_target_interfaces(imgui_ros_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(imgui_ros_node
