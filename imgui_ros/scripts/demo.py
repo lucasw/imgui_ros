@@ -21,6 +21,7 @@ from geometry_msgs.msg import TransformStamped
 from imgui_ros.msg import Widget
 from imgui_ros.srv import AddWindow
 from rclpy.node import Node
+from visualization_msgs.msg import Marker
 
 
 class Demo(Node):
@@ -208,8 +209,9 @@ class Demo(Node):
         widget.name = "viz2d"
         widget.type = Widget.SUB
         widget.sub_type = Widget.VIZ2D
-        widget.topic = "map"
+        widget.topic = 'marker'
         widget.max = 100.0
+        widget.items.append("map")
         widget.items.append("foo")
         widget.items.append("bar")
         req.widgets.append(widget)
@@ -222,6 +224,19 @@ class Demo(Node):
         self.period = 0.05
         # self.br = tf2_ros.TransformBroadcaster()
         # self.timer = self.create_timer(self.period, self.update)
+
+        # now publish some markers for the Viz2D
+        self.marker_pub = self.create_publisher(Marker, 'marker')
+        marker = Marker()
+        marker.ns = "test"
+        marker.id = 0
+        marker.header.frame_id = "bar"
+        marker.scale.x = 1.0
+        marker.scale.y = 0.5
+        marker.color.r = 0.8
+        marker.color.b = 0.6
+        marker.color.a = 1.0
+        self.marker_pub.publish(marker)
 
     def update(self):
         ts = TransformStamped()

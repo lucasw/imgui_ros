@@ -101,20 +101,22 @@ void Viz2D::draw()
   ImVec2 origin = center;
 
   const ImU32 connection_color = IM_COL32(255, 255, 0, 32);
-  const ImU32 red = IM_COL32(255, 0, 0, 128);
-  const ImU32 green = IM_COL32(0, 255, 0, 128);
-  const ImU32 blue = IM_COL32(0, 0, 255, 128);
-  float len = 16;
-  draw_list->AddLine(origin, ImVec2(center.x + len, center.y), red, 2.0f);
-  draw_list->AddLine(origin, ImVec2(center.x, center.y + len), green, 2.0f);
+  const ImU32 red = IM_COL32(255, 0, 0, 180);
+  const ImU32 green = IM_COL32(0, 255, 0, 180);
+  const ImU32 blue = IM_COL32(0, 0, 255, 180);
+  std::vector<ImU32> colors;
+  colors.push_back(red);
+  colors.push_back(green);
+  colors.push_back(blue);
+  const float len = 32;
   // TODO(lucasw) draw a grid
 
+  const double sc = pixels_per_meter_;
   for (auto frame : frames_) {
     try {
       geometry_msgs::msg::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(frame_id_, frame, tf2::TimePointZero);
       auto pos = tf.transform.translation;
-      const double sc = pixels_per_meter_;
       const ImVec2 im_pos = ImVec2(center.x + pos.x * sc,
           center.y + pos.y * sc);
       draw_list->AddLine(origin, im_pos, connection_color, 1.0f);
@@ -134,35 +136,73 @@ void Viz2D::draw()
       tf_pos_y.vector.y = 1.0;
       auto tf_pos_z = tf_pos_origin;
       tf_pos_z.vector.z = 1.0;
+      std::vector<geometry_msgs::msg::Vector3Stamped> vectors;
+      vectors.push_back(tf_pos_x);
+      vectors.push_back(tf_pos_y);
+      vectors.push_back(tf_pos_z);
 
-      geometry_msgs::msg::Vector3Stamped origin_out, x_out, y_out, z_out;
       // origin_out should be the same as pos above- it isn't, is it because
       // the transform only rotates?
       // tf_buffer_->transform(
       //    tf_pos_origin, origin_out, frame_id_);
       // std::cout << "o " << printVec(tf_pos_origin) << " -> " << printVec(origin_out) << "\n";
 
-      tf_buffer_->transform(tf_pos_x, x_out, frame_id_);
-      // std::cout << "x " << printVec(tf_pos_x) << " -> " << printVec(x_out) << "\n";
-      const auto im_x = ImVec2(im_pos.x + x_out.vector.x * len,
-          im_pos.y + x_out.vector.y * len);
-      draw_list->AddLine(im_pos, im_x, red, 2.0f);
-
-      tf_buffer_->transform(tf_pos_y, y_out, frame_id_);
-      // std::cout << "y " << printVec(tf_pos_y) << " -> " << printVec(y_out) << "\n";
-      const auto im_y = ImVec2(im_pos.x + y_out.vector.x * len,
-          im_pos.y + y_out.vector.y * len);
-      draw_list->AddLine(im_pos, im_y, green, 2.0f);
-
-      tf_buffer_->transform(tf_pos_z, z_out, frame_id_);
-      // std::cout << "z " << printVec(tf_pos_z) << " -> " << printVec(z_out) << "\n";
-      const auto im_z = ImVec2(im_pos.x + z_out.vector.x * len,
-        im_pos.y + z_out.vector.y * len);
-      draw_list->AddLine(im_pos, im_z, blue, 2.0f);
+      for (size_t i = 0; i < vectors.size() && i < colors.size(); ++i) {
+        geometry_msgs::msg::Vector3Stamped vector_in_viz_frame;
+        tf_buffer_->transform(vectors[i], vector_in_viz_frame, frame_id_);
+        // std::cout << i << " " << printVec(vector) << " -> "
+        //     << printVec(vector_in_viz_frame) << "\n";
+        const auto im_vec = ImVec2(im_pos.x + vector_in_viz_frame.vector.x * len,
+            im_pos.y + vector_in_viz_frame.vector.y * len);
+        draw_list->AddLine(im_pos, im_vec, colors[i], 2.0f);
+      }
     } catch (tf2::TransformException& ex) {
       // ImGui::Text("%s", ex.what());
     }
   }
 
+  for (auto marker_ns : markers_) {
+    for (auto marker_pair : marker_ns.second) {
+      try {
+        auto marker = (marker_pair.second);
+        geometry_msgs::msg::TransformStamped tf;
+        tf = tf_buffer_->lookupTransform(frame_id_, marker->header.frame_id, tf2::TimePointZero);
+        std::vector<geometry_msgs::msg::PointStamped> rect_3d;
+        geometry_msgs::msg::PointStamped pt;
+        pt.header.frame_id = marker->header.frame_id;
+        pt.header.stamp = tf.header.stamp;
+
+        pt.point.x = -marker->scale.x * 0.5;
+        pt.point.y = -marker->scale.y * 0.5;
+        rect_3d.push_back(pt);
+        pt.point.x = -marker->scale.x * 0.5;
+        pt.point.y = marker->scale.y * 0.5;
+        rect_3d.push_back(pt);
+        pt.point.x = marker->scale.x * 0.5;
+        pt.point.y = marker->scale.y * 0.5;
+        rect_3d.push_back(pt);
+        pt.point.x = marker->scale.x * 0.5;
+        pt.point.y = -marker->scale.y * 0.5;
+        rect_3d.push_back(pt);
+        std::vector<ImVec2> rect_2d;
+        for (auto pt : rect_3d) {
+          geometry_msgs::msg::PointStamped pt_in_viz_frame;
+          tf_buffer_->transform(pt, pt_in_viz_frame, frame_id_);
+          rect_2d.push_back(ImVec2(origin.x + pt_in_viz_frame.point.x * sc,
+              origin.y + pt_in_viz_frame.point.y * sc));
+        }
+        for (size_t i = 0; i < rect_2d.size(); ++i) {
+          draw_list->AddLine(rect_2d[i], rect_2d[(i + 1) % rect_2d.size()],
+              IM_COL32(marker->color.r * 255,
+                  marker->color.g * 255,
+                  marker->color.b * 255,
+                  marker->color.a * 255),
+              2.0f);
+        }
+      } catch (tf2::TransformException& ex) {
+
+      }
+    }  // loop through marker ids in this namespace
+  }  // loop through marker namespace sets
   draw_list->PopClipRect();
 }
