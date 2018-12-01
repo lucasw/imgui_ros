@@ -120,6 +120,7 @@ bool inputText(const std::string name, std::string& text)
 
 void TfBroadcaster::draw()
 {
+  ImGui::PushID(name_.c_str());
   // TODO(lucasw) lock guard around ts usage?
   inputText("parent", ts_.header.frame_id);
   inputText("child", ts_.child_frame_id);
@@ -150,4 +151,5 @@ void TfBroadcaster::draw()
   ts_.transform.rotation.y = quat.y();
   ts_.transform.rotation.z = quat.z();
   ts_.transform.rotation.w = quat.w();
+  ImGui::PopID();
 }

@@ -121,6 +121,12 @@ void Viz2D::draw()
           center.y + pos.y * sc);
       draw_list->AddLine(origin, im_pos, connection_color, 1.0f);
 
+      // draw_list->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
+      //    im_pos, blue, frame.c_str(), NULL, 0.0f, nullptr);
+      const ImU32 text_color = IM_COL32(200, 200, 255, 230);
+      draw_list->AddText(ImVec2(im_pos.x + 10, im_pos.y + 5),
+          text_color, frame.c_str(), NULL);
+
       // TODO(lucasw) need to transform points extended in x and y
       // a short distance away from the frame
       // origin to capture the rotation of the frame.

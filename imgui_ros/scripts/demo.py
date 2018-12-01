@@ -206,6 +206,16 @@ class Demo(Node):
         req.widgets.append(widget)
 
         widget = Widget()
+        widget.name = "map pub tf 2"
+        widget.type = Widget.PUB
+        widget.sub_type = Widget.TF
+        widget.min = -2.0
+        widget.max = 2.0
+        widget.items.append("map")
+        widget.items.append("bar2")
+        req.widgets.append(widget)
+
+        widget = Widget()
         widget.name = "viz2d"
         widget.type = Widget.SUB
         widget.sub_type = Widget.VIZ2D
@@ -214,6 +224,7 @@ class Demo(Node):
         widget.items.append("map")
         widget.items.append("foo")
         widget.items.append("bar")
+        widget.items.append("bar2")
         req.widgets.append(widget)
 
         self.future = self.cli.call_async(req)
@@ -227,6 +238,7 @@ class Demo(Node):
 
         # now publish some markers for the Viz2D
         self.marker_pub = self.create_publisher(Marker, 'marker')
+
         marker = Marker()
         marker.ns = "test"
         marker.id = 0
@@ -235,6 +247,18 @@ class Demo(Node):
         marker.scale.y = 0.5
         marker.color.r = 0.8
         marker.color.b = 0.6
+        marker.color.a = 1.0
+        self.marker_pub.publish(marker)
+
+        marker = Marker()
+        marker.ns = "test"
+        marker.id = 1
+        marker.header.frame_id = "bar2"
+        marker.scale.x = 0.4
+        marker.scale.y = 0.4
+        marker.color.r = 0.3
+        marker.color.b = 0.6
+        marker.color.g = 0.3
         marker.color.a = 1.0
         self.marker_pub.publish(marker)
 
