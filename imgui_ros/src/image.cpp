@@ -173,10 +173,15 @@ using std::placeholders::_1;
         if (fr_x > fr_y) {
           fr = fr_y;
         }
-        win_size.x = width_ * fr;
+        ImVec2 image_size;
         // TODO(lucasw) get this vertical offset from somewhere
-        win_size.y = height_ * fr + 15;
-        ImGui::Image((void*)(intptr_t)texture_id_, win_size);
+        // is it the height of the title bar?
+        image_size.y = height_ * fr - 15;
+        // have to get a new scale factor because of the manual offset
+        image_size.x = width_ * (image_size.y / height_);
+        ImGui::SetCursorPos(ImVec2((win_size.x - image_size.x) * 0.5f,
+            (win_size.y - image_size.y) * 0.5f));
+        ImGui::Image((void*)(intptr_t)texture_id_, image_size);
       }
     }
   }
