@@ -28,8 +28,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <geometry_msgs/msg/quaternion.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <imgui_ros/tf.h>
+// #include <imgui_internal.h>  // for PushMulti
+#include <iomanip>
 #include <tf2/LinearMath/Matrix3x3.h>
 
 
@@ -47,25 +50,80 @@ TfEcho::TfEcho(const std::string name,
   RCLCPP_DEBUG(node->get_logger(), "new tf echo %s to %s", parent_.c_str(), child_.c_str());
 }
 
+void rot2RPY(const geometry_msgs::msg::Quaternion rotation,
+    double& roll, double& pitch, double& yaw)
+{
+  tf2::Quaternion quat(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      rotation.w);
+  tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+}
+
+void putText(const std::string& text)
+{
+  ImGui::Text("%s", text.c_str());
+}
+
+void putText(const std::stringstream& text)
+{
+  putText(text.str());
+}
+
+void putText(const std::string& label, double value)
+{
+  std::stringstream ss;
+  ss << label;
+  if ((value == 0.0) && (std::signbit(value)))
+    value = 0.0;
+  if (!std::signbit(value))
+    ss << " ";
+  ss << value;
+  putText(ss);
+}
+
 void TfEcho::draw()
 {
+  ImGui::PushID(name_.c_str());
   try {
     geometry_msgs::msg::TransformStamped tf;
     tf = tf_buffer_->lookupTransform(parent_, child_, tf2::TimePointZero);
     std::stringstream ss;
-    ss << name_ << " tf: "
-        << tf.header.stamp.sec << "." << tf.header.stamp.nanosec
-        << " " << tf.transform.translation.x
-        << " " << tf.transform.translation.y
-        << " " << tf.transform.translation.z
-        << ", " << tf.transform.rotation.x
-        << " " << tf.transform.rotation.y
-        << " " << tf.transform.rotation.z
-        << " " << tf.transform.rotation.w;
+    ss << name_ << ": time "
+    //    << std::setprecision(3) << std::setw(4) << std::setfill('0') << std::internal
+        << tf.header.stamp.sec << "." << tf.header.stamp.nanosec;
     ImGui::Text("%s", ss.str().c_str());
+
+    // ImGui::BeginChild("xyz");
+    // ImGui::PushID("xyz");
+    {
+      ImGui::Columns(3);
+      putText("x: ", tf.transform.translation.x);
+      ImGui::NextColumn();
+      putText("y: ", tf.transform.translation.y);
+      ImGui::NextColumn();
+      putText("z: ", tf.transform.translation.z);
+      ImGui::NextColumn();
+    }
+    // ImGui::PopID();
+    // ImGui::EndChild();
+
+    double roll, pitch, yaw;
+    rot2RPY(tf.transform.rotation, roll, pitch, yaw);
+
+    putText("r: ", roll);
+    ImGui::NextColumn();
+    putText("p: ", pitch);
+    ImGui::NextColumn();
+    putText("y: ", yaw);
+    ImGui::NextColumn();
+
+    ImGui::Columns(1);
   } catch (tf2::TransformException& ex) {
     ImGui::Text("%s", ex.what());
   }
+  ImGui::PopID();
 }
 
 TfBroadcaster::TfBroadcaster(const std::string name,
@@ -131,21 +189,17 @@ void TfBroadcaster::draw()
   ImGui::SliderScalar("z", ImGuiDataType_Double,
       &ts_.transform.translation.z, &min_, &max_, "%lf");
 
-  double roll, pitch, yaw;
   double min = -3.2;
   double max = 3.2;
-  tf2::Quaternion quat(
-    ts_.transform.rotation.x,
-    ts_.transform.rotation.y,
-    ts_.transform.rotation.z,
-    ts_.transform.rotation.w);
-  tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+  double roll, pitch, yaw;
+  rot2RPY(ts_.transform.rotation, roll, pitch, yaw);
   ImGui::SliderScalar("roll", ImGuiDataType_Double,
       &roll, &min, &max, "%lf");
   ImGui::SliderScalar("pitch", ImGuiDataType_Double,
       &pitch, &min, &max, "%lf");
   ImGui::SliderScalar("yaw", ImGuiDataType_Double,
       &yaw, &min, &max, "%lf");
+  tf2::Quaternion quat;
   quat.setRPY(roll, pitch, yaw);
   ts_.transform.rotation.x = quat.x();
   ts_.transform.rotation.y = quat.y();

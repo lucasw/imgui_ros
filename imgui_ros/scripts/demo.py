@@ -192,7 +192,7 @@ class Demo(Node):
         widget.type = Widget.SUB
         widget.sub_type = Widget.TF
         widget.items.append("map")
-        widget.items.append("foo")
+        widget.items.append("bar")
         req.widgets.append(widget)
 
         widget = Widget()
