@@ -301,6 +301,20 @@ namespace imgui_ros {
         int value = widget.value;
         pub.reset(new MenuPub(widget.name, widget.topic,
             value, widget.items, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::TF) {
+        RCLCPP_DEBUG(get_logger(), "new tf pub");
+        if (widget.items.size() < 2) {
+          std::stringstream ss;
+          ss << widget.name << " need two widget items for tf parent and child "
+              << widget.items.size();
+          message = ss.str();
+          return false;
+        }
+        pub.reset(new TfBroadcaster(widget.name,
+            widget.items[0], widget.items[1],
+            widget.min, widget.max,
+            tf_buffer_,
+            shared_from_this()));
       } else {
         std::stringstream ss;
         ss << "unsupported window type " << std::dec << widget.sub_type;

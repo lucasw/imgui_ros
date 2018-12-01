@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2016 Open Source Robotics Foundation, Inc.
+# Copyright 2018 Lucas Walter
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,10 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO(lucasW) this doesn't exist in python yet?
+# import tf2_ros
+import rclpy
+
+from geometry_msgs.msg import TransformStamped
 from imgui_ros.msg import Widget
 from imgui_ros.srv import AddWindow
-
-import rclpy
 from rclpy.node import Node
 
 
@@ -176,12 +179,29 @@ class Demo(Node):
         widget.sub_type = Widget.STRING
         req.widgets.append(widget)
 
+        self.future = self.cli.call_async(req)
+        self.wait_for_response()
+
+        #######################################
+        req = AddWindow.Request()
+        req.name = "tf viz"
+
         widget = Widget()
         widget.name = "map foo tf"
         widget.type = Widget.SUB
         widget.sub_type = Widget.TF
         widget.items.append("map")
         widget.items.append("foo")
+        req.widgets.append(widget)
+
+        widget = Widget()
+        widget.name = "map pub tf"
+        widget.type = Widget.PUB
+        widget.sub_type = Widget.TF
+        widget.min = -2.0
+        widget.max = 2.0
+        widget.items.append("map")
+        widget.items.append("bar")
         req.widgets.append(widget)
 
         widget = Widget()
@@ -196,6 +216,23 @@ class Demo(Node):
 
         self.future = self.cli.call_async(req)
         self.wait_for_response()
+
+        # TODO(lucasw) move the tf broadcasting into standalone node
+        self.elapsed = 0.0
+        self.period = 0.05
+        # self.br = tf2_ros.TransformBroadcaster()
+        # self.timer = self.create_timer(self.period, self.update)
+
+    def update(self):
+        ts = TransformStamped()
+        ts.header.stamp = self.now()
+        ts.header.frame_id = "map"
+        ts.child_frame_id = "bar"
+        ts.transform.translation.x = math.cos(self.elapsed * 0.1)
+        ts.transform.translation.y = math.sin(self.elapsed * 0.2)
+        ts.transform.rotation.w = 1.0
+        self.br.sendTransform(ts)
+        self.elapsed += 0.05
 
 def main(args=None):
     rclpy.init(args=args)
