@@ -66,6 +66,9 @@ protected:
   // TODO(lucasw) make this a service later
   std::map<std::string, std::map<int, visualization_msgs::msg::Marker::SharedPtr> > markers_;
   void markerCallback(const visualization_msgs::msg::Marker::SharedPtr msg);
+
+  void drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center);
+  void drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center);
 };
 
 #endif  // IMGUI_ROS_VIZ2D_H

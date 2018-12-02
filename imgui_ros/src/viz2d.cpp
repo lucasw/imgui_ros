@@ -94,13 +94,23 @@ void Viz2D::draw()
             IM_COL32(60, 60, 70, 255), IM_COL32(50, 50, 60, 255));
   draw_list->AddRect(canvas_pos, corner,
           IM_COL32(255, 255, 255, 255));
+
   draw_list->PushClipRect(canvas_pos, corner, true);
 
   ImVec2 center = ImVec2(canvas_pos.x + canvas_size.x * 0.5,
       canvas_pos.y + canvas_size.y * 0.5);
   ImVec2 origin = center;
 
+  // TODO(lucasw) draw a grid
+  drawTf(draw_list, origin, center);
+  drawMarkers(draw_list, origin, center);
+  draw_list->PopClipRect();
+}
+
+void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center)
+{
   const ImU32 connection_color = IM_COL32(255, 255, 0, 32);
+
   const ImU32 red = IM_COL32(255, 0, 0, 180);
   const ImU32 green = IM_COL32(0, 255, 0, 180);
   const ImU32 blue = IM_COL32(0, 0, 255, 180);
@@ -108,17 +118,16 @@ void Viz2D::draw()
   colors.push_back(red);
   colors.push_back(green);
   colors.push_back(blue);
-  const float len = 32;
-  // TODO(lucasw) draw a grid
 
+  const float len = 32;
   const double sc = pixels_per_meter_;
   for (auto frame : frames_) {
     try {
       geometry_msgs::msg::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(frame_id_, frame, tf2::TimePointZero);
       auto pos = tf.transform.translation;
-      const ImVec2 im_pos = ImVec2(center.x + pos.x * sc,
-          center.y + pos.y * sc);
+      const ImVec2 im_pos = ImVec2(origin.x + pos.x * sc,
+          origin.y + pos.y * sc);
       draw_list->AddLine(origin, im_pos, connection_color, 1.0f);
 
       // draw_list->AddText(ImGui::GetFont(), ImGui::GetFontSize(),
@@ -166,7 +175,11 @@ void Viz2D::draw()
       // ImGui::Text("%s", ex.what());
     }
   }
+}  // draw tf
 
+void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center)
+{
+  const double sc = pixels_per_meter_;
   for (auto marker_ns : markers_) {
     for (auto marker_pair : marker_ns.second) {
       try {
@@ -210,5 +223,4 @@ void Viz2D::draw()
       }
     }  // loop through marker ids in this namespace
   }  // loop through marker namespace sets
-  draw_list->PopClipRect();
 }
