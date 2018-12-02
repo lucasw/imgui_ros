@@ -31,6 +31,7 @@
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <geometry_msgs/msg/vector3_stamped.hpp>
 #include <imgui_ros/viz2d.h>
+#include <math.h>
 #include <tf2_ros/buffer_interface.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -63,8 +64,8 @@ Viz2D::Viz2D(const std::string name,
     Sub(name, frame_id, node),
     frame_id_(frame_id),
     frames_(frames),
-    pixels_per_meter_(pixels_per_meter),
-    tf_buffer_(tf_buffer)
+    tf_buffer_(tf_buffer),
+    pixels_per_meter_(pixels_per_meter)
 {
   // RCLCPP_INFO(node->get_logger(), "new tf echo %s to %s", parent_.c_str(), child_.c_str());
   marker_sub_ = node_->create_subscription<visualization_msgs::msg::Marker>(topic,
@@ -104,6 +105,7 @@ void Viz2D::draw()
   ImVec2 mouse_pos_in_canvas = ImVec2(ImGui::GetIO().MousePos.x - canvas_pos.x, ImGui::GetIO().MousePos.y - canvas_pos.y);
 
   if (dragging_view_) {
+    // This allows continued dragging outside the canvas
     offset_ = ImVec2(
         offset_.x + mouse_pos_in_canvas.x - drag_point_.x,
         offset_.y + mouse_pos_in_canvas.y - drag_point_.y);
@@ -112,22 +114,41 @@ void Viz2D::draw()
       dragging_view_ = false;
     }
   }
+  if (dragging_scale_) {
+    // drag_point_ = mouse_pos_in_canvas;
+    const float base = 100.0;
+    const float diff = mouse_pos_in_canvas.y - drag_point_.y;
+    pixels_per_meter_live_ = pixels_per_meter_ * exp(diff / base);
+    if (!ImGui::IsMouseDown(1)) {
+      dragging_scale_ = false;
+      pixels_per_meter_ = pixels_per_meter_live_;
+    }
+  }
   if (ImGui::IsItemHovered()) {
     if (!dragging_view_ && ImGui::IsMouseClicked(0)) {
       drag_point_ = mouse_pos_in_canvas;
       dragging_view_ = true;
     }
+    if (!dragging_scale_ && ImGui::IsMouseClicked(1)) {
+      drag_point_ = mouse_pos_in_canvas;
+      dragging_scale_ = true;
+    }
   }
 
   ImVec2 origin = ImVec2(center.x + offset_.x, center.y + offset_.y);
 
+  double sc = pixels_per_meter_;
+  if (dragging_scale_)
+    sc = pixels_per_meter_live_;
+
   // TODO(lucasw) draw a grid
-  drawTf(draw_list, origin, center);
-  drawMarkers(draw_list, origin, center);
+  drawTf(draw_list, origin, center, sc);
+  drawMarkers(draw_list, origin, center, sc);
   draw_list->PopClipRect();
 }
 
-void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center)
+void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
+    const float sc)
 {
   const ImU32 connection_color = IM_COL32(255, 255, 0, 32);
 
@@ -139,8 +160,7 @@ void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center)
   colors.push_back(green);
   colors.push_back(blue);
 
-  const float len = 32;
-  const double sc = pixels_per_meter_;
+  const float len = 0.25;
   for (auto frame : frames_) {
     try {
       geometry_msgs::msg::TransformStamped tf;
@@ -187,8 +207,9 @@ void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center)
         tf_buffer_->transform(vectors[i], vector_in_viz_frame, frame_id_);
         // std::cout << i << " " << printVec(vector) << " -> "
         //     << printVec(vector_in_viz_frame) << "\n";
-        const auto im_vec = ImVec2(im_pos.x + vector_in_viz_frame.vector.x * len,
-            im_pos.y + vector_in_viz_frame.vector.y * len);
+        const auto im_vec = ImVec2(
+            im_pos.x + vector_in_viz_frame.vector.x * len * sc,
+            im_pos.y + vector_in_viz_frame.vector.y * len * sc);
         draw_list->AddLine(im_pos, im_vec, colors[i], 2.0f);
       }
     } catch (tf2::TransformException& ex) {
@@ -197,9 +218,9 @@ void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center)
   }
 }  // draw tf
 
-void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center)
+void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
+    const float sc)
 {
-  const double sc = pixels_per_meter_;
   for (auto marker_ns : markers_) {
     for (auto marker_pair : marker_ns.second) {
       try {

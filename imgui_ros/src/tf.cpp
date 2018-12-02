@@ -85,6 +85,7 @@ void putText(const std::string& label, double value)
 
 void TfEcho::draw()
 {
+  ImGui::Separator();
   ImGui::PushID(name_.c_str());
   try {
     geometry_msgs::msg::TransformStamped tf;
@@ -178,6 +179,7 @@ bool inputText(const std::string name, std::string& text)
 
 void TfBroadcaster::draw()
 {
+  ImGui::Separator();
   ImGui::PushID(name_.c_str());
   // TODO(lucasw) lock guard around ts usage?
   inputText("parent", ts_.header.frame_id);

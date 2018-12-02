@@ -60,19 +60,21 @@ struct Viz2D : public Sub {
 protected:
   std::string frame_id_;
   std::vector<std::string> frames_;
-  double pixels_per_meter_ = 10.0;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   rclcpp::Subscription<visualization_msgs::msg::Marker>::SharedPtr marker_sub_;
   // TODO(lucasw) make this a service later
   std::map<std::string, std::map<int, visualization_msgs::msg::Marker::SharedPtr> > markers_;
   void markerCallback(const visualization_msgs::msg::Marker::SharedPtr msg);
 
+  bool dragging_scale_ = false;
+  double pixels_per_meter_ = 10.0;
+  double pixels_per_meter_live_;
   ImVec2 offset_;
   bool dragging_view_ = false;
   ImVec2 drag_point_;
 
-  void drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center);
-  void drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center);
+  void drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center, const float sc);
+  void drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center, const float sc);
 };
 
 #endif  // IMGUI_ROS_VIZ2D_H
