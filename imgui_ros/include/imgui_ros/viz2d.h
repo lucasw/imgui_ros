@@ -67,6 +67,10 @@ protected:
   std::map<std::string, std::map<int, visualization_msgs::msg::Marker::SharedPtr> > markers_;
   void markerCallback(const visualization_msgs::msg::Marker::SharedPtr msg);
 
+  ImVec2 offset_;
+  bool dragging_view_ = false;
+  ImVec2 drag_point_;
+
   void drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center);
   void drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center);
 };

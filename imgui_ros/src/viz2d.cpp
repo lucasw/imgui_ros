@@ -99,7 +99,27 @@ void Viz2D::draw()
 
   ImVec2 center = ImVec2(canvas_pos.x + canvas_size.x * 0.5,
       canvas_pos.y + canvas_size.y * 0.5);
-  ImVec2 origin = center;
+
+  ImGui::InvisibleButton((name_ + "_canvas").c_str(), canvas_size);
+  ImVec2 mouse_pos_in_canvas = ImVec2(ImGui::GetIO().MousePos.x - canvas_pos.x, ImGui::GetIO().MousePos.y - canvas_pos.y);
+
+  if (dragging_view_) {
+    offset_ = ImVec2(
+        offset_.x + mouse_pos_in_canvas.x - drag_point_.x,
+        offset_.y + mouse_pos_in_canvas.y - drag_point_.y);
+    drag_point_ = mouse_pos_in_canvas;
+    if (!ImGui::IsMouseDown(0)) {
+      dragging_view_ = false;
+    }
+  }
+  if (ImGui::IsItemHovered()) {
+    if (!dragging_view_ && ImGui::IsMouseClicked(0)) {
+      drag_point_ = mouse_pos_in_canvas;
+      dragging_view_ = true;
+    }
+  }
+
+  ImVec2 origin = ImVec2(center.x + offset_.x, center.y + offset_.y);
 
   // TODO(lucasw) draw a grid
   drawTf(draw_list, origin, center);
