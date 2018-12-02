@@ -248,6 +248,7 @@ class Demo(Node):
         marker.color.r = 0.8
         marker.color.b = 0.6
         marker.color.a = 1.0
+        marker.text = "bar marker"
         self.marker_pub.publish(marker)
 
         marker = Marker()
@@ -260,6 +261,7 @@ class Demo(Node):
         marker.color.b = 0.6
         marker.color.g = 0.3
         marker.color.a = 1.0
+        marker.text = "bar2 marker"
         self.marker_pub.publish(marker)
 
     def update(self):

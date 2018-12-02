@@ -251,7 +251,14 @@ void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
           rect_2d.push_back(ImVec2(origin.x + pt_in_viz_frame.point.x * sc,
               origin.y + pt_in_viz_frame.point.y * sc));
         }
+        ImVec2 text_pos = rect_2d[0];
         for (size_t i = 0; i < rect_2d.size(); ++i) {
+          auto x = rect_2d[i].x;
+          auto y = rect_2d[i].y;
+          if (x < text_pos.x)
+            text_pos.x = x;
+          if (y > text_pos.y)
+            text_pos.y = y;
           draw_list->AddLine(rect_2d[i], rect_2d[(i + 1) % rect_2d.size()],
               IM_COL32(marker->color.r * 255,
                   marker->color.g * 255,
@@ -259,7 +266,11 @@ void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
                   marker->color.a * 255),
               2.0f);
         }
-      } catch (tf2::TransformException& ex) {
+
+        const ImU32 text_color = IM_COL32(250, 200, 225, 230);
+        draw_list->AddText(ImVec2(text_pos.x + 1, text_pos.y + 3),
+            text_color, marker->text.c_str(), NULL);
+        } catch (tf2::TransformException& ex) {
 
       }
     }  // loop through marker ids in this namespace
