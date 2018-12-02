@@ -244,8 +244,15 @@ void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
         pt.point.x = marker->scale.x * 0.5;
         pt.point.y = -marker->scale.y * 0.5;
         rect_3d.push_back(pt);
+
+        // TODO(lucasw) later could use orientation also
+        auto offset = marker->pose.position;
         std::vector<ImVec2> rect_2d;
         for (auto pt : rect_3d) {
+          pt.point.x += offset.x;
+          pt.point.y += offset.y;
+          pt.point.z += offset.z;
+
           geometry_msgs::msg::PointStamped pt_in_viz_frame;
           tf_buffer_->transform(pt, pt_in_viz_frame, frame_id_);
           rect_2d.push_back(ImVec2(origin.x + pt_in_viz_frame.point.x * sc,

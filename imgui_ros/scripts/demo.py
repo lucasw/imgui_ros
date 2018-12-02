@@ -248,6 +248,8 @@ class Demo(Node):
         marker.color.r = 0.8
         marker.color.b = 0.6
         marker.color.a = 1.0
+        marker.pose.position.x = 0.5
+        marker.pose.position.y = 0.25
         marker.text = "bar marker"
         self.marker_pub.publish(marker)
 
