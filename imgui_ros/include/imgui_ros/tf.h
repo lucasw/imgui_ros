@@ -40,7 +40,8 @@
 #include <opencv2/core.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
-#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_msgs/msg/tf_message.hpp>
+// #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 using std::placeholders::_1;
 
@@ -70,13 +71,21 @@ struct TfBroadcaster : public Pub {
 
   ~TfBroadcaster() {}
 
+  virtual void addTF(tf2_msgs::msg::TFMessage& tfm)
+  {
+    if ((ts_.header.frame_id != "") && (ts_.child_frame_id != "")) {
+      tfm.transforms.push_back(ts_);
+    }
+  }
   virtual void draw();
 protected:
   void update();
   double min_;
   double max_;
   geometry_msgs::msg::TransformStamped ts_;
-  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+  // TODO(lucasw) may weak_ptr would work
+  // std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+  // rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr tf_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
 };

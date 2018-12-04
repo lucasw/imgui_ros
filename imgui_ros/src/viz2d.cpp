@@ -68,7 +68,7 @@ Viz2D::Viz2D(const std::string name,
     pixels_per_meter_(pixels_per_meter)
 {
   // RCLCPP_INFO(node->get_logger(), "new tf echo %s to %s", parent_.c_str(), child_.c_str());
-  marker_sub_ = node_->create_subscription<visualization_msgs::msg::Marker>(topic,
+  marker_sub_ = node->create_subscription<visualization_msgs::msg::Marker>(topic,
       std::bind(&Viz2D::markerCallback, this, std::placeholders::_1));
 }
 
@@ -150,6 +150,7 @@ void Viz2D::draw()
 void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
     const float sc)
 {
+  (void)center;
   const ImU32 connection_color = IM_COL32(255, 255, 0, 32);
 
   const ImU32 red = IM_COL32(255, 0, 0, 180);
@@ -221,6 +222,7 @@ void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
 void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
     const float sc)
 {
+  (void)center;
   for (auto marker_ns : markers_) {
     for (auto marker_pair : marker_ns.second) {
       try {

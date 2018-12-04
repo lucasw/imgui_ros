@@ -64,6 +64,7 @@ using std::placeholders::_2;
 namespace imgui_ros {
   ImguiRos::ImguiRos() : Node("imgui_ros") {
 
+    tf_pub_ = create_publisher<tf2_msgs::msg::TFMessage>("/tf");
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>();
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
@@ -528,6 +529,8 @@ namespace imgui_ros {
     // flags.
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
+      if (!rclcpp::ok())
+        return;
       ImGui_ImplSDL2_ProcessEvent(&event);
       if (event.type == SDL_QUIT) {
         rclcpp::shutdown();
@@ -575,7 +578,16 @@ namespace imgui_ros {
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
+
+    tf2_msgs::msg::TFMessage tfs;
+    for (auto& window : windows_) {
+      if (window.second) {
+        window.second->addTF(tfs);
+      }
+    }
+    tf_pub_->publish(tfs);
   }
+
 }  // namespace imgui_ros
 
 int main(int argc, char * argv[])

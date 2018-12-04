@@ -64,11 +64,14 @@ struct Param : public Widget {
       node_(node)
   {
     value_.type = type;
-    parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(node_, node_name_);
+    parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(node, node_name_);
     param_sub_ = parameters_client_->on_parameter_event(
         std::bind(&Param::onParameterEvent, this, std::placeholders::_1));
   }
-  // ~Param();
+
+  ~Param()
+  {
+  }
 
   virtual void draw()
   {
@@ -150,16 +153,22 @@ protected:
   // uint8_t type_;
   double min_ = 0.0;
   double max_ = 1.0;
-  std::shared_ptr<rclcpp::Node> node_;
+
+  std::weak_ptr<rclcpp::Node> node_;
 
   rcl_interfaces::msg::ParameterValue value_;
 
   void responseReceivedCallback(
       const std::shared_future<std::vector<rcl_interfaces::msg::SetParametersResult>> future)
   {
+    std::shared_ptr<rclcpp::Node> node = node_.lock();
+    if (!node) {
+      return;
+    }
+
     for (auto & result : future.get()) {
       if (!result.successful) {
-        RCLCPP_ERROR(node_->get_logger(), "Failed to set parameter: %s", result.reason.c_str())
+        RCLCPP_ERROR(node->get_logger(), "Failed to set parameter: %s", result.reason.c_str())
       }
     }
   }
@@ -181,8 +190,13 @@ protected:
 
   bool updateValue(const rcl_interfaces::msg::ParameterValue& new_value)
   {
+    std::shared_ptr<rclcpp::Node> node = node_.lock();
+    if (!node) {
+      return false;
+    }
+
     if (new_value.type != value_.type) {
-      RCLCPP_WARN(node_->get_logger(), "Wrong type %s %d != %d",
+      RCLCPP_WARN(node->get_logger(), "Wrong type %s %d != %d",
           name_, new_value.type, value_.type);
       return false;
     }

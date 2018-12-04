@@ -62,7 +62,7 @@ struct Pub : public Widget {
   virtual void draw() = 0;
 protected:
   // unsigned type_ = imgui_ros::srv::AddWindow::Request::FLOAT32;
-  std::shared_ptr<rclcpp::Node> node_;
+  std::weak_ptr<rclcpp::Node> node_;
 };
 
 template <class T>
@@ -75,7 +75,7 @@ struct GenericPub : public Pub {
     msg_.reset(new T);
     msg_->data = value;
     // TODO(lucasw) bring back type for all the float types
-    pub_ = node_->create_publisher<T>(topic);
+    pub_ = node->create_publisher<T>(topic);
   }
 
   ~GenericPub() {}

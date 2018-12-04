@@ -145,9 +145,10 @@ TfBroadcaster::TfBroadcaster(const std::string name,
 
   double update_rate = 30.0;
   int period = 1000 / update_rate;
-  timer_ = node_->create_wall_timer(std::chrono::milliseconds(period),
+  timer_ = node->create_wall_timer(std::chrono::milliseconds(period),
       std::bind(&TfBroadcaster::update, this));
-  tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node_);
+  // tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node_);
+  // tf_pub_ = node->create_publisher<tf2_msgs::msg::TFMessage>("/tf");
 }
 
 void TfBroadcaster::update()
@@ -157,7 +158,10 @@ void TfBroadcaster::update()
   if (ts_.child_frame_id == "")
     return;
 
-  tf_broadcaster_->sendTransform(ts_);
+  // tf_broadcaster_->sendTransform(ts_);
+  // tf2_msgs::msg::TFMessage tfs;
+  // tfs.transforms.push_back(ts_);
+  // tf_pub_->publish(tfs);
 }
 
 bool inputText(const std::string name, std::string& text)

@@ -45,7 +45,7 @@ BoolPub::BoolPub(const std::string name, const std::string topic,  // const unsi
     std::shared_ptr<rclcpp::Node> node) :
     Pub(name, topic, node), value_(value)  {
   msg_.reset(new std_msgs::msg::Bool);
-  pub_ = node_->create_publisher<std_msgs::msg::Bool>(topic);
+  pub_ = node->create_publisher<std_msgs::msg::Bool>(topic);
 }
 
 void BoolPub::draw() {
@@ -80,7 +80,7 @@ StringPub::StringPub(const std::string name, const std::string topic,
     items_null_ += item + '\0';
   }
   // TODO(lucasw) bring back type for all the int types
-  pub_ = node_->create_publisher<std_msgs::msg::String>(topic);
+  pub_ = node->create_publisher<std_msgs::msg::String>(topic);
 }
 
 void StringPub::draw() {
@@ -123,7 +123,7 @@ MenuPub::MenuPub(const std::string name, const std::string topic,  // const unsi
     items_null_ += item + '\0';
   }
   // TODO(lucasw) bring back type for all the int types
-  pub_ = node_->create_publisher<std_msgs::msg::Int32>(topic);
+  pub_ = node->create_publisher<std_msgs::msg::Int32>(topic);
 }
 
 void MenuPub::draw() {
