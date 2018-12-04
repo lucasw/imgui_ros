@@ -103,21 +103,9 @@ struct GenericPub : public Pub {
         &val, &min, &max, "%lf");
       if (changed) msg_->data = val;
     // TODO(lucasw) combine 8/16/32
-    } else if (std::is_same<T, std_msgs::msg::Int8>::value) {
-      ImS32 val = msg_->data;
-      ImS32 min = min_;
-      ImS32 max = max_;
-      changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S32,
-        &val, &min, &max, "%d");
-      if (changed) msg_->data = val;
-    } else if (std::is_same<T, std_msgs::msg::Int16>::value) {
-      ImS32 val = msg_->data;
-      ImS32 min = min_;
-      ImS32 max = max_;
-      changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S32,
-        &val, &min, &max, "%d");
-      if (changed) msg_->data = val;
-    } else if (std::is_same<T, std_msgs::msg::Int32>::value) {
+    } else if ((std::is_same<T, std_msgs::msg::Int8>::value) ||
+              (std::is_same<T, std_msgs::msg::Int16>::value) ||
+              (std::is_same<T, std_msgs::msg::Int32>::value)) {
       ImS32 val = msg_->data;
       ImS32 min = min_;
       ImS32 max = max_;
@@ -131,9 +119,26 @@ struct GenericPub : public Pub {
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S64,
         &val, &min, &max, "%I64d");
       if (changed) msg_->data = val;
+    } else if ((std::is_same<T, std_msgs::msg::UInt8>::value) ||
+              (std::is_same<T, std_msgs::msg::UInt16>::value) ||
+              (std::is_same<T, std_msgs::msg::UInt32>::value)) {
+      ImU32 val = msg_->data;
+      ImU32 min = min_;
+      ImU32 max = max_;
+      changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_U32,
+        &val, &min, &max, "%d");
+      if (changed) msg_->data = val;
+    } else if (std::is_same<T, std_msgs::msg::UInt64>::value) {
+      ImU64 val = msg_->data;
+      ImU64 min = min_;
+      ImU64 max = max_;
+      changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_U64,
+        &val, &min, &max, "%I64u");
+      if (changed) msg_->data = val;
+
     } else {
       // ImGui::Text(name_.c_str());
-      ImGui::Text("%.*s", static_cast<int>(name_.size()), name_.data());
+      ImGui::Text("unsupported %.*s", static_cast<int>(name_.size()), name_.data());
     }
     if (changed) {
       pub_->publish(msg_);
