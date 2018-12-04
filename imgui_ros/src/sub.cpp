@@ -44,7 +44,7 @@ BoolSub::BoolSub(const std::string name, const std::string topic,  // const unsi
     Sub(name, topic, node) {
   (void)value;
   // msg_.reset(new std_msgs::msg::Bool);
-  sub_ = node_->create_subscription<std_msgs::msg::Bool>(topic,
+  sub_ = node->create_subscription<std_msgs::msg::Bool>(topic,
       std::bind(&BoolSub::callback, this, _1));
 }
 

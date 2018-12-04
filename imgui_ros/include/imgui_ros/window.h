@@ -35,6 +35,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <tf2_msgs/msg/tf_message.hpp>
 #include <vector>
 
 struct Widget {
@@ -43,6 +44,11 @@ struct Widget {
   ~Widget() {}
   virtual void draw() = 0;
   std::string name_ = "";
+
+  virtual void addTF(tf2_msgs::msg::TFMessage& tfm)
+  {
+    (void)tfm;
+  }
 protected:
   bool dirty_ = true;
   std::string topic_ = "";
@@ -55,6 +61,13 @@ struct Window {
   ~Window() {}
   virtual void draw();
   void add(std::shared_ptr<Widget> widget);
+  virtual void addTF(tf2_msgs::msg::TFMessage& tfm) {
+    for (auto& name : widget_order_) {
+      if (widgets_[name]) {
+        widgets_[name]->addTF(tfm);
+      }
+    }
+  }
 protected:
   // TODO(lucasw) this sorts into alphabetical order, but want to preserve insertion order
   std::map<std::string, std::shared_ptr<Widget> > widgets_;

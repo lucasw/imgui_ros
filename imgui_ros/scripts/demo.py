@@ -47,6 +47,13 @@ class Demo(Node):
                 break
 
     def run(self):
+        self.add_images()
+        self.add_roto_controls()
+        self.add_misc()
+        self.add_viz()
+        self.add_markers()
+
+    def add_images(self):
         req = AddWindow.Request()
         req.name = "input image"
         widget = Widget()
@@ -67,6 +74,7 @@ class Demo(Node):
         self.future = self.cli.call_async(req)
         self.wait_for_response()
 
+    def add_roto_controls(self):
         req = AddWindow.Request()
         req.name = "rotozoom controls"
 
@@ -153,6 +161,13 @@ class Demo(Node):
             widget.sub_type = widget_type
             req.widgets.append(widget)
 
+        self.future = self.cli.call_async(req)
+        self.wait_for_response()
+
+    def add_misc(self):
+        req = AddWindow.Request()
+        req.name = "string controls"
+
         # string pub sub test
         string_topic = "string"
         widget = Widget()
@@ -183,7 +198,7 @@ class Demo(Node):
         self.future = self.cli.call_async(req)
         self.wait_for_response()
 
-        #######################################
+    def add_viz(self):
         req = AddWindow.Request()
         req.name = "tf viz"
 
@@ -236,6 +251,7 @@ class Demo(Node):
         # self.br = tf2_ros.TransformBroadcaster()
         # self.timer = self.create_timer(self.period, self.update)
 
+    def add_markers(self):
         # now publish some markers for the Viz2D
         self.marker_pub = self.create_publisher(Marker, 'marker')
 

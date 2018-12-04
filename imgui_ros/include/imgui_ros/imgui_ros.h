@@ -38,6 +38,7 @@
 #include <opencv2/core.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <tf2_msgs/msg/tf_message.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <SDL.h>
 
@@ -75,6 +76,8 @@ private:
 
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+
+  rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr tf_pub_;
 };
 
 }  // namespace imgui_ros

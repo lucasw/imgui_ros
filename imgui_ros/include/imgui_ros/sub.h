@@ -48,7 +48,7 @@ struct Sub : public Widget {
   // ~Sub();
   virtual void draw() = 0;
 protected:
-  std::shared_ptr<rclcpp::Node> node_;
+  std::weak_ptr<rclcpp::Node> node_;
 };
 
 template <class T>
@@ -56,7 +56,7 @@ struct GenericSub : public Sub {
   GenericSub(const std::string name, const std::string topic,
       std::shared_ptr<rclcpp::Node> node) : Sub(name, topic, node)
   {
-    sub_ = node_->create_subscription<T>(topic,
+    sub_ = node->create_subscription<T>(topic,
         std::bind(&GenericSub::callback, this, std::placeholders::_1));
   }
   ~GenericSub() {}

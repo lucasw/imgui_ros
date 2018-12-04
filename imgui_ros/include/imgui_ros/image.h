@@ -86,7 +86,7 @@ struct RosImage : public GlImage {
   virtual void draw();
 
 private:
-  std::shared_ptr<rclcpp::Node> node_;
+  std::weak_ptr<rclcpp::Node> node_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
   sensor_msgs::msg::Image::SharedPtr image_;
 };  // RosImage
