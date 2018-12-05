@@ -35,6 +35,26 @@
 #include <tf2_ros/buffer_interface.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+// TODO(lucasw) move to utility header
+// TODO(lucasw) the ignore doesn't work
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wvariadic-macros"
+
+#define LOG(__type__, msg, ...) { if (node_) {std::shared_ptr<rclcpp::Node> node = node_.lock(); if (node) { RCLCPP_##__type__(node->get_logger(), msg, ##__VA_ARGS__) }}}
+#define LOG0(__type__, msg) { std::shared_ptr<rclcpp::Node> node = node_.lock(); if (node) { RCLCPP_##__type__(node->get_logger(), msg) }}
+
+#define INFO(msg, ...) LOG(INFO, msg, ##__VA_ARGS__)
+// #define INFO(msg, ...) { std::shared_ptr<rclcpp::Node> node = node_.lock(); if (node) { RCLCPP_INFO(node->get_logger(), msg, ##__VA_ARGS__) }}
+
+#define WARN(msg, ...) LOG(WARN, msg, ##__VA_ARGS__)
+#define WARN0(msg) LOG0(WARN, msg)
+// { std::shared_ptr<rclcpp::Node> node = node_.lock(); if (node) { RCLCPP_WARN(node->get_logger(), msg, ##__VA_ARGS__) }}
+
+// #define ERROR(msg, ...) LOG(ERROR, msg, ##__VA_ARGS__)
+// #define DEBUG(msg, ...) LOG(ERROR, msg, ##__VA_ARGS__)
+
+#pragma GCC diagnostic pop
+
 // TODO(lucasw) overload <<
 std::string printVec(const geometry_msgs::msg::Vector3& vec)
 {
@@ -74,8 +94,27 @@ Viz2D::Viz2D(const std::string name,
 
 void Viz2D::markerCallback(const visualization_msgs::msg::Marker::SharedPtr msg)
 {
+  std::lock_guard<std::mutex> lock(mutex_);
   // TODO(lucasw) handle DELETE later
-  markers_[msg->ns][msg->id] = msg;
+  if ((msg->action == visualization_msgs::msg::Marker::ADD) ||
+     (msg->action == visualization_msgs::msg::Marker::MODIFY)) {
+     // TODO(lucasw) these aren't working, are failing in strange ways
+    // INFO("adding/modifying marker %s %d %s", msg->ns, msg->id, msg->header.frame_id);
+    std::cout << "viz add/modify " << msg->ns << " " << msg->id << " "
+        << msg->header.frame_id << "\n";
+    markers_[msg->ns][msg->id] = msg;
+  } else if (msg->action == visualization_msgs::msg::Marker::DELETE) {
+    if ((markers_.count(msg->ns) > 0) && (markers_[msg->ns].count(msg->id)) > 0) {
+      // WARN("erasing marker %s %d %s", msg->ns, msg->id, msg->header.frame_id);
+      std::cout << "viz erasing " << msg->ns << " " << msg->id << " "
+          << msg->header.frame_id << "\n";
+      markers_[msg->ns].erase(msg->id);
+    }
+  } else if (msg->action == visualization_msgs::msg::Marker::DELETEALL) {
+    // WARN0("clearing markers");
+    std::cout << "viz clearing markers" << "\n";
+    markers_.clear();
+  }
 }
 
 void Viz2D::draw()
@@ -166,6 +205,15 @@ void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
     try {
       geometry_msgs::msg::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(frame_id_, frame, tf2::TimePointZero);
+      #if 0
+      {
+        std::shared_ptr<rclcpp::Node> node = node_.lock();
+        if (node && ((node->now().nanoseconds() / 1e9 - tf.header.stamp.sec) > 4)) {
+          continue;
+        }
+      }
+      #endif
+
       auto pos = tf.transform.translation;
       const ImVec2 im_pos = ImVec2(origin.x + pos.x * sc,
           origin.y + pos.y * sc);
@@ -223,12 +271,26 @@ void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
     const float sc)
 {
   (void)center;
+  std::lock_guard<std::mutex> lock(mutex_);
   for (auto marker_ns : markers_) {
+    std::vector<int> markers_to_remove;
     for (auto marker_pair : marker_ns.second) {
       try {
-        auto marker = (marker_pair.second);
+        auto marker = marker_pair.second;
         geometry_msgs::msg::TransformStamped tf;
         tf = tf_buffer_->lookupTransform(frame_id_, marker->header.frame_id, tf2::TimePointZero);
+        {
+          std::shared_ptr<rclcpp::Node> node = node_.lock();
+          #if 0
+          // TODO(lucasw) this doesn't work when the tf is static, the stamp is zero
+          if (node && ((node->now().nanoseconds() / 1e9 - tf.header.stamp.sec) > 4)) {
+            RCLCPP_INFO(node->get_logger(), "removing old marker %s",
+                marker->header.frame_id.c_str());
+            markers_to_remove.push_back(marker_pair.first);
+            continue;
+          }
+          #endif
+        }
         std::vector<geometry_msgs::msg::PointStamped> rect_3d;
         geometry_msgs::msg::PointStamped pt;
         pt.header.frame_id = marker->header.frame_id;
@@ -279,9 +341,14 @@ void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
         const ImU32 text_color = IM_COL32(250, 200, 225, 230);
         draw_list->AddText(ImVec2(text_pos.x + 1, text_pos.y + 3),
             text_color, marker->text.c_str(), NULL);
-        } catch (tf2::TransformException& ex) {
+      } catch (tf2::TransformException& ex) {
 
       }
     }  // loop through marker ids in this namespace
+
+    for (auto ind : markers_to_remove) {
+      // TODO(lucasw) is this changing the outer container?
+      marker_ns.second.erase(ind);
+    }
   }  // loop through marker namespace sets
 }
