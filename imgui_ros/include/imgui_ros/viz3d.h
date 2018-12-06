@@ -61,14 +61,15 @@ struct Viz3D {
     std::shared_ptr<ImGuiImplOpenGL3> renderer
     );
   ~Viz3D() {}
-  void render(const int fb_width, const int fb_height);
+  void render(const int fb_width, const int fb_height,
+      const int display_pos_x, const int display_pos_y,
+      const int display_size_x, const int display_size_y);
 protected:
   // TODO(lucasw) or NULL or -1?
   GLuint texture_id_ = 0;
   size_t width_ = 0;
   size_t height_ = 0;
 
-  GLuint vao_handle_ = 0;
   static const GLfloat* getVertexBuffer() {
     static const GLfloat g_vertex_buffer_data_[] = {
       -1.0f, -1.0f, 0.0f,
@@ -78,7 +79,6 @@ protected:
     return &g_vertex_buffer_data_[0];
   }
   GLuint vertex_buffer_;
-  int g_attrib_location_position_ = 0;
 
   std::string name_;
   std::weak_ptr<ImGuiImplOpenGL3> renderer_;

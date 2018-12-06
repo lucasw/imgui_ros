@@ -571,7 +571,10 @@ namespace imgui_ros {
     const int fb_width = ImGui::GetDrawData()->DisplaySize.x * ImGui::GetIO().DisplayFramebufferScale.x;
     const int fb_height = ImGui::GetDrawData()->DisplaySize.y * ImGui::GetIO().DisplayFramebufferScale.y;
 
-    viz3d->render(fb_width, fb_height);
+    viz3d->render(fb_width, fb_height,
+        ImGui::GetDrawData()->DisplayPos.x, ImGui::GetDrawData()->DisplayPos.y,
+        ImGui::GetDrawData()->DisplaySize.x, ImGui::GetDrawData()->DisplaySize.y
+        );
     imgui_impl_opengl3_->RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
 
