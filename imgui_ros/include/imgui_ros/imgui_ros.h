@@ -82,7 +82,7 @@ private:
   int width_ = 1280;
   int height_ = 720;
 
-  ImGuiImplOpenGL3 imgui_impl_opengl3_;
+  std::shared_ptr<ImGuiImplOpenGL3> imgui_impl_opengl3_;
   std::shared_ptr<Viz3D> viz3d;
 };
 

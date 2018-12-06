@@ -29,14 +29,15 @@
  */
 
 #include "imgui.h"
-#include "imgui_impl_opengl3.h"
-#include "imgui_impl_sdl.h"
+// #include "imgui_impl_sdl.h"
 #include <imgui_ros/viz3d.h>
 using std::placeholders::_1;
 
 // render the entire background
 // this probably will be split out into a widget also.
-Viz3D::Viz3D(const std::string name) : name_(name)
+Viz3D::Viz3D(const std::string name,
+    std::shared_ptr<ImGuiImplOpenGL3> renderer) : name_(name),
+    renderer_(renderer)
 {
   glGenVertexArrays(1, &vao_handle_);
   glGenBuffers(1, &vertex_buffer_);

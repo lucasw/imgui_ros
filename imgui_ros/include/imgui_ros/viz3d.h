@@ -32,6 +32,7 @@
 #define IMGUI_ROS_VIZ3D_H
 
 #include <imgui.h>
+#include <imgui_ros/imgui_impl_opengl3.h>
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -56,7 +57,9 @@
 #pragma GCC diagnostic pop
 
 struct Viz3D {
-  Viz3D(const std::string name);
+  Viz3D(const std::string name,
+    std::shared_ptr<ImGuiImplOpenGL3> renderer
+    );
   ~Viz3D() {}
   void render(const int fb_width, const int fb_height);
 protected:
@@ -78,6 +81,7 @@ protected:
   int g_attrib_location_position_ = 0;
 
   std::string name_;
+  std::weak_ptr<ImGuiImplOpenGL3> renderer_;
   std::weak_ptr<rclcpp::Node> node_;
 };
 
