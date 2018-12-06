@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2017 Lucas Walter
- * June 2017
+ * Copyright (c) 2018 Lucas Walter
+ * October 2018
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,59 +29,36 @@
  */
 
 #include "imgui.h"
+#include "imgui_impl_opengl3.h"
+#include "imgui_impl_sdl.h"
 #include <imgui_ros/viz3d.h>
-#include <imgui_ros/srv/add_window.hpp>
-#include <map>
-#include <mutex>
-#include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
-#include <tf2_msgs/msg/tf_message.hpp>
-#include <tf2_ros/transform_listener.h>
-#include <SDL.h>
+using std::placeholders::_1;
 
+// render the entire background
+// this probably will be split out into a widget also.
+Viz3D::Viz3D(const std::string name) : name_(name)
+{
+  glGenVertexArrays(1, &vao_handle_);
+  glGenBuffers(1, &vertex_buffer_);
+}
 
-namespace imgui_ros {
-class ImguiRos : public rclcpp::Node {
-public:
-  ImguiRos();
-  ~ImguiRos();
+void Viz3D::render(const int fb_width, const int fb_height)
+{
+  if (fb_width <= 0 || fb_height <= 0)
+      return;
 
-private:
-  void addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
-                 std::shared_ptr<imgui_ros::srv::AddWindow::Response> res);
-  bool addWidget(const imgui_ros::msg::Widget& widget,
-      std::string& message, std::shared_ptr<Widget>& imgui_widget);
-  void update();
+#if 0
+  glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
+  glUseProgram(g_ShaderHandle);
 
-  // Need to init the opengl context in same thread as the update
-  // is run in, not necessarily the same thread onInit runs in
-  void glInit();
-  std::mutex mutex_;
-  bool init_;
-  // TODO(lucasw) std::shared_ptr
-  SDL_Window *window;
-  ImGuiIO io;
-  SDL_GLContext gl_context;
-  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-  std::map<std::string, std::shared_ptr<Window> > windows_;
-
-  // TODO(lucasw) still need to update even if ros time is paused
-  rclcpp::TimerBase::SharedPtr update_timer_;
-
-  rclcpp::Service<srv::AddWindow>::SharedPtr add_window_;
-
-  std::shared_ptr<tf2_ros::TransformListener> tfl_;
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-
-  rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr tf_pub_;
-
-  std::string name_ = "imgui_ros";
-  int width_ = 1280;
-  int height_ = 720;
-
-  std::shared_ptr<Viz3D> viz3d;
-};
-
-}  // namespace imgui_ros
+  glBindVertexArray(vao_handle_);
+  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(getVertexBuffer()),
+      getVertexBuffer(), GL_STATIC_DRAW);
+  glEnableVertexAttribArray(g_attrib_location_position_);
+  glVertexAttribPointer(g_attrib_location_position_, 3, GL_FLOAT,
+    GL_FALSE, 0, (void*)0);
+  glDrawArrays(GL_TRIANGLES, 0, 3);
+  glDisableVertexAttribArray(g_attrib_location_position_);
+#endif
+}

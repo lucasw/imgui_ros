@@ -28,60 +28,57 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "imgui.h"
-#include <imgui_ros/viz3d.h>
-#include <imgui_ros/srv/add_window.hpp>
-#include <map>
+#ifndef IMGUI_ROS_VIZ3D_H
+#define IMGUI_ROS_VIZ3D_H
+
+#include <imgui.h>
+// #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
-#include <tf2_msgs/msg/tf_message.hpp>
-#include <tf2_ros/transform_listener.h>
-#include <SDL.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+// About OpenGL function loaders: modern OpenGL doesn't have a standard header
+// file and requires individual function pointers to be loaded manually. Helper
+// libraries are often used for this purpose! Here we are supporting a few
+// common ones: gl3w, glew, glad. You may use another loader/header of your
+// choice (glext, glLoadGen, etc.), or chose to manually implement your own.
+#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
+#include <GL/gl3w.h> // Initialize with gl3wInit()
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
+#include <GL/glew.h> // Initialize with glewInit()
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
+#include <glad/glad.h> // Initialize with gladLoadGL()
+#else
+#include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+#endif
+#pragma GCC diagnostic pop
 
-namespace imgui_ros {
-class ImguiRos : public rclcpp::Node {
-public:
-  ImguiRos();
-  ~ImguiRos();
+struct Viz3D {
+  Viz3D(const std::string name);
+  ~Viz3D() {}
+  void render(const int fb_width, const int fb_height);
+protected:
+  // TODO(lucasw) or NULL or -1?
+  GLuint texture_id_ = 0;
+  size_t width_ = 0;
+  size_t height_ = 0;
 
-private:
-  void addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
-                 std::shared_ptr<imgui_ros::srv::AddWindow::Response> res);
-  bool addWidget(const imgui_ros::msg::Widget& widget,
-      std::string& message, std::shared_ptr<Widget>& imgui_widget);
-  void update();
+  GLuint vao_handle_ = 0;
+  static const GLfloat* getVertexBuffer() {
+    static const GLfloat g_vertex_buffer_data_[] = {
+      -1.0f, -1.0f, 0.0f,
+      1.0f, -1.0f, 0.0f,
+      0.0f,  1.0f, 0.0f,
+    };
+    return &g_vertex_buffer_data_[0];
+  }
+  GLuint vertex_buffer_;
+  int g_attrib_location_position_ = 0;
 
-  // Need to init the opengl context in same thread as the update
-  // is run in, not necessarily the same thread onInit runs in
-  void glInit();
-  std::mutex mutex_;
-  bool init_;
-  // TODO(lucasw) std::shared_ptr
-  SDL_Window *window;
-  ImGuiIO io;
-  SDL_GLContext gl_context;
-  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-  std::map<std::string, std::shared_ptr<Window> > windows_;
-
-  // TODO(lucasw) still need to update even if ros time is paused
-  rclcpp::TimerBase::SharedPtr update_timer_;
-
-  rclcpp::Service<srv::AddWindow>::SharedPtr add_window_;
-
-  std::shared_ptr<tf2_ros::TransformListener> tfl_;
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-
-  rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr tf_pub_;
-
-  std::string name_ = "imgui_ros";
-  int width_ = 1280;
-  int height_ = 720;
-
-  std::shared_ptr<Viz3D> viz3d;
+  std::string name_;
+  std::weak_ptr<rclcpp::Node> node_;
 };
 
-}  // namespace imgui_ros
+#endif  // IMGUI_ROS_VIZ3D_H

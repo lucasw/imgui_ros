@@ -187,22 +187,7 @@ namespace imgui_ros {
     // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f,
     // NULL, io.Fonts->GetGlyphRangesJapanese()); IM_ASSERT(font != NULL);
 
-#if 0
-    // temp test code
-    {
-      std::string image_file = "";
-      ros::param::get("~image", image_file);
-      std::shared_ptr<CvImage> image;
-      image.reset(new CvImage("test"));
-      image->image_ = cv::imread(image_file, CV_LOAD_IMAGE_COLOR);
-      image->updateTexture();
-      windows_.push_back(image);
-
-      std::shared_ptr<RosImage> ros_image;
-      ros_image.reset(new RosImage("test2", "/image_source/image_raw", getNodeHandle));
-      windows_.push_back(ros_image);
-    }
-#endif
+    viz3d = std::make_shared<Viz3D>("main render window");
 
     init_ = true;
   }
@@ -519,8 +504,9 @@ namespace imgui_ros {
   }
 
   void ImguiRos::update() {
-    if (!init_)
+    if (!init_) {
       glInit();
+    }
     // Poll and handle events (inputs, window resize, etc.)
     // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to
     // tell if dear imgui wants to use your inputs.
@@ -579,6 +565,12 @@ namespace imgui_ros {
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
     glClear(GL_COLOR_BUFFER_BIT);
+    // TODO(lucasw) render anything else into the background here,
+    // and the ui will appear over it?
+    const int fb_width = ImGui::GetDrawData()->DisplaySize.x * ImGui::GetIO().DisplayFramebufferScale.x;
+    const int fb_height = ImGui::GetDrawData()->DisplaySize.y * ImGui::GetIO().DisplayFramebufferScale.y;
+
+    viz3d->render(fb_width, fb_height);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
 
@@ -590,7 +582,6 @@ namespace imgui_ros {
     }
     tf_pub_->publish(tfs);
   }
-
 }  // namespace imgui_ros
 
 int main(int argc, char * argv[])

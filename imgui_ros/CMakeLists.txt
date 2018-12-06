@@ -57,13 +57,15 @@ add_executable(imgui_ros_node
   src/sub.cpp
   src/tf.cpp
   src/viz2d.cpp
+  src/viz3d.cpp
   src/window.cpp
   imgui/imgui.cpp
   imgui/imgui_demo.cpp
   imgui/imgui_draw.cpp
   imgui/imgui_widgets.cpp
   imgui/examples/imgui_impl_sdl.cpp
-  imgui/examples/imgui_impl_opengl3.cpp
+  # imgui/examples/imgui_impl_opengl3.cpp
+  src/imgui_impl_opengl3.cpp
   imgui/examples/libs/gl3w/GL/gl3w.c
 )
 set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPILE_FLAGS -Wno-pedantic)
