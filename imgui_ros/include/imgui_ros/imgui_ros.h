@@ -78,6 +78,10 @@ private:
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
 
   rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr tf_pub_;
+
+  std::string name_ = "imgui_ros";
+  int width_ = 1280;
+  int height_ = 720;
 };
 
 }  // namespace imgui_ros

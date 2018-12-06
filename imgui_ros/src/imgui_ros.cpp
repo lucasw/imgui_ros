@@ -68,6 +68,11 @@ namespace imgui_ros {
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>();
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
+    // TODO(lucasw) check if width and height are > minimum value
+    get_parameter_or("name", name_, name_);
+    get_parameter_or("width", width_, width_);
+    get_parameter_or("height", height_, height_);
+
     add_window_ = create_service<srv::AddWindow>("add_window",
         std::bind(&ImguiRos::addWindow, this, _1, _2));
 
@@ -121,12 +126,10 @@ namespace imgui_ros {
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
-    std::string title = "imgui_ros";
-    // ros::param::get("~title", title);
     // TODO(lucasw) window.reset()
     window = SDL_CreateWindow(
-        title.c_str(), SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED, 1280, 720,
+        name_.c_str(), SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED, width_, height_,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE); // | SDL_WINDOW_BORDERLESS);
     gl_context = SDL_GL_CreateContext(window);
     SDL_GL_SetSwapInterval(1); // Enable vsync
