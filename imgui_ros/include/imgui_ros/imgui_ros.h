@@ -30,6 +30,7 @@
 
 #include "imgui.h"
 #include <imgui_ros/viz3d.h>
+#include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/srv/add_window.hpp>
 #include <map>
 #include <mutex>
@@ -81,6 +82,7 @@ private:
   int width_ = 1280;
   int height_ = 720;
 
+  ImGuiImplOpenGL3 imgui_impl_opengl3_;
   std::shared_ptr<Viz3D> viz3d;
 };
 

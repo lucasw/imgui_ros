@@ -82,7 +82,7 @@ namespace imgui_ros {
 
   ImguiRos::~ImguiRos() {
     // Cleanup
-    ImGuiImplOpenGL3::Shutdown();
+    imgui_impl_opengl3_.Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
@@ -157,7 +157,7 @@ namespace imgui_ros {
     // Controls
 
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
-    ImGuiImplOpenGL3::Init(glsl_version);
+    imgui_impl_opengl3_.Init(glsl_version);
 
     // Setup style
     ImGui::StyleColorsDark();
@@ -536,7 +536,7 @@ namespace imgui_ros {
     {
     std::lock_guard<std::mutex> lock(mutex_);
     // Start the Dear ImGui frame
-    ImGuiImplOpenGL3::NewFrame();
+    imgui_impl_opengl3_.NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
 
@@ -571,7 +571,7 @@ namespace imgui_ros {
     const int fb_height = ImGui::GetDrawData()->DisplaySize.y * ImGui::GetIO().DisplayFramebufferScale.y;
 
     viz3d->render(fb_width, fb_height);
-    ImGuiImplOpenGL3::RenderDrawData(ImGui::GetDrawData());
+    imgui_impl_opengl3_.RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
 
     tf2_msgs::msg::TFMessage tfs;
