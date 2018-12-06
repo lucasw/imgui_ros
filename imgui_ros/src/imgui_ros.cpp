@@ -32,11 +32,11 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #include <imgui.h>
-#include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl.h>
 #pragma GCC diagnostic pop
 #include <imgui_ros/srv/add_window.hpp>
 #include <imgui_ros/image.h>
+#include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/imgui_ros.h>
 #include <imgui_ros/param.h>
 #include <imgui_ros/pub.h>
@@ -82,7 +82,7 @@ namespace imgui_ros {
 
   ImguiRos::~ImguiRos() {
     // Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
+    ImGuiImplOpenGL3::Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
@@ -157,7 +157,7 @@ namespace imgui_ros {
     // Controls
 
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
-    ImGui_ImplOpenGL3_Init(glsl_version);
+    ImGuiImplOpenGL3::Init(glsl_version);
 
     // Setup style
     ImGui::StyleColorsDark();
@@ -536,7 +536,7 @@ namespace imgui_ros {
     {
     std::lock_guard<std::mutex> lock(mutex_);
     // Start the Dear ImGui frame
-    ImGui_ImplOpenGL3_NewFrame();
+    ImGuiImplOpenGL3::NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
 
@@ -571,7 +571,7 @@ namespace imgui_ros {
     const int fb_height = ImGui::GetDrawData()->DisplaySize.y * ImGui::GetIO().DisplayFramebufferScale.y;
 
     viz3d->render(fb_width, fb_height);
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    ImGuiImplOpenGL3::RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
 
     tf2_msgs::msg::TFMessage tfs;
