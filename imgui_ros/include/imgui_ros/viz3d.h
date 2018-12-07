@@ -86,6 +86,17 @@ protected:
   GLuint vertex_buffer_;
 #endif
 
+  GLuint shader_handle_ = 0;
+  GLuint vert_handle_ = 0;
+  GLuint frag_handle_ = 0;
+  int attrib_location_tex_ = 0;
+  int attrib_location_proj_mtx_ = 0;
+  int attrib_location_position_ = 0;
+  int attrib_location_uv_ = 0;
+  int attrib_location_color_ = 0;
+  unsigned int vbo_handle_ = 0;
+  unsigned int elements_handle_ = 0;
+
   std::string name_;
   std::weak_ptr<ImGuiImplOpenGL3> renderer_;
   std::weak_ptr<rclcpp::Node> node_;

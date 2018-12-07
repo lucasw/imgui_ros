@@ -179,7 +179,7 @@ void    ImGuiImplOpenGL3::RenderDrawData(ImDrawData* draw_data)
 
     /////////////////////////////////////////////
     // Test draw
-    #if 1
+    #if 0
     {
       ImVector<ImDrawVert> VtxBuffer;
       const float sc = 50.0;

@@ -64,6 +64,80 @@ Viz3D::Viz3D(const std::string name,
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, test_.cols, test_.rows,
       0, GL_RGB, GL_UNSIGNED_BYTE, &test_.data[0]);
   checkGLError(__FILE__, __LINE__);
+
+
+  // TODO(lucasw) maintaining many versions of these seems like a big hassle,
+  // which is why bgfx exists...
+  // const GLchar* vertex_shader_glsl_130 =
+  const GLchar* vertex_shader =
+      "uniform mat4 ProjMtx;\n"
+      "in vec2 Position;\n"
+      "in vec2 UV;\n"
+      "in vec4 Color;\n"
+      "out vec2 FraUV;\n"
+      "out vec4 FraColor;\n"
+      "void main()\n"
+      "{\n"
+      "    FraUV = UV;\n"
+      "    FraColor = Color;\n"
+      "    gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
+      "}\n";
+
+  // const GLchar* fragment_shader_glsl_130 =
+  const GLchar* fragment_shader =
+      "uniform sampler2D Texture;\n"
+      "in vec2 FraUV;\n"
+      "in vec4 FraColor;\n"
+      "out vec4 Out_Color;\n"
+      "void main()\n"
+      "{\n"
+      "    Out_Color = FraColor * texture(Texture, FraUV.st);\n"
+      "}\n";
+
+  // Create shaders
+  const GLchar* vertex_shader_with_version[2] = { renderer->GlslVersionString, vertex_shader };
+  vert_handle_ = glCreateShader(GL_VERTEX_SHADER);
+  if (!vert_handle_)
+  {
+    std::cerr << "vertex shader failed to create " << glGetError() << "\n";
+    return;
+  }
+  else
+  {
+    glShaderSource(vert_handle_, 2, vertex_shader_with_version, NULL);
+    glCompileShader(vert_handle_);
+    CheckShader(vert_handle_, "vertex shader");
+  }
+
+  const GLchar* fragment_shader_with_version[2] = { renderer->GlslVersionString, fragment_shader };
+  frag_handle_ = glCreateShader(GL_FRAGMENT_SHADER);
+  if (!frag_handle_)
+  {
+    std::cerr << "fragment shader failed to create " << glGetError() << "\n";
+    return;
+  }
+  else
+  {
+    glShaderSource(frag_handle_, 2, fragment_shader_with_version, NULL);
+    glCompileShader(frag_handle_);
+    CheckShader(frag_handle_, "fragment shader");
+  }
+
+  shader_handle_ = glCreateProgram();
+  glAttachShader(shader_handle_, vert_handle_);
+  glAttachShader(shader_handle_, frag_handle_);
+  glLinkProgram(shader_handle_);
+  CheckProgram(shader_handle_, "shader program");
+
+  attrib_location_tex_ = glGetUniformLocation(shader_handle_, "Texture");
+  attrib_location_proj_mtx_ = glGetUniformLocation(shader_handle_, "ProjMtx");
+  attrib_location_position_ = glGetAttribLocation(shader_handle_, "Position");
+  attrib_location_uv_ = glGetAttribLocation(shader_handle_, "UV");
+  attrib_location_color_ = glGetAttribLocation(shader_handle_, "Color");
+
+  // Create buffers
+  glGenBuffers(1, &vbo_handle_);
+  glGenBuffers(1, &elements_handle_);
 }
 
 Viz3D::~Viz3D()
@@ -130,9 +204,9 @@ void Viz3D::render(const int fb_width, const int fb_height,
         { 0.0f,   0.0f,   0.0f,   1.0f },
     };
     #endif
-    glUseProgram(renderer->shader_handle_);
-    glUniform1i(renderer->attrib_location_tex_, 0);
-    glUniformMatrix4fv(renderer->attrib_location_proj_mtx_, 1, GL_FALSE, &ortho_projection[0][0]);
+    glUseProgram(shader_handle_);
+    glUniform1i(attrib_location_tex_, 0);
+    glUniformMatrix4fv(attrib_location_proj_mtx_, 1, GL_FALSE, &ortho_projection[0][0]);
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
     // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
@@ -143,18 +217,18 @@ void Viz3D::render(const int fb_width, const int fb_height,
     GLuint vao_handle = 0;
     glGenVertexArrays(1, &vao_handle);
     glBindVertexArray(vao_handle);
-    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_handle_);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_handle_);
     checkGLError(__FILE__, __LINE__);
-    glEnableVertexAttribArray(renderer->attrib_location_position_);
-    glEnableVertexAttribArray(renderer->attrib_location_uv_);
-    glEnableVertexAttribArray(renderer->attrib_location_color_);
+    glEnableVertexAttribArray(attrib_location_position_);
+    glEnableVertexAttribArray(attrib_location_uv_);
+    glEnableVertexAttribArray(attrib_location_color_);
     checkGLError(__FILE__, __LINE__);
     // This is for 2D data, need to be 3D
-    glVertexAttribPointer(renderer->attrib_location_position_, 2, GL_FLOAT, GL_FALSE,
+    glVertexAttribPointer(attrib_location_position_, 2, GL_FLOAT, GL_FALSE,
         sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, pos));
-    glVertexAttribPointer(renderer->attrib_location_uv_, 2, GL_FLOAT, GL_FALSE,
+    glVertexAttribPointer(attrib_location_uv_, 2, GL_FLOAT, GL_FALSE,
         sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, uv));
-    glVertexAttribPointer(renderer->attrib_location_color_, 4, GL_UNSIGNED_BYTE, GL_TRUE,
+    glVertexAttribPointer(attrib_location_color_, 4, GL_UNSIGNED_BYTE, GL_TRUE,
         sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, col));
 
     {
@@ -200,11 +274,11 @@ void Viz3D::render(const int fb_width, const int fb_height,
       checkGLError(__FILE__, __LINE__);
       const ImDrawIdx* idx_buffer_offset = 0;
 
-      glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_handle_);
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_handle_);
       glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)VtxBuffer.Size * sizeof(ImDrawVert),
           (const GLvoid*)VtxBuffer.Data, GL_STREAM_DRAW);
 
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer->elements_handle_);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
       glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)IdxBuffer.Size * sizeof(ImDrawIdx),
           (const GLvoid*)IdxBuffer.Data, GL_STREAM_DRAW);
       checkGLError(__FILE__, __LINE__);
