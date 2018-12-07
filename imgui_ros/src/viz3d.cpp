@@ -42,17 +42,26 @@ Viz3D::Viz3D(const std::string name,
     std::shared_ptr<ImGuiImplOpenGL3> renderer) : name_(name),
     renderer_(renderer)
 {
+  glGenTextures(1, &texture_id_);
+  test_ = cv::Mat(16, 16, CV_8UC3, cv::Scalar(255, 128, 32));
+
+  glBindTexture(GL_TEXTURE_2D, texture_id_);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, test_.cols, test_.rows,
+      0, GL_RGB, GL_UNSIGNED_BYTE, &test_.data[0]);
 }
 
 void Viz3D::render(const int fb_width, const int fb_height,
   const int display_pos_x, const int display_pos_y,
   const int display_size_x, const int display_size_y)
 {
-  if (fb_width <= 0 || fb_height <= 0)
-      return;
+  if (fb_width <= 0 || fb_height <= 0) {
+    std::cerr << "bad width height " << fb_width << " " << fb_height << "\n";
+    return;
+  }
 
   std::shared_ptr<ImGuiImplOpenGL3> renderer = renderer_.lock();
   if (!renderer) {
+    std::cerr << "no renderer\n";
     return;
   }
     checkGLError(__FILE__, __LINE__);
@@ -206,12 +215,14 @@ void Viz3D::render(const int fb_width, const int fb_height,
           (const GLvoid*)IdxBuffer.Data, GL_STREAM_DRAW);
       checkGLError(__FILE__, __LINE__);
 
+      // std::cout << IdxBuffer.Size << " " << VtxBuffer.Size << " " << CmdBuffer.Size << "\n";
+
       for (int cmd_i = 0; cmd_i < CmdBuffer.Size; cmd_i++)
       {
         const ImDrawCmd* pcmd = &CmdBuffer[cmd_i];
         {
           // Bind texture, Draw
-          // glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
+          glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)texture_id_);
           glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount,
               sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
           checkGLError(__FILE__, __LINE__);

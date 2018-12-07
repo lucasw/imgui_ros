@@ -65,6 +65,11 @@ struct Viz3D {
       const int display_pos_x, const int display_pos_y,
       const int display_size_x, const int display_size_y);
 protected:
+
+  // temp texture test
+  GLuint texture_id_ = 0;
+  cv::Mat test_;
+#if 0
   // TODO(lucasw) or NULL or -1?
   GLuint texture_id_ = 0;
   size_t width_ = 0;
@@ -79,6 +84,7 @@ protected:
     return &g_vertex_buffer_data_[0];
   }
   GLuint vertex_buffer_;
+#endif
 
   std::string name_;
   std::weak_ptr<ImGuiImplOpenGL3> renderer_;

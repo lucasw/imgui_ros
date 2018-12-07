@@ -576,7 +576,7 @@ namespace imgui_ros {
     const int fb_height = ImGui::GetDrawData()->DisplaySize.y * ImGui::GetIO().DisplayFramebufferScale.y;
 
     checkGLError(__FILE__, __LINE__);
-    if (false) {
+    if (true) {
       viz3d->render(fb_width, fb_height,
           ImGui::GetDrawData()->DisplayPos.x, ImGui::GetDrawData()->DisplayPos.y,
           ImGui::GetDrawData()->DisplaySize.x, ImGui::GetDrawData()->DisplaySize.y

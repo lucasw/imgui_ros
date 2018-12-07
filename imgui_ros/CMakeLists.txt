@@ -18,6 +18,7 @@ endif()
 find_package(SDL2 REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(OpenCV REQUIRED)
 # find_package(example_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcl_interfaces REQUIRED)
@@ -46,6 +47,7 @@ include_directories(
   imgui
   imgui/examples
   imgui/examples/libs/gl3w
+  ${OpenCV_INCLUDE_DIRECTORIES}
   ${SDL2_INCLUDE_DIRS}
 )
 
@@ -84,6 +86,7 @@ ament_target_dependencies(imgui_ros_node
 )
 rosidl_target_interfaces(imgui_ros_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(imgui_ros_node
+  ${OpenCV_LIBRARIES}
   ${SDL2_LIBRARIES}
   GL
   dl
