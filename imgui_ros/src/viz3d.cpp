@@ -182,6 +182,8 @@ void Viz3D::render(const int fb_width, const int fb_height,
     // Setup viewport, orthographic projection matrix
     // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
+    // TODO(lucasw) use glm::perspective() to create a non-ortho projection matrix
+    // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-projection-matrix
     #if 1
     float L = display_pos_x;
     float R = display_pos_x + display_size_x;
