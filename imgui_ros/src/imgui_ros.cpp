@@ -572,6 +572,7 @@ namespace imgui_ros {
     glClear(GL_COLOR_BUFFER_BIT);
     // TODO(lucasw) render anything else into the background here,
     // and the ui will appear over it?
+    // bgfx does the 3D render after imgui render
     const int fb_width = ImGui::GetDrawData()->DisplaySize.x * ImGui::GetIO().DisplayFramebufferScale.x;
     const int fb_height = ImGui::GetDrawData()->DisplaySize.y * ImGui::GetIO().DisplayFramebufferScale.y;
 
@@ -582,8 +583,10 @@ namespace imgui_ros {
           ImGui::GetDrawData()->DisplaySize.x, ImGui::GetDrawData()->DisplaySize.y
           );
     }
+    checkGLError(__FILE__, __LINE__);
     imgui_impl_opengl3_->RenderDrawData(ImGui::GetDrawData());
     checkGLError(__FILE__, __LINE__);
+
     SDL_GL_SwapWindow(window);
 
     tf2_msgs::msg::TFMessage tfs;

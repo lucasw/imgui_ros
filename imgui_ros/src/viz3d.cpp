@@ -66,49 +66,8 @@ void Viz3D::render(const int fb_width, const int fb_height,
   }
     checkGLError(__FILE__, __LINE__);
 
-    // Backup GL state
-    GLenum last_active_texture;
-    glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture);
-    glActiveTexture(GL_TEXTURE0);
-    GLint last_program;
-    glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    GLint last_texture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-#ifdef GL_SAMPLER_BINDING
-    GLint last_sampler;
-    glGetIntegerv(GL_SAMPLER_BINDING, &last_sampler);
-#endif
-    GLint last_array_buffer;
-    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-    GLint last_vertex_array;
-    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
-#ifdef GL_POLYGON_MODE
-    GLint last_polygon_mode[2];
-    glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
-#endif
-    checkGLError(__FILE__, __LINE__);
-    GLint last_viewport[4];
-    glGetIntegerv(GL_VIEWPORT, last_viewport);
-    GLint last_scissor_box[4];
-    glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box);
-    GLenum last_blend_src_rgb;
-    glGetIntegerv(GL_BLEND_SRC_RGB, (GLint*)&last_blend_src_rgb);
-    GLenum last_blend_dst_rgb;
-    glGetIntegerv(GL_BLEND_DST_RGB, (GLint*)&last_blend_dst_rgb);
-    GLenum last_blend_src_alpha;
-    glGetIntegerv(GL_BLEND_SRC_ALPHA, (GLint*)&last_blend_src_alpha);
-    GLenum last_blend_dst_alpha;
-    glGetIntegerv(GL_BLEND_DST_ALPHA, (GLint*)&last_blend_dst_alpha);
-    GLenum last_blend_equation_rgb;
-    glGetIntegerv(GL_BLEND_EQUATION_RGB, (GLint*)&last_blend_equation_rgb);
-    GLenum last_blend_equation_alpha;
-    glGetIntegerv(GL_BLEND_EQUATION_ALPHA, (GLint*)&last_blend_equation_alpha);
-    GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
-    GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
-    GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
-    GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
-    checkGLError(__FILE__, __LINE__);
-    ///////////////////////////////////////////////////////////////////////////
+    GLState gl_state;
+    gl_state.backup();
 
     // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
     glEnable(GL_BLEND);
@@ -128,6 +87,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     // Setup viewport, orthographic projection matrix
     // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
+    #if 0
     float L = display_pos_x;
     float R = display_pos_x + display_size_x;
     float T = display_pos_y;
@@ -139,6 +99,14 @@ void Viz3D::render(const int fb_width, const int fb_height,
         { 0.0f,         2.0f/(T-B),   0.0f,   0.0f },
         { 0.0f,         0.0f,        -1.0f,   0.0f },
         { (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
+    };
+    #endif
+    const float ortho_projection[4][4] =
+    {
+        { 1.0f,   0.0f,   0.0f,   0.0f },
+        { 0.0f,   1.0f,   0.0f,   0.0f },
+        { 0.0f,   0.0f,   1.0f,   0.0f },
+        { 0.0f,   0.0f,   0.0f,   1.0f },
     };
     glUseProgram(renderer->shader_handle_);
     glUniform1i(renderer->attrib_location_tex_, 0);
@@ -154,9 +122,11 @@ void Viz3D::render(const int fb_width, const int fb_height,
     glGenVertexArrays(1, &vao_handle);
     glBindVertexArray(vao_handle);
     glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_handle_);
+    checkGLError(__FILE__, __LINE__);
     glEnableVertexAttribArray(renderer->attrib_location_position_);
     glEnableVertexAttribArray(renderer->attrib_location_uv_);
     glEnableVertexAttribArray(renderer->attrib_location_color_);
+    checkGLError(__FILE__, __LINE__);
     // This is for 2D data, need to be 3D
     glVertexAttribPointer(renderer->attrib_location_position_, 2, GL_FLOAT, GL_FALSE,
         sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, pos));
@@ -169,25 +139,32 @@ void Viz3D::render(const int fb_width, const int fb_height,
     #if 1
     {
       ImVector<ImDrawVert> VtxBuffer;
-      ImDrawVert p1;
-      p1.pos.x = -100.0;
-      p1.pos.y = -100.0;
-      p1.uv.x = 0;
-      p1.uv.y = 0;
-      p1.col = IM_COL32(255, 0, 0, 255);
-      VtxBuffer.push_back(p1);
-      p1.pos.x = 100.0;
-      p1.uv.x = 1.0;
-      p1.col = IM_COL32(255, 255, 0, 255);
-      VtxBuffer.push_back(p1);
-      p1.pos.y = 100.0;
-      p1.uv.y = 1.0;
-      p1.col = IM_COL32(255, 255, 255, 255);
-      VtxBuffer.push_back(p1);
-      p1.pos.x = 0.0;
-      p1.uv.x = 0.0;
-      p1.col = IM_COL32(0, 255, 255, 255);
-      VtxBuffer.push_back(p1);
+      {
+        static float offset = -50.0;
+        const float sc = 1.0f;
+        ImDrawVert p1;
+        p1.pos.x = offset;
+        p1.pos.y = offset;
+        p1.uv.x = 0;
+        p1.uv.y = 0;
+        p1.col = IM_COL32(255, 0, 0, 255);
+        VtxBuffer.push_back(p1);
+        p1.pos.x = 1.0 * sc + offset;
+        p1.uv.x = 1.0 * sc;
+        p1.col = IM_COL32(255, 255, 0, 255);
+        VtxBuffer.push_back(p1);
+        p1.pos.y = 1.0 * sc + offset;
+        p1.uv.y = 1.0 * sc;
+        p1.col = IM_COL32(255, 255, 255, 255);
+        VtxBuffer.push_back(p1);
+        p1.pos.x = offset;
+        p1.uv.x = 0.0;
+        p1.col = IM_COL32(0, 255, 255, 255);
+        VtxBuffer.push_back(p1);
+        offset += 0.5;
+        if (offset > 100.0)
+          offset = 0.0;
+      }
 
       ImVector<ImDrawIdx> IdxBuffer;
       IdxBuffer.push_back(0);
@@ -234,30 +211,6 @@ void Viz3D::render(const int fb_width, const int fb_height,
     glDeleteVertexArrays(1, &vao_handle);
 
     checkGLError(__FILE__, __LINE__);
-    ///////////////////////////////////////////////////////////////////////////
-    // Restore modified GL state
-    glUseProgram(last_program);
-    glBindTexture(GL_TEXTURE_2D, last_texture);
-#ifdef GL_SAMPLER_BINDING
-    glBindSampler(0, last_sampler);
-#endif
-    glActiveTexture(last_active_texture);
-    glBindVertexArray(last_vertex_array);
-    glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
-    glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha);
-    glBlendFuncSeparate(last_blend_src_rgb, last_blend_dst_rgb, last_blend_src_alpha, last_blend_dst_alpha);
-    if (last_enable_blend) glEnable(GL_BLEND);
-    else glDisable(GL_BLEND);
-    if (last_enable_cull_face) glEnable(GL_CULL_FACE);
-    else glDisable(GL_CULL_FACE);
-    if (last_enable_depth_test) glEnable(GL_DEPTH_TEST);
-    else glDisable(GL_DEPTH_TEST);
-    if (last_enable_scissor_test) glEnable(GL_SCISSOR_TEST);
-    else glDisable(GL_SCISSOR_TEST);
-#ifdef GL_POLYGON_MODE
-    glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
-#endif
-    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
-    glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
-
+    gl_state.backup();
+    checkGLError(__FILE__, __LINE__);
 }
