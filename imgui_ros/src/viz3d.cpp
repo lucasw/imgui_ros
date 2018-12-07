@@ -34,8 +34,6 @@
 #include <imgui_ros/viz3d.h>
 using std::placeholders::_1;
 
-extern void checkGLError(const std::string, int line);
-
 // render the entire background
 // this probably will be split out into a widget also.
 Viz3D::Viz3D(const std::string name,

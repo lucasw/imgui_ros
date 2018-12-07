@@ -41,29 +41,6 @@
 #include <tf2_ros/transform_listener.h>
 #include <SDL.h>
 
-void checkGLError(const std::string file, const int line)
-{
-  while (true) {
-    GLenum error = glGetError();
-    std::string msg;
-    if (error == GL_NO_ERROR)
-      return;
-    else if (error == GL_INVALID_ENUM)
-      msg = "invalid enum";
-    else if (error == GL_INVALID_ENUM)
-      msg = "invalid enum";
-    else if (error == GL_INVALID_VALUE)
-      msg = "invalid value";
-    else if (error == GL_INVALID_OPERATION)
-      msg = "invalid operation";
-    else if (error == GL_INVALID_FRAMEBUFFER_OPERATION)
-      msg = "invalid framebuffer operation";
-    else if (error == GL_OUT_OF_MEMORY)
-      msg = "out of memory";
-    std::cerr << file << ":" << line << " gl error " << msg << " " << error << "\n";
-  }
-}
-
 namespace imgui_ros {
 class ImguiRos : public rclcpp::Node {
 public:
