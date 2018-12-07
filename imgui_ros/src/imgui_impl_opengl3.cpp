@@ -179,48 +179,44 @@ void    ImGuiImplOpenGL3::RenderDrawData(ImDrawData* draw_data)
 
     /////////////////////////////////////////////
     // Test draw
-    #if 0
+    #if 1
     {
       ImVector<ImDrawVert> VtxBuffer;
-      {
-        static float offset = -50.0;
-        const float sc = 30.0f;
-        ImDrawVert p1;
-        p1.pos.x = offset;
-        p1.pos.y = offset;
-        p1.uv.x = 0;
-        p1.uv.y = 0;
-        p1.col = IM_COL32(255, 0, 0, 255);
-        VtxBuffer.push_back(p1);
-        p1.pos.x = 1.0 * sc + offset;
-        p1.uv.x = 1.0 * sc;
-        p1.col = IM_COL32(255, 255, 0, 255);
-        VtxBuffer.push_back(p1);
-        p1.pos.y = 1.0 * sc + offset;
-        p1.uv.y = 1.0 * sc;
-        p1.col = IM_COL32(255, 255, 255, 255);
-        VtxBuffer.push_back(p1);
-        p1.pos.x = offset;
-        p1.uv.x = 0.0;
-        p1.col = IM_COL32(0, 255, 255, 255);
-        VtxBuffer.push_back(p1);
-        offset += 0.5;
-        if (offset > 100.0)
-          offset = 0.0;
+      const float sc = 50.0;
+      const float off_y = 50.0;
+      const int num = 16;
+      for (int i = 0; i < num; ++i) {
+        float uv_x = float(i) / float(num);
+        {
+          ImDrawVert p1;
+          p1.pos.x = i * sc;
+          p1.pos.y = off_y;
+          p1.uv.x = uv_x;
+          p1.uv.y = 0;
+          p1.col = IM_COL32(255, 0, 255, 255);
+          VtxBuffer.push_back(p1);
+        }
+        {
+          ImDrawVert p2;
+          p2.pos.x = i * sc;
+          p2.pos.y = off_y + sc;
+          p2.uv.x = uv_x;
+          p2.uv.y = 1.0;
+          p2.col = IM_COL32(255, 255, 0, 255);
+          VtxBuffer.push_back(p2);
+        }
       }
 
       ImVector<ImDrawIdx> IdxBuffer;
-      IdxBuffer.push_back(0);
-      IdxBuffer.push_back(1);
-      IdxBuffer.push_back(2);
-
-      IdxBuffer.push_back(0);
-      IdxBuffer.push_back(2);
-      IdxBuffer.push_back(3);
+      for (int i = 0; i < VtxBuffer.Size - 3; ++i) {
+        IdxBuffer.push_back(i);
+        IdxBuffer.push_back(i + 1);
+        IdxBuffer.push_back(i + 2);
+      }
 
       ImVector<ImDrawCmd> CmdBuffer;
       ImDrawCmd cmd;
-      cmd.ElemCount = 2;
+      cmd.ElemCount = IdxBuffer.Size;
       CmdBuffer.push_back(cmd);
 
       checkGLError(__FILE__, __LINE__);
@@ -235,21 +231,35 @@ void    ImGuiImplOpenGL3::RenderDrawData(ImDrawData* draw_data)
           (const GLvoid*)IdxBuffer.Data, GL_STREAM_DRAW);
       checkGLError(__FILE__, __LINE__);
 
-      // std::cout << IdxBuffer.Size << " " << VtxBuffer.Size << " " << CmdBuffer.Size << "\n";
+      ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
+      glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
+          (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
 
+      ImTextureID tex_id = nullptr;
+      #if 1
+      // grab any texture at all to test with
+      for (int i = 0; i < draw_data->CmdListsCount; ++i) {
+        for (int j = 0; j < draw_data->CmdLists[i]->CmdBuffer.Size; ++j) {
+          tex_id = draw_data->CmdLists[i]->CmdBuffer[j].TextureId;
+          break;
+        }
+      }
+      #endif
       for (int cmd_i = 0; cmd_i < CmdBuffer.Size; cmd_i++)
       {
         const ImDrawCmd* pcmd = &CmdBuffer[cmd_i];
         {
-          // Bind texture, Draw
-          // glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)texture_id_);
+          // Bind texture- if it is null then the color is black
+          if (tex_id != nullptr)
+            glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)tex_id);
           glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount,
               sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
+          // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
           checkGLError(__FILE__, __LINE__);
         }
         idx_buffer_offset += pcmd->ElemCount;
       }
-    } // test draw
+    }  // test draw
     #endif
     /////////////////////////////////////////////
 
@@ -266,6 +276,26 @@ void    ImGuiImplOpenGL3::RenderDrawData(ImDrawData* draw_data)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), (const GLvoid*)cmd_list->IdxBuffer.Data, GL_STREAM_DRAW);
 
+#if 0
+        std::cout << n << " "
+            << cmd_list->VtxBuffer.Size << " "
+            << cmd_list->IdxBuffer.Size << ", vertices:\n";
+#endif
+#if 0
+        if (n < 2) {
+          std::cout << n << " " << cmd_list->VtxBuffer.Size << " "
+              << cmd_list->IdxBuffer.Size << " ";
+          for (int i = 0; i < cmd_list->VtxBuffer.Size && i < 4; ++i) {
+            std::cout << i << ", "
+                << "elem " << cmd_list->CmdBuffer[i].ElemCount << " "
+                << "xy " << cmd_list->VtxBuffer[i].pos.x << " "
+                << cmd_list->VtxBuffer[i].pos.y << ", "
+                << "uv " << cmd_list->VtxBuffer[i].uv.x << " "
+                << cmd_list->VtxBuffer[i].uv.y << ", ";
+          }
+          std::cout << "\n";
+        }
+#endif
         for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
         {
             const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
@@ -281,6 +311,9 @@ void    ImGuiImplOpenGL3::RenderDrawData(ImDrawData* draw_data)
                 {
                     // Apply scissor/clipping rectangle
                     glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w), (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
+
+                    // std::cout << clip_rect.x << " " << clip_rect.y << " "
+                    //     << idx_buffer_offset << "\n";
 
                     // Bind texture, Draw
                     glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
