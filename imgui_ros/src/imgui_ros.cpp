@@ -72,6 +72,10 @@ namespace imgui_ros {
     get_parameter_or("name", name_, name_);
     get_parameter_or("width", width_, width_);
     get_parameter_or("height", height_, height_);
+    get_parameter_or("red", clear_color_.x, clear_color_.x);
+    get_parameter_or("green", clear_color_.y, clear_color_.y);
+    get_parameter_or("blue", clear_color_.z, clear_color_.z);
+    get_parameter_or("alpha", clear_color_.w, clear_color_.w);
 
     add_window_ = create_service<srv::AddWindow>("add_window",
         std::bind(&ImguiRos::addWindow, this, _1, _2));
@@ -151,8 +155,6 @@ namespace imgui_ros {
     // Setup Dear ImGui binding
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    io = ImGui::GetIO();
-    (void)io;
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard
     // Controls
 
@@ -509,11 +511,11 @@ namespace imgui_ros {
       glInit();
     }
     // Poll and handle events (inputs, window resize, etc.)
-    // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to
+    // You can read the gui_io.WantCaptureMouse, gui_io.WantCaptureKeyboard flags to
     // tell if dear imgui wants to use your inputs.
-    // - When io.WantCaptureMouse is true, do not dispatch mouse input data to
+    // - When gui_io.WantCaptureMouse is true, do not dispatch mouse input data to
     // your main application.
-    // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input
+    // - When gui_io.WantCaptureKeyboard is true, do not dispatch keyboard input
     // data to your main application. Generally you may always pass all inputs
     // to dear imgui, and hide them from your application based on those two
     // flags.
@@ -563,19 +565,25 @@ namespace imgui_ros {
     // TODO(lucasw) or wait until after GetDrawData() to unlock?
     }
     SDL_GL_MakeCurrent(window, gl_context);
-    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-    glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+    checkGLError(__FILE__, __LINE__);
+    glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
+    checkGLError(__FILE__, __LINE__);
+    glClearColor(clear_color_.x, clear_color_.y, clear_color_.z, clear_color_.w);
     glClear(GL_COLOR_BUFFER_BIT);
     // TODO(lucasw) render anything else into the background here,
     // and the ui will appear over it?
     const int fb_width = ImGui::GetDrawData()->DisplaySize.x * ImGui::GetIO().DisplayFramebufferScale.x;
     const int fb_height = ImGui::GetDrawData()->DisplaySize.y * ImGui::GetIO().DisplayFramebufferScale.y;
 
-    viz3d->render(fb_width, fb_height,
-        ImGui::GetDrawData()->DisplayPos.x, ImGui::GetDrawData()->DisplayPos.y,
-        ImGui::GetDrawData()->DisplaySize.x, ImGui::GetDrawData()->DisplaySize.y
-        );
+    checkGLError(__FILE__, __LINE__);
+    if (false) {
+      viz3d->render(fb_width, fb_height,
+          ImGui::GetDrawData()->DisplayPos.x, ImGui::GetDrawData()->DisplayPos.y,
+          ImGui::GetDrawData()->DisplaySize.x, ImGui::GetDrawData()->DisplaySize.y
+          );
+    }
     imgui_impl_opengl3_->RenderDrawData(ImGui::GetDrawData());
+    checkGLError(__FILE__, __LINE__);
     SDL_GL_SwapWindow(window);
 
     tf2_msgs::msg::TFMessage tfs;
@@ -584,7 +592,9 @@ namespace imgui_ros {
         window.second->addTF(tfs);
       }
     }
-    tf_pub_->publish(tfs);
+    if (tfs.transforms.size() > 0) {
+      tf_pub_->publish(tfs);
+    }
   }
 }  // namespace imgui_ros
 

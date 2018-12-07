@@ -34,6 +34,8 @@
 #include <imgui_ros/viz3d.h>
 using std::placeholders::_1;
 
+extern void checkGLError(const std::string, int line);
+
 // render the entire background
 // this probably will be split out into a widget also.
 Viz3D::Viz3D(const std::string name,
@@ -53,6 +55,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
   if (!renderer) {
     return;
   }
+    checkGLError(__FILE__, __LINE__);
 
     // Backup GL state
     GLenum last_active_texture;
@@ -74,6 +77,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     GLint last_polygon_mode[2];
     glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
 #endif
+    checkGLError(__FILE__, __LINE__);
     GLint last_viewport[4];
     glGetIntegerv(GL_VIEWPORT, last_viewport);
     GLint last_scissor_box[4];
@@ -94,6 +98,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
     GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
     GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
+    checkGLError(__FILE__, __LINE__);
     ///////////////////////////////////////////////////////////////////////////
 
     // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
@@ -104,10 +109,12 @@ void Viz3D::render(const int fb_width, const int fb_height,
     glDisable(GL_CULL_FACE);
     // TODO(lucasw) later enable
     glDisable(GL_DEPTH_TEST);
-    glEnable(GL_SCISSOR_TEST);
+    // Want to draw to whole window
+    glDisable(GL_SCISSOR_TEST);
 #ifdef GL_POLYGON_MODE
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
+    checkGLError(__FILE__, __LINE__);
 
     // Setup viewport, orthographic projection matrix
     // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
@@ -116,6 +123,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     float R = display_pos_x + display_size_x;
     float T = display_pos_y;
     float B = display_pos_y + display_size_y;
+    // later do non-ortho projection
     const float ortho_projection[4][4] =
     {
         { 2.0f/(R-L),   0.0f,         0.0f,   0.0f },
@@ -132,6 +140,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
 #endif
     // Recreate the VAO every time
     // (This is to easily allow multiple GL contexts. VAO are not shared among GL contexts, and we don't track creation/deletion of windows so we don't have an obvious key to use to cache them.)
+    checkGLError(__FILE__, __LINE__);
     GLuint vao_handle = 0;
     glGenVertexArrays(1, &vao_handle);
     glBindVertexArray(vao_handle);
@@ -139,6 +148,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     glEnableVertexAttribArray(renderer->attrib_location_position_);
     glEnableVertexAttribArray(renderer->attrib_location_uv_);
     glEnableVertexAttribArray(renderer->attrib_location_color_);
+    // This is for 2D data, need to be 3D
     glVertexAttribPointer(renderer->attrib_location_position_, 2, GL_FLOAT, GL_FALSE,
         sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, pos));
     glVertexAttribPointer(renderer->attrib_location_uv_, 2, GL_FLOAT, GL_FALSE,
@@ -147,39 +157,72 @@ void Viz3D::render(const int fb_width, const int fb_height,
         sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, col));
 
     // Draw
-    #if 0
-    for (int n = 0; n < draw_data->CmdListsCount; n++)
+    #if 1
     {
-        const ImDrawList* cmd_list = draw_data->CmdLists[n];
-        const ImDrawIdx* idx_buffer_offset = 0;
+      ImVector<ImDrawVert> VtxBuffer;
+      ImDrawVert p1;
+      p1.pos.x = -100.0;
+      p1.pos.y = -100.0;
+      p1.uv.x = 0;
+      p1.uv.y = 0;
+      p1.col = IM_COL32(255, 0, 0, 255);
+      VtxBuffer.push_back(p1);
+      p1.pos.x = 100.0;
+      p1.uv.x = 1.0;
+      p1.col = IM_COL32(255, 255, 0, 255);
+      VtxBuffer.push_back(p1);
+      p1.pos.y = 100.0;
+      p1.uv.y = 1.0;
+      p1.col = IM_COL32(255, 255, 255, 255);
+      VtxBuffer.push_back(p1);
+      p1.pos.x = 0.0;
+      p1.uv.x = 0.0;
+      p1.col = IM_COL32(0, 255, 255, 255);
+      VtxBuffer.push_back(p1);
 
-        glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_handle_);
-        glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.Size * sizeof(ImDrawVert), (const GLvoid*)cmd_list->VtxBuffer.Data, GL_STREAM_DRAW);
+      ImVector<ImDrawIdx> IdxBuffer;
+      IdxBuffer.push_back(0);
+      IdxBuffer.push_back(1);
+      IdxBuffer.push_back(2);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ElementsHandle);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), (const GLvoid*)cmd_list->IdxBuffer.Data, GL_STREAM_DRAW);
+      IdxBuffer.push_back(0);
+      IdxBuffer.push_back(2);
+      IdxBuffer.push_back(3);
 
-        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
+      ImVector<ImDrawCmd> CmdBuffer;
+      ImDrawCmd cmd;
+      cmd.ElemCount = 2;
+      CmdBuffer.push_back(cmd);
+
+      checkGLError(__FILE__, __LINE__);
+      const ImDrawIdx* idx_buffer_offset = 0;
+
+      glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_handle_);
+      glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)VtxBuffer.Size * sizeof(ImDrawVert),
+          (const GLvoid*)VtxBuffer.Data, GL_STREAM_DRAW);
+
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer->elements_handle_);
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)IdxBuffer.Size * sizeof(ImDrawIdx),
+          (const GLvoid*)IdxBuffer.Data, GL_STREAM_DRAW);
+      checkGLError(__FILE__, __LINE__);
+
+      for (int cmd_i = 0; cmd_i < CmdBuffer.Size; cmd_i++)
+      {
+        const ImDrawCmd* pcmd = &CmdBuffer[cmd_i];
         {
-            const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
-            {
-                ImVec4 clip_rect = ImVec4(pcmd->ClipRect.x - pos.x, pcmd->ClipRect.y - pos.y, pcmd->ClipRect.z - pos.x, pcmd->ClipRect.w - pos.y);
-                if (clip_rect.x < fb_width && clip_rect.y < fb_height && clip_rect.z >= 0.0f && clip_rect.w >= 0.0f)
-                {
-                    // Apply scissor/clipping rectangle
-                    glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w), (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
-
-                    // Bind texture, Draw
-                    glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
-                    glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
-                }
-            }
-            idx_buffer_offset += pcmd->ElemCount;
+          // Bind texture, Draw
+          // glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
+          glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount,
+              sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
+          checkGLError(__FILE__, __LINE__);
         }
+        idx_buffer_offset += pcmd->ElemCount;
+      }
     }
     #endif
     glDeleteVertexArrays(1, &vao_handle);
 
+    checkGLError(__FILE__, __LINE__);
     ///////////////////////////////////////////////////////////////////////////
     // Restore modified GL state
     glUseProgram(last_program);
