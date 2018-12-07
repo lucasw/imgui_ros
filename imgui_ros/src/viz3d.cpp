@@ -32,6 +32,8 @@
 #include "imgui.h"
 // #include "imgui_impl_sdl.h"
 #include <imgui_ros/viz3d.h>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 using std::placeholders::_1;
 
 // render the entire background
@@ -41,11 +43,32 @@ Viz3D::Viz3D(const std::string name,
     renderer_(renderer)
 {
   glGenTextures(1, &texture_id_);
-  test_ = cv::Mat(16, 16, CV_8UC3, cv::Scalar(255, 128, 32));
+  std::cout << "viz3d texture id " << texture_id_ << "\n";
+  test_ = cv::Mat(128, 128, CV_8UC3, cv::Scalar::all(128));
+  cv::circle(test_, cv::Point(40, 40), 40, cv::Scalar(0, 255, 255, 0), -1);
+  // cv::imshow("test", test_);
+  // cv::waitKey(0);
 
   glBindTexture(GL_TEXTURE_2D, texture_id_);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  // Set texture clamping method - GL_CLAMP isn't defined
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+  glPixelStorei(GL_UNPACK_ALIGNMENT, (test_.step & 3) ? 1 : 4);
+  // set length of one complete row in data (doesn't need to equal image.cols)
+  glPixelStorei(GL_UNPACK_ROW_LENGTH, test_.step / test_.elemSize());
+
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, test_.cols, test_.rows,
       0, GL_RGB, GL_UNSIGNED_BYTE, &test_.data[0]);
+  checkGLError(__FILE__, __LINE__);
+}
+
+Viz3D::~Viz3D()
+{
+  glDeleteTextures(1, &texture_id_);
 }
 
 void Viz3D::render(const int fb_width, const int fb_height,
@@ -85,7 +108,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     // Setup viewport, orthographic projection matrix
     // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
-    #if 0
+    #if 1
     float L = display_pos_x;
     float R = display_pos_x + display_size_x;
     float T = display_pos_y;
@@ -98,7 +121,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
         { 0.0f,         0.0f,        -1.0f,   0.0f },
         { (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
     };
-    #endif
+    #else
     const float ortho_projection[4][4] =
     {
         { 1.0f,   0.0f,   0.0f,   0.0f },
@@ -106,6 +129,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
         { 0.0f,   0.0f,   1.0f,   0.0f },
         { 0.0f,   0.0f,   0.0f,   1.0f },
     };
+    #endif
     glUseProgram(renderer->shader_handle_);
     glUniform1i(renderer->attrib_location_tex_, 0);
     glUniformMatrix4fv(renderer->attrib_location_proj_mtx_, 1, GL_FALSE, &ortho_projection[0][0]);
@@ -133,49 +157,44 @@ void Viz3D::render(const int fb_width, const int fb_height,
     glVertexAttribPointer(renderer->attrib_location_color_, 4, GL_UNSIGNED_BYTE, GL_TRUE,
         sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, col));
 
-    // Draw
-    #if 1
     {
       ImVector<ImDrawVert> VtxBuffer;
-      {
-        static float offset = -50.0;
-        const float sc = 1.0f;
-        ImDrawVert p1;
-        p1.pos.x = offset;
-        p1.pos.y = offset;
-        p1.uv.x = 0;
-        p1.uv.y = 0;
-        p1.col = IM_COL32(255, 0, 0, 255);
-        VtxBuffer.push_back(p1);
-        p1.pos.x = 1.0 * sc + offset;
-        p1.uv.x = 1.0 * sc;
-        p1.col = IM_COL32(255, 255, 0, 255);
-        VtxBuffer.push_back(p1);
-        p1.pos.y = 1.0 * sc + offset;
-        p1.uv.y = 1.0 * sc;
-        p1.col = IM_COL32(255, 255, 255, 255);
-        VtxBuffer.push_back(p1);
-        p1.pos.x = offset;
-        p1.uv.x = 0.0;
-        p1.col = IM_COL32(0, 255, 255, 255);
-        VtxBuffer.push_back(p1);
-        offset += 0.5;
-        if (offset > 100.0)
-          offset = 0.0;
+      const float sc = 50.0;
+      const float off_y = 150.0;
+      const int num = 16;
+      for (int i = 0; i < num; ++i) {
+        float uv_x = float(i) / float(num);
+        {
+          ImDrawVert p1;
+          p1.pos.x = i * sc;
+          p1.pos.y = off_y;
+          p1.uv.x = uv_x;
+          p1.uv.y = 0;
+          // These colors multiply with the texture color
+          p1.col = IM_COL32(255, 255, 255, 255);
+          VtxBuffer.push_back(p1);
+        }
+        {
+          ImDrawVert p2;
+          p2.pos.x = i * sc;
+          p2.pos.y = off_y + sc;
+          p2.uv.x = uv_x;
+          p2.uv.y = 1.0;
+          p2.col = IM_COL32(255, 255, 255, 255);
+          VtxBuffer.push_back(p2);
+        }
       }
 
       ImVector<ImDrawIdx> IdxBuffer;
-      IdxBuffer.push_back(0);
-      IdxBuffer.push_back(1);
-      IdxBuffer.push_back(2);
-
-      IdxBuffer.push_back(0);
-      IdxBuffer.push_back(2);
-      IdxBuffer.push_back(3);
+      for (int i = 0; i < VtxBuffer.Size - 3; i += 2) {
+        IdxBuffer.push_back(i);
+        IdxBuffer.push_back(i + 3);
+        IdxBuffer.push_back(i + 2);
+      }
 
       ImVector<ImDrawCmd> CmdBuffer;
       ImDrawCmd cmd;
-      cmd.ElemCount = 2;
+      cmd.ElemCount = IdxBuffer.Size;
       CmdBuffer.push_back(cmd);
 
       checkGLError(__FILE__, __LINE__);
@@ -190,22 +209,26 @@ void Viz3D::render(const int fb_width, const int fb_height,
           (const GLvoid*)IdxBuffer.Data, GL_STREAM_DRAW);
       checkGLError(__FILE__, __LINE__);
 
-      // std::cout << IdxBuffer.Size << " " << VtxBuffer.Size << " " << CmdBuffer.Size << "\n";
+      ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
+      glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
+          (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
 
       for (int cmd_i = 0; cmd_i < CmdBuffer.Size; cmd_i++)
       {
         const ImDrawCmd* pcmd = &CmdBuffer[cmd_i];
         {
-          // Bind texture, Draw
+          // Bind texture- if it is null then the color is black
+          // if (texture_id_ != nullptr)
           glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)texture_id_);
           glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount,
               sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
+          // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
           checkGLError(__FILE__, __LINE__);
         }
         idx_buffer_offset += pcmd->ElemCount;
       }
-    }
-    #endif
+    }  // test draw
+
     glDeleteVertexArrays(1, &vao_handle);
 
     checkGLError(__FILE__, __LINE__);

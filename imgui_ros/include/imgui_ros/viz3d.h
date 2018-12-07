@@ -60,7 +60,7 @@ struct Viz3D {
   Viz3D(const std::string name,
     std::shared_ptr<ImGuiImplOpenGL3> renderer
     );
-  ~Viz3D() {}
+  ~Viz3D();
   void render(const int fb_width, const int fb_height,
       const int display_pos_x, const int display_pos_y,
       const int display_size_x, const int display_size_y);

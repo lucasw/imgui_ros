@@ -201,16 +201,21 @@ void    ImGuiImplOpenGL3::RenderDrawData(ImDrawData* draw_data)
           p2.pos.x = i * sc;
           p2.pos.y = off_y + sc;
           p2.uv.x = uv_x;
-          p2.uv.y = 1.0;
+          p2.uv.y = 0.5;
           p2.col = IM_COL32(255, 255, 0, 255);
           VtxBuffer.push_back(p2);
         }
       }
 
       ImVector<ImDrawIdx> IdxBuffer;
-      for (int i = 0; i < VtxBuffer.Size - 3; ++i) {
+      for (int i = 0; i < VtxBuffer.Size - 3; i += 2) {
+#if 0
         IdxBuffer.push_back(i);
         IdxBuffer.push_back(i + 1);
+        IdxBuffer.push_back(i + 3);
+#endif
+        IdxBuffer.push_back(i);
+        IdxBuffer.push_back(i + 3);
         IdxBuffer.push_back(i + 2);
       }
 
@@ -244,7 +249,13 @@ void    ImGuiImplOpenGL3::RenderDrawData(ImDrawData* draw_data)
           break;
         }
       }
+      static bool has_printed = false;
+      if (!has_printed) {
+        std::cout << "impl test texture id " << tex_id << "\n";
+        has_printed = true;
+      }
       #endif
+
       for (int cmd_i = 0; cmd_i < CmdBuffer.Size; cmd_i++)
       {
         const ImDrawCmd* pcmd = &CmdBuffer[cmd_i];
