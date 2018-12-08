@@ -550,8 +550,8 @@ bool    ImGuiImplOpenGL3::CreateDeviceObjects()
         vertex_shader = vertex_shader_glsl_130;
         fragment_shader = fragment_shader_glsl_130;
     }
-    std::cout << "glsl vertex shader " << glsl_version << ":\n" << vertex_shader << "\n";
-    std::cout << "glsl fragment shader:\n" << fragment_shader << "\n";
+    // std::cout << "glsl vertex shader " << glsl_version << ":\n" << vertex_shader << "\n";
+    // std::cout << "glsl fragment shader:\n" << fragment_shader << "\n";
 
     // Create shaders
     const GLchar* vertex_shader_with_version[2] = { GlslVersionString, vertex_shader };

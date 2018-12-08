@@ -29,6 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "imgui.h"
 // #include "imgui_impl_sdl.h"
 #include <imgui_ros/viz3d.h>
@@ -80,8 +82,9 @@ Viz3D::Viz3D(const std::string name,
       "{\n"
       "    FraUV = UV;\n"
       "    FraColor = Color;\n"
-      "    gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
+      "    gl_Position = ProjMtx * vec4(Position.xy, 1.0, 1.0);\n"
       "}\n";
+  std::cout << "viz3d vertex shader:\n" << vertex_shader << "\n";
 
   // const GLchar* fragment_shader_glsl_130 =
   const GLchar* fragment_shader =
@@ -149,6 +152,11 @@ void Viz3D::render(const int fb_width, const int fb_height,
   const int display_pos_x, const int display_pos_y,
   const int display_size_x, const int display_size_y)
 {
+  (void)display_pos_x;
+  (void)display_pos_y;
+  (void)display_size_x;
+  (void)display_size_y;
+
   if (fb_width <= 0 || fb_height <= 0) {
     std::cerr << "bad width height " << fb_width << " " << fb_height << "\n";
     return;
@@ -179,36 +187,37 @@ void Viz3D::render(const int fb_width, const int fb_height,
 #endif
     checkGLError(__FILE__, __LINE__);
 
-    // Setup viewport, orthographic projection matrix
     // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
-    // TODO(lucasw) use glm::perspective() to create a non-ortho projection matrix
-    // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-projection-matrix
-    #if 1
-    float L = display_pos_x;
-    float R = display_pos_x + display_size_x;
-    float T = display_pos_y;
-    float B = display_pos_y + display_size_y;
-    // later do non-ortho projection
-    const float ortho_projection[4][4] =
+
+    const float fovy_deg = 80.0;
+    const float aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height);
+    const float near = 0.01f;
+    const float far = 100.0f;
+    glm::mat4 projection_matrix = glm::perspective(glm::radians(fovy_deg), aspect, near, far);
+    glm::mat4 model_matrix = glm::mat4(1.0f);
+    glm::mat4 view_matrix = glm::lookAt(
+        glm::vec3(0,0,0), // Camera is at (4,3,3), in World Space
+        glm::vec3(0,0,1), // and looks at the origin
+        glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
+    );
+    glm::mat4 mvp = projection_matrix * view_matrix * model_matrix;
     {
-        { 2.0f/(R-L),   0.0f,         0.0f,   0.0f },
-        { 0.0f,         2.0f/(T-B),   0.0f,   0.0f },
-        { 0.0f,         0.0f,        -1.0f,   0.0f },
-        { (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
-    };
-    #else
-    const float ortho_projection[4][4] =
-    {
-        { 1.0f,   0.0f,   0.0f,   0.0f },
-        { 0.0f,   1.0f,   0.0f,   0.0f },
-        { 0.0f,   0.0f,   1.0f,   0.0f },
-        { 0.0f,   0.0f,   0.0f,   1.0f },
-    };
-    #endif
+      static bool has_printed = false;
+      if (!has_printed) {
+        has_printed = true;
+        std::cout << "projection\n";
+        for (size_t i = 0; i < 4; ++i) {
+          for (size_t j = 0; j < 4; ++j) {
+            std::cout << mvp[i][j] << " ";
+          }
+          std::cout << "\n";
+        }
+      }
+    }
     glUseProgram(shader_handle_);
     glUniform1i(attrib_location_tex_, 0);
-    glUniformMatrix4fv(attrib_location_proj_mtx_, 1, GL_FALSE, &ortho_projection[0][0]);
+    glUniformMatrix4fv(attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
     // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
@@ -235,14 +244,15 @@ void Viz3D::render(const int fb_width, const int fb_height,
 
     {
       ImVector<ImDrawVert> VtxBuffer;
-      const float sc = 50.0;
-      const float off_y = 150.0;
+      const float sc = 0.2;
+      const float off_y = 0.0;
       const int num = 16;
+      const float off_x = -sc * num / 2;
       for (int i = 0; i < num; ++i) {
         float uv_x = float(i) / float(num);
         {
           ImDrawVert p1;
-          p1.pos.x = i * sc;
+          p1.pos.x = i * sc + off_x;
           p1.pos.y = off_y;
           p1.uv.x = uv_x;
           p1.uv.y = 0;
@@ -252,7 +262,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
         }
         {
           ImDrawVert p2;
-          p2.pos.x = i * sc;
+          p2.pos.x = i * sc + off_x;
           p2.pos.y = off_y + sc;
           p2.uv.x = uv_x;
           p2.uv.y = 1.0;
