@@ -74,7 +74,7 @@ struct Viz3D {
   //    const int size_x, const int size_y);
 protected:
   // TODO(lucasw) later this will be a matrix
-  glm::vec3 translation_;
+  glm::vec3 translation_ = glm::vec3(0, 0, 0);
   float angle_ = 0.0;
 
   bool dragging_view_ = false;

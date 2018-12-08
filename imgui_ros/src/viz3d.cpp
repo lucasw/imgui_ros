@@ -202,6 +202,11 @@ void Viz3D::draw()
     }
     #endif
   }
+
+  std::stringstream ss;
+  ss << translation_.x  << " " << translation_.y << " " << translation_.z << ", "
+      << angle_;
+  ImGui::Text("%s", ss.str().c_str());
 }
 
 void Viz3D::render(const int fb_width, const int fb_height,
