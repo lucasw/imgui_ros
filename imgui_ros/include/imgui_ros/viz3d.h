@@ -31,6 +31,7 @@
 #ifndef IMGUI_ROS_VIZ3D_H
 #define IMGUI_ROS_VIZ3D_H
 
+#include <glm/glm.hpp>
 #include <imgui.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 // #include <imgui_ros/window.h>
@@ -56,6 +57,9 @@
 #endif
 #pragma GCC diagnostic pop
 
+// TODO(lucasw) need to support covering the entire background,
+// and being within a widget, possibly with subclassing.
+// For now just do entire background.
 struct Viz3D {
   Viz3D(const std::string name,
     std::shared_ptr<ImGuiImplOpenGL3> renderer
@@ -64,7 +68,12 @@ struct Viz3D {
   void render(const int fb_width, const int fb_height,
       const int display_pos_x, const int display_pos_y,
       const int display_size_x, const int display_size_y);
+
+  void draw();
+  //    const int pos_x, const int pos_y,
+  //    const int size_x, const int size_y);
 protected:
+  glm::vec3 translation_;
 
   // temp texture test
   GLuint texture_id_ = 0;

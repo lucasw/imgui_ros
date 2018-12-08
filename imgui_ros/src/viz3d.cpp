@@ -29,9 +29,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <SDL2/SDL.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "imgui.h"
+#include <imgui.h>
 // #include "imgui_impl_sdl.h"
 #include <imgui_ros/viz3d.h>
 #include <opencv2/highgui.hpp>
@@ -148,6 +149,45 @@ Viz3D::~Viz3D()
   glDeleteTextures(1, &texture_id_);
 }
 
+void Viz3D::draw()
+//  const int pos_x, const int pos_y,
+//  const int size_x, const int size_y)
+{
+  ImGuiIO& io = ImGui::GetIO();
+
+  const float sc = 0.03;
+  if (ImGui::IsKeyPressed(SDL_SCANCODE_A)) {
+    translation_.x += sc;
+  }
+  if (ImGui::IsKeyPressed(SDL_SCANCODE_D)) {
+    translation_.x -= sc;
+  }
+  if (ImGui::IsKeyPressed(SDL_SCANCODE_W)) {
+    translation_.z += sc;
+  }
+  if (ImGui::IsKeyPressed(SDL_SCANCODE_S)) {
+    translation_.z -= sc;
+  }
+  if (ImGui::IsKeyPressed(SDL_SCANCODE_Q)) {
+    translation_.y += sc;
+  }
+  if (ImGui::IsKeyPressed(SDL_SCANCODE_Z)) {
+    translation_.y -= sc;
+  }
+
+#if 0
+  // if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
+  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootWindow)) {
+    // This is also true when outside the entire window
+    // ImGui::CaptureKeyboardFromApp(true);
+    std::cout << "active\n";
+  } else {
+    // ImGui::CaptureKeyboardFromApp(false);
+    std::cout << "inactive\n";
+  }
+#endif
+}
+
 void Viz3D::render(const int fb_width, const int fb_height,
   const int display_pos_x, const int display_pos_y,
   const int display_size_x, const int display_size_y)
@@ -197,8 +237,8 @@ void Viz3D::render(const int fb_width, const int fb_height,
     glm::mat4 projection_matrix = glm::perspective(glm::radians(fovy_deg), aspect, near, far);
     glm::mat4 model_matrix = glm::mat4(1.0f);
     glm::mat4 view_matrix = glm::lookAt(
-        glm::vec3(0,0,0), // Camera is at (4,3,3), in World Space
-        glm::vec3(0,0,1), // and looks at the origin
+        translation_,
+        translation_ + glm::vec3(0,0,1), // and looks at the origin
         glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
     );
     glm::mat4 mvp = projection_matrix * view_matrix * model_matrix;

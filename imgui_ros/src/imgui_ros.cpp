@@ -544,6 +544,8 @@ namespace imgui_ros {
     ImGui::NewFrame();
 
     {
+      // handle input from entire window
+      viz3d->draw();
 
       ImGui::Begin("stats"); // Create a window called "stats"
                              // and append into it.
@@ -573,11 +575,11 @@ namespace imgui_ros {
     // TODO(lucasw) render anything else into the background here,
     // and the ui will appear over it?
     // bgfx does the 3D render after imgui render
-    const int fb_width = ImGui::GetDrawData()->DisplaySize.x * ImGui::GetIO().DisplayFramebufferScale.x;
-    const int fb_height = ImGui::GetDrawData()->DisplaySize.y * ImGui::GetIO().DisplayFramebufferScale.y;
 
     checkGLError(__FILE__, __LINE__);
     if (true) {
+      const int fb_width = ImGui::GetDrawData()->DisplaySize.x * ImGui::GetIO().DisplayFramebufferScale.x;
+      const int fb_height = ImGui::GetDrawData()->DisplaySize.y * ImGui::GetIO().DisplayFramebufferScale.y;
       viz3d->render(fb_width, fb_height,
           ImGui::GetDrawData()->DisplayPos.x, ImGui::GetDrawData()->DisplayPos.y,
           ImGui::GetDrawData()->DisplaySize.x, ImGui::GetDrawData()->DisplaySize.y
