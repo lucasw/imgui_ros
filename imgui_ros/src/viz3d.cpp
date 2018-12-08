@@ -175,17 +175,33 @@ void Viz3D::draw()
     translation_.y -= sc;
   }
 
-#if 0
-  // if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
-  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootWindow)) {
-    // This is also true when outside the entire window
-    // ImGui::CaptureKeyboardFromApp(true);
-    std::cout << "active\n";
-  } else {
-    // ImGui::CaptureKeyboardFromApp(false);
-    std::cout << "inactive\n";
+  // mouse input
+  ImVec2 mouse_pos_in_canvas = ImGui::GetIO().MousePos;
+
+  if (dragging_view_) {
+    // This allows continued dragging outside the canvas
+    ImVec2 offset = ImVec2(
+        mouse_pos_in_canvas.x - drag_point_.x,
+        mouse_pos_in_canvas.y - drag_point_.y);
+    angle_ -= offset.x / 300.0;
+    drag_point_ = mouse_pos_in_canvas;
+    if (!ImGui::IsMouseDown(0)) {
+      dragging_view_ = false;
+    }
   }
-#endif
+
+  if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
+    if (!dragging_view_ && ImGui::IsMouseClicked(0)) {
+      drag_point_ = mouse_pos_in_canvas;
+      dragging_view_ = true;
+    }
+    #if 0
+    if (!dragging_scale_ && ImGui::IsMouseClicked(1)) {
+      drag_point_ = mouse_pos_in_canvas;
+      dragging_scale_ = true;
+    }
+    #endif
+  }
 }
 
 void Viz3D::render(const int fb_width, const int fb_height,
@@ -238,7 +254,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     glm::mat4 model_matrix = glm::mat4(1.0f);
     glm::mat4 view_matrix = glm::lookAt(
         translation_,
-        translation_ + glm::vec3(0,0,1), // and looks at the origin
+        translation_ + glm::vec3(sin(angle_), 0, cos(angle_)),
         glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
     );
     glm::mat4 mvp = projection_matrix * view_matrix * model_matrix;

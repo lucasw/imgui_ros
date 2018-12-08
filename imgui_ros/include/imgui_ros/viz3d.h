@@ -73,7 +73,12 @@ struct Viz3D {
   //    const int pos_x, const int pos_y,
   //    const int size_x, const int size_y);
 protected:
+  // TODO(lucasw) later this will be a matrix
   glm::vec3 translation_;
+  float angle_ = 0.0;
+
+  bool dragging_view_ = false;
+  ImVec2 drag_point_;
 
   // temp texture test
   GLuint texture_id_ = 0;
