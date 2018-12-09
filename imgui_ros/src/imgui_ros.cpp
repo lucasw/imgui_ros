@@ -562,6 +562,7 @@ namespace imgui_ros {
       }
     }
 
+    //////////////////////////////////////////////////////////////
     // Rendering
     ImGui::Render();
     // TODO(lucasw) or wait until after GetDrawData() to unlock?
@@ -572,6 +573,7 @@ namespace imgui_ros {
     checkGLError(__FILE__, __LINE__);
     glClearColor(clear_color_.x, clear_color_.y, clear_color_.z, clear_color_.w);
     glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
     // TODO(lucasw) render anything else into the background here,
     // and the ui will appear over it?
     // bgfx does the 3D render after imgui render
@@ -590,6 +592,7 @@ namespace imgui_ros {
     checkGLError(__FILE__, __LINE__);
 
     SDL_GL_SwapWindow(window);
+    ////////////////////////////////////////////////////////////////////
 
     tf2_msgs::msg::TFMessage tfs;
     for (auto& window : windows_) {

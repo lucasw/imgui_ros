@@ -57,6 +57,12 @@
 #endif
 #pragma GCC diagnostic pop
 
+struct DrawVert {
+  glm::vec3 pos;
+  glm::vec2 uv;
+  glm::vec4 col;
+};
+
 // TODO(lucasw) need to support covering the entire background,
 // and being within a widget, possibly with subclassing.
 // For now just do entire background.

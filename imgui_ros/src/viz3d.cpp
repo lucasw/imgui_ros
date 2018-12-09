@@ -45,6 +45,7 @@ Viz3D::Viz3D(const std::string name,
     std::shared_ptr<ImGuiImplOpenGL3> renderer) : name_(name),
     renderer_(renderer)
 {
+  /// generate a test texture
   glGenTextures(1, &texture_id_);
   std::cout << "viz3d texture id " << texture_id_ << "\n";
   test_ = cv::Mat(128, 128, CV_8UC3, cv::Scalar::all(128));
@@ -67,14 +68,14 @@ Viz3D::Viz3D(const std::string name,
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, test_.cols, test_.rows,
       0, GL_RGB, GL_UNSIGNED_BYTE, &test_.data[0]);
   checkGLError(__FILE__, __LINE__);
-
+  ////////////////////////////////////
 
   // TODO(lucasw) maintaining many versions of these seems like a big hassle,
   // which is why bgfx exists...
   // const GLchar* vertex_shader_glsl_130 =
   const GLchar* vertex_shader =
       "uniform mat4 ProjMtx;\n"
-      "in vec2 Position;\n"
+      "in vec3 Position;\n"
       "in vec2 UV;\n"
       "in vec4 Color;\n"
       "out vec2 FraUV;\n"
@@ -83,7 +84,7 @@ Viz3D::Viz3D(const std::string name,
       "{\n"
       "    FraUV = UV;\n"
       "    FraColor = Color;\n"
-      "    gl_Position = ProjMtx * vec4(Position.xy, 1.0, 1.0);\n"
+      "    gl_Position = ProjMtx * vec4(Position.xyz, 1.0);\n"
       "}\n";
   std::cout << "viz3d vertex shader:\n" << vertex_shader << "\n";
 
@@ -240,7 +241,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     // TODO(lucasw) later enable
     glDisable(GL_CULL_FACE);
     // TODO(lucasw) later enable
-    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
     // Want to draw to whole window
     glDisable(GL_SCISSOR_TEST);
 #ifdef GL_POLYGON_MODE
@@ -295,48 +296,56 @@ void Viz3D::render(const int fb_width, const int fb_height,
     glEnableVertexAttribArray(attrib_location_uv_);
     glEnableVertexAttribArray(attrib_location_color_);
     checkGLError(__FILE__, __LINE__);
-    // This is for 2D data, need to be 3D
-    glVertexAttribPointer(attrib_location_position_, 2, GL_FLOAT, GL_FALSE,
-        sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, pos));
+    glVertexAttribPointer(attrib_location_position_, 3, GL_FLOAT, GL_FALSE,
+        sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
     glVertexAttribPointer(attrib_location_uv_, 2, GL_FLOAT, GL_FALSE,
-        sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, uv));
-    glVertexAttribPointer(attrib_location_color_, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-        sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, col));
+        sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, uv));
+    glVertexAttribPointer(attrib_location_color_, 4, GL_FLOAT, GL_FALSE,
+        sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
 
     {
-      ImVector<ImDrawVert> VtxBuffer;
+      ImVector<DrawVert> VtxBuffer;
       const float sc = 0.2;
       const float off_y = 0.0;
       const int num = 16;
       const float off_x = -sc * num / 2;
-      for (int i = 0; i < num; ++i) {
-        float uv_x = float(i) / float(num);
-        {
-          ImDrawVert p1;
-          p1.pos.x = i * sc + off_x;
-          p1.pos.y = off_y;
-          p1.uv.x = uv_x;
-          p1.uv.y = 0;
-          // These colors multiply with the texture color
-          p1.col = IM_COL32(255, 255, 255, 255);
-          VtxBuffer.push_back(p1);
-        }
-        {
-          ImDrawVert p2;
-          p2.pos.x = i * sc + off_x;
-          p2.pos.y = off_y + sc;
-          p2.uv.x = uv_x;
-          p2.uv.y = 1.0;
-          p2.col = IM_COL32(255, 255, 255, 255);
-          VtxBuffer.push_back(p2);
-        }
-      }
-
       ImVector<ImDrawIdx> IdxBuffer;
-      for (int i = 0; i < VtxBuffer.Size - 3; i += 2) {
-        IdxBuffer.push_back(i);
-        IdxBuffer.push_back(i + 3);
-        IdxBuffer.push_back(i + 2);
+
+      for (int j = 0; j < 5; ++j) {
+        for (int i = VtxBuffer.Size; i < VtxBuffer.Size + num * 2 - 3; i += 2) {
+          IdxBuffer.push_back(i);
+          IdxBuffer.push_back(i + 3);
+          IdxBuffer.push_back(i + 2);
+
+          IdxBuffer.push_back(i);
+          IdxBuffer.push_back(i + 1);
+          IdxBuffer.push_back(i + 3);
+        }
+
+        for (int i = 0; i < num; ++i) {
+          float fr = float(i) / float(num);
+          {
+            DrawVert p1;
+            p1.pos.x = i * sc + off_x;
+            p1.pos.y = off_y;
+            p1.pos.z = 1.0 + j * sc * 2;
+            p1.uv.x = fr;
+            p1.uv.y = 0;
+            // These colors multiply with the texture color
+            p1.col = glm::vec4(1.0, 1.0, 1.0, 1.0);
+            VtxBuffer.push_back(p1);
+          }
+          {
+            DrawVert p2;
+            p2.pos.x = i * sc + off_x;
+            p2.pos.y = off_y + sc;
+            p2.pos.z = 1.0 + j * sc * 2;
+            p2.uv.x = fr;
+            p2.uv.y = 1.0;
+            p2.col = glm::vec4(1.0 - fr, 1.0 - fr, 1.0, 1.0);
+            VtxBuffer.push_back(p2);
+          }
+        }
       }
 
       ImVector<ImDrawCmd> CmdBuffer;
@@ -348,7 +357,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
       const ImDrawIdx* idx_buffer_offset = 0;
 
       glBindBuffer(GL_ARRAY_BUFFER, vbo_handle_);
-      glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)VtxBuffer.Size * sizeof(ImDrawVert),
+      glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)VtxBuffer.Size * sizeof(DrawVert),
           (const GLvoid*)VtxBuffer.Data, GL_STREAM_DRAW);
 
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
