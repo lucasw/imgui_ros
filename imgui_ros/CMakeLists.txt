@@ -29,6 +29,7 @@ find_package(rosidl_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 # find_package(rosidl_typesupport_cpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(shape_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
@@ -37,7 +38,9 @@ find_package(visualization_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Widget.msg"
+  "msg/TexturedShape.msg"
   "srv/AddWindow.srv"
+  DEPENDENCIES geometry_msgs sensor_msgs shape_msgs std_msgs
 )
 
 # TODO(lucasw) currently have to symlink imgui in,
@@ -78,6 +81,7 @@ ament_target_dependencies(imgui_ros_node
   "rcl_interfaces"
   "rclcpp"
   "rcutils"
+  "shape_msgs"
   "sensor_msgs"
   "std_msgs"
   "tf2"

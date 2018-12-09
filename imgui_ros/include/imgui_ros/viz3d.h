@@ -39,6 +39,7 @@
 #include <mutex>
 #include <opencv2/core.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/buffer.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -70,6 +71,7 @@ struct DrawVert {
 struct Viz3D {
   Viz3D(const std::string name,
     std::shared_ptr<ImGuiImplOpenGL3> renderer,
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer,
     std::shared_ptr<rclcpp::Node> node
     );
   ~Viz3D();
@@ -127,7 +129,10 @@ protected:
   unsigned int elements_handle_ = 0;
 
   std::string name_;
+  // TODO(lucasw) don't need this now
   std::weak_ptr<ImGuiImplOpenGL3> renderer_;
+
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::weak_ptr<rclcpp::Node> node_;
 
   // probably will replace with service that adds a texture with a given

@@ -191,6 +191,7 @@ namespace imgui_ros {
     // NULL, io.Fonts->GetGlyphRangesJapanese()); IM_ASSERT(font != NULL);
 
     viz3d = std::make_shared<Viz3D>("main render window", imgui_impl_opengl3_,
+        tf_buffer_,
         shared_from_this());
 
     init_ = true;

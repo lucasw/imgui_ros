@@ -43,8 +43,12 @@ using std::placeholders::_1;
 // this probably will be split out into a widget also.
 Viz3D::Viz3D(const std::string name,
     std::shared_ptr<ImGuiImplOpenGL3> renderer,
-    std::shared_ptr<rclcpp::Node> node) : name_(name),
-    renderer_(renderer)
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer,
+    std::shared_ptr<rclcpp::Node> node) :
+    name_(name),
+    renderer_(renderer),
+    tf_buffer_(tf_buffer),
+    node_(node)
 {
   ros_image.reset(new RosImage("texture", "/image_out", node));
 
