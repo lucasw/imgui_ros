@@ -209,6 +209,7 @@ Viz3D::Viz3D(const std::string name,
 
   test_shape_ = std::make_shared<Shape>();
   makeTestShape(test_shape_);
+  // shapes_[test_shape_->name_] = test_shape_;
 }
 
 Viz3D::~Viz3D()
@@ -454,13 +455,8 @@ void Viz3D::render(const int fb_width, const int fb_height,
         sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
 
 #if 1
-    {
-      auto shape = test_shape_;
-      ImVector<ImDrawCmd> CmdBuffer;
-      ImDrawCmd cmd;
-      cmd.ElemCount = shape->indices_.Size;
-      cmd.TextureId = (void*)ros_image_->texture_id_;
-      CmdBuffer.push_back(cmd);
+  for (auto shape_pair : shapes_) {
+    auto shape = shape_pair.second;
 
       checkGLError(__FILE__, __LINE__);
       const ImDrawIdx* idx_buffer_offset = 0;
@@ -478,27 +474,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
       glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
           (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
 
-      {
-        const ImDrawCmd* pcmd = &CmdBuffer[0];
-        {
-          // Bind texture- if it is null then the color is black
-          // if (texture_id_ != nullptr)
-          glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
-          glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount,
-              sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
-          // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
-          checkGLError(__FILE__, __LINE__);
-        }
-        idx_buffer_offset += pcmd->ElemCount;
-      }
-    }  // test draw
-
-#endif
 #if 0
-  for (auto shape_pair : shapes_) {
-    auto shape = shape_pair.second;
-    const ImDrawIdx* idx_buffer_offset = 0;
-
     {
       static bool has_printed = false;
       if (!has_printed) {
@@ -507,33 +483,22 @@ void Viz3D::render(const int fb_width, const int fb_height,
       }
     }
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_handle_);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)shape->vertices_.Size * sizeof(DrawVert),
-        (const GLvoid*)shape->vertices_.Data, GL_STREAM_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)shape->indices_.Size * sizeof(ImDrawIdx),
-        (const GLvoid*)shape->indices_.Data, GL_STREAM_DRAW);
-    checkGLError(__FILE__, __LINE__);
-
-    ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
-    glScissor((int)clip_rect.x, (int)clip_rect.y,
-        (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
-
     // Bind texture- if it is null then the color is black
     // if (texture_id_ != nullptr)
     GLuint tex_id = 0;
     if ((shape->texture_ != "") && (ros_images_.count(shape->texture_) > 0)) {
       tex_id = (GLuint)(intptr_t)ros_images_[shape->texture_]->texture_id_;
     }
-    glBindTexture(GL_TEXTURE_2D, tex_id);
-
-    GLsizei elem_count = (GLsizei)shape->indices_.Size;
-    glDrawElements(GL_TRIANGLES, elem_count,
-        sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
-    idx_buffer_offset += elem_count;
-    checkGLError(__FILE__, __LINE__);
-  }
+#endif
+      // Bind texture- if it is null then the color is black
+      // if (texture_id_ != nullptr)
+      glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)ros_image_->texture_id_);
+      glDrawElements(GL_TRIANGLES, (GLsizei)shape->indices_.Size,
+          sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
+      // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
+      checkGLError(__FILE__, __LINE__);
+      // idx_buffer_offset += pcmd->ElemCount;
+    }  // test draw
 #endif
 
     glDeleteVertexArrays(1, &vao_handle);
