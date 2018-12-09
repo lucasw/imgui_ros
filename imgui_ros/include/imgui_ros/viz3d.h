@@ -159,6 +159,8 @@ protected:
   // could be passed into opengl directly, which it probably could be made
   // to do, but for now interpret it on reception into local class.
   std::map<std::string, std::shared_ptr<Shape> > shapes_;
+  // test shape
+  std::shared_ptr<Shape> test_shape_;
 
   std::string name_;
   // TODO(lucasw) don't need this now

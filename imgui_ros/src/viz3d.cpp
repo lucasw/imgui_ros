@@ -39,6 +39,56 @@
 #include <opencv2/imgproc/imgproc.hpp>
 using std::placeholders::_1;
 
+void makeTestShape(std::shared_ptr<Shape> shape)
+{
+  if (!shape) {
+    std::cerr << "shape needs to be already created\n";
+    return;
+  }
+
+  const float sc = 0.2;
+  const float off_y = 0.0;
+  const int num = 16;
+  const float off_x = -sc * num / 2;
+
+  for (int j = 0; j < 5; ++j) {
+    for (int i = shape->vertices_.Size; i < shape->vertices_.Size + num * 2 - 3; i += 2) {
+      shape->indices_.push_back(i);
+      shape->indices_.push_back(i + 3);
+      shape->indices_.push_back(i + 2);
+
+      shape->indices_.push_back(i);
+      shape->indices_.push_back(i + 1);
+      shape->indices_.push_back(i + 3);
+    }
+
+    for (int i = 0; i < num; ++i) {
+      float fr = float(i) / float(num);
+      {
+        DrawVert p1;
+        p1.pos.x = i * sc + off_x;
+        p1.pos.y = off_y;
+        p1.pos.z = 1.0 + j * sc * 2;
+        p1.uv.x = fr;
+        p1.uv.y = 0;
+        // These colors multiply with the texture color
+        p1.col = glm::vec4(1.0, 1.0, 1.0, 1.0);
+        shape->vertices_.push_back(p1);
+      }
+      {
+        DrawVert p2;
+        p2.pos.x = i * sc + off_x;
+        p2.pos.y = off_y + sc * 4;
+        p2.pos.z = 1.0 + j * sc * 2;
+        p2.uv.x = fr;
+        p2.uv.y = 1.0;
+        p2.col = glm::vec4(1.0 - fr, 1.0 - fr, 1.0, 1.0);
+        shape->vertices_.push_back(p2);
+      }
+    }
+  }
+}
+
 // render the entire background
 // this probably will be split out into a widget also.
 Viz3D::Viz3D(const std::string name,
@@ -53,8 +103,6 @@ Viz3D::Viz3D(const std::string name,
 {
   ros_image_.reset(new RosImage("texture", "/image_out", node));
 
-  textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
-        std::bind(&Viz3D::texturedShapeCallback, this, _1));
 #if 0
   /// generate a test texture
   glGenTextures(1, &texture_id_);
@@ -155,6 +203,12 @@ Viz3D::Viz3D(const std::string name,
   // Create buffers
   glGenBuffers(1, &vbo_handle_);
   glGenBuffers(1, &elements_handle_);
+
+  textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
+        std::bind(&Viz3D::texturedShapeCallback, this, _1));
+
+  test_shape_ = std::make_shared<Shape>();
+  makeTestShape(test_shape_);
 }
 
 Viz3D::~Viz3D()
@@ -401,49 +455,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
 
 #if 1
     {
-      auto shape = std::make_shared<Shape>();
-      const float sc = 0.2;
-      const float off_y = 0.0;
-      const int num = 16;
-      const float off_x = -sc * num / 2;
-
-      for (int j = 0; j < 5; ++j) {
-        for (int i = shape->vertices_.Size; i < shape->vertices_.Size + num * 2 - 3; i += 2) {
-          shape->indices_.push_back(i);
-          shape->indices_.push_back(i + 3);
-          shape->indices_.push_back(i + 2);
-
-          shape->indices_.push_back(i);
-          shape->indices_.push_back(i + 1);
-          shape->indices_.push_back(i + 3);
-        }
-
-        for (int i = 0; i < num; ++i) {
-          float fr = float(i) / float(num);
-          {
-            DrawVert p1;
-            p1.pos.x = i * sc + off_x;
-            p1.pos.y = off_y;
-            p1.pos.z = 1.0 + j * sc * 2;
-            p1.uv.x = fr;
-            p1.uv.y = 0;
-            // These colors multiply with the texture color
-            p1.col = glm::vec4(1.0, 1.0, 1.0, 1.0);
-            shape->vertices_.push_back(p1);
-          }
-          {
-            DrawVert p2;
-            p2.pos.x = i * sc + off_x;
-            p2.pos.y = off_y + sc * 4;
-            p2.pos.z = 1.0 + j * sc * 2;
-            p2.uv.x = fr;
-            p2.uv.y = 1.0;
-            p2.col = glm::vec4(1.0 - fr, 1.0 - fr, 1.0, 1.0);
-            shape->vertices_.push_back(p2);
-          }
-        }
-      }
-
+      auto shape = test_shape_;
       ImVector<ImDrawCmd> CmdBuffer;
       ImDrawCmd cmd;
       cmd.ElemCount = shape->indices_.Size;
@@ -466,9 +478,8 @@ void Viz3D::render(const int fb_width, const int fb_height,
       glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
           (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
 
-      for (int cmd_i = 0; cmd_i < CmdBuffer.Size; cmd_i++)
       {
-        const ImDrawCmd* pcmd = &CmdBuffer[cmd_i];
+        const ImDrawCmd* pcmd = &CmdBuffer[0];
         {
           // Bind texture- if it is null then the color is black
           // if (texture_id_ != nullptr)
