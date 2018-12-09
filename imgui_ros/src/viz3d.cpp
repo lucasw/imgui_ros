@@ -161,6 +161,7 @@ void Viz3D::draw()
 //  const int pos_x, const int pos_y,
 //  const int size_x, const int size_y)
 {
+  ImGui::Begin("camera");
   // ImGuiIO& io = ImGui::GetIO();
 
   const float sc = 0.03;
@@ -211,10 +212,52 @@ void Viz3D::draw()
     #endif
   }
 
+  // Maybe aovy should be a ros topic,
+  // and the slider a regular Pub widget.
+  double min = 1.0;
+  double max = 170.0;
+  ImGui::SliderScalar("aov y", ImGuiDataType_Double,
+      &aov_y_, &min, &max, "%lf");
+
+  min = 0.1;
+  max = 10.0;
+  ImGui::SliderScalar("aspect scale", ImGuiDataType_Double,
+      &aspect_scale_, &min, &max, "%lf");
+
   std::stringstream ss;
   ss << translation_.x  << " " << translation_.y << " " << translation_.z << ", "
       << angle_;
   ImGui::Text("%s", ss.str().c_str());
+  ImGui::End();
+}
+
+void Viz3D::setupCamera(const int fb_width, const int fb_height)
+{
+  const float aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height) * aspect_scale_;
+  glm::mat4 projection_matrix = glm::perspective(static_cast<float>(glm::radians(aov_y_)),
+      aspect, near_, far_);
+  glm::mat4 model_matrix = glm::mat4(1.0f);
+  glm::mat4 view_matrix = glm::lookAt(
+      translation_,
+      translation_ + glm::vec3(sin(angle_), 0, cos(angle_)),
+      glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
+  );
+  glm::mat4 mvp = projection_matrix * view_matrix * model_matrix;
+  glUniformMatrix4fv(attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
+
+  {
+    static bool has_printed = false;
+    if (!has_printed) {
+      has_printed = true;
+      std::cout << "projection\n";
+      for (size_t i = 0; i < 4; ++i) {
+        for (size_t j = 0; j < 4; ++j) {
+          std::cout << mvp[i][j] << " ";
+        }
+        std::cout << "\n";
+      }
+    }
+  }
 }
 
 void Viz3D::render(const int fb_width, const int fb_height,
@@ -261,34 +304,10 @@ void Viz3D::render(const int fb_width, const int fb_height,
     // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
 
-    const float fovy_deg = 80.0;
-    const float aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height);
-    const float near = 0.01f;
-    const float far = 100.0f;
-    glm::mat4 projection_matrix = glm::perspective(glm::radians(fovy_deg), aspect, near, far);
-    glm::mat4 model_matrix = glm::mat4(1.0f);
-    glm::mat4 view_matrix = glm::lookAt(
-        translation_,
-        translation_ + glm::vec3(sin(angle_), 0, cos(angle_)),
-        glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
-    );
-    glm::mat4 mvp = projection_matrix * view_matrix * model_matrix;
-    {
-      static bool has_printed = false;
-      if (!has_printed) {
-        has_printed = true;
-        std::cout << "projection\n";
-        for (size_t i = 0; i < 4; ++i) {
-          for (size_t j = 0; j < 4; ++j) {
-            std::cout << mvp[i][j] << " ";
-          }
-          std::cout << "\n";
-        }
-      }
-    }
+    setupCamera(fb_width, fb_height);
+
     glUseProgram(shader_handle_);
     glUniform1i(attrib_location_tex_, 0);
-    glUniformMatrix4fv(attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
     // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.

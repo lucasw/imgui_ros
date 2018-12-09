@@ -88,6 +88,11 @@ protected:
   bool dragging_view_ = false;
   ImVec2 drag_point_;
 
+  double aov_y_ = 45.0f;
+  float near_ = 0.01f;
+  float far_ = 100.0f;
+  double aspect_scale_ = 1.0f;
+  void setupCamera(const int fb_width, const int fb_height);
 #if 0
   // temp texture test
   GLuint texture_id_ = 0;
