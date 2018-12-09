@@ -34,6 +34,7 @@
 #include <glm/glm.hpp>
 #include <imgui.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
+#include <imgui_ros/image.h>
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -68,7 +69,8 @@ struct DrawVert {
 // For now just do entire background.
 struct Viz3D {
   Viz3D(const std::string name,
-    std::shared_ptr<ImGuiImplOpenGL3> renderer
+    std::shared_ptr<ImGuiImplOpenGL3> renderer,
+    std::shared_ptr<rclcpp::Node> node
     );
   ~Viz3D();
   void render(const int fb_width, const int fb_height,
@@ -86,9 +88,11 @@ protected:
   bool dragging_view_ = false;
   ImVec2 drag_point_;
 
+#if 0
   // temp texture test
   GLuint texture_id_ = 0;
   cv::Mat test_;
+#endif
 #if 0
   // TODO(lucasw) or NULL or -1?
   GLuint texture_id_ = 0;
@@ -120,6 +124,10 @@ protected:
   std::string name_;
   std::weak_ptr<ImGuiImplOpenGL3> renderer_;
   std::weak_ptr<rclcpp::Node> node_;
+
+  // probably will replace with service that adds a texture with a given
+  // name, for now have topic.
+  std::shared_ptr<RosImage> ros_image;
 };
 
 #endif  // IMGUI_ROS_VIZ3D_H

@@ -44,9 +44,10 @@ struct GlImage : public Widget {
   ~GlImage();
   virtual bool updateTexture() = 0;
   virtual void draw() = 0;
-protected:
+
   // TODO(lucasw) or NULL or -1?
   GLuint texture_id_ = 0;
+protected:
   size_t width_ = 0;
   size_t height_ = 0;
 };

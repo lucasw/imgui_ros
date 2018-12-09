@@ -42,9 +42,13 @@ using std::placeholders::_1;
 // render the entire background
 // this probably will be split out into a widget also.
 Viz3D::Viz3D(const std::string name,
-    std::shared_ptr<ImGuiImplOpenGL3> renderer) : name_(name),
+    std::shared_ptr<ImGuiImplOpenGL3> renderer,
+    std::shared_ptr<rclcpp::Node> node) : name_(name),
     renderer_(renderer)
 {
+  ros_image.reset(new RosImage("texture", "/image_out", node));
+
+#if 0
   /// generate a test texture
   glGenTextures(1, &texture_id_);
   std::cout << "viz3d texture id " << texture_id_ << "\n";
@@ -68,6 +72,7 @@ Viz3D::Viz3D(const std::string name,
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, test_.cols, test_.rows,
       0, GL_RGB, GL_UNSIGNED_BYTE, &test_.data[0]);
   checkGLError(__FILE__, __LINE__);
+#endif
   ////////////////////////////////////
 
   // TODO(lucasw) maintaining many versions of these seems like a big hassle,
@@ -147,14 +152,16 @@ Viz3D::Viz3D(const std::string name,
 
 Viz3D::~Viz3D()
 {
+#if 0
   glDeleteTextures(1, &texture_id_);
+#endif
 }
 
 void Viz3D::draw()
 //  const int pos_x, const int pos_y,
 //  const int size_x, const int size_y)
 {
-  ImGuiIO& io = ImGui::GetIO();
+  // ImGuiIO& io = ImGui::GetIO();
 
   const float sc = 0.03;
   if (ImGui::IsKeyPressed(SDL_SCANCODE_A)) {
@@ -230,6 +237,8 @@ void Viz3D::render(const int fb_width, const int fb_height,
     return;
   }
     checkGLError(__FILE__, __LINE__);
+
+  ros_image->updateTexture();
 
     GLState gl_state;
     gl_state.backup();
@@ -338,7 +347,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
           {
             DrawVert p2;
             p2.pos.x = i * sc + off_x;
-            p2.pos.y = off_y + sc;
+            p2.pos.y = off_y + sc * 4;
             p2.pos.z = 1.0 + j * sc * 2;
             p2.uv.x = fr;
             p2.uv.y = 1.0;
@@ -351,7 +360,9 @@ void Viz3D::render(const int fb_width, const int fb_height,
       ImVector<ImDrawCmd> CmdBuffer;
       ImDrawCmd cmd;
       cmd.ElemCount = IdxBuffer.Size;
+      cmd.TextureId = (void*)ros_image->texture_id_;
       CmdBuffer.push_back(cmd);
+
 
       checkGLError(__FILE__, __LINE__);
       const ImDrawIdx* idx_buffer_offset = 0;
@@ -375,7 +386,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
         {
           // Bind texture- if it is null then the color is black
           // if (texture_id_ != nullptr)
-          glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)texture_id_);
+          glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
           glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount,
               sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
           // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
