@@ -17,10 +17,11 @@
 # import tf2_ros
 import rclpy
 
-from geometry_msgs.msg import TransformStamped
-from imgui_ros.msg import Widget
+from geometry_msgs.msg import Point, TransformStamped
+from imgui_ros.msg import TexturedShape, Widget
 from imgui_ros.srv import AddWindow
 from rclpy.node import Node
+from shape_msgs.msg import MeshTriangle, Mesh
 from visualization_msgs.msg import Marker
 
 
@@ -28,6 +29,8 @@ class Demo(Node):
 
     def __init__(self):
         super().__init__('demo')
+        self.marker_pub = self.create_publisher(Marker, 'marker')
+        self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
         self.cli = self.create_client(AddWindow, 'add_window')
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
@@ -52,6 +55,7 @@ class Demo(Node):
         self.add_misc()
         self.add_viz()
         self.add_markers()
+        self.add_shapes()
 
     def add_images(self):
         req = AddWindow.Request()
@@ -253,8 +257,6 @@ class Demo(Node):
 
     def add_markers(self):
         # now publish some markers for the Viz2D
-        self.marker_pub = self.create_publisher(Marker, 'marker')
-
         marker = Marker()
         marker.ns = "test"
         marker.id = 0
@@ -281,6 +283,40 @@ class Demo(Node):
         marker.color.a = 1.0
         marker.text = "bar2 marker"
         self.marker_pub.publish(marker)
+
+    def add_shapes(self):
+        shape = TexturedShape()
+        shape.name = "foo"
+        shape.header.frame_id = 'map'
+        # shape.header.stamp = self.now()
+
+        sc = 0.2
+        off_y = 0.0
+        num = 8
+        off_x = -sc * num / 2
+        num_rows = 5
+        for j in range(num_rows):
+            for i in range(num * 2 - 3):
+                ind = i + len(shape.mesh.vertices)
+                triangle = MeshTriangle()
+                triangle.vertex_indices[0] = ind
+                triangle.vertex_indices[1] = ind + 3
+                triangle.vertex_indices[2] = ind + 2
+                shape.mesh.triangles.append(triangle)
+                triangle.vertex_indices[0] = ind
+                triangle.vertex_indices[1] = ind + 1
+                triangle.vertex_indices[2] = ind + 3
+                shape.mesh.triangles.append(triangle)
+            for i in range(num):
+                pt = Point()
+                pt.x = i * sc + off_x
+                pt.y = off_y
+                pt.z = 1.0 + j * sc * 2.0
+                shape.mesh.vertices.append(pt)
+
+        print("shape {} {} {}".format(shape.name, len(shape.mesh.vertices),
+              len(shape.mesh.triangles) * 3))
+        self.shape_pub.publish(shape)
 
     def update(self):
         ts = TransformStamped()

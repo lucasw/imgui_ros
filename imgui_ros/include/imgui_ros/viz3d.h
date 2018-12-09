@@ -35,6 +35,7 @@
 #include <imgui.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
+#include <imgui_ros/msg/textured_shape.hpp>
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -65,11 +66,35 @@ struct DrawVert {
   glm::vec4 col;
 };
 
+struct Shape {
+  std::string name_;
+  ImVector<DrawVert> vertices_;
+  ImVector<ImDrawIdx> indices_;
+  std::string texture_;
+
+  void print() {
+    std::cout << "shape " << name_ << " " << texture_ << " "
+        << vertices_.Size << " " << indices_.Size << ":\n";
+    for (int i = 0; (i < 10) && (i < vertices_.Size); ++i)
+      std::cout << i << "  "
+        << " " << vertices_[i].pos.x
+        << " " << vertices_[i].pos.y
+        << " " << vertices_[i].pos.z << ", ";
+    std::cout << "\n";
+    for (int i = 0; (i < 12) && (i < indices_.Size); ++i)
+      std::cout << " " << indices_[i];
+    std::cout << "\n";
+
+  }
+  // TODO(lucasw) handles to in-gpu buffers of above
+};
+
 // TODO(lucasw) need to support covering the entire background,
 // and being within a widget, possibly with subclassing.
 // For now just do entire background.
 struct Viz3D {
   Viz3D(const std::string name,
+    const std::string topic,
     std::shared_ptr<ImGuiImplOpenGL3> renderer,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
     std::shared_ptr<rclcpp::Node> node
@@ -128,6 +153,13 @@ protected:
   unsigned int vbo_handle_ = 0;
   unsigned int elements_handle_ = 0;
 
+  void texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr msg);
+  rclcpp::Subscription<imgui_ros::msg::TexturedShape>::SharedPtr textured_shape_sub_;
+  // TODO(lucasw) it would be nice if the received TexturedShape
+  // could be passed into opengl directly, which it probably could be made
+  // to do, but for now interpret it on reception into local class.
+  std::map<std::string, std::shared_ptr<Shape> > shapes_;
+
   std::string name_;
   // TODO(lucasw) don't need this now
   std::weak_ptr<ImGuiImplOpenGL3> renderer_;
@@ -137,7 +169,8 @@ protected:
 
   // probably will replace with service that adds a texture with a given
   // name, for now have topic.
-  std::shared_ptr<RosImage> ros_image;
+  std::map<std::string, std::shared_ptr<RosImage> > ros_images_;
+  std::shared_ptr<RosImage> ros_image_;
 };
 
 #endif  // IMGUI_ROS_VIZ3D_H

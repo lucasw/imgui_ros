@@ -11,10 +11,18 @@ shape_msgs/Mesh mesh
 # colors for each vertice, needs to have 0, 1 (for all vertices same color),
 # or same number as mesh has vertices
 std_msgs/ColorRGBA[] colors
+# TODO(lucasw) later make 2D type for this
+geometry_msgs/Vector3[] uv
 # the name of the texture, which needs to be stored in the receiver unless
-# it is a topic or supplied below
-string texture
+# it is a topic or supplied below.
+# If blank use solid colors.
+string texture ""
 # get the texture from an image topic specified in texture
 bool is_topic false
 # alternatively supply the texture directly, store with name above
 sensor_msgs/Image image
+# specify which set of already loaded shaders to use-
+# This should map to consistent pair of vertex and fragment shaders
+# (though could maybe specify those independently here)
+# If blank use default shader 
+string shader ""

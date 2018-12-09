@@ -190,7 +190,8 @@ namespace imgui_ros {
     // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f,
     // NULL, io.Fonts->GetGlyphRangesJapanese()); IM_ASSERT(font != NULL);
 
-    viz3d = std::make_shared<Viz3D>("main render window", imgui_impl_opengl3_,
+    viz3d = std::make_shared<Viz3D>("main render window", "shapes",
+        imgui_impl_opengl3_,
         tf_buffer_,
         shared_from_this());
 

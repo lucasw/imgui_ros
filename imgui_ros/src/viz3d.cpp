@@ -42,6 +42,7 @@ using std::placeholders::_1;
 // render the entire background
 // this probably will be split out into a widget also.
 Viz3D::Viz3D(const std::string name,
+    const std::string topic,
     std::shared_ptr<ImGuiImplOpenGL3> renderer,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
     std::shared_ptr<rclcpp::Node> node) :
@@ -50,8 +51,10 @@ Viz3D::Viz3D(const std::string name,
     tf_buffer_(tf_buffer),
     node_(node)
 {
-  ros_image.reset(new RosImage("texture", "/image_out", node));
+  ros_image_.reset(new RosImage("texture", "/image_out", node));
 
+  textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
+        std::bind(&Viz3D::texturedShapeCallback, this, _1));
 #if 0
   /// generate a test texture
   glGenTextures(1, &texture_id_);
@@ -159,6 +162,67 @@ Viz3D::~Viz3D()
 #if 0
   glDeleteTextures(1, &texture_id_);
 #endif
+}
+
+// TODO(lucasw) Shape -> Mesh?
+void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr msg)
+{
+  if (msg->name == "") {
+    std::cerr << "mesh needs name\n";
+    return;
+  }
+  bool use_uv = msg->uv.size() > 0;
+  if ((use_uv) && (msg->uv.size() != msg->mesh.vertices.size())) {
+    std::cerr << "mismatching uv sizes " << msg->uv.size() << " "
+        << msg->mesh.vertices.size() << "\n";
+    use_uv = false;
+  }
+  bool use_color = msg->colors.size() > 0;
+  if ((use_color) && (msg->colors.size() != msg->mesh.vertices.size())) {
+    std::cerr << "mismatching color sizes " << msg->colors.size() << " "
+        << msg->mesh.vertices.size() << "\n";
+    use_uv = false;
+  }
+  glm::vec4 default_color = glm::vec4(1.0, 1.0, 1.0, 1.0);
+  if ((!use_color) && (msg->colors.size() == 1)) {
+    default_color.x = msg->colors[0].r;
+    default_color.y = msg->colors[0].g;
+    default_color.z = msg->colors[0].b;
+    default_color.w = msg->colors[0].a;
+  }
+
+  auto shape = std::make_shared<Shape>();
+  shape->name_ = msg->name;
+  shape->texture_ = msg->texture;
+  for (size_t i = 0; i < msg->mesh.vertices.size(); ++i) {
+    DrawVert p1;
+    p1.pos.x = msg->mesh.vertices[i].x;
+    p1.pos.y = msg->mesh.vertices[i].y;
+    p1.pos.z = msg->mesh.vertices[i].z;
+    if (use_uv) {
+      p1.uv.x = msg->uv[i].x;
+      p1.uv.y = msg->uv[i].y;
+    }
+    // These colors multiply with the texture color
+    if (use_color) {
+      p1.col.x = msg->colors[i].r;
+      p1.col.y = msg->colors[i].g;
+      p1.col.z = msg->colors[i].b;
+      p1.col.w = msg->colors[i].a;
+    } else {
+      p1.col = default_color;
+    }
+    shape->vertices_.push_back(p1);
+  }
+
+  for (size_t i = 0; i < msg->mesh.triangles.size(); ++i) {
+    for (size_t j = 0; j < msg->mesh.triangles[i].vertex_indices.size(); ++j) {
+      shape->indices_.push_back(msg->mesh.triangles[i].vertex_indices[j]);
+    }
+  }
+
+  shape->print();
+  shapes_[shape->name_] = shape;
 }
 
 void Viz3D::draw()
@@ -285,7 +349,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
   }
     checkGLError(__FILE__, __LINE__);
 
-  ros_image->updateTexture();
+    ros_image_->updateTexture();
 
     GLState gl_state;
     gl_state.backup();
@@ -335,6 +399,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     glVertexAttribPointer(attrib_location_color_, 4, GL_FLOAT, GL_FALSE,
         sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
 
+#if 1
     {
       ImVector<DrawVert> VtxBuffer;
       const float sc = 0.2;
@@ -383,7 +448,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
       ImVector<ImDrawCmd> CmdBuffer;
       ImDrawCmd cmd;
       cmd.ElemCount = IdxBuffer.Size;
-      cmd.TextureId = (void*)ros_image->texture_id_;
+      cmd.TextureId = (void*)ros_image_->texture_id_;
       CmdBuffer.push_back(cmd);
 
 
@@ -419,8 +484,50 @@ void Viz3D::render(const int fb_width, const int fb_height,
       }
     }  // test draw
 
-    glDeleteVertexArrays(1, &vao_handle);
+#endif
+#if 0
+  for (auto shape_pair : shapes_) {
+    auto shape = shape_pair.second;
+    const ImDrawIdx* idx_buffer_offset = 0;
 
+    {
+      static bool has_printed = false;
+      if (!has_printed) {
+        has_printed = true;
+        shape->print();
+      }
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_handle_);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)shape->vertices_.Size * sizeof(DrawVert),
+        (const GLvoid*)shape->vertices_.Data, GL_STREAM_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)shape->indices_.Size * sizeof(ImDrawIdx),
+        (const GLvoid*)shape->indices_.Data, GL_STREAM_DRAW);
+    checkGLError(__FILE__, __LINE__);
+
+    ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
+    glScissor((int)clip_rect.x, (int)clip_rect.y,
+        (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
+
+    // Bind texture- if it is null then the color is black
+    // if (texture_id_ != nullptr)
+    GLuint tex_id = 0;
+    if ((shape->texture_ != "") && (ros_images_.count(shape->texture_) > 0)) {
+      tex_id = (GLuint)(intptr_t)ros_images_[shape->texture_]->texture_id_;
+    }
+    glBindTexture(GL_TEXTURE_2D, tex_id);
+
+    GLsizei elem_count = (GLsizei)shape->indices_.Size;
+    glDrawElements(GL_TRIANGLES, elem_count,
+        sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
+    idx_buffer_offset += elem_count;
+    checkGLError(__FILE__, __LINE__);
+  }
+#endif
+
+    glDeleteVertexArrays(1, &vao_handle);
     checkGLError(__FILE__, __LINE__);
     gl_state.backup();
     checkGLError(__FILE__, __LINE__);
