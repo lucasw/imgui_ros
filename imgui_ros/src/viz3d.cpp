@@ -401,22 +401,21 @@ void Viz3D::render(const int fb_width, const int fb_height,
 
 #if 1
     {
-      ImVector<DrawVert> VtxBuffer;
+      auto shape = std::make_shared<Shape>();
       const float sc = 0.2;
       const float off_y = 0.0;
       const int num = 16;
       const float off_x = -sc * num / 2;
-      ImVector<ImDrawIdx> IdxBuffer;
 
       for (int j = 0; j < 5; ++j) {
-        for (int i = VtxBuffer.Size; i < VtxBuffer.Size + num * 2 - 3; i += 2) {
-          IdxBuffer.push_back(i);
-          IdxBuffer.push_back(i + 3);
-          IdxBuffer.push_back(i + 2);
+        for (int i = shape->vertices_.Size; i < shape->vertices_.Size + num * 2 - 3; i += 2) {
+          shape->indices_.push_back(i);
+          shape->indices_.push_back(i + 3);
+          shape->indices_.push_back(i + 2);
 
-          IdxBuffer.push_back(i);
-          IdxBuffer.push_back(i + 1);
-          IdxBuffer.push_back(i + 3);
+          shape->indices_.push_back(i);
+          shape->indices_.push_back(i + 1);
+          shape->indices_.push_back(i + 3);
         }
 
         for (int i = 0; i < num; ++i) {
@@ -430,7 +429,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
             p1.uv.y = 0;
             // These colors multiply with the texture color
             p1.col = glm::vec4(1.0, 1.0, 1.0, 1.0);
-            VtxBuffer.push_back(p1);
+            shape->vertices_.push_back(p1);
           }
           {
             DrawVert p2;
@@ -440,28 +439,27 @@ void Viz3D::render(const int fb_width, const int fb_height,
             p2.uv.x = fr;
             p2.uv.y = 1.0;
             p2.col = glm::vec4(1.0 - fr, 1.0 - fr, 1.0, 1.0);
-            VtxBuffer.push_back(p2);
+            shape->vertices_.push_back(p2);
           }
         }
       }
 
       ImVector<ImDrawCmd> CmdBuffer;
       ImDrawCmd cmd;
-      cmd.ElemCount = IdxBuffer.Size;
+      cmd.ElemCount = shape->indices_.Size;
       cmd.TextureId = (void*)ros_image_->texture_id_;
       CmdBuffer.push_back(cmd);
-
 
       checkGLError(__FILE__, __LINE__);
       const ImDrawIdx* idx_buffer_offset = 0;
 
       glBindBuffer(GL_ARRAY_BUFFER, vbo_handle_);
-      glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)VtxBuffer.Size * sizeof(DrawVert),
-          (const GLvoid*)VtxBuffer.Data, GL_STREAM_DRAW);
+      glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)shape->vertices_.Size * sizeof(DrawVert),
+          (const GLvoid*)shape->vertices_.Data, GL_STREAM_DRAW);
 
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
-      glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)IdxBuffer.Size * sizeof(ImDrawIdx),
-          (const GLvoid*)IdxBuffer.Data, GL_STREAM_DRAW);
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)shape->indices_.Size * sizeof(ImDrawIdx),
+          (const GLvoid*)shape->indices_.Data, GL_STREAM_DRAW);
       checkGLError(__FILE__, __LINE__);
 
       ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
