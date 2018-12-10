@@ -68,6 +68,7 @@ struct DrawVert {
 
 struct Shape {
   std::string name_;
+  std::string frame_id_;
   ImVector<DrawVert> vertices_;
   ImVector<ImDrawIdx> indices_;
   std::string texture_;
@@ -96,6 +97,10 @@ struct Shape {
     std::cout << "\n";
   }
 
+  // ROS
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+
+  // OpenGL
   GLuint vao_handle_ = 0;
   GLuint vbo_handle_ = 0;
   GLuint elements_handle_ = 0;
@@ -137,7 +142,8 @@ protected:
   float near_ = 0.01f;
   float far_ = 100.0f;
   double aspect_scale_ = 1.0f;
-  void setupCamera(const int fb_width, const int fb_height, glm::mat4& mvp);
+  void setupCamera(const std::string child_frame_id,
+      const int fb_width, const int fb_height, glm::mat4& mvp);
 #if 0
   // temp texture test
   GLuint texture_id_ = 0;
@@ -174,6 +180,7 @@ protected:
   std::shared_ptr<Shape> test_shape_;
 
   std::string name_;
+  std::string frame_id_ = "map";
   // TODO(lucasw) don't need this now
   std::weak_ptr<ImGuiImplOpenGL3> renderer_;
 

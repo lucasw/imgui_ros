@@ -58,14 +58,15 @@ class Demo(Node):
     def add_shapes(self):
         shape = TexturedShape()
         shape.name = "foo"
-        shape.header.frame_id = 'map'
+        shape.header.frame_id = 'bar'
         # shape.header.stamp = self.now()
 
         sc = 0.2
-        off_y = 0.0
         num = 7
         off_x = -sc * num / 2
         num_rows = 4
+        off_y = -sc
+        off_z = -sc * num_rows
         for j in range(num_rows):
             for i in range(0, num * 2 - 3, 2):
                 ind = i + len(shape.mesh.vertices)
@@ -84,7 +85,7 @@ class Demo(Node):
 
             for i in range(num):
                 x = i * sc + off_x
-                z = 1.0 + j * sc * 2.0
+                z = j * sc * 2.0 + off_z
                 pt = Point()
                 pt.x = x
                 pt.y = off_y

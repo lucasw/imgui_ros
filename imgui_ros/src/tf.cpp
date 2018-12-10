@@ -201,8 +201,12 @@ void TfBroadcaster::draw()
   rot2RPY(ts_.transform.rotation, roll, pitch, yaw);
   ImGui::SliderScalar("roll", ImGuiDataType_Double,
       &roll, &min, &max, "%lf");
+
+  // TODO(lucasw) need to eliminate glitches from going beyond pi/2
+  double pitch_min = -1.57;
+  double pitch_max = 1.57;
   ImGui::SliderScalar("pitch", ImGuiDataType_Double,
-      &pitch, &min, &max, "%lf");
+      &pitch, &pitch_min, &pitch_max, "%lf");
   ImGui::SliderScalar("yaw", ImGuiDataType_Double,
       &yaw, &min, &max, "%lf");
   tf2::Quaternion quat;

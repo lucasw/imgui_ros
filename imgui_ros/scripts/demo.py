@@ -250,10 +250,11 @@ class Demo(Node):
         self.wait_for_response()
 
         # TODO(lucasw) move the tf broadcasting into standalone node
-        self.elapsed = 0.0
-        self.period = 0.05
-        # self.br = tf2_ros.TransformBroadcaster()
-        # self.timer = self.create_timer(self.period, self.update)
+        if False:
+            self.elapsed = 0.0
+            self.period = 0.05
+            self.br = tf2_ros.TransformBroadcaster()
+            self.timer = self.create_timer(self.period, self.update)
 
     def add_markers(self):
         # now publish some markers for the Viz2D

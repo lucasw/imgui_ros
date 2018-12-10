@@ -37,6 +37,7 @@
 #include <imgui_ros/viz3d.h>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 using std::placeholders::_1;
 
 void makeTestShape(std::shared_ptr<Shape> shape)
@@ -250,7 +251,14 @@ void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr
 
   auto shape = std::make_shared<Shape>();
   shape->name_ = msg->name;
+  shape->frame_id_ = msg->header.frame_id;
+  shape->tf_buffer_ = tf_buffer_;
   shape->texture_ = msg->texture;
+
+  // TODO(lucasw) if is_topic then create RosImage subscriber
+  // if msg->image isn't empty create a RosImage and initialize the image
+  // with it (RosImage doesn't support that yet).
+
   for (size_t i = 0; i < msg->mesh.vertices.size(); ++i) {
     DrawVert p1;
     p1.pos.x = msg->mesh.vertices[i].x;
@@ -274,8 +282,8 @@ void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr
 
   for (size_t i = 0; i < msg->mesh.triangles.size(); ++i) {
     for (size_t j = 0; j < msg->mesh.triangles[i].vertex_indices.size(); ++j) {
-      const auto ind = msg->mesh.triangles[i].vertex_indices[j];
-      if (ind >= shape->vertices_.Size) {
+      const int ind = msg->mesh.triangles[i].vertex_indices[j];
+      if ((ind < 0) || (ind >= shape->vertices_.Size)) {
         std::cerr << "bad triangle index " << ind << " >= "
             << shape->vertices_.Size << "\n";
         // TODO(lucasw) or set to zero, or Size - 1?
@@ -364,12 +372,40 @@ void Viz3D::draw()
   ImGui::End();
 }
 
-void Viz3D::setupCamera(const int fb_width, const int fb_height, glm::mat4& mvp)
+// Currently calling setupcamera for every object- that seems efficient vs.
+// transforming all the data of every object.
+void Viz3D::setupCamera(const std::string child_frame_id,
+    const int fb_width, const int fb_height, glm::mat4& mvp)
 {
   const float aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height) * aspect_scale_;
   glm::mat4 projection_matrix = glm::perspective(static_cast<float>(glm::radians(aov_y_)),
       aspect, near_, far_);
+
   glm::mat4 model_matrix = glm::mat4(1.0f);
+  try {
+    geometry_msgs::msg::TransformStamped tf;
+    tf = tf_buffer_->lookupTransform(frame_id_, child_frame_id, tf2::TimePointZero);
+    tf2::Stamped<tf2::Transform> stamped_transform;
+    tf2::fromMsg(tf, stamped_transform);
+    #if 0
+    tf2::TimePoint time_out;
+    // this is private, so doesn't work
+    tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
+        tf2::TimePointZero, transform, time_out);
+    #endif
+
+    glm::dmat4 model_matrix_double;
+    stamped_transform.getOpenGLMatrix(&model_matrix_double[0][0]);
+    // TODO(lucasw) is there a glm double to float conversion function?
+    for (size_t i = 0; i < 4; ++i)
+      for (size_t j = 0; j < 4; ++j)
+        model_matrix[i][j] = model_matrix_double[i][j];
+  } catch (tf2::TransformException& ex) {
+    // TODO(lucasw) display exception on gui, but this isn't currently the correct
+    // time.
+    // ImGui::Text("%s", ex.what());
+  }
+
   glm::mat4 view_matrix = glm::lookAt(
       translation_,
       translation_ + glm::vec3(sin(angle_), 0, cos(angle_)),
@@ -441,15 +477,16 @@ void Viz3D::render(const int fb_width, const int fb_height,
     // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
 
-    glm::mat4 mvp;
-    setupCamera(fb_width, fb_height, mvp);
     // (This is to easily allow multiple GL contexts. VAO are not shared among GL contexts, and we don't track creation/deletion of windows so we don't have an obvious key to use to cache them.)
     checkGLError(__FILE__, __LINE__);
 
   for (auto shape_pair : shapes_) {
     auto shape = shape_pair.second;
 
+    glm::mat4 mvp;
+    setupCamera(shape->frame_id_, fb_width, fb_height, mvp);
     glUseProgram(shader_handle_);
+    // glUniformMatrix4dv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
     glUniformMatrix4fv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
     glUniform1i(shape->attrib_location_tex_, 0);
 #ifdef GL_SAMPLER_BINDING
