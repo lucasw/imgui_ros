@@ -89,6 +89,43 @@ void makeTestShape(std::shared_ptr<Shape> shape)
   }
 }
 
+void Shape::init(GLuint& shader_handle)
+{
+  glGenVertexArrays(1, &vao_handle_);
+  glBindVertexArray(vao_handle_);
+
+  glGenBuffers(1, &vbo_handle_);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_handle_);
+  // copy data to gpu
+  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)vertices_.Size * sizeof(DrawVert),
+      (const GLvoid*)vertices_.Data, GL_STREAM_DRAW);
+
+  attrib_location_tex_ = glGetUniformLocation(shader_handle, "Texture");
+  attrib_location_proj_mtx_ = glGetUniformLocation(shader_handle, "ProjMtx");
+  attrib_location_position_ = glGetAttribLocation(shader_handle, "Position");
+  attrib_location_uv_ = glGetAttribLocation(shader_handle, "UV");
+  attrib_location_color_ = glGetAttribLocation(shader_handle, "Color");
+
+  checkGLError(__FILE__, __LINE__);
+  glEnableVertexAttribArray(attrib_location_position_);
+  glEnableVertexAttribArray(attrib_location_uv_);
+  glEnableVertexAttribArray(attrib_location_color_);
+  checkGLError(__FILE__, __LINE__);
+  glVertexAttribPointer(attrib_location_position_, 3, GL_FLOAT, GL_FALSE,
+      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
+  glVertexAttribPointer(attrib_location_uv_, 2, GL_FLOAT, GL_FALSE,
+      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, uv));
+  glVertexAttribPointer(attrib_location_color_, 4, GL_FLOAT, GL_FALSE,
+      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
+  checkGLError(__FILE__, __LINE__);
+
+  glGenBuffers(1, &elements_handle_);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)indices_.Size * sizeof(ImDrawIdx),
+      (const GLvoid*)indices_.Data, GL_STREAM_DRAW);
+  checkGLError(__FILE__, __LINE__);
+}
+
 // render the entire background
 // this probably will be split out into a widget also.
 Viz3D::Viz3D(const std::string name,
@@ -102,33 +139,6 @@ Viz3D::Viz3D(const std::string name,
     node_(node)
 {
   ros_image_.reset(new RosImage("texture", "/image_out", node));
-
-#if 0
-  /// generate a test texture
-  glGenTextures(1, &texture_id_);
-  std::cout << "viz3d texture id " << texture_id_ << "\n";
-  test_ = cv::Mat(128, 128, CV_8UC3, cv::Scalar::all(128));
-  cv::circle(test_, cv::Point(40, 40), 40, cv::Scalar(0, 255, 255, 0), -1);
-  // cv::imshow("test", test_);
-  // cv::waitKey(0);
-
-  glBindTexture(GL_TEXTURE_2D, texture_id_);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  // Set texture clamping method - GL_CLAMP isn't defined
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-  glPixelStorei(GL_UNPACK_ALIGNMENT, (test_.step & 3) ? 1 : 4);
-  // set length of one complete row in data (doesn't need to equal image.cols)
-  glPixelStorei(GL_UNPACK_ROW_LENGTH, test_.step / test_.elemSize());
-
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, test_.cols, test_.rows,
-      0, GL_RGB, GL_UNSIGNED_BYTE, &test_.data[0]);
-  checkGLError(__FILE__, __LINE__);
-#endif
-  ////////////////////////////////////
 
   // TODO(lucasw) maintaining many versions of these seems like a big hassle,
   // which is why bgfx exists...
@@ -194,22 +204,14 @@ Viz3D::Viz3D(const std::string name,
   glLinkProgram(shader_handle_);
   CheckProgram(shader_handle_, "shader program");
 
-  attrib_location_tex_ = glGetUniformLocation(shader_handle_, "Texture");
-  attrib_location_proj_mtx_ = glGetUniformLocation(shader_handle_, "ProjMtx");
-  attrib_location_position_ = glGetAttribLocation(shader_handle_, "Position");
-  attrib_location_uv_ = glGetAttribLocation(shader_handle_, "UV");
-  attrib_location_color_ = glGetAttribLocation(shader_handle_, "Color");
-
-  // Create buffers
-  glGenBuffers(1, &vbo_handle_);
-  glGenBuffers(1, &elements_handle_);
-
   textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
 
+  #if 0
   test_shape_ = std::make_shared<Shape>();
   makeTestShape(test_shape_);
-  // shapes_[test_shape_->name_] = test_shape_;
+  shapes_[test_shape_->name_] = test_shape_;
+  #endif
 }
 
 Viz3D::~Viz3D()
@@ -283,6 +285,7 @@ void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr
     }
   }
 
+  shape->init(shader_handle_);
   shape->print();
   shapes_[shape->name_] = shape;
 }
@@ -361,7 +364,7 @@ void Viz3D::draw()
   ImGui::End();
 }
 
-void Viz3D::setupCamera(const int fb_width, const int fb_height)
+void Viz3D::setupCamera(const int fb_width, const int fb_height, glm::mat4& mvp)
 {
   const float aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height) * aspect_scale_;
   glm::mat4 projection_matrix = glm::perspective(static_cast<float>(glm::radians(aov_y_)),
@@ -372,8 +375,7 @@ void Viz3D::setupCamera(const int fb_width, const int fb_height)
       translation_ + glm::vec3(sin(angle_), 0, cos(angle_)),
       glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
   );
-  glm::mat4 mvp = projection_matrix * view_matrix * model_matrix;
-  glUniformMatrix4fv(attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
+  mvp = projection_matrix * view_matrix * model_matrix;
 
   {
     static bool has_printed = false;
@@ -399,6 +401,10 @@ void Viz3D::render(const int fb_width, const int fb_height,
   (void)display_size_x;
   (void)display_size_y;
 
+  if (shapes_.size() == 0) {
+    return;
+  }
+
   if (fb_width <= 0 || fb_height <= 0) {
     std::cerr << "bad width height " << fb_width << " " << fb_height << "\n";
     return;
@@ -409,6 +415,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     std::cerr << "no renderer\n";
     return;
   }
+
     checkGLError(__FILE__, __LINE__);
 
     ros_image_->updateTexture();
@@ -434,52 +441,29 @@ void Viz3D::render(const int fb_width, const int fb_height,
     // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
 
-    setupCamera(fb_width, fb_height);
+    glm::mat4 mvp;
+    setupCamera(fb_width, fb_height, mvp);
+    // (This is to easily allow multiple GL contexts. VAO are not shared among GL contexts, and we don't track creation/deletion of windows so we don't have an obvious key to use to cache them.)
+    checkGLError(__FILE__, __LINE__);
+
+  for (auto shape_pair : shapes_) {
+    auto shape = shape_pair.second;
 
     glUseProgram(shader_handle_);
-    glUniform1i(attrib_location_tex_, 0);
+    glUniformMatrix4fv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
+    glUniform1i(shape->attrib_location_tex_, 0);
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
     // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
 #endif
-    // Recreate the VAO every time
-    // (This is to easily allow multiple GL contexts. VAO are not shared among GL contexts, and we don't track creation/deletion of windows so we don't have an obvious key to use to cache them.)
+
     checkGLError(__FILE__, __LINE__);
-    GLuint vao_handle = 0;
-    glGenVertexArrays(1, &vao_handle);
-    glBindVertexArray(vao_handle);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_handle_);
-    checkGLError(__FILE__, __LINE__);
-    glEnableVertexAttribArray(attrib_location_position_);
-    glEnableVertexAttribArray(attrib_location_uv_);
-    glEnableVertexAttribArray(attrib_location_color_);
-    checkGLError(__FILE__, __LINE__);
-    glVertexAttribPointer(attrib_location_position_, 3, GL_FLOAT, GL_FALSE,
-        sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
-    glVertexAttribPointer(attrib_location_uv_, 2, GL_FLOAT, GL_FALSE,
-        sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, uv));
-    glVertexAttribPointer(attrib_location_color_, 4, GL_FLOAT, GL_FALSE,
-        sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
 
-#if 1
-  for (auto shape_pair : shapes_) {
-    auto shape = shape_pair.second;
+    glBindVertexArray(shape->vao_handle_);
 
-      checkGLError(__FILE__, __LINE__);
-      const ImDrawIdx* idx_buffer_offset = 0;
-
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_handle_);
-      glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)shape->vertices_.Size * sizeof(DrawVert),
-          (const GLvoid*)shape->vertices_.Data, GL_STREAM_DRAW);
-
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
-      glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)shape->indices_.Size * sizeof(ImDrawIdx),
-          (const GLvoid*)shape->indices_.Data, GL_STREAM_DRAW);
-      checkGLError(__FILE__, __LINE__);
-
-      ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
-      glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
-          (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
+    ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
+    glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
+        (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
 
 #if 0
     {
@@ -497,8 +481,10 @@ void Viz3D::render(const int fb_width, const int fb_height,
       tex_id = (GLuint)(intptr_t)ros_images_[shape->texture_]->texture_id_;
     }
 #endif
+    const ImDrawIdx* idx_buffer_offset = 0;
       // Bind texture- if it is null then the color is black
       // if (texture_id_ != nullptr)
+      glBindBuffer(GL_ARRAY_BUFFER, shape->vbo_handle_);  // needed before bind texture?
       glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)ros_image_->texture_id_);
       glDrawElements(GL_TRIANGLES, (GLsizei)shape->indices_.Size,
           sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
@@ -506,10 +492,8 @@ void Viz3D::render(const int fb_width, const int fb_height,
       checkGLError(__FILE__, __LINE__);
       // idx_buffer_offset += pcmd->ElemCount;
     }  // test draw
-#endif
 
-    glDeleteVertexArrays(1, &vao_handle);
-    checkGLError(__FILE__, __LINE__);
-    gl_state.backup();
-    checkGLError(__FILE__, __LINE__);
+  checkGLError(__FILE__, __LINE__);
+  gl_state.backup();
+  checkGLError(__FILE__, __LINE__);
 }

@@ -72,6 +72,16 @@ struct Shape {
   ImVector<ImDrawIdx> indices_;
   std::string texture_;
 
+  ~Shape()
+  {
+    glDeleteBuffers(1, &elements_handle_);
+    glDeleteBuffers(1, &vbo_handle_);
+    glDeleteVertexArrays(1, &vao_handle_);
+  }
+
+  // transfer to gpu
+  void init(GLuint& shader_handle);
+
   void print() {
     std::cout << "shape " << name_ << " " << texture_ << " "
         << vertices_.Size << " " << indices_.Size << ":\n";
@@ -84,9 +94,17 @@ struct Shape {
     for (int i = 0; (i < 12) && (i < indices_.Size); ++i)
       std::cout << " " << indices_[i];
     std::cout << "\n";
-
   }
-  // TODO(lucasw) handles to in-gpu buffers of above
+
+  GLuint vao_handle_ = 0;
+  GLuint vbo_handle_ = 0;
+  GLuint elements_handle_ = 0;
+
+  int attrib_location_tex_ = 0;
+  int attrib_location_proj_mtx_ = 0;
+  int attrib_location_position_ = 0;
+  int attrib_location_uv_ = 0;
+  int attrib_location_color_ = 0;
 };
 
 // TODO(lucasw) need to support covering the entire background,
@@ -119,7 +137,7 @@ protected:
   float near_ = 0.01f;
   float far_ = 100.0f;
   double aspect_scale_ = 1.0f;
-  void setupCamera(const int fb_width, const int fb_height);
+  void setupCamera(const int fb_width, const int fb_height, glm::mat4& mvp);
 #if 0
   // temp texture test
   GLuint texture_id_ = 0;
@@ -145,13 +163,6 @@ protected:
   GLuint shader_handle_ = 0;
   GLuint vert_handle_ = 0;
   GLuint frag_handle_ = 0;
-  int attrib_location_tex_ = 0;
-  int attrib_location_proj_mtx_ = 0;
-  int attrib_location_position_ = 0;
-  int attrib_location_uv_ = 0;
-  int attrib_location_color_ = 0;
-  unsigned int vbo_handle_ = 0;
-  unsigned int elements_handle_ = 0;
 
   void texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr msg);
   rclcpp::Subscription<imgui_ros::msg::TexturedShape>::SharedPtr textured_shape_sub_;

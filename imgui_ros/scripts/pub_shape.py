@@ -17,12 +17,13 @@
 # import tf2_ros
 import rclpy
 
-from geometry_msgs.msg import Point, TransformStamped
+from geometry_msgs.msg import Point, TransformStamped, Vector3
 from imgui_ros.msg import TexturedShape, Widget
 from imgui_ros.srv import AddWindow
 from rclpy.node import Node
 from shape_msgs.msg import MeshTriangle, Mesh
 from std_msgs.msg import ColorRGBA
+from time import sleep
 from visualization_msgs.msg import Marker
 
 
@@ -32,6 +33,7 @@ class Demo(Node):
         super().__init__('add_shape')
         self.marker_pub = self.create_publisher(Marker, 'marker')
         self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
+        sleep(1.0)
         self.cli = self.create_client(AddWindow, 'add_window')
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
@@ -63,7 +65,7 @@ class Demo(Node):
         off_y = 0.0
         num = 7
         off_x = -sc * num / 2
-        num_rows = 1
+        num_rows = 4
         for j in range(num_rows):
             for i in range(0, num * 2 - 3, 2):
                 ind = i + len(shape.mesh.vertices)
@@ -89,6 +91,12 @@ class Demo(Node):
                 pt.z = z
                 shape.mesh.vertices.append(pt)
 
+                fr = float(i) / float(num)
+                uv = Vector3()
+                uv.x = fr
+                uv.y = 0.0
+                shape.uv.append(uv)
+
                 col = ColorRGBA()
                 col.r = float(j) / float(num_rows)
                 col.g = 1.0
@@ -102,6 +110,11 @@ class Demo(Node):
                 pt.z = z
                 shape.mesh.vertices.append(pt)
 
+                uv = Vector3()
+                uv.x = fr
+                uv.y = 1.0
+                shape.uv.append(uv)
+
                 col = ColorRGBA()
                 col.r = float(j) / float(num_rows)
                 col.g = 0.3
@@ -112,6 +125,7 @@ class Demo(Node):
         print("shape {} {} {}".format(shape.name, len(shape.mesh.vertices),
               len(shape.mesh.triangles) * 3))
         self.shape_pub.publish(shape)
+        sleep(1.0)
 
 def main(args=None):
     rclpy.init(args=args)

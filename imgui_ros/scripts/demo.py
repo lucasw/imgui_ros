@@ -55,7 +55,7 @@ class Demo(Node):
         self.add_misc()
         self.add_viz()
         self.add_markers()
-        self.add_shapes()
+        # self.add_shapes()
 
     def add_images(self):
         req = AddWindow.Request()
