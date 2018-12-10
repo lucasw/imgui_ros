@@ -272,7 +272,14 @@ void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr
 
   for (size_t i = 0; i < msg->mesh.triangles.size(); ++i) {
     for (size_t j = 0; j < msg->mesh.triangles[i].vertex_indices.size(); ++j) {
-      shape->indices_.push_back(msg->mesh.triangles[i].vertex_indices[j]);
+      const auto ind = msg->mesh.triangles[i].vertex_indices[j];
+      if (ind >= shape->vertices_.Size) {
+        std::cerr << "bad triangle index " << ind << " >= "
+            << shape->vertices_.Size << "\n";
+        // TODO(lucasw) or set to zero, or Size - 1?
+        return;
+      }
+      shape->indices_.push_back(ind);
     }
   }
 

@@ -73,11 +73,11 @@ class Demo(Node):
                 triangle.vertex_indices[2] = ind + 3
                 shape.mesh.triangles.append(triangle)
 
-                if False:
+                if True:
                     triangle = MeshTriangle()
                     triangle.vertex_indices[0] = ind
-                    triangle.vertex_indices[1] = ind + 1
-                    triangle.vertex_indices[2] = ind + 3
+                    triangle.vertex_indices[1] = ind + 3
+                    triangle.vertex_indices[2] = ind + 2
                     shape.mesh.triangles.append(triangle)
 
             for i in range(num):
