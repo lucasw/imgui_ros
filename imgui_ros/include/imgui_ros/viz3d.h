@@ -36,6 +36,7 @@
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
 #include <imgui_ros/msg/textured_shape.hpp>
+#include <imgui_ros/srv/add_shape.hpp>
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -170,14 +171,15 @@ protected:
   GLuint vert_handle_ = 0;
   GLuint frag_handle_ = 0;
 
+  rclcpp::Service<imgui_ros::srv::AddShape>::SharedPtr add_shape_;
+  void addShape(const std::shared_ptr<imgui_ros::srv::AddShape::Request> req,
+                std::shared_ptr<imgui_ros::srv::AddShape::Response> res);
   void texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr msg);
   rclcpp::Subscription<imgui_ros::msg::TexturedShape>::SharedPtr textured_shape_sub_;
   // TODO(lucasw) it would be nice if the received TexturedShape
   // could be passed into opengl directly, which it probably could be made
   // to do, but for now interpret it on reception into local class.
   std::map<std::string, std::shared_ptr<Shape> > shapes_;
-  // test shape
-  std::shared_ptr<Shape> test_shape_;
 
   std::string name_;
   std::string frame_id_ = "map";
@@ -190,6 +192,7 @@ protected:
   // probably will replace with service that adds a texture with a given
   // name, for now have topic.
   std::map<std::string, std::shared_ptr<RosImage> > ros_images_;
+  // temp test
   std::shared_ptr<RosImage> ros_image_;
 };
 

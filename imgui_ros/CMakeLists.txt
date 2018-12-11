@@ -40,6 +40,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Widget.msg"
   "msg/TexturedShape.msg"
   "srv/AddWindow.srv"
+  "srv/AddShape.srv"
   DEPENDENCIES geometry_msgs sensor_msgs shape_msgs std_msgs
 )
 

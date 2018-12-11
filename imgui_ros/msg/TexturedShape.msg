@@ -1,11 +1,14 @@
 std_msgs/Header header
 # unique name, will replace any textured shape already received
 string name
+bool add True
 # where the shape is relative to the header frame_id
 # TODO(lucasw) or make this a TransformStamped, and have the position computed
 # relative to the header frame id at the time in the TransformStamped,
 # but then at later timesteps it remains fixed relative to the header frame_id?
 # No should just have the caller figure that out.
+# TODO(lucasw) this belongs in a ShapeInstance.msg, this msg should be
+# just for the geometry to be stored but doesn't actually create an instance to be rendered.
 geometry_msgs/Transform transform
 shape_msgs/Mesh mesh
 # colors for each vertice, needs to have 0, 1 (for all vertices same color),

@@ -19,7 +19,7 @@ import rclpy
 
 from geometry_msgs.msg import Point, TransformStamped, Vector3
 from imgui_ros.msg import TexturedShape, Widget
-from imgui_ros.srv import AddWindow
+from imgui_ros.srv import AddShape, AddWindow
 from rclpy.node import Node
 from shape_msgs.msg import MeshTriangle, Mesh
 from std_msgs.msg import ColorRGBA
@@ -31,10 +31,10 @@ class Demo(Node):
 
     def __init__(self):
         super().__init__('add_shape')
-        self.marker_pub = self.create_publisher(Marker, 'marker')
-        self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
+        # self.marker_pub = self.create_publisher(Marker, 'marker')
+        # self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
         sleep(1.0)
-        self.cli = self.create_client(AddWindow, 'add_window')
+        self.cli = self.create_client(AddShape, 'add_shape')
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
 
@@ -125,7 +125,12 @@ class Demo(Node):
 
         print("shape {} {} {}".format(shape.name, len(shape.mesh.vertices),
               len(shape.mesh.triangles) * 3))
-        self.shape_pub.publish(shape)
+        # self.shape_pub.publish(shape)
+        shape.add = True
+        req = AddShape.Request()
+        req.shapes.append(shape)
+        self.future = self.cli.call_async(req)
+        self.wait_for_response()
         sleep(1.0)
 
 def main(args=None):

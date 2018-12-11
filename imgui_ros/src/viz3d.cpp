@@ -39,6 +39,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 using std::placeholders::_1;
+using std::placeholders::_2;
 
 void makeTestShape(std::shared_ptr<Shape> shape)
 {
@@ -208,6 +209,8 @@ Viz3D::Viz3D(const std::string name,
   textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
 
+  add_shape_ = node->create_service<imgui_ros::srv::AddShape>("add_shape",
+      std::bind(&Viz3D::addShape, this, _1, _2));
   #if 0
   test_shape_ = std::make_shared<Shape>();
   makeTestShape(test_shape_);
@@ -222,6 +225,18 @@ Viz3D::~Viz3D()
 #endif
 }
 
+void Viz3D::addShape(const std::shared_ptr<imgui_ros::srv::AddShape::Request> req,
+                std::shared_ptr<imgui_ros::srv::AddShape::Response> res)
+{
+  for (auto textured_shape : req->shapes) {
+    auto shape = std::make_shared<imgui_ros::msg::TexturedShape>(textured_shape);
+    texturedShapeCallback(shape);
+    res->message += " " + shape->name;
+  }
+
+  res->success = true;
+}
+
 // TODO(lucasw) Shape -> Mesh?
 void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr msg)
 {
@@ -229,6 +244,15 @@ void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr
     std::cerr << "mesh needs name\n";
     return;
   }
+
+  if (msg->add == false) {
+
+    if (shapes_.count(msg->name) > 0) {
+      shapes_.erase(msg->name);
+      return;
+    }
+  }
+
   bool use_uv = msg->uv.size() > 0;
   if ((use_uv) && (msg->uv.size() != msg->mesh.vertices.size())) {
     std::cerr << "mismatching uv sizes " << msg->uv.size() << " "
