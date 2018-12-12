@@ -53,6 +53,8 @@ def generate_launch_description():
 
     configure_windows = launch_ros.actions.Node(
             package='imgui_ros', node_executable='demo.py', output='screen')
+    add_shapes = launch_ros.actions.Node(
+            package='imgui_ros', node_executable='pub_shape.py', output='screen')
 
     return launch.LaunchDescription([
         roto_zoom,
@@ -60,4 +62,5 @@ def generate_launch_description():
         # image_pub,
         imgui_ros,
         configure_windows,
+        add_shapes,
     ])

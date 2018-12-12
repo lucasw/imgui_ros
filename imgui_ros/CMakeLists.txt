@@ -110,7 +110,9 @@ ament_target_dependencies(param_to_topic
 install(TARGETS param_to_topic DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+# TODO(lucasw) glob
 install(PROGRAMS scripts/demo.py DESTINATION lib/${PROJECT_NAME})
+install(PROGRAMS scripts/pub_shape.py DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

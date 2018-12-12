@@ -348,18 +348,20 @@ void Viz3D::draw()
   ImGui::Begin("camera");
   // ImGuiIO& io = ImGui::GetIO();
 
+  float x_move = 0.0;
+  float y_move = 0.0;
   const float sc = 0.03;
   if (ImGui::IsKeyPressed(SDL_SCANCODE_A)) {
-    translation_.x += sc;
+    y_move += sc;
   }
   if (ImGui::IsKeyPressed(SDL_SCANCODE_D)) {
-    translation_.x -= sc;
+    y_move -= sc;
   }
   if (ImGui::IsKeyPressed(SDL_SCANCODE_W)) {
-    translation_.z += sc;
+    x_move += sc;
   }
   if (ImGui::IsKeyPressed(SDL_SCANCODE_S)) {
-    translation_.z -= sc;
+    x_move -= sc;
   }
   if (ImGui::IsKeyPressed(SDL_SCANCODE_Q)) {
     translation_.y += sc;
@@ -367,6 +369,9 @@ void Viz3D::draw()
   if (ImGui::IsKeyPressed(SDL_SCANCODE_Z)) {
     translation_.y -= sc;
   }
+
+  translation_.z += x_move * cos(angle_) - y_move * sin(angle_);
+  translation_.x += x_move * sin(angle_) + y_move * cos(angle_);
 
   // mouse input
   ImVec2 mouse_pos_in_canvas = ImGui::GetIO().MousePos;
