@@ -49,9 +49,12 @@ using std::placeholders::_1;
 
   RosImage::RosImage(const std::string name, const std::string topic,
                      std::shared_ptr<rclcpp::Node> node) : GlImage(name, topic), node_(node) {
-    std::cout << "subscribing to topic " << topic << "\n";
-    sub_ = node->create_subscription<sensor_msgs::msg::Image>(topic,
-        std::bind(&RosImage::imageCallback, this, _1));
+
+    if (topic != "") {
+      std::cout << "subscribing to topic " << topic << "\n";
+      sub_ = node->create_subscription<sensor_msgs::msg::Image>(topic,
+          std::bind(&RosImage::imageCallback, this, _1));
+    }
   }
 
   void RosImage::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg) {

@@ -22,8 +22,6 @@ geometry_msgs/Vector3[] uv
 string texture ""
 # get the texture from an image topic specified in texture
 bool is_topic false
-# alternatively supply the texture directly, store with name above
-sensor_msgs/Image image
 # specify which set of already loaded shaders to use-
 # This should map to consistent pair of vertex and fragment shaders
 # (though could maybe specify those independently here)

@@ -1,0 +1,7 @@
+# the name needs to be unique, it will overwrite same named textures otherwise.
+string name
+sensor_msgs/Image image
+bool remove false
+---
+string message ""
+bool success False

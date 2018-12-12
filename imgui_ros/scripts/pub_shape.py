@@ -13,13 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import cv2
+import cv_bridge
 # TODO(lucasW) this doesn't exist in python yet?
 # import tf2_ros
 import rclpy
 
+from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Point, TransformStamped, Vector3
 from imgui_ros.msg import TexturedShape, Widget
-from imgui_ros.srv import AddShape, AddWindow
+from imgui_ros.srv import AddShape, AddTexture, AddWindow
 from rclpy.node import Node
 from shape_msgs.msg import MeshTriangle, Mesh
 from std_msgs.msg import ColorRGBA
@@ -38,6 +41,8 @@ class Demo(Node):
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
 
+        self.bridge = cv_bridge.CvBridge()
+
     # TODO(lucasw) can't this be a callback instead?
     def wait_for_response(self):
         while rclpy.ok():
@@ -53,12 +58,34 @@ class Demo(Node):
                 break
 
     def run(self):
+        self.add_texture()
         self.add_shapes()
+
+    def add_texture(self):
+        self.texture_cli = self.create_client(AddTexture, 'add_texture')
+        while not self.texture_cli.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+
+        # imread an image
+        image_dir = get_package_share_directory('image_manip')
+        print('image_manip dir ' + image_dir)
+        name = 'diffract1.png'
+        image = cv2.imread(image_dir + "/data/" + name, 1)
+        # cv2.imshow("image", image)
+        # cv2.waitKey(0)
+        image = self.bridge.cv2_to_imgmsg(image, encoding="bgr8")
+
+        req = AddTexture.Request()
+        req.name = 'diffract'
+        req.image = image
+        self.future = self.texture_cli.call_async(req)
+        self.wait_for_response()
 
     def add_shapes(self):
         shape = TexturedShape()
         shape.name = "foo"
         shape.header.frame_id = 'bar'
+        shape.texture = 'diffract'
         # shape.header.stamp = self.now()
 
         sc = 0.2

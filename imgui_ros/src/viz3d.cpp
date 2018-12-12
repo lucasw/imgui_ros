@@ -209,6 +209,8 @@ Viz3D::Viz3D(const std::string name,
   textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
 
+  add_texture_ = node->create_service<imgui_ros::srv::AddTexture>("add_texture",
+      std::bind(&Viz3D::addTexture, this, _1, _2));
   add_shape_ = node->create_service<imgui_ros::srv::AddShape>("add_shape",
       std::bind(&Viz3D::addShape, this, _1, _2));
   #if 0
@@ -223,6 +225,23 @@ Viz3D::~Viz3D()
 #if 0
   glDeleteTextures(1, &texture_id_);
 #endif
+}
+
+void Viz3D::addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request> req,
+                       std::shared_ptr<imgui_ros::srv::AddTexture::Response> res)
+{
+  if (req->remove) {
+    if (textures_.count(req->name) > 0) {
+      textures_.erase(req->name);
+      res->success = true;
+      return;
+    }
+  }
+
+  auto texture = std::make_shared<RosImage>(req->name);
+  texture->imageCallback(std::make_shared<sensor_msgs::msg::Image>(req->image));
+  texture->updateTexture();
+  textures_[req->name] = texture;
 }
 
 void Viz3D::addShape(const std::shared_ptr<imgui_ros::srv::AddShape::Request> req,
@@ -534,19 +553,21 @@ void Viz3D::render(const int fb_width, const int fb_height,
         shape->print();
       }
     }
+#endif
 
     // Bind texture- if it is null then the color is black
     // if (texture_id_ != nullptr)
     GLuint tex_id = 0;
-    if ((shape->texture_ != "") && (ros_images_.count(shape->texture_) > 0)) {
-      tex_id = (GLuint)(intptr_t)ros_images_[shape->texture_]->texture_id_;
+    if ((shape->texture_ != "") && (textures_.count(shape->texture_) > 0)) {
+      tex_id = (GLuint)(intptr_t)textures_[shape->texture_]->texture_id_;
+    } else {
+      tex_id = (GLuint)(intptr_t)ros_image_->texture_id_;
     }
-#endif
     const ImDrawIdx* idx_buffer_offset = 0;
       // Bind texture- if it is null then the color is black
       // if (texture_id_ != nullptr)
       glBindBuffer(GL_ARRAY_BUFFER, shape->vbo_handle_);  // needed before bind texture?
-      glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)ros_image_->texture_id_);
+      glBindTexture(GL_TEXTURE_2D, tex_id);
       glDrawElements(GL_TRIANGLES, (GLsizei)shape->indices_.Size,
           sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
       // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";

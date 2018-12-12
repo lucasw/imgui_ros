@@ -37,6 +37,7 @@
 #include <imgui_ros/image.h>
 #include <imgui_ros/msg/textured_shape.hpp>
 #include <imgui_ros/srv/add_shape.hpp>
+#include <imgui_ros/srv/add_texture.hpp>
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -171,6 +172,10 @@ protected:
   GLuint vert_handle_ = 0;
   GLuint frag_handle_ = 0;
 
+  rclcpp::Service<imgui_ros::srv::AddTexture>::SharedPtr add_texture_;
+  void addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request> req,
+                  std::shared_ptr<imgui_ros::srv::AddTexture::Response> res);
+
   rclcpp::Service<imgui_ros::srv::AddShape>::SharedPtr add_shape_;
   void addShape(const std::shared_ptr<imgui_ros::srv::AddShape::Request> req,
                 std::shared_ptr<imgui_ros::srv::AddShape::Response> res);
@@ -191,7 +196,7 @@ protected:
 
   // probably will replace with service that adds a texture with a given
   // name, for now have topic.
-  std::map<std::string, std::shared_ptr<RosImage> > ros_images_;
+  std::map<std::string, std::shared_ptr<RosImage> > textures_;
   // temp test
   std::shared_ptr<RosImage> ros_image_;
 };

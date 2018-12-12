@@ -57,8 +57,8 @@ protected:
 // TODO(lucasw) should every window be a node?  Or less overhead to
 // have a single node in the imgui parent?
 struct RosImage : public GlImage {
-  RosImage(const std::string name, const std::string topic,
-           std::shared_ptr<rclcpp::Node> node);
+  RosImage(const std::string name, const std::string topic = "",
+           std::shared_ptr<rclcpp::Node> node = nullptr);
 
   void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
 
@@ -69,10 +69,10 @@ struct RosImage : public GlImage {
   // TODO(lucasw) factor out common code
   virtual void draw();
 
+  sensor_msgs::msg::Image::SharedPtr image_;
 private:
   std::weak_ptr<rclcpp::Node> node_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
-  sensor_msgs::msg::Image::SharedPtr image_;
 };  // RosImage
 
 struct CvImage : public GlImage {
