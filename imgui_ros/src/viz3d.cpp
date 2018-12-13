@@ -380,7 +380,7 @@ void Viz3D::draw()
     z_move -= sc;
   }
 
-  velocity_= velocity_ + tf2::Vector3(y_move, -z_move, x_move);
+  velocity_= velocity_ + tf2::Vector3(-y_move, z_move, -x_move);
   auto rot_mat = transform_.getBasis();
   tf2::Vector3 vel_in_world = rot_mat * velocity_;
 
@@ -394,8 +394,6 @@ void Viz3D::draw()
   tf2::Vector3 translation = transform_.getOrigin();
   translation = translation + vel_in_world;
   transform_.setOrigin(translation);
-  // translation_.z += x_move * cos(pitch_) - y_move * sin(pitch_);
-  // translation_.x += x_move * sin(pitch_) + y_move * cos(pitch_);
 
   velocity_ *= 0.8;
 
@@ -417,12 +415,19 @@ void Viz3D::draw()
 
     yaw_ -= offset.x / rotate_scale_;
     pitch_ -= offset.y / rotate_scale_;
+    if (pitch_ > M_PI/2.0)
+      pitch_ = M_PI/2.0;
+    if (pitch_ < -M_PI/2.0)
+      pitch_ = -M_PI/2.0;
 
     drag_point_ = mouse_pos_in_canvas;
     if (!ImGui::IsMouseDown(0)) {
       dragging_view_ = false;
     }
   }
+  tf2::Quaternion rot;
+  rot.setRPY(pitch_, yaw_, 0.0);
+  transform_.setRotation(rot);
 
   if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
     if (!dragging_view_ && ImGui::IsMouseClicked(0)) {
@@ -500,7 +505,7 @@ void Viz3D::setupCamera(const std::string child_frame_id,
   );
   #endif
   glm::dmat4 view_matrix_double;
-  transform_.getOpenGLMatrix(&view_matrix_double[0][0]);
+  transform_.inverse().getOpenGLMatrix(&view_matrix_double[0][0]);
   glm::mat4 view_matrix;
   for (size_t i = 0; i < 4; ++i)
     for (size_t j = 0; j < 4; ++j)
