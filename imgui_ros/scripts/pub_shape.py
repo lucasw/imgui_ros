@@ -15,6 +15,7 @@
 
 import cv2
 import cv_bridge
+import math
 # TODO(lucasW) this doesn't exist in python yet?
 # import tf2_ros
 import rclpy
@@ -81,7 +82,77 @@ class Demo(Node):
         self.future = self.texture_cli.call_async(req)
         self.wait_for_response()
 
-    def add_shapes(self):
+    def make_cylinder(self, name='cylinder', radius=0.1, length=0.5, segs=16):
+        shape = TexturedShape()
+        shape.name = name
+        shape.header.frame_id = 'bar2'
+        shape.texture = 'diffract'
+
+        for i in range(segs):
+            fr = float(i) / float(segs - 1)
+            theta = fr * 2.0 * math.pi
+            # print("{} {}".format(i, theta))
+            x = radius * math.cos(theta)
+            y = radius * math.sin(theta)
+
+            ind0 = len(shape.mesh.vertices)
+            ind1 = ind0 + 1
+            ind2 = ind0 + 2
+            ind3 = ind0 + 3
+            # connect to start, but can't reuse vertices because of uv
+            if i < segs - 1:
+                triangle = MeshTriangle()
+                triangle.vertex_indices[0] = ind0
+                triangle.vertex_indices[1] = ind3
+                triangle.vertex_indices[2] = ind1
+                shape.mesh.triangles.append(triangle)
+
+                if True:
+                    triangle = MeshTriangle()
+                    triangle.vertex_indices[0] = ind0
+                    triangle.vertex_indices[1] = ind2
+                    triangle.vertex_indices[2] = ind3
+                    shape.mesh.triangles.append(triangle)
+
+            pt = Point()
+            pt.x = x
+            pt.y = y
+            pt.z = -length * 0.5
+            shape.mesh.vertices.append(pt)
+
+            uv = Vector3()
+            uv.x = fr
+            uv.y = 0.0
+            shape.uv.append(uv)
+
+            col = ColorRGBA()
+            col.r = 0.0
+            col.g = 1.0
+            col.b = 0.0
+            col.a = 1.0
+            shape.colors.append(col);
+
+            pt = Point()
+            pt.x = x
+            pt.y = y
+            pt.z = length * 0.5
+            shape.mesh.vertices.append(pt)
+
+            uv = Vector3()
+            uv.x = fr
+            uv.y = 1.0
+            shape.uv.append(uv)
+
+            col = ColorRGBA()
+            col.r = 0.0
+            col.g = 1.0
+            col.b = 0.0
+            col.a = 1.0
+            shape.colors.append(col);
+
+        return shape
+
+    def make_planes(self):
         shape = TexturedShape()
         shape.name = "foo"
         shape.header.frame_id = 'bar'
@@ -154,7 +225,14 @@ class Demo(Node):
               len(shape.mesh.triangles) * 3))
         # self.shape_pub.publish(shape)
         shape.add = True
+        return shape
+
+    def add_shapes(self):
         req = AddShape.Request()
+        shape = self.make_planes()
+        shape.add = False
+        req.shapes.append(shape)
+        shape = self.make_cylinder()
         req.shapes.append(shape)
         self.future = self.cli.call_async(req)
         self.wait_for_response()

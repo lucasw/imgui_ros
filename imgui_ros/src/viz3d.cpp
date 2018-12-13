@@ -230,12 +230,13 @@ Viz3D::~Viz3D()
 void Viz3D::addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request> req,
                        std::shared_ptr<imgui_ros::srv::AddTexture::Response> res)
 {
+  res->success = true;
   if (req->remove) {
     if (textures_.count(req->name) > 0) {
       textures_.erase(req->name);
-      res->success = true;
       return;
     }
+    return;
   }
 
   auto texture = std::make_shared<RosImage>(req->name);
@@ -265,11 +266,11 @@ void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr
   }
 
   if (msg->add == false) {
-
     if (shapes_.count(msg->name) > 0) {
       shapes_.erase(msg->name);
       return;
     }
+    return;
   }
 
   bool use_uv = msg->uv.size() > 0;
