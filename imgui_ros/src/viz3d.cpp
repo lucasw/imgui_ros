@@ -142,6 +142,7 @@ Viz3D::Viz3D(const std::string name,
 {
   ros_image_.reset(new RosImage("texture", "/image_out", node));
 
+  transform_.setIdentity();
   // TODO(lucasw) maintaining many versions of these seems like a big hassle,
   // which is why bgfx exists...
   // const GLchar* vertex_shader_glsl_130 =
@@ -349,9 +350,17 @@ void Viz3D::draw()
   ImGui::Begin("camera");
   // ImGuiIO& io = ImGui::GetIO();
 
-  float x_move = 0.0;
-  float y_move = 0.0;
-  const float sc = 0.03;
+  {
+    double min = 0.0001;
+    double max = 0.1;
+    ImGui::SliderScalar("move scale", ImGuiDataType_Double,
+          &move_scale_, &min, &max, "%lf");
+  }
+
+  double x_move = 0.0;
+  double y_move = 0.0;
+  double z_move = 0.0;
+  const double sc = move_scale_;
   if (ImGui::IsKeyPressed(SDL_SCANCODE_A)) {
     y_move += sc;
   }
@@ -365,24 +374,50 @@ void Viz3D::draw()
     x_move -= sc;
   }
   if (ImGui::IsKeyPressed(SDL_SCANCODE_Q)) {
-    translation_.y += sc;
+    z_move += sc;
   }
   if (ImGui::IsKeyPressed(SDL_SCANCODE_Z)) {
-    translation_.y -= sc;
+    z_move -= sc;
   }
 
-  translation_.z += x_move * cos(angle_) - y_move * sin(angle_);
-  translation_.x += x_move * sin(angle_) + y_move * cos(angle_);
+  velocity_= velocity_ + tf2::Vector3(y_move, -z_move, x_move);
+  auto rot_mat = transform_.getBasis();
+  tf2::Vector3 vel_in_world = rot_mat * velocity_;
+
+  std::stringstream ss;
+  ss << "velocity in view: " << velocity_.x()  << " " << velocity_.y() << " " << velocity_.z();
+  ImGui::Text("%s", ss.str().c_str());
+  ss.str("");
+  ss << "velocity in world: " << vel_in_world.x()  << " " << vel_in_world.y() << " " << vel_in_world.z();
+  ImGui::Text("%s", ss.str().c_str());
+
+  tf2::Vector3 translation = transform_.getOrigin();
+  translation = translation + vel_in_world;
+  transform_.setOrigin(translation);
+  // translation_.z += x_move * cos(pitch_) - y_move * sin(pitch_);
+  // translation_.x += x_move * sin(pitch_) + y_move * cos(pitch_);
+
+  velocity_ *= 0.8;
 
   // mouse input
   ImVec2 mouse_pos_in_canvas = ImGui::GetIO().MousePos;
+
+  {
+    double min = 5.0;
+    double max = 500.0;
+    ImGui::SliderScalar("rotate scale", ImGuiDataType_Double,
+          &rotate_scale_, &min, &max, "%lf");
+  }
 
   if (dragging_view_) {
     // This allows continued dragging outside the canvas
     ImVec2 offset = ImVec2(
         mouse_pos_in_canvas.x - drag_point_.x,
         mouse_pos_in_canvas.y - drag_point_.y);
-    angle_ -= offset.x / 300.0;
+
+    yaw_ -= offset.x / rotate_scale_;
+    pitch_ -= offset.y / rotate_scale_;
+
     drag_point_ = mouse_pos_in_canvas;
     if (!ImGui::IsMouseDown(0)) {
       dragging_view_ = false;
@@ -414,10 +449,12 @@ void Viz3D::draw()
   ImGui::SliderScalar("aspect scale", ImGuiDataType_Double,
       &aspect_scale_, &min, &max, "%lf");
 
-  std::stringstream ss;
-  ss << translation_.x  << " " << translation_.y << " " << translation_.z << ", "
-      << angle_;
-  ImGui::Text("%s", ss.str().c_str());
+  {
+    std::stringstream ss;
+    ss << translation.x()  << " " << translation.y() << " " << translation.z() << ", "
+        << pitch_;
+    ImGui::Text("%s", ss.str().c_str());
+  }
   ImGui::End();
 }
 
@@ -455,11 +492,20 @@ void Viz3D::setupCamera(const std::string child_frame_id,
     // ImGui::Text("%s", ex.what());
   }
 
+  #if 0
   glm::mat4 view_matrix = glm::lookAt(
       translation_,
-      translation_ + glm::vec3(sin(angle_), 0, cos(angle_)),
+      translation_ + glm::vec3(sin(pitch_), 0, cos(pitch_)),
       glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
   );
+  #endif
+  glm::dmat4 view_matrix_double;
+  transform_.getOpenGLMatrix(&view_matrix_double[0][0]);
+  glm::mat4 view_matrix;
+  for (size_t i = 0; i < 4; ++i)
+    for (size_t j = 0; j < 4; ++j)
+      view_matrix[i][j] = view_matrix_double[i][j];
+
   mvp = projection_matrix * view_matrix * model_matrix;
 
   {

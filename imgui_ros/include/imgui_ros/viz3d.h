@@ -42,6 +42,7 @@
 #include <mutex>
 #include <opencv2/core.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <tf2/LinearMath/Transform.h>
 #include <tf2_ros/buffer.h>
 
 #pragma GCC diagnostic push
@@ -134,8 +135,14 @@ struct Viz3D {
   //    const int size_x, const int size_y);
 protected:
   // TODO(lucasw) later this will be a matrix
-  glm::vec3 translation_ = glm::vec3(0, 0, 0);
-  float angle_ = 0.0;
+  // glm::vec3 translation_ = glm::vec3(0, 0, 0);
+  tf2::Transform transform_;
+  tf2::Vector3 velocity_;
+
+  double move_scale_ = 0.005;
+  double rotate_scale_ = 300.0;
+  double pitch_ = 0.0;
+  double yaw_ = 0.0;
 
   bool dragging_view_ = false;
   ImVec2 drag_point_;
