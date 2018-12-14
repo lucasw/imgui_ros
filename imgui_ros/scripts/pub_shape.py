@@ -59,30 +59,30 @@ class Demo(Node):
                 break
 
     def run(self):
-        self.add_texture()
+        self.add_texture('diffract', 'image_manip', 'diffract1.png')
+        self.add_texture('projected_texture', 'image_manip', 'maze1.png')
         self.add_shapes()
 
-    def add_texture(self):
+    def add_texture(self, name='diffract', pkg_name='image_manip', image_name='diffract1.png'):
         self.texture_cli = self.create_client(AddTexture, 'add_texture')
         while not self.texture_cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
 
         # imread an image
-        image_dir = get_package_share_directory('image_manip')
+        image_dir = get_package_share_directory(pkg_name)
         print('image_manip dir ' + image_dir)
-        name = 'diffract1.png'
-        image = cv2.imread(image_dir + "/data/" + name, 1)
+        image = cv2.imread(image_dir + "/data/" + image_name, 1)
         # cv2.imshow("image", image)
         # cv2.waitKey(0)
         image = self.bridge.cv2_to_imgmsg(image, encoding="bgr8")
-
         req = AddTexture.Request()
-        req.name = 'diffract'
+        req.name = name
         req.image = image
+
         self.future = self.texture_cli.call_async(req)
         self.wait_for_response()
 
-    def make_cylinder(self, name='cylinder', radius=0.1, length=0.5, segs=16):
+    def make_cylinder(self, name='cylinder', radius=0.5, length=2.5, segs=16):
         shape = TexturedShape()
         shape.name = name
         shape.header.frame_id = 'bar2'

@@ -221,7 +221,7 @@ class Demo(Node):
         widget.min = -2.0
         widget.max = 2.0
         widget.items.append("map")
-        widget.items.append("bar")
+        widget.items.append("projected_texture")
         req.widgets.append(widget)
 
         widget = Widget()

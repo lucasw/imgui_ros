@@ -151,7 +151,7 @@ protected:
   float near_ = 0.01f;
   float far_ = 100.0f;
   double aspect_scale_ = 1.0f;
-  void setupCamera(const std::string child_frame_id,
+  bool setupCamera(const std::string child_frame_id,
       const int fb_width, const int fb_height, glm::mat4& mvp);
 #if 0
   // temp texture test
@@ -206,6 +206,16 @@ protected:
   std::map<std::string, std::shared_ptr<RosImage> > textures_;
   // temp test
   std::shared_ptr<RosImage> ros_image_;
+
+  bool initialized_ = false;
+
+  // projected texture
+  bool setupProjectedTexture();
+  const std::string projected_texture_name_ = "projected_texture";
+  // this frame needs to follow opengl coordinates
+  const std::string projected_texture_frame_id_ = "projected_texture";
+  int attrib_location_proj_tex_ = 0;
+  int attrib_location_proj_tex_mtx_ = 0;
 };
 
 #endif  // IMGUI_ROS_VIZ3D_H

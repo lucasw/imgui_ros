@@ -148,29 +148,46 @@ Viz3D::Viz3D(const std::string name,
   // const GLchar* vertex_shader_glsl_130 =
   const GLchar* vertex_shader =
       "uniform mat4 ProjMtx;\n"
+      "uniform mat4 ProjTexMtx;\n"
       "in vec3 Position;\n"
       "in vec2 UV;\n"
       "in vec4 Color;\n"
       "out vec2 FraUV;\n"
       "out vec4 FraColor;\n"
+      "out vec4 ProjectedTexturePosition;\n"
       "void main()\n"
       "{\n"
       "    FraUV = UV;\n"
       "    FraColor = Color;\n"
       "    gl_Position = ProjMtx * vec4(Position.xyz, 1.0);\n"
+      "    ProjectedTexturePosition = ProjTexMtx * vec4(Position.xyz, 1.0);\n"
+      "    // ProjectedTexturePosition = ProjMtx * vec4(Position.xyz, 1.0);\n"
+      "    // transform to clip space\n"
+      "    // this division looks funny, texture becomes jagged\n"
+      "    // ProjectedTexturePosition.xyz /= ProjectedTexturePosition.w;\n"
+      "    ProjectedTexturePosition.xyz += 1.0;\n"
+      "    ProjectedTexturePosition.xyz /= 2.0;\n"
       "}\n";
   std::cout << "viz3d vertex shader:\n" << vertex_shader << "\n";
 
+  // OpenGL makes the first vec4 `out` the fragment color by default
+  // but should be explicit.
   // const GLchar* fragment_shader_glsl_130 =
   const GLchar* fragment_shader =
       "uniform sampler2D Texture;\n"
+      "uniform sampler2D ProjectedTexture;\n"
       "in vec2 FraUV;\n"
       "in vec4 FraColor;\n"
+      "in vec4 ProjectedTexturePosition;\n"
       "out vec4 Out_Color;\n"
       "void main()\n"
       "{\n"
-      "    Out_Color = FraColor * texture(Texture, FraUV.st);\n"
+      "    vec3 in_proj_vec = step(0.0, ProjectedTexturePosition.xyz) * (1.0 - step(1.0, ProjectedTexturePosition.xyz));\n"
+      "    float in_proj_bounds = normalize(dot(in_proj_vec, in_proj_vec));\n"
+      "    // Out_Color = FraColor * texture(Texture, FraUV.st) + in_proj_bounds * texture(ProjectedTexture, ProjectedTexturePosition.xy);\n"
+      "    Out_Color = FraColor * texture(Texture, FraUV.st) + texture(ProjectedTexture, ProjectedTexturePosition.xy);\n"
       "}\n";
+  std::cout << "viz3d fragment shader:\n" << fragment_shader << "\n";
 
   // Create shaders
   const GLchar* vertex_shader_with_version[2] = { renderer->GlslVersionString, vertex_shader };
@@ -207,6 +224,9 @@ Viz3D::Viz3D(const std::string name,
   glLinkProgram(shader_handle_);
   CheckProgram(shader_handle_, "shader program");
 
+  attrib_location_proj_tex_ = glGetUniformLocation(shader_handle_, "ProjectedTexture");
+  attrib_location_proj_tex_mtx_ = glGetUniformLocation(shader_handle_, "ProjTexMtx");
+
   textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
 
@@ -219,6 +239,8 @@ Viz3D::Viz3D(const std::string name,
   makeTestShape(test_shape_);
   shapes_[test_shape_->name_] = test_shape_;
   #endif
+
+  initialized_ = true;
 }
 
 Viz3D::~Viz3D()
@@ -465,7 +487,7 @@ void Viz3D::draw()
 
 // Currently calling setupcamera for every object- that seems efficient vs.
 // transforming all the data of every object.
-void Viz3D::setupCamera(const std::string child_frame_id,
+bool Viz3D::setupCamera(const std::string child_frame_id,
     const int fb_width, const int fb_height, glm::mat4& mvp)
 {
   const float aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height) * aspect_scale_;
@@ -495,6 +517,7 @@ void Viz3D::setupCamera(const std::string child_frame_id,
     // TODO(lucasw) display exception on gui, but this isn't currently the correct
     // time.
     // ImGui::Text("%s", ex.what());
+    return false;
   }
 
   #if 0
@@ -526,6 +549,32 @@ void Viz3D::setupCamera(const std::string child_frame_id,
       }
     }
   }
+
+  return true;
+}
+
+bool Viz3D::setupProjectedTexture()
+{
+  const std::string name = projected_texture_name_;
+  if (textures_.count(name) < 1) {
+    return false;
+  }
+  if (!textures_[name]->image_) {
+    return false;
+  }
+  const int width = textures_[name]->image_->width;
+  const int height = textures_[name]->image_->height;
+
+  // texture projection
+  glm::mat4 mtp;
+  if (!setupCamera(projected_texture_frame_id_, width, height, mtp))
+    return false;
+
+  glUniformMatrix4fv(attrib_location_proj_tex_mtx_, 1, GL_FALSE, &mtp[0][0]);
+  // assign this texture to the TEXTURE1 slot
+  glUniform1i(attrib_location_proj_tex_, 1);
+  checkGLError(__FILE__, __LINE__);
+  return true;
 }
 
 void Viz3D::render(const int fb_width, const int fb_height,
@@ -583,24 +632,32 @@ void Viz3D::render(const int fb_width, const int fb_height,
   for (auto shape_pair : shapes_) {
     auto shape = shape_pair.second;
 
-    glm::mat4 mvp;
-    setupCamera(shape->frame_id_, fb_width, fb_height, mvp);
     glUseProgram(shader_handle_);
-    // glUniformMatrix4dv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
-    glUniformMatrix4fv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
-    glUniform1i(shape->attrib_location_tex_, 0);
+
+    {
+      glm::mat4 mvp;
+      if (!setupCamera(shape->frame_id_, fb_width, fb_height, mvp))
+        continue;
+      // TODO(lucasw) use double in the future?
+      // glUniformMatrix4dv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
+      glUniformMatrix4fv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
+      glUniform1i(shape->attrib_location_tex_, 0);
+      checkGLError(__FILE__, __LINE__);
+    }
+
+    bool use_texture_projection = setupProjectedTexture();
+
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
     // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
 #endif
-
-    checkGLError(__FILE__, __LINE__);
 
     glBindVertexArray(shape->vao_handle_);
 
     ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
     glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
         (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
+    checkGLError(__FILE__, __LINE__);
 
 #if 0
     {
@@ -614,24 +671,43 @@ void Viz3D::render(const int fb_width, const int fb_height,
 
     // Bind texture- if it is null then the color is black
     // if (texture_id_ != nullptr)
-    GLuint tex_id = 0;
-    if ((shape->texture_ != "") && (textures_.count(shape->texture_) > 0)) {
-      tex_id = (GLuint)(intptr_t)textures_[shape->texture_]->texture_id_;
-    } else {
-      tex_id = (GLuint)(intptr_t)ros_image_->texture_id_;
-    }
-    const ImDrawIdx* idx_buffer_offset = 0;
+    {
+      GLuint tex_id = 0;
+      if ((shape->texture_ != "") && (textures_.count(shape->texture_) > 0)) {
+        tex_id = (GLuint)(intptr_t)textures_[shape->texture_]->texture_id_;
+      } else {
+        tex_id = (GLuint)(intptr_t)ros_image_->texture_id_;
+      }
+      glActiveTexture(GL_TEXTURE0);
       // Bind texture- if it is null then the color is black
-      // if (texture_id_ != nullptr)
-      glBindBuffer(GL_ARRAY_BUFFER, shape->vbo_handle_);  // needed before bind texture?
       glBindTexture(GL_TEXTURE_2D, tex_id);
+      checkGLError(__FILE__, __LINE__);
+    }
+
+    if (use_texture_projection) {
+      GLuint tex_id = 0;
+      // TODO(lucasw) currently hardcoded, later make more flexible
+      const std::string name = projected_texture_name_;
+      if (textures_.count(name) > 0) {
+        tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
+      } else {
+        tex_id = (GLuint)(intptr_t)ros_image_->texture_id_;
+      }
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D, tex_id);
+      checkGLError(__FILE__, __LINE__);
+    }
+
+    {
+      glBindBuffer(GL_ARRAY_BUFFER, shape->vbo_handle_);  // needed before bind texture?
+      const ImDrawIdx* idx_buffer_offset = 0;
       glDrawElements(GL_TRIANGLES, (GLsizei)shape->indices_.Size,
           sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
       // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
       checkGLError(__FILE__, __LINE__);
       // idx_buffer_offset += pcmd->ElemCount;
-    }  // test draw
-
+    }
+  }
   checkGLError(__FILE__, __LINE__);
   gl_state.backup();
   checkGLError(__FILE__, __LINE__);

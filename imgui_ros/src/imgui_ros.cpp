@@ -195,7 +195,7 @@ namespace imgui_ros {
         tf_buffer_,
         shared_from_this());
 
-    init_ = true;
+    init_ = true;  // viz3d->initialized_;
   }
 
   void ImguiRos::addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
