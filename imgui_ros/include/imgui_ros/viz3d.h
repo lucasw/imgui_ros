@@ -137,7 +137,7 @@ protected:
   // TODO(lucasw) later this will be a matrix
   // glm::vec3 translation_ = glm::vec3(0, 0, 0);
   tf2::Transform transform_;
-  tf2::Vector3 velocity_;
+  tf2::Vector3 velocity_ = tf2::Vector3(0.0, 0.0, 0.0);
 
   double move_scale_ = 0.005;
   double rotate_scale_ = 300.0;
@@ -213,10 +213,12 @@ protected:
 
   // TODO(lucasw) need to encapsulate this
   // projected texture
+  bool enable_projected_texture_ = true;
   bool setupProjectedTexture(const std::string& shape_frame_id);
   const std::string projected_texture_name_ = "projected_texture";
   // this frame needs to follow opengl coordinates
   const std::string projected_texture_frame_id_ = "projected_texture";
+  int attrib_location_projected_texture_scale_ = 0;
   int attrib_location_proj_tex_ = 0;
   int attrib_location_proj_tex_mtx_ = 0;
 };

@@ -49,6 +49,32 @@ void dmat4Todmat(const glm::dmat4& dmat, glm::mat4& mat)
       mat[i][j] = dmat[i][j];
 }
 
+void printMat(glm::mat4& mat, const std::string& desc = "")
+{
+  std::cout << desc << "\n";
+  for (size_t i = 0; i < 4; ++i) {
+    for (size_t j = 0; j < 4; ++j) {
+      std::cout << mat[i][j] << " ";
+    }
+    std::cout << "\n";
+  }
+}
+void printMat(glm::dmat4& mat, const std::string& desc = "")
+{
+  glm::mat4 mat2;
+  dmat4Todmat(mat, mat2);
+  printMat(mat2, desc);
+}
+
+void printTransform(tf2::Transform& tf, const std::string& desc = "")
+{
+  std::cout << desc << "\n";
+  std::cout
+    << tf.getOrigin().x() << " "
+    << tf.getOrigin().y() << " "
+    << tf.getOrigin().z() << "\n";
+}
+
 void makeTestShape(std::shared_ptr<Shape> shape)
 {
   if (!shape) {
@@ -151,6 +177,7 @@ Viz3D::Viz3D(const std::string name,
   ros_image_.reset(new RosImage("texture", "/image_out", node));
 
   transform_.setIdentity();
+  // TODO(lucasw) load these from disk with python script, setup via ros service
   // TODO(lucasw) maintaining many versions of these seems like a big hassle,
   // which is why bgfx exists...
   // const GLchar* vertex_shader_glsl_130 =
@@ -184,6 +211,7 @@ Viz3D::Viz3D(const std::string name,
   const GLchar* fragment_shader =
       "uniform sampler2D Texture;\n"
       "uniform sampler2D ProjectedTexture;\n"
+      "uniform float projected_texture_scale;\n"
       "in vec2 FraUV;\n"
       "in vec4 FraColor;\n"
       "in vec4 ProjectedTexturePosition;\n"
@@ -191,9 +219,10 @@ Viz3D::Viz3D(const std::string name,
       "void main()\n"
       "{\n"
       "    vec3 in_proj_vec = step(0.0, ProjectedTexturePosition.xyz) * (1.0 - step(1.0, ProjectedTexturePosition.xyz));\n"
-      "    float in_proj_bounds = normalize(dot(in_proj_vec, in_proj_vec));\n"
+      "    // TODO(lwalter) can skip this if always border textures with alpha 0.0\n"
+      "    // float in_proj_bounds = normalize(dot(in_proj_vec, in_proj_vec));\n"
       "    // Out_Color = FraColor * texture(Texture, FraUV.st) + in_proj_bounds * texture(ProjectedTexture, ProjectedTexturePosition.xy);\n"
-      "    Out_Color = FraColor * texture(Texture, FraUV.st) + texture(ProjectedTexture, ProjectedTexturePosition.xy);\n"
+      "    Out_Color = FraColor * texture(Texture, FraUV.st) + projected_texture_scale * texture(ProjectedTexture, ProjectedTexturePosition.xy);\n"
       "}\n";
   std::cout << "viz3d fragment shader:\n" << fragment_shader << "\n";
 
@@ -232,6 +261,7 @@ Viz3D::Viz3D(const std::string name,
   glLinkProgram(shader_handle_);
   CheckProgram(shader_handle_, "shader program");
 
+  attrib_location_projected_texture_scale_ = glGetUniformLocation(shader_handle_, "projected_texture_scale");
   attrib_location_proj_tex_ = glGetUniformLocation(shader_handle_, "ProjectedTexture");
   attrib_location_proj_tex_mtx_ = glGetUniformLocation(shader_handle_, "ProjTexMtx");
 
@@ -381,6 +411,10 @@ void Viz3D::draw()
   // ImGuiIO& io = ImGui::GetIO();
 
   {
+    // TODO(lucasw) make this a ros topic, use a regular PUB + SUB gui widget
+    const bool changed = ImGui::Checkbox("projected texture", &enable_projected_texture_);
+  }
+  {
     double min = 0.0001;
     double max = 0.1;
     ImGui::SliderScalar("move scale", ImGuiDataType_Double,
@@ -526,15 +560,9 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
     return false;
   }
 
-  #if 0
-  glm::mat4 view_matrix = glm::lookAt(
-      translation_,
-      translation_ + glm::vec3(sin(pitch_), 0, cos(pitch_)),
-      glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
-  );
-  #endif
   glm::dmat4 view_matrix_double;
   view_transform.inverse().getOpenGLMatrix(&view_matrix_double[0][0]);
+  // printMat(view_matrix_double, "view_matrix double");
   glm::mat4 view_matrix;
   dmat4Todmat(view_matrix_double, view_matrix);
 
@@ -544,13 +572,10 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
     static bool has_printed = false;
     if (!has_printed) {
       has_printed = true;
-      std::cout << "projection\n";
-      for (size_t i = 0; i < 4; ++i) {
-        for (size_t j = 0; j < 4; ++j) {
-          std::cout << mvp[i][j] << " ";
-        }
-        std::cout << "\n";
-      }
+      printMat(projection_matrix, "projection " + child_frame_id);
+      printMat(view_matrix, "view_matrix " + child_frame_id);
+      printMat(model_matrix, "model_matrix " + child_frame_id);
+      printMat(mvp, "m * v * p");
     }
   }
 
@@ -581,6 +606,14 @@ bool Viz3D::setupProjectedTexture(const std::string& shape_frame_id)
     // time.
     // ImGui::Text("%s", ex.what());
     return false;
+  }
+
+  {
+    static bool has_printed = false;
+    if (!has_printed) {
+      has_printed = true;
+      printTransform(stamped_transform, "projection transform");
+    }
   }
 
   // texture projection
@@ -664,7 +697,8 @@ void Viz3D::render(const int fb_width, const int fb_height,
     }
 
     // TODO(lucasw) add imgui use texture projection checkbox
-    bool use_texture_projection = setupProjectedTexture(shape->frame_id_);
+    const bool use_texture_projection = enable_projected_texture_ &&
+        setupProjectedTexture(shape->frame_id_);
 
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
@@ -704,6 +738,8 @@ void Viz3D::render(const int fb_width, const int fb_height,
     }
 
     if (use_texture_projection) {
+      // TODO(lucasw) later the scale could be a brightness setting
+      glUniform1f(attrib_location_projected_texture_scale_, 1.0);
       GLuint tex_id = 0;
       // TODO(lucasw) currently hardcoded, later make more flexible
       const std::string name = projected_texture_name_;
@@ -715,6 +751,10 @@ void Viz3D::render(const int fb_width, const int fb_height,
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, tex_id);
       checkGLError(__FILE__, __LINE__);
+    } else {
+      // turn off projection in fragment shader, otherwise last updated
+      // uniform values will be used
+      glUniform1f(attrib_location_projected_texture_scale_, 0.0);
     }
 
     {
