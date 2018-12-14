@@ -41,6 +41,14 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
+// TODO(lucasw) is there a glm double to float conversion function?
+void dmat4Todmat(const glm::dmat4& dmat, glm::mat4& mat)
+{
+  for (size_t i = 0; i < 4; ++i)
+    for (size_t j = 0; j < 4; ++j)
+      mat[i][j] = dmat[i][j];
+}
+
 void makeTestShape(std::shared_ptr<Shape> shape)
 {
   if (!shape) {
@@ -487,7 +495,8 @@ void Viz3D::draw()
 
 // Currently calling setupcamera for every object- that seems efficient vs.
 // transforming all the data of every object.
-bool Viz3D::setupCamera(const std::string child_frame_id,
+bool Viz3D::setupCamera(const tf2::Transform& view_transform,
+    const std::string child_frame_id,
     const int fb_width, const int fb_height, glm::mat4& mvp)
 {
   const float aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height) * aspect_scale_;
@@ -509,10 +518,7 @@ bool Viz3D::setupCamera(const std::string child_frame_id,
 
     glm::dmat4 model_matrix_double;
     stamped_transform.getOpenGLMatrix(&model_matrix_double[0][0]);
-    // TODO(lucasw) is there a glm double to float conversion function?
-    for (size_t i = 0; i < 4; ++i)
-      for (size_t j = 0; j < 4; ++j)
-        model_matrix[i][j] = model_matrix_double[i][j];
+    dmat4Todmat(model_matrix_double, model_matrix);
   } catch (tf2::TransformException& ex) {
     // TODO(lucasw) display exception on gui, but this isn't currently the correct
     // time.
@@ -528,11 +534,9 @@ bool Viz3D::setupCamera(const std::string child_frame_id,
   );
   #endif
   glm::dmat4 view_matrix_double;
-  transform_.inverse().getOpenGLMatrix(&view_matrix_double[0][0]);
+  view_transform.inverse().getOpenGLMatrix(&view_matrix_double[0][0]);
   glm::mat4 view_matrix;
-  for (size_t i = 0; i < 4; ++i)
-    for (size_t j = 0; j < 4; ++j)
-      view_matrix[i][j] = view_matrix_double[i][j];
+  dmat4Todmat(view_matrix_double, view_matrix);
 
   mvp = projection_matrix * view_matrix * model_matrix;
 
@@ -553,7 +557,7 @@ bool Viz3D::setupCamera(const std::string child_frame_id,
   return true;
 }
 
-bool Viz3D::setupProjectedTexture()
+bool Viz3D::setupProjectedTexture(const std::string& shape_frame_id)
 {
   const std::string name = projected_texture_name_;
   if (textures_.count(name) < 1) {
@@ -565,9 +569,23 @@ bool Viz3D::setupProjectedTexture()
   const int width = textures_[name]->image_->width;
   const int height = textures_[name]->image_->height;
 
+  // this is the view of the projector
+  tf2::Stamped<tf2::Transform> stamped_transform;
+  try {
+    geometry_msgs::msg::TransformStamped tf;
+    tf = tf_buffer_->lookupTransform(frame_id_,
+        projected_texture_frame_id_, tf2::TimePointZero);
+    tf2::fromMsg(tf, stamped_transform);
+  } catch (tf2::TransformException& ex) {
+    // TODO(lucasw) display exception on gui, but this isn't currently the correct
+    // time.
+    // ImGui::Text("%s", ex.what());
+    return false;
+  }
+
   // texture projection
   glm::mat4 mtp;
-  if (!setupCamera(projected_texture_frame_id_, width, height, mtp))
+  if (!setupCamera(stamped_transform, shape_frame_id, width, height, mtp))
     return false;
 
   glUniformMatrix4fv(attrib_location_proj_tex_mtx_, 1, GL_FALSE, &mtp[0][0]);
@@ -636,7 +654,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
 
     {
       glm::mat4 mvp;
-      if (!setupCamera(shape->frame_id_, fb_width, fb_height, mvp))
+      if (!setupCamera(transform_, shape->frame_id_, fb_width, fb_height, mvp))
         continue;
       // TODO(lucasw) use double in the future?
       // glUniformMatrix4dv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
@@ -645,7 +663,8 @@ void Viz3D::render(const int fb_width, const int fb_height,
       checkGLError(__FILE__, __LINE__);
     }
 
-    bool use_texture_projection = setupProjectedTexture();
+    // TODO(lucasw) add imgui use texture projection checkbox
+    bool use_texture_projection = setupProjectedTexture(shape->frame_id_);
 
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);

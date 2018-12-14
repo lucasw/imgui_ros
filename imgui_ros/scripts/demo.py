@@ -241,8 +241,7 @@ class Demo(Node):
         widget.topic = 'marker'
         widget.max = 100.0
         widget.items.append("map")
-        widget.items.append("foo")
-        widget.items.append("bar")
+        widget.items.append("projected_texture")
         widget.items.append("bar2")
         req.widgets.append(widget)
 
