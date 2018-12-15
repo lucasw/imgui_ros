@@ -82,8 +82,6 @@ void main()
   ProjectedTexturePosition = ProjTexMtx * vec4(Position.xyz, 1.0);
   // ProjectedTexturePosition = ProjMtx * vec4(Position.xyz, 1.0);
   // transform to clip space
-  // this division looks funny, texture becomes jagged
-  // ProjectedTexturePosition.xyz /= ProjectedTexturePosition.w;
   ProjectedTexturePosition.xyz += 1.0;
   ProjectedTexturePosition.xyz /= 2.0;
 }
@@ -103,11 +101,13 @@ in vec4 ProjectedTexturePosition;
 out vec4 Out_Color;
 void main()
 {
+    vec4 projected_texture_position = ProjectedTexturePosition;
+    projected_texture_position.xyz /= projected_texture_position.w;
     // vec3 in_proj_vec = step(0.0, ProjectedTexturePosition.xyz) * (1.0 - step(1.0, ProjectedTexturePosition.xyz));
     // TODO(lwalter) can skip this if always border textures with alpha 0.0
     // float in_proj_bounds = normalize(dot(in_proj_vec, in_proj_vec));
     // Out_Color = FraColor * texture(Texture, FraUV.st) + in_proj_bounds * texture(ProjectedTexture, ProjectedTexturePosition.xy);
-    Out_Color = FraColor * texture(Texture, FraUV.st) + projected_texture_scale * texture(ProjectedTexture, ProjectedTexturePosition.xy);
+    Out_Color = FraColor * texture(Texture, FraUV.st) + projected_texture_scale * texture(ProjectedTexture, projected_texture_position.xy);
 }
 
 '''
