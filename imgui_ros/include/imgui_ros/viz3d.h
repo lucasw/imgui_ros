@@ -189,7 +189,9 @@ protected:
   // TODO(lucasw) should be setupProjection or setupModelViewProjection
   // though later will do the matrix multiplication inside shader?
   bool setupCamera(const tf2::Transform& view_transform, const std::string child_frame_id,
-      const int fb_width, const int fb_height, glm::mat4& mvp);
+      const double aov_y,
+      const int fb_width, const int fb_height,
+      glm::mat4& mvp);
 #if 0
   // temp texture test
   GLuint texture_id_ = 0;
@@ -251,6 +253,7 @@ protected:
   // TODO(lucasw) need to encapsulate this
   // projected texture
   bool enable_projected_texture_ = true;
+  double projected_texture_aov_y_ = 25.0;
   bool setupProjectedTexture(const std::string& shape_frame_id);
   const std::string projected_texture_name_ = "projected_texture";
   // this frame needs to follow opengl coordinates

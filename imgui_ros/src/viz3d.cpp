@@ -417,6 +417,11 @@ void Viz3D::draw()
     // TODO(lucasw) make this a ros topic, use a regular PUB + SUB gui widget
     // const bool changed =
     ImGui::Checkbox("projected texture", &enable_projected_texture_);
+    // TODO(lucasw) switch to ortho projection if angle is zero
+    double min = 1.0;
+    double max = 170.0;
+    ImGui::SliderScalar("projected_texture_aov y", ImGuiDataType_Double,
+        &projected_texture_aov_y_, &min, &max, "%lf");
   }
   {
     double min = 0.0001;
@@ -534,11 +539,11 @@ void Viz3D::draw()
 // Currently calling setupcamera for every object- that seems efficient vs.
 // transforming all the data of every object.
 bool Viz3D::setupCamera(const tf2::Transform& view_transform,
-    const std::string child_frame_id,
+    const std::string child_frame_id, const double aov_y,
     const int fb_width, const int fb_height, glm::mat4& mvp)
 {
   const float aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height) * aspect_scale_;
-  glm::mat4 projection_matrix = glm::perspective(static_cast<float>(glm::radians(aov_y_)),
+  glm::mat4 projection_matrix = glm::perspective(static_cast<float>(glm::radians(aov_y)),
       aspect, near_, far_);
 
   glm::mat4 model_matrix = glm::mat4(1.0f);
@@ -622,7 +627,10 @@ bool Viz3D::setupProjectedTexture(const std::string& shape_frame_id)
 
   // texture projection
   glm::mat4 mtp;
-  if (!setupCamera(stamped_transform, shape_frame_id, width, height, mtp))
+  if (!setupCamera(stamped_transform, shape_frame_id,
+      projected_texture_aov_y_,
+      width, height,
+      mtp))
     return false;
 
   for (auto shaders : shader_sets_) {
@@ -718,7 +726,10 @@ void Viz3D::render2(const int fb_width, const int fb_height)
 
     {
       glm::mat4 mvp;
-      if (!setupCamera(transform_, shape->frame_id_, fb_width, fb_height, mvp))
+      if (!setupCamera(transform_, shape->frame_id_,
+          aov_y_,
+          fb_width, fb_height,
+          mvp))
         continue;
       // TODO(lucasw) use double in the future?
       // glUniformMatrix4dv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
