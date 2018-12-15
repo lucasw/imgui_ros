@@ -66,29 +66,42 @@
 
 #include <iostream>
 
-void checkGLError(const std::string file, const int line)
+bool checkGLError2(std::string& msg)
 {
   while (true) {
     GLenum error = glGetError();
-    std::string msg;
+
     if (error == GL_NO_ERROR)
-      return;
+      return false;
+
+    if (msg.size() != 0)
+      msg += ", ";
+
+    if (error == GL_INVALID_ENUM)
+      msg += "invalid enum";
     else if (error == GL_INVALID_ENUM)
-      msg = "invalid enum";
-    else if (error == GL_INVALID_ENUM)
-      msg = "invalid enum";
+      msg += "invalid enum";
     else if (error == GL_INVALID_VALUE)
-      msg = "invalid value";
+      msg += "invalid value";
     else if (error == GL_INVALID_OPERATION)
-      msg = "invalid operation";
+      msg += "invalid operation";
     else if (error == GL_INVALID_FRAMEBUFFER_OPERATION)
-      msg = "invalid framebuffer operation";
+      msg += "invalid framebuffer operation";
     else if (error == GL_OUT_OF_MEMORY)
-      msg = "out of memory";
-    std::cerr << file << ":" << line << " gl error " << msg << " " << error << "\n";
+      msg += "out of memory";
   }
+  return true;
 }
 
+bool checkGLError(const std::string file, const int line)
+{
+  std::string msg;
+  if (checkGLError2(msg)) {
+    std::cerr << file << ":" << line << " gl error " << msg << "\n";
+    return true;
+  }
+  return false;
+}
 
 // Functions
 bool    ImGuiImplOpenGL3::Init(const char* glsl_version)
@@ -379,37 +392,43 @@ void ImGuiImplOpenGL3::DestroyFontsTexture()
 }
 
 // If you get an error please report on github. You may try different GL context version or GLSL version.
-bool CheckShader(GLuint handle, const char* desc)
+bool CheckShader(GLuint handle, const char* desc, std::string& msg)
 {
     GLint status = 0, lolength = 0;
     glGetShaderiv(handle, GL_COMPILE_STATUS, &status);
     glGetShaderiv(handle, GL_INFO_LOG_LENGTH, &lolength);
-    if ((GLboolean)status == GL_FALSE)
-        fprintf(stderr, "ERROR: ImGuiImplOpenGL3::CreateDeviceObjects: failed to compile %d %s!\n", handle, desc);
+    if ((GLboolean)status == GL_FALSE) {
+      msg += "ERROR: ImGuiImplOpenGL3::CreateDeviceObjects: failed to compile.\n";
+      msg += "handle " + std::to_string(handle) + "\n";
+      msg += desc;
+    }
     if (lolength > 0)
     {
         ImVector<char> buf;
         buf.resize((int)(lolength + 1));
         glGetShaderInfoLog(handle, lolength, NULL, (GLchar*)buf.begin());
-        fprintf(stderr, "%s\n", buf.begin());
+        msg += std::string(&buf[0]);
     }
     return (GLboolean)status == GL_TRUE;
 }
 
 // If you get an error please report on github. You may try different GL context version or GLSL version.
-bool CheckProgram(GLuint handle, const char* desc)
+bool CheckProgram(GLuint handle, const char* desc, std::string& msg)
 {
     GLint status = 0, lolength = 0;
     glGetProgramiv(handle, GL_LINK_STATUS, &status);
     glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &lolength);
-    if ((GLboolean)status == GL_FALSE)
-        fprintf(stderr, "ERROR: ImGuiImplOpenGL3::CreateDeviceObjects: failed to link %s!\n", desc);
+    if ((GLboolean)status == GL_FALSE) {
+      msg += "ERROR: ImGuiImplOpenGL3::CreateDeviceObjects: failed to link:\n";
+      msg += "handle " + std::to_string(handle) + "\n";
+      msg += desc;
+    }
     if (lolength > 0)
     {
         ImVector<char> buf;
         buf.resize((int)(lolength + 1));
         glGetProgramInfoLog(handle, lolength, NULL, (GLchar*)buf.begin());
-        fprintf(stderr, "%s\n", buf.begin());
+        msg += std::string(&buf[0]);
     }
     return (GLboolean)status == GL_TRUE;
 }
@@ -564,7 +583,9 @@ bool    ImGuiImplOpenGL3::CreateDeviceObjects()
     {
       glShaderSource(vert_handle_, 2, vertex_shader_with_version, NULL);
       glCompileShader(vert_handle_);
-      CheckShader(vert_handle_, "vertex shader");
+      std::string msg;
+      if (!CheckShader(vert_handle_, "vertex shader", msg))
+        std::cerr << msg << "\n";
     }
 
     const GLchar* fragment_shader_with_version[2] = { GlslVersionString, fragment_shader };
@@ -577,7 +598,9 @@ bool    ImGuiImplOpenGL3::CreateDeviceObjects()
     {
       glShaderSource(frag_handle_, 2, fragment_shader_with_version, NULL);
       glCompileShader(frag_handle_);
-      CheckShader(frag_handle_, "fragment shader");
+      std::string msg;
+      if (!CheckShader(frag_handle_, "fragment shader", msg))
+        std::cerr << msg << "\n";
     }
 
     if (vert_handle_ && frag_handle_)
@@ -586,7 +609,10 @@ bool    ImGuiImplOpenGL3::CreateDeviceObjects()
       glAttachShader(shader_handle_, vert_handle_);
       glAttachShader(shader_handle_, frag_handle_);
       glLinkProgram(shader_handle_);
-      CheckProgram(shader_handle_, "shader program");
+      std::string msg;
+      if (!CheckProgram(shader_handle_, "shader program", msg)) {
+        std::cerr << msg << "\n";
+      }
 
       attrib_location_tex_ = glGetUniformLocation(shader_handle_, "Texture");
       attrib_location_proj_mtx_ = glGetUniformLocation(shader_handle_, "ProjMtx");

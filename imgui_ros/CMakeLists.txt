@@ -42,6 +42,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/AddTexture.srv"
   "srv/AddWindow.srv"
   "srv/AddShape.srv"
+  "srv/AddShaders.srv"
   DEPENDENCIES geometry_msgs sensor_msgs shape_msgs std_msgs
 )
 
@@ -65,6 +66,7 @@ add_executable(imgui_ros_node
   src/sub.cpp
   src/tf.cpp
   src/viz2d.cpp
+  src/imgui_impl_opengl3.cpp
   src/viz3d.cpp
   src/window.cpp
   imgui/imgui.cpp
@@ -73,7 +75,6 @@ add_executable(imgui_ros_node
   imgui/imgui_widgets.cpp
   imgui/examples/imgui_impl_sdl.cpp
   # imgui/examples/imgui_impl_opengl3.cpp
-  src/imgui_impl_opengl3.cpp
   imgui/examples/libs/gl3w/GL/gl3w.c
 )
 set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPILE_FLAGS -Wno-pedantic)
@@ -111,8 +112,9 @@ install(TARGETS param_to_topic DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 # TODO(lucasw) glob
-install(PROGRAMS scripts/demo.py DESTINATION lib/${PROJECT_NAME})
-install(PROGRAMS scripts/pub_shape.py DESTINATION lib/${PROJECT_NAME})
+file(GLOB SCRIPT_FILES scripts/*)
+install(PROGRAMS ${SCRIPT_FILES}
+  DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -62,10 +62,11 @@
 
 #include <string>
 
-bool CheckShader(GLuint handle, const char* desc);
-bool CheckProgram(GLuint handle, const char* desc);
+bool CheckShader(GLuint handle, const char* desc, std::string& msg);
+bool CheckProgram(GLuint handle, const char* desc, std::string& msg);
 
-void checkGLError(const std::string file, const int line);
+bool checkGLError2(std::string& msg);
+bool checkGLError(const std::string file, const int line);
 
 struct GLState
 {

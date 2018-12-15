@@ -125,7 +125,83 @@ void makeTestShape(std::shared_ptr<Shape> shape)
   }
 }
 
-void Shape::init(GLuint& shader_handle)
+bool ShaderSet::init(const std::string& glsl_version, std::string& message)
+{
+  // Create shaders
+  const GLchar* vertex_shader_with_version[2] = {glsl_version.c_str(),
+      vertex_code_.c_str()};
+  vert_handle_ = glCreateShader(GL_VERTEX_SHADER);
+  if (!vert_handle_)
+  {
+    message = "vertex shader failed to create " + glGetError();
+    return false;
+  }
+  else
+  {
+    glShaderSource(vert_handle_, 2, vertex_shader_with_version, NULL);
+    glCompileShader(vert_handle_);
+    if (!CheckShader(vert_handle_, "vertex shader", message)) {
+      std::cout << vertex_code_ << std::endl;
+      return false;
+    }
+  }
+
+  const GLchar* fragment_shader_with_version[2] = {glsl_version.c_str(), fragment_code_.c_str() };
+  frag_handle_ = glCreateShader(GL_FRAGMENT_SHADER);
+  if (!frag_handle_)
+  {
+    message = "fragment shader failed to create " + glGetError();
+    return false;
+  }
+  else
+  {
+    glShaderSource(frag_handle_, 2, fragment_shader_with_version, NULL);
+    glCompileShader(frag_handle_);
+    if (!CheckShader(frag_handle_, "fragment shader", message)) {
+      std::cout << fragment_code_ << std::endl;
+      return false;
+    }
+  }
+
+  shader_handle_ = glCreateProgram();
+  glAttachShader(shader_handle_, vert_handle_);
+  glAttachShader(shader_handle_, frag_handle_);
+  glLinkProgram(shader_handle_);
+  if (!CheckProgram(shader_handle_, "shader program", message)) {
+    return false;
+  }
+
+  // TODO(lucasw) make these generic - provide a list of uniforms
+  // in request
+  attrib_location_tex_ = glGetUniformLocation(shader_handle_, "Texture");
+  attrib_location_proj_mtx_ = glGetUniformLocation(shader_handle_, "ProjMtx");
+  attrib_location_position_ = glGetAttribLocation(shader_handle_, "Position");
+  attrib_location_uv_ = glGetAttribLocation(shader_handle_, "UV");
+  attrib_location_color_ = glGetAttribLocation(shader_handle_, "Color");
+
+  attrib_location_projected_texture_scale_ = glGetUniformLocation(shader_handle_, "projected_texture_scale");
+  attrib_location_proj_tex_ = glGetUniformLocation(shader_handle_, "ProjectedTexture");
+  attrib_location_proj_tex_mtx_ = glGetUniformLocation(shader_handle_, "ProjTexMtx");
+
+  glEnableVertexAttribArray(attrib_location_position_);
+  glEnableVertexAttribArray(attrib_location_uv_);
+  glEnableVertexAttribArray(attrib_location_color_);
+  glVertexAttribPointer(attrib_location_position_, 3, GL_FLOAT, GL_FALSE,
+      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
+  glVertexAttribPointer(attrib_location_uv_, 2, GL_FLOAT, GL_FALSE,
+      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, uv));
+  glVertexAttribPointer(attrib_location_color_, 4, GL_FLOAT, GL_FALSE,
+      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
+
+  std::string msg;
+  if (checkGLError2(msg)) {
+    return false;
+  }
+
+  return true;
+}
+
+void Shape::init()
 {
   glGenVertexArrays(1, &vao_handle_);
   glBindVertexArray(vao_handle_);
@@ -135,25 +211,6 @@ void Shape::init(GLuint& shader_handle)
   // copy data to gpu
   glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)vertices_.Size * sizeof(DrawVert),
       (const GLvoid*)vertices_.Data, GL_STREAM_DRAW);
-
-  attrib_location_tex_ = glGetUniformLocation(shader_handle, "Texture");
-  attrib_location_proj_mtx_ = glGetUniformLocation(shader_handle, "ProjMtx");
-  attrib_location_position_ = glGetAttribLocation(shader_handle, "Position");
-  attrib_location_uv_ = glGetAttribLocation(shader_handle, "UV");
-  attrib_location_color_ = glGetAttribLocation(shader_handle, "Color");
-
-  checkGLError(__FILE__, __LINE__);
-  glEnableVertexAttribArray(attrib_location_position_);
-  glEnableVertexAttribArray(attrib_location_uv_);
-  glEnableVertexAttribArray(attrib_location_color_);
-  checkGLError(__FILE__, __LINE__);
-  glVertexAttribPointer(attrib_location_position_, 3, GL_FLOAT, GL_FALSE,
-      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
-  glVertexAttribPointer(attrib_location_uv_, 2, GL_FLOAT, GL_FALSE,
-      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, uv));
-  glVertexAttribPointer(attrib_location_color_, 4, GL_FLOAT, GL_FALSE,
-      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
-  checkGLError(__FILE__, __LINE__);
 
   glGenBuffers(1, &elements_handle_);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
@@ -177,97 +234,12 @@ Viz3D::Viz3D(const std::string name,
   ros_image_.reset(new RosImage("texture", "/image_out", node));
 
   transform_.setIdentity();
-  // TODO(lucasw) load these from disk with python script, setup via ros service
-  // TODO(lucasw) maintaining many versions of these seems like a big hassle,
-  // which is why bgfx exists...
-  // const GLchar* vertex_shader_glsl_130 =
-  const GLchar* vertex_shader =
-      "uniform mat4 ProjMtx;\n"
-      "uniform mat4 ProjTexMtx;\n"
-      "in vec3 Position;\n"
-      "in vec2 UV;\n"
-      "in vec4 Color;\n"
-      "out vec2 FraUV;\n"
-      "out vec4 FraColor;\n"
-      "out vec4 ProjectedTexturePosition;\n"
-      "void main()\n"
-      "{\n"
-      "    FraUV = UV;\n"
-      "    FraColor = Color;\n"
-      "    gl_Position = ProjMtx * vec4(Position.xyz, 1.0);\n"
-      "    ProjectedTexturePosition = ProjTexMtx * vec4(Position.xyz, 1.0);\n"
-      "    // ProjectedTexturePosition = ProjMtx * vec4(Position.xyz, 1.0);\n"
-      "    // transform to clip space\n"
-      "    // this division looks funny, texture becomes jagged\n"
-      "    // ProjectedTexturePosition.xyz /= ProjectedTexturePosition.w;\n"
-      "    ProjectedTexturePosition.xyz += 1.0;\n"
-      "    ProjectedTexturePosition.xyz /= 2.0;\n"
-      "}\n";
-  std::cout << "viz3d vertex shader:\n" << vertex_shader << "\n";
-
-  // OpenGL makes the first vec4 `out` the fragment color by default
-  // but should be explicit.
-  // const GLchar* fragment_shader_glsl_130 =
-  const GLchar* fragment_shader =
-      "uniform sampler2D Texture;\n"
-      "uniform sampler2D ProjectedTexture;\n"
-      "uniform float projected_texture_scale;\n"
-      "in vec2 FraUV;\n"
-      "in vec4 FraColor;\n"
-      "in vec4 ProjectedTexturePosition;\n"
-      "out vec4 Out_Color;\n"
-      "void main()\n"
-      "{\n"
-      "    vec3 in_proj_vec = step(0.0, ProjectedTexturePosition.xyz) * (1.0 - step(1.0, ProjectedTexturePosition.xyz));\n"
-      "    // TODO(lwalter) can skip this if always border textures with alpha 0.0\n"
-      "    // float in_proj_bounds = normalize(dot(in_proj_vec, in_proj_vec));\n"
-      "    // Out_Color = FraColor * texture(Texture, FraUV.st) + in_proj_bounds * texture(ProjectedTexture, ProjectedTexturePosition.xy);\n"
-      "    Out_Color = FraColor * texture(Texture, FraUV.st) + projected_texture_scale * texture(ProjectedTexture, ProjectedTexturePosition.xy);\n"
-      "}\n";
-  std::cout << "viz3d fragment shader:\n" << fragment_shader << "\n";
-
-  // Create shaders
-  const GLchar* vertex_shader_with_version[2] = { renderer->GlslVersionString, vertex_shader };
-  vert_handle_ = glCreateShader(GL_VERTEX_SHADER);
-  if (!vert_handle_)
-  {
-    std::cerr << "vertex shader failed to create " << glGetError() << "\n";
-    return;
-  }
-  else
-  {
-    glShaderSource(vert_handle_, 2, vertex_shader_with_version, NULL);
-    glCompileShader(vert_handle_);
-    CheckShader(vert_handle_, "vertex shader");
-  }
-
-  const GLchar* fragment_shader_with_version[2] = { renderer->GlslVersionString, fragment_shader };
-  frag_handle_ = glCreateShader(GL_FRAGMENT_SHADER);
-  if (!frag_handle_)
-  {
-    std::cerr << "fragment shader failed to create " << glGetError() << "\n";
-    return;
-  }
-  else
-  {
-    glShaderSource(frag_handle_, 2, fragment_shader_with_version, NULL);
-    glCompileShader(frag_handle_);
-    CheckShader(frag_handle_, "fragment shader");
-  }
-
-  shader_handle_ = glCreateProgram();
-  glAttachShader(shader_handle_, vert_handle_);
-  glAttachShader(shader_handle_, frag_handle_);
-  glLinkProgram(shader_handle_);
-  CheckProgram(shader_handle_, "shader program");
-
-  attrib_location_projected_texture_scale_ = glGetUniformLocation(shader_handle_, "projected_texture_scale");
-  attrib_location_proj_tex_ = glGetUniformLocation(shader_handle_, "ProjectedTexture");
-  attrib_location_proj_tex_mtx_ = glGetUniformLocation(shader_handle_, "ProjTexMtx");
 
   textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
 
+  add_shaders_ = node->create_service<imgui_ros::srv::AddShaders>("add_shaders",
+      std::bind(&Viz3D::addShaders, this, _1, _2));
   add_texture_ = node->create_service<imgui_ros::srv::AddTexture>("add_texture",
       std::bind(&Viz3D::addTexture, this, _1, _2));
   add_shape_ = node->create_service<imgui_ros::srv::AddShape>("add_shape",
@@ -286,6 +258,37 @@ Viz3D::~Viz3D()
 #if 0
   glDeleteTextures(1, &texture_id_);
 #endif
+}
+
+void Viz3D::addShaders(const std::shared_ptr<imgui_ros::srv::AddShaders::Request> req,
+                       std::shared_ptr<imgui_ros::srv::AddShaders::Response> res)
+{
+  res->success = true;
+  if (req->remove) {
+    if (shader_sets_.count(req->name) > 0) {
+      shader_sets_.erase(req->name);
+      return;
+    }
+    return;
+  }
+
+  auto shaders = std::make_shared<ShaderSet>(req->name, req->vertex,
+      req->geometry, req->fragment);
+
+  std::shared_ptr<ImGuiImplOpenGL3> renderer = renderer_.lock();
+  if (!renderer) {
+    // TODO(lucasw) maybe should store them and try to initialize them
+    // later?
+    res->message = "no renderer, not ready for shaders";
+    res->success = false;
+    return;
+  }
+
+  if (!shaders->init(renderer->GlslVersionString, res->message)) {
+    res->success = false;
+    return;
+  }
+  shader_sets_[req->name] = shaders;
 }
 
 void Viz3D::addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request> req,
@@ -398,7 +401,7 @@ void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr
     }
   }
 
-  shape->init(shader_handle_);
+  shape->init();
   shape->print();
   shapes_[shape->name_] = shape;
 }
@@ -412,7 +415,8 @@ void Viz3D::draw()
 
   {
     // TODO(lucasw) make this a ros topic, use a regular PUB + SUB gui widget
-    const bool changed = ImGui::Checkbox("projected texture", &enable_projected_texture_);
+    // const bool changed =
+    ImGui::Checkbox("projected texture", &enable_projected_texture_);
   }
   {
     double min = 0.0001;
@@ -621,10 +625,12 @@ bool Viz3D::setupProjectedTexture(const std::string& shape_frame_id)
   if (!setupCamera(stamped_transform, shape_frame_id, width, height, mtp))
     return false;
 
-  glUniformMatrix4fv(attrib_location_proj_tex_mtx_, 1, GL_FALSE, &mtp[0][0]);
-  // assign this texture to the TEXTURE1 slot
-  glUniform1i(attrib_location_proj_tex_, 1);
-  checkGLError(__FILE__, __LINE__);
+  for (auto shaders : shader_sets_) {
+    glUniformMatrix4fv(shaders.second->attrib_location_proj_tex_mtx_, 1, GL_FALSE, &mtp[0][0]);
+    // assign this texture to the TEXTURE1 slot
+    glUniform1i(shaders.second->attrib_location_proj_tex_, 1);
+    checkGLError(__FILE__, __LINE__);
+  }
   return true;
 }
 
@@ -646,11 +652,13 @@ void Viz3D::render(const int fb_width, const int fb_height,
     return;
   }
 
+#if 0
   std::shared_ptr<ImGuiImplOpenGL3> renderer = renderer_.lock();
   if (!renderer) {
     std::cerr << "no renderer\n";
     return;
   }
+#endif
 
     checkGLError(__FILE__, __LINE__);
 
@@ -659,6 +667,15 @@ void Viz3D::render(const int fb_width, const int fb_height,
     GLState gl_state;
     gl_state.backup();
 
+    render2(fb_width, fb_height);
+    checkGLError(__FILE__, __LINE__);
+
+    gl_state.backup();
+    checkGLError(__FILE__, __LINE__);
+}
+
+void Viz3D::render2(const int fb_width, const int fb_height)
+{
     // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
@@ -672,18 +689,32 @@ void Viz3D::render(const int fb_width, const int fb_height,
 #ifdef GL_POLYGON_MODE
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
-    checkGLError(__FILE__, __LINE__);
+    // TODO(lucasw) instead of outputing to stdout put the error in a gui text widget
+    if (checkGLError(__FILE__, __LINE__))
+      return;
 
     // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
 
     // (This is to easily allow multiple GL contexts. VAO are not shared among GL contexts, and we don't track creation/deletion of windows so we don't have an obvious key to use to cache them.)
-    checkGLError(__FILE__, __LINE__);
+    if (checkGLError(__FILE__, __LINE__))
+      return;
+
+  std::shared_ptr<ShaderSet> shaders;
+  if (shader_sets_.size() == 0) {
+    return;
+  }
+
+  // TODO(lucasw) for now just use the last shader set
+  for (auto shaders_pair : shader_sets_) {
+    shaders = shaders_pair.second;
+  }
 
   for (auto shape_pair : shapes_) {
     auto shape = shape_pair.second;
 
-    glUseProgram(shader_handle_);
+    // TODO(lucasw) later a shape can use certain shaders or just default
+    glUseProgram(shaders->shader_handle_);
 
     {
       glm::mat4 mvp;
@@ -691,9 +722,10 @@ void Viz3D::render(const int fb_width, const int fb_height,
         continue;
       // TODO(lucasw) use double in the future?
       // glUniformMatrix4dv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
-      glUniformMatrix4fv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
-      glUniform1i(shape->attrib_location_tex_, 0);
-      checkGLError(__FILE__, __LINE__);
+      glUniformMatrix4fv(shaders->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
+      glUniform1i(shaders->attrib_location_tex_, 0);
+      if (checkGLError(__FILE__, __LINE__))
+        return;
     }
 
     // TODO(lucasw) add imgui use texture projection checkbox
@@ -710,7 +742,8 @@ void Viz3D::render(const int fb_width, const int fb_height,
     ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
     glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
         (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
-    checkGLError(__FILE__, __LINE__);
+    if (checkGLError(__FILE__, __LINE__))
+      return;
 
 #if 0
     {
@@ -734,12 +767,13 @@ void Viz3D::render(const int fb_width, const int fb_height,
       glActiveTexture(GL_TEXTURE0);
       // Bind texture- if it is null then the color is black
       glBindTexture(GL_TEXTURE_2D, tex_id);
-      checkGLError(__FILE__, __LINE__);
+      if (checkGLError(__FILE__, __LINE__))
+        return;
     }
 
     if (use_texture_projection) {
       // TODO(lucasw) later the scale could be a brightness setting
-      glUniform1f(attrib_location_projected_texture_scale_, 1.0);
+      glUniform1f(shaders->attrib_location_projected_texture_scale_, 1.0);
       GLuint tex_id = 0;
       // TODO(lucasw) currently hardcoded, later make more flexible
       const std::string name = projected_texture_name_;
@@ -750,11 +784,12 @@ void Viz3D::render(const int fb_width, const int fb_height,
       }
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, tex_id);
-      checkGLError(__FILE__, __LINE__);
+      if (checkGLError(__FILE__, __LINE__))
+        return;
     } else {
       // turn off projection in fragment shader, otherwise last updated
       // uniform values will be used
-      glUniform1f(attrib_location_projected_texture_scale_, 0.0);
+      glUniform1f(shaders->attrib_location_projected_texture_scale_, 0.0);
     }
 
     {
@@ -763,11 +798,11 @@ void Viz3D::render(const int fb_width, const int fb_height,
       glDrawElements(GL_TRIANGLES, (GLsizei)shape->indices_.Size,
           sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
       // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
-      checkGLError(__FILE__, __LINE__);
+      if (checkGLError(__FILE__, __LINE__))
+        return;
       // idx_buffer_offset += pcmd->ElemCount;
     }
   }
-  checkGLError(__FILE__, __LINE__);
-  gl_state.backup();
-  checkGLError(__FILE__, __LINE__);
+
+  return;
 }

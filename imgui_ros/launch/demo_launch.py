@@ -51,12 +51,15 @@ def generate_launch_description():
             arguments=['__params:=' + param_file],
             remappings=[])
 
+    add_shaders = launch_ros.actions.Node(
+            package='imgui_ros', node_executable='add_shaders.py', output='screen')
     configure_windows = launch_ros.actions.Node(
             package='imgui_ros', node_executable='demo.py', output='screen')
     add_shapes = launch_ros.actions.Node(
             package='imgui_ros', node_executable='pub_shape.py', output='screen')
 
     return launch.LaunchDescription([
+        add_shaders,
         roto_zoom,
         static_tf,
         # image_pub,

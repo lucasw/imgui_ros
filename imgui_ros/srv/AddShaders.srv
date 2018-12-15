@@ -1,0 +1,9 @@
+# the name needs to be unique, it will overwrite same named textures otherwise.
+string name
+string vertex
+string geometry
+string fragment
+bool remove false
+---
+string message ""
+bool success False

@@ -23,7 +23,7 @@ import rclpy
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Point, TransformStamped, Vector3
 from imgui_ros.msg import TexturedShape, Widget
-from imgui_ros.srv import AddShape, AddTexture, AddWindow
+from imgui_ros.srv import AddShaders, AddShape, AddTexture, AddWindow
 from rclpy.node import Node
 from shape_msgs.msg import MeshTriangle, Mesh
 from std_msgs.msg import ColorRGBA

@@ -36,6 +36,7 @@
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
 #include <imgui_ros/msg/textured_shape.hpp>
+#include <imgui_ros/srv/add_shaders.hpp>
 #include <imgui_ros/srv/add_shape.hpp>
 #include <imgui_ros/srv/add_texture.hpp>
 // #include <imgui_ros/window.h>
@@ -63,6 +64,45 @@
 #endif
 #pragma GCC diagnostic pop
 
+struct ShaderSet {
+  ShaderSet(const std::string& name, const std::string& vertex_code,
+      const std::string& geometry_code, const std::string& fragment_code) :
+      name_(name),
+      vertex_code_(vertex_code),
+      geometry_code_(geometry_code),
+      fragment_code_(fragment_code)
+  {
+  }
+
+  // TODO(lucasw)
+  ~ShaderSet() {}
+
+  bool init(const std::string& glsl_version, std::string& message);
+
+  const std::string name_;
+
+  std::string vertex_code_;
+  GLuint vert_handle_ = 0;
+
+  std::string geometry_code_;
+  GLuint geometry_handle_ = 0;
+
+  std::string fragment_code_;
+  GLuint frag_handle_ = 0;
+
+  GLuint shader_handle_ = 0;
+
+  int attrib_location_tex_ = 0;
+  int attrib_location_proj_mtx_ = 0;
+  int attrib_location_position_ = 0;
+  int attrib_location_uv_ = 0;
+  int attrib_location_color_ = 0;
+
+  int attrib_location_projected_texture_scale_ = 0;
+  int attrib_location_proj_tex_ = 0;
+  int attrib_location_proj_tex_mtx_ = 0;
+};
+
 struct DrawVert {
   glm::vec3 pos;
   glm::vec2 uv;
@@ -84,7 +124,7 @@ struct Shape {
   }
 
   // transfer to gpu
-  void init(GLuint& shader_handle);
+  void init();
 
   void print() {
     std::cout << "shape " << name_ << " " << texture_ << " "
@@ -107,12 +147,6 @@ struct Shape {
   GLuint vao_handle_ = 0;
   GLuint vbo_handle_ = 0;
   GLuint elements_handle_ = 0;
-
-  int attrib_location_tex_ = 0;
-  int attrib_location_proj_mtx_ = 0;
-  int attrib_location_position_ = 0;
-  int attrib_location_uv_ = 0;
-  int attrib_location_color_ = 0;
 };
 
 // TODO(lucasw) need to support covering the entire background,
@@ -129,6 +163,7 @@ struct Viz3D {
   void render(const int fb_width, const int fb_height,
       const int display_pos_x, const int display_pos_y,
       const int display_size_x, const int display_size_y);
+  void render2(const int fb_width, const int fb_height);
 
   void draw();
   //    const int pos_x, const int pos_y,
@@ -177,9 +212,11 @@ protected:
   GLuint vertex_buffer_;
 #endif
 
-  GLuint shader_handle_ = 0;
-  GLuint vert_handle_ = 0;
-  GLuint frag_handle_ = 0;
+
+  rclcpp::Service<imgui_ros::srv::AddShaders>::SharedPtr add_shaders_;
+  void addShaders(const std::shared_ptr<imgui_ros::srv::AddShaders::Request> req,
+                  std::shared_ptr<imgui_ros::srv::AddShaders::Response> res);
+  std::map<std::string, std::shared_ptr<ShaderSet> > shader_sets_;
 
   rclcpp::Service<imgui_ros::srv::AddTexture>::SharedPtr add_texture_;
   void addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request> req,
@@ -218,9 +255,6 @@ protected:
   const std::string projected_texture_name_ = "projected_texture";
   // this frame needs to follow opengl coordinates
   const std::string projected_texture_frame_id_ = "projected_texture";
-  int attrib_location_projected_texture_scale_ = 0;
-  int attrib_location_proj_tex_ = 0;
-  int attrib_location_proj_tex_mtx_ = 0;
 };
 
 #endif  // IMGUI_ROS_VIZ3D_H
