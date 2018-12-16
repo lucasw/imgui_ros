@@ -241,28 +241,37 @@ Viz3D::Viz3D(const std::string name,
   ros_image_.reset(new RosImage("texture", "/image_out", node));
 
   if (true) {
-    glGenFramebuffers(1, &frame_buffer_);
-    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_);
 
+    {
     cv::Mat tmp(cv::Size(render_width_, render_height_), CV_8UC4, cv::Scalar(100, 50, 20, 255));
-
     glGenTextures(1, &rendered_texture_);
     glBindTexture(GL_TEXTURE_2D, rendered_texture_);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render_width_, render_height_, 0, GL_RGBA,
         GL_UNSIGNED_BYTE, &tmp.data[0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // unbind - TODO(lucasw) needed?
+    glBindTexture(GL_TEXTURE_2D, 0);
+    }
 
+    {
     glGenRenderbuffers(1, &depth_buffer_);
     glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer_);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
         render_width_, render_height_);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
         GL_RENDERBUFFER, depth_buffer_);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    }
 
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, rendered_texture_, 0);
+    {
+    glGenFramebuffers(1, &frame_buffer_);
+    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+        GL_TEXTURE_2D, rendered_texture_, 0);
 
-    GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
     glDrawBuffers(1, DrawBuffers);
     // OpenGL 4?
     // glNamedFramebufferDrawBuffers(frame_buffer_, 1, DrawBuffers);
@@ -276,6 +285,8 @@ Viz3D::Viz3D(const std::string name,
 
     // restore default frame buffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
     std::string msg;
     if (checkGLError2(msg)) {
       throw std::runtime_error(msg);
@@ -304,6 +315,11 @@ Viz3D::Viz3D(const std::string name,
 
 Viz3D::~Viz3D()
 {
+  {
+    glDeleteTextures(1, &rendered_texture_);
+    glDeleteRenderbuffers(1, &depth_buffer_);
+    glDeleteFramebuffers(1, &frame_buffer_);
+  }
 #if 0
   glDeleteTextures(1, &texture_id_);
 #endif
@@ -754,7 +770,7 @@ void Viz3D::renderToTexture()
     gl_state.backup();
 
     glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_);
-    glClearColor(0.5, 0.5, 0.1, 1.0);
+    glClearColor(0.1, 0.1, 5.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // TODO(lucasw) if render width/height change need to update rendered_texture
     render2(render_width_, render_height_);
@@ -762,7 +778,6 @@ void Viz3D::renderToTexture()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     gl_state.backup();
   }
-
 }
 
 void Viz3D::render2(const int fb_width, const int fb_height)

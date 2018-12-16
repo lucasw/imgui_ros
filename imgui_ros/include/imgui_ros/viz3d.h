@@ -266,6 +266,8 @@ protected:
   GLuint rendered_texture_;
   int render_width_ = 512;
   int render_height_ = 512;
+  // TODO(lucasw) not sure about this
+  GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
 };
 
 #endif  // IMGUI_ROS_VIZ3D_H
