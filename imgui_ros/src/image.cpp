@@ -161,14 +161,17 @@ using std::placeholders::_1;
     {
       std::lock_guard<std::mutex> lock(mutex_);
       if ((texture_id_ != 0) && (width_ != 0) && (height_ != 0)) {
-        std::stringstream ss;
         static int count = 0;
-        ss << texture_id_ << " " << topic_ << " "
-            << width_ << " " << height_ << " " << count++;
-        // const char* text = ss.str().c_str();
-        std::string text = ss.str();
-        // std::cout << "draw " << text << "\n";
-        // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+
+        if (false) {
+          std::stringstream ss;
+          ss << texture_id_ << " " << topic_ << " "
+              << width_ << " " << height_ << " " << count++;
+          // const char* text = ss.str().c_str();
+          std::string text = ss.str();
+          // std::cout << "draw " << text << "\n";
+          ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+        }
         ImVec2 win_size = ImGui::GetWindowSize();
         const double fr_x = win_size.x / width_;
         const double fr_y = win_size.y / height_;

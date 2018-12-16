@@ -74,8 +74,7 @@ struct ShaderSet {
   {
   }
 
-  // TODO(lucasw)
-  ~ShaderSet() {}
+  ~ShaderSet();
 
   bool init(const std::string& glsl_version, std::string& message);
 
@@ -163,6 +162,7 @@ struct Viz3D {
   void render(const int fb_width, const int fb_height,
       const int display_pos_x, const int display_pos_y,
       const int display_size_x, const int display_size_y);
+  void renderToTexture();
   void render2(const int fb_width, const int fb_height);
 
   void draw();
@@ -258,6 +258,14 @@ protected:
   const std::string projected_texture_name_ = "projected_texture";
   // this frame needs to follow opengl coordinates
   const std::string projected_texture_frame_id_ = "projected_texture";
+
+  // TODO(lucasw) put in own class later
+  bool enable_rtt_ = true;
+  GLuint frame_buffer_;
+  GLuint depth_buffer_;
+  GLuint rendered_texture_;
+  int render_width_ = 512;
+  int render_height_ = 512;
 };
 
 #endif  // IMGUI_ROS_VIZ3D_H

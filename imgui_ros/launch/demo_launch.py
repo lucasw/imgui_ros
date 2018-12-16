@@ -59,11 +59,11 @@ def generate_launch_description():
             package='imgui_ros', node_executable='pub_shape.py', output='screen')
 
     return launch.LaunchDescription([
-        add_shaders,
         roto_zoom,
         static_tf,
         # image_pub,
         imgui_ros,
         configure_windows,
         add_shapes,
+        add_shaders,
     ])
