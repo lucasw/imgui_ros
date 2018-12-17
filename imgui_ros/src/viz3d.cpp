@@ -261,8 +261,6 @@ Viz3D::Viz3D(const std::string name,
     glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer_);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
         render_width_, render_height_);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-        GL_RENDERBUFFER, depth_buffer_);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
     }
 
@@ -271,6 +269,8 @@ Viz3D::Viz3D(const std::string name,
     glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
         GL_TEXTURE_2D, rendered_texture_, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+        GL_RENDERBUFFER, depth_buffer_);
 
     glDrawBuffers(1, DrawBuffers);
     // OpenGL 4?
@@ -774,6 +774,8 @@ void Viz3D::renderToTexture()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // TODO(lucasw) if render width/height change need to update rendered_texture
     render2(render_width_, render_height_);
+
+    // TODO(lucasw) copy the date from the texture out to a cv::Mat?
     checkGLError(__FILE__, __LINE__);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     gl_state.backup();
