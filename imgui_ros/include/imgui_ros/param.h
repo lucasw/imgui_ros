@@ -168,7 +168,7 @@ protected:
 
     for (auto & result : future.get()) {
       if (!result.successful) {
-        RCLCPP_ERROR(node->get_logger(), "Failed to set parameter: %s", result.reason.c_str())
+        RCLCPP_ERROR(node->get_logger(), "Failed to set parameter: %s", result.reason.c_str());
       }
     }
   }

@@ -71,6 +71,7 @@ private:
 
   rclcpp::Service<srv::AddWindow>::SharedPtr add_window_;
 
+  rclcpp::Clock::SharedPtr clock_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
 
