@@ -47,7 +47,7 @@ struct GlImage : public Widget {
 
   // TODO(lucasw) or NULL or -1?
   GLuint texture_id_ = 0;
-protected:
+// protected:
   size_t width_ = 0;
   size_t height_ = 0;
 };

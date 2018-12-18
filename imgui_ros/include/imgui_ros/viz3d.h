@@ -148,6 +148,23 @@ struct Shape {
   GLuint elements_handle_ = 0;
 };
 
+struct RenderTexture {
+  RenderTexture(const std::string name, std::shared_ptr<rclcpp::Node> node);
+  ~RenderTexture();
+  void draw();
+  // void render();
+
+  std::string name_;
+  std::shared_ptr<RosImage> image_;
+
+  // TODO(lucasw) put in own class later
+  bool enable_rtt_ = true;
+  GLuint frame_buffer_;
+  GLuint depth_buffer_;
+  // TODO(lucasw) not sure about this
+  GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+};
+
 // TODO(lucasw) need to support covering the entire background,
 // and being within a widget, possibly with subclassing.
 // For now just do entire background.
@@ -255,15 +272,7 @@ protected:
   // this frame needs to follow opengl coordinates
   const std::string projected_texture_frame_id_ = "projected_texture";
 
-  // TODO(lucasw) put in own class later
-  bool enable_rtt_ = true;
-  GLuint frame_buffer_;
-  GLuint depth_buffer_;
-  GLuint rendered_texture_;
-  int render_width_ = 512;
-  int render_height_ = 512;
-  // TODO(lucasw) not sure about this
-  GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+  std::shared_ptr<RenderTexture> render_texture_;
 };
 
 #endif  // IMGUI_ROS_VIZ3D_H

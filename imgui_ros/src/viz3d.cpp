@@ -226,6 +226,85 @@ void Shape::init()
   checkGLError(__FILE__, __LINE__);
 }
 
+RenderTexture::RenderTexture(const std::string name, std::shared_ptr<rclcpp::Node> node) :
+    name_(name)
+{
+  image_ = std::make_shared<RosImage>("rendered", "", node);
+  image_->width_ = 512;
+  image_->height_ = 512;
+
+  {
+    cv::Mat tmp(cv::Size(image_->width_, image_->height_), CV_8UC4, cv::Scalar(100, 50, 20, 255));
+    glGenTextures(1, &image_->texture_id_);
+    glBindTexture(GL_TEXTURE_2D, image_->texture_id_);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_->width_, image_->height_, 0, GL_RGBA,
+        GL_UNSIGNED_BYTE, &tmp.data[0]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // unbind - TODO(lucasw) needed?
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+
+  {
+    glGenRenderbuffers(1, &depth_buffer_);
+    glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer_);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
+        image_->width_, image_->height_);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+  }
+
+  {
+    glGenFramebuffers(1, &frame_buffer_);
+    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+        GL_TEXTURE_2D, image_->texture_id_, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+        GL_RENDERBUFFER, depth_buffer_);
+
+    glDrawBuffers(1, DrawBuffers);
+    // OpenGL 4?
+    // glNamedFramebufferDrawBuffers(frame_buffer_, 1, DrawBuffers);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+      RCLCPP_ERROR(node->get_logger(), "Framebuffer is not complete %s", glGetError());
+    } else {
+      RCLCPP_INFO(node->get_logger(), "Framebuffer setup complete %d %d %d",
+          frame_buffer_, depth_buffer_, image_->texture_id_);
+    }
+
+    // restore default frame buffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  }
+
+  std::string msg;
+  if (checkGLError2(msg)) {
+    throw std::runtime_error(msg);
+  }
+}
+
+RenderTexture::~RenderTexture()
+{
+  glDeleteRenderbuffers(1, &depth_buffer_);
+  glDeleteFramebuffers(1, &frame_buffer_);
+}
+
+void RenderTexture::draw()
+{
+  ImGui::Begin(name_.c_str());
+  // TODO(lucasw) later re-use code in RosImage
+  ImGui::Checkbox("render to texture", &enable_rtt_);
+  if (enable_rtt_) {
+    image_->draw();
+  }
+  ImGui::End();
+}
+
+// RenderTexture::render()
+// {
+// }
+
 // render the entire background
 // this probably will be split out into a widget also.
 Viz3D::Viz3D(const std::string name,
@@ -238,60 +317,11 @@ Viz3D::Viz3D(const std::string name,
     tf_buffer_(tf_buffer),
     node_(node)
 {
-  textures_["default"] = std::make_shared<RosImage>("texture", "/image_out", node);
-
-  if (true) {
-
-    {
-    cv::Mat tmp(cv::Size(render_width_, render_height_), CV_8UC4, cv::Scalar(100, 50, 20, 255));
-    glGenTextures(1, &rendered_texture_);
-    glBindTexture(GL_TEXTURE_2D, rendered_texture_);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render_width_, render_height_, 0, GL_RGBA,
-        GL_UNSIGNED_BYTE, &tmp.data[0]);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    // unbind - TODO(lucasw) needed?
-    glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
-    {
-    glGenRenderbuffers(1, &depth_buffer_);
-    glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer_);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
-        render_width_, render_height_);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    }
-
-    {
-    glGenFramebuffers(1, &frame_buffer_);
-    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-        GL_TEXTURE_2D, rendered_texture_, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-        GL_RENDERBUFFER, depth_buffer_);
-
-    glDrawBuffers(1, DrawBuffers);
-    // OpenGL 4?
-    // glNamedFramebufferDrawBuffers(frame_buffer_, 1, DrawBuffers);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-      RCLCPP_ERROR(node->get_logger(), "Framebuffer is not complete %s", glGetError());
-    } else {
-      RCLCPP_INFO(node->get_logger(), "Framebuffer setup complete %d %d %d",
-          frame_buffer_, depth_buffer_, rendered_texture_);
-    }
-
-    // restore default frame buffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-
-    std::string msg;
-    if (checkGLError2(msg)) {
-      throw std::runtime_error(msg);
-    }
-  }
+  textures_["default"] = std::make_shared<RosImage>("default", "/image_out", node);
+  // TODO(lucasw) add this via service, also make it optionally output the image
+  // on a topic.
+  render_texture_ = std::make_shared<RenderTexture>("render_texture", node);
+  textures_["rendered"] = render_texture_->image_;
 
   transform_.setIdentity();
 
@@ -315,11 +345,6 @@ Viz3D::Viz3D(const std::string name,
 
 Viz3D::~Viz3D()
 {
-  {
-    glDeleteTextures(1, &rendered_texture_);
-    glDeleteRenderbuffers(1, &depth_buffer_);
-    glDeleteFramebuffers(1, &frame_buffer_);
-  }
 #if 0
   glDeleteTextures(1, &texture_id_);
 #endif
@@ -475,17 +500,10 @@ void Viz3D::draw()
 //  const int pos_x, const int pos_y,
 //  const int size_x, const int size_y)
 {
+  render_texture_->draw();
+
   ImGui::Begin("camera");
   // ImGuiIO& io = ImGui::GetIO();
-
-  if (true) {
-    // TODO(lucasw) later re-use code in RosImage
-    ImGui::Checkbox("render to texture", &enable_rtt_);
-    if (enable_rtt_) {
-      ImVec2 win_size = ImGui::GetWindowSize();
-      ImGui::Image((void*)(intptr_t)rendered_texture_, win_size);
-    }
-  }
 
   {
     // TODO(lucasw) make this a ros topic, use a regular PUB + SUB gui widget
@@ -764,22 +782,26 @@ void Viz3D::render(const int fb_width, const int fb_height,
 // don't interleave this with regular 3d rendering imgui rendering
 void Viz3D::renderToTexture()
 {
-  // TODO(lwalter) make a checkbox to enable this 
-  if (enable_rtt_) {
-    GLState gl_state;
-    gl_state.backup();
-
-    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_);
-    glClearColor(0.1, 0.1, 5.0, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // TODO(lucasw) if render width/height change need to update rendered_texture
-    render2(render_width_, render_height_, -1.0);
-
-    // TODO(lucasw) copy the date from the texture out to a cv::Mat?
-    checkGLError(__FILE__, __LINE__);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    gl_state.backup();
+  // TODO(lucasw) later make this a for loop through map
+  // render_texture_->render();
+  // TODO(lucasw) make a checkbox to enable this 
+  if (!render_texture_->enable_rtt_) {
+    return;
   }
+  GLState gl_state;
+  gl_state.backup();
+
+  glBindFramebuffer(GL_FRAMEBUFFER, render_texture_->frame_buffer_);
+  glClearColor(0.1, 0.1, 5.0, 1.0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  // TODO(lucasw) if render width/height change need to update rendered_texture
+  render2(render_texture_->image_->width_, render_texture_->image_->height_, -1.0);
+
+  // TODO(lucasw) copy the date from the texture out to a cv::Mat?
+  checkGLError(__FILE__, __LINE__);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  gl_state.backup();
+
 }
 
 void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert)
