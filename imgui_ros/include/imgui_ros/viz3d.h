@@ -163,7 +163,7 @@ struct Viz3D {
       const int display_pos_x, const int display_pos_y,
       const int display_size_x, const int display_size_y);
   void renderToTexture();
-  void render2(const int fb_width, const int fb_height);
+  void render2(const int fb_width, const int fb_height, const float sc_vert = 1.0);
 
   void draw();
   //    const int pos_x, const int pos_y,
@@ -191,7 +191,7 @@ protected:
   bool setupCamera(const tf2::Transform& view_transform, const std::string child_frame_id,
       const double aov_y,
       const int fb_width, const int fb_height,
-      glm::mat4& mvp);
+      glm::mat4& mvp, const float sc_vert = 1.0);
 #if 0
   // temp texture test
   GLuint texture_id_ = 0;

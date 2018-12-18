@@ -616,11 +616,11 @@ void Viz3D::draw()
 // transforming all the data of every object.
 bool Viz3D::setupCamera(const tf2::Transform& view_transform,
     const std::string child_frame_id, const double aov_y,
-    const int fb_width, const int fb_height, glm::mat4& mvp)
+    const int fb_width, const int fb_height, glm::mat4& mvp, float sc_vert)
 {
   const float aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height) * aspect_scale_;
-  glm::mat4 projection_matrix = glm::perspective(static_cast<float>(glm::radians(aov_y)),
-      aspect, near_, far_);
+  glm::mat4 projection_matrix = glm::perspective(static_cast<float>(sc_vert * glm::radians(aov_y)),
+      sc_vert * aspect, near_, far_);
 
   glm::mat4 model_matrix = glm::mat4(1.0f);
   try {
@@ -773,7 +773,7 @@ void Viz3D::renderToTexture()
     glClearColor(0.1, 0.1, 5.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // TODO(lucasw) if render width/height change need to update rendered_texture
-    render2(render_width_, render_height_);
+    render2(render_width_, render_height_, -1.0);
 
     // TODO(lucasw) copy the date from the texture out to a cv::Mat?
     checkGLError(__FILE__, __LINE__);
@@ -782,7 +782,7 @@ void Viz3D::renderToTexture()
   }
 }
 
-void Viz3D::render2(const int fb_width, const int fb_height)
+void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert)
 {
     // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
     glEnable(GL_BLEND);
@@ -829,7 +829,7 @@ void Viz3D::render2(const int fb_width, const int fb_height)
       if (!setupCamera(transform_, shape->frame_id_,
           aov_y_,
           fb_width, fb_height,
-          mvp))
+          mvp, sc_vert))
         continue;
       // TODO(lucasw) use double in the future?
       // glUniformMatrix4dv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);

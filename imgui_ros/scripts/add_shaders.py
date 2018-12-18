@@ -42,6 +42,7 @@ class AddShadersNode(Node):
             self.get_logger().info('service not available, waiting again...')
 
         self.bridge = cv_bridge.CvBridge()
+        sleep(1.0)
 
     # TODO(lucasw) can't this be a callback instead?
     def wait_for_response(self):
@@ -107,13 +108,14 @@ void main()
     // TODO(lwalter) can skip this if always border textures with alpha 0.0
     // float in_proj_bounds = normalize(dot(in_proj_vec, in_proj_vec));
     // Out_Color = FraColor * texture(Texture, FraUV.st) + in_proj_bounds * texture(ProjectedTexture, ProjectedTexturePosition.xy);
-    Out_Color = FraColor * texture(Texture, FraUV.st) + projected_texture_scale * texture(ProjectedTexture, projected_texture_position.xy);
+    vec2 uv = projected_texture_position.xy;
+    // uv.t = 1.0 - uv.t;
+    Out_Color = FraColor * texture(Texture, FraUV.st) + projected_texture_scale * texture(ProjectedTexture, uv.st);
 }
 
 '''
         self.future = self.shaders_cli.call_async(req)
         self.wait_for_response()
-        sleep(1.0)
 
 def main(args=None):
     rclpy.init(args=args)

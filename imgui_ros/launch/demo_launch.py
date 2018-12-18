@@ -19,13 +19,13 @@ def generate_launch_description():
     # image_pub = launch_ros.actions.Node(
     #         package='image_manip2', node_executable='image_publisher', output='screen',
     #         arguments=[image_manip_dir + "/data/mosaic.jpg"])
-    roto_zoom = launch.actions.IncludeLaunchDescription(
-            launch.launch_description_sources.PythonLaunchDescriptionSource(
-            image_manip_dir + '/launch/roto_zoom_launch.py'))
-    # this requires https://github.com/lucasw/geometry2/tree/static_tf_args_bouncy
+    # roto_zoom = launch.actions.Node(
+    #         launch.launch_description_sources.PythonLaunchDescriptionSource(
+    #         image_manip_dir + '/launch/roto_zoom_launch.py'))
     static_tf = launch_ros.actions.Node(
             package='tf2_ros',
             node_executable='static_transform_publisher',
+            node_name='static_foo',
             output='screen',
             arguments=['0.1', '0.2', '0.3', '0.4', '.5', '.6', 'map', 'foo'],
             # this doesn't work- it becomes one arg?
@@ -59,8 +59,9 @@ def generate_launch_description():
             package='imgui_ros', node_executable='pub_shape.py', output='screen')
 
     return launch.LaunchDescription([
-        roto_zoom,
-        static_tf,
+        # thse are both taking 100% cpu
+        # roto_zoom,
+        # static_tf,
         # image_pub,
         imgui_ros,
         configure_windows,
