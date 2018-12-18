@@ -242,11 +242,7 @@ protected:
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::weak_ptr<rclcpp::Node> node_;
 
-  // probably will replace with service that adds a texture with a given
-  // name, for now have topic.
   std::map<std::string, std::shared_ptr<RosImage> > textures_;
-  // temp test
-  std::shared_ptr<RosImage> ros_image_;
 
   bool initialized_ = false;
 

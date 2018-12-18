@@ -238,7 +238,7 @@ Viz3D::Viz3D(const std::string name,
     tf_buffer_(tf_buffer),
     node_(node)
 {
-  ros_image_.reset(new RosImage("texture", "/image_out", node));
+  textures_["default"] = std::make_shared<RosImage>("texture", "/image_out", node);
 
   if (true) {
 
@@ -484,8 +484,6 @@ void Viz3D::draw()
     if (enable_rtt_) {
       ImVec2 win_size = ImGui::GetWindowSize();
       ImGui::Image((void*)(intptr_t)rendered_texture_, win_size);
-      // GLuint tex_id = (GLuint)(intptr_t)ros_image_->texture_id_;
-      // ImGui::Image((void*)(intptr_t)tex_id, win_size);
     }
   }
 
@@ -746,7 +744,9 @@ void Viz3D::render(const int fb_width, const int fb_height,
 
     checkGLError(__FILE__, __LINE__);
 
-    ros_image_->updateTexture();
+  for (auto texture_pair : textures_) {
+    texture_pair.second->updateTexture();
+  }
 
     GLState gl_state;
     gl_state.backup();
@@ -872,9 +872,10 @@ void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert
       GLuint tex_id = 0;
       if ((shape->texture_ != "") && (textures_.count(shape->texture_) > 0)) {
         tex_id = (GLuint)(intptr_t)textures_[shape->texture_]->texture_id_;
-      } else {
-        tex_id = (GLuint)(intptr_t)ros_image_->texture_id_;
+      } else if (textures_.count("default") > 0) {
+        tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
       }
+      // TODO(lucasw) else stop rendering?
       glActiveTexture(GL_TEXTURE0);
       // Bind texture- if it is null then the color is black
       glBindTexture(GL_TEXTURE_2D, tex_id);
@@ -890,8 +891,8 @@ void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert
       const std::string name = projected_texture_name_;
       if (textures_.count(name) > 0) {
         tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
-      } else {
-        tex_id = (GLuint)(intptr_t)ros_image_->texture_id_;
+      } else if (textures_.count("default") > 0) {
+        tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
       }
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, tex_id);
