@@ -75,8 +75,11 @@ struct ShaderSet {
   }
 
   ~ShaderSet();
+  void remove();
 
   bool init(const std::string& glsl_version, std::string& message);
+
+  void draw();
 
   const std::string name_;
 
@@ -125,9 +128,23 @@ struct Shape {
   // transfer to gpu
   void init();
 
-  void print() {
-    std::cout << "shape " << name_ << " " << texture_ << " "
-        << vertices_.Size << " " << indices_.Size << ":\n";
+  void draw()
+  {
+    std::stringstream ss;
+    ss << "shape: " << name_ << ", frame: " << frame_id_ << ", texture: "  << texture_ << "\n";
+    ss << " `- vertices: " << vertices_.size() << ", indices " << indices_.size() << "\n";
+    ss << " `- vao: " << vao_handle_ << ", vbo " << vbo_handle_
+        << ", elements " << elements_handle_ << "\n";
+    // ss << msg_;
+    // TODO(lucasw) add interactive way to browse vertices and indices
+    ImGui::Text("%s", ss.str().c_str());
+  }
+
+  std::string print() {
+    std::stringstream ss;
+    ss << "shape " << name_ << " " << texture_ << " "
+        << vertices_.Size << " " << indices_.Size << "\n";
+    #if 0
     for (int i = 0; (i < 10) && (i < vertices_.Size); ++i)
       std::cout << i << "  "
         << " " << vertices_[i].pos.x
@@ -137,6 +154,8 @@ struct Shape {
     for (int i = 0; (i < 12) && (i < indices_.Size); ++i)
       std::cout << " " << indices_[i];
     std::cout << "\n";
+    #endif
+    return ss.str();
   }
 
   // ROS
@@ -158,7 +177,7 @@ struct RenderTexture {
   std::shared_ptr<RosImage> image_;
 
   // TODO(lucasw) put in own class later
-  bool enable_rtt_ = true;
+  bool enable_rtt_ = false;
   GLuint frame_buffer_;
   GLuint depth_buffer_;
   // TODO(lucasw) not sure about this
@@ -181,6 +200,8 @@ struct Viz3D {
       const int display_size_x, const int display_size_y);
   void renderToTexture();
   void render2(const int fb_width, const int fb_height, const float sc_vert = 1.0);
+
+  std::stringstream render_message_;
 
   void draw();
   //    const int pos_x, const int pos_y,
@@ -209,6 +230,8 @@ protected:
       const double aov_y,
       const int fb_width, const int fb_height,
       glm::mat4& mvp, const float sc_vert = 1.0);
+
+  std::string glsl_version_string_ = "";
 #if 0
   // temp texture test
   GLuint texture_id_ = 0;
@@ -237,6 +260,8 @@ protected:
                   std::shared_ptr<imgui_ros::srv::AddShaders::Response> res);
   std::map<std::string, std::shared_ptr<ShaderSet> > shader_sets_;
 
+  bool updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_ptr<Shape> shape);
+
   rclcpp::Service<imgui_ros::srv::AddTexture>::SharedPtr add_texture_;
   void addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request> req,
                   std::shared_ptr<imgui_ros::srv::AddTexture::Response> res);
@@ -246,6 +271,7 @@ protected:
                 std::shared_ptr<imgui_ros::srv::AddShape::Response> res);
   void texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr msg);
   rclcpp::Subscription<imgui_ros::msg::TexturedShape>::SharedPtr textured_shape_sub_;
+  bool addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::string& message);
   // TODO(lucasw) it would be nice if the received TexturedShape
   // could be passed into opengl directly, which it probably could be made
   // to do, but for now interpret it on reception into local class.
@@ -265,7 +291,7 @@ protected:
 
   // TODO(lucasw) need to encapsulate this
   // projected texture
-  bool enable_projected_texture_ = true;
+  bool enable_projected_texture_ = false;
   double projected_texture_aov_y_ = 25.0;
   bool setupProjectedTexture(const std::string& shape_frame_id);
   const std::string projected_texture_name_ = "projected_texture";
@@ -273,6 +299,8 @@ protected:
   const std::string projected_texture_frame_id_ = "projected_texture";
 
   std::shared_ptr<RenderTexture> render_texture_;
+
+  std::mutex mutex_;
 };
 
 #endif  // IMGUI_ROS_VIZ3D_H

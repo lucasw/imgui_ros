@@ -35,6 +35,7 @@
 #include <imgui.h>
 // #include "imgui_impl_sdl.h"
 #include <imgui_ros/viz3d.h>
+#include <iomanip>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -49,30 +50,31 @@ void dmat4Todmat(const glm::dmat4& dmat, glm::mat4& mat)
       mat[i][j] = dmat[i][j];
 }
 
-void printMat(glm::mat4& mat, const std::string& desc = "")
+std::string printMat(glm::mat4& mat)
 {
-  std::cout << desc << "\n";
+  std::stringstream ss;
   for (size_t i = 0; i < 4; ++i) {
     for (size_t j = 0; j < 4; ++j) {
-      std::cout << mat[i][j] << " ";
+      ss << std::setw(5) << std::fixed << mat[i][j] << " ";
     }
-    std::cout << "\n";
+    ss << "\n";
   }
+  return ss.str();
 }
-void printMat(glm::dmat4& mat, const std::string& desc = "")
+std::string printMat(glm::dmat4& mat)
 {
   glm::mat4 mat2;
   dmat4Todmat(mat, mat2);
-  printMat(mat2, desc);
+  return printMat(mat2);
 }
 
-void printTransform(tf2::Transform& tf, const std::string& desc = "")
+std::string printTransform(tf2::Transform& tf)
 {
-  std::cout << desc << "\n";
-  std::cout
-    << tf.getOrigin().x() << " "
-    << tf.getOrigin().y() << " "
-    << tf.getOrigin().z() << "\n";
+  std::stringstream ss;
+  ss << std::setw(5) << tf.getOrigin().x() << " "
+    << std::setw(5) << tf.getOrigin().y() << " "
+    << std::setw(5) << tf.getOrigin().z() << "\n";
+  return ss.str();
 }
 
 void makeTestShape(std::shared_ptr<Shape> shape)
@@ -125,8 +127,16 @@ void makeTestShape(std::shared_ptr<Shape> shape)
   }
 }
 
+////////////////////////////////////////////////////////////
 ShaderSet::~ShaderSet()
 {
+  remove();
+}
+
+void ShaderSet::remove()
+{
+  std::cout << "Deleting shader set " << name_
+      << vert_handle_ << " " << frag_handle_ << " " << shader_handle_ << "\n";
   glDeleteShader(vert_handle_);
   glDeleteShader(frag_handle_);
   glDeleteProgram(shader_handle_);
@@ -134,6 +144,13 @@ ShaderSet::~ShaderSet()
 
 bool ShaderSet::init(const std::string& glsl_version, std::string& message)
 {
+  if ((vert_handle_ != 0) || (frag_handle_ != 0) || (shader_handle_ != 0)) {
+    std::stringstream ss;
+    ss << "already initialized, deleting old versions "
+        << vert_handle_ << " " << frag_handle_ << " " << shader_handle_ << "\n";
+    message += ss.str();
+    remove();
+  }
   // Create shaders
   const GLchar* vertex_shader_with_version[2] = {glsl_version.c_str(),
       vertex_code_.c_str()};
@@ -190,22 +207,40 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
   attrib_location_proj_tex_ = glGetUniformLocation(shader_handle_, "ProjectedTexture");
   attrib_location_proj_tex_mtx_ = glGetUniformLocation(shader_handle_, "ProjTexMtx");
 
-  glEnableVertexAttribArray(attrib_location_position_);
-  glEnableVertexAttribArray(attrib_location_uv_);
-  glEnableVertexAttribArray(attrib_location_color_);
-  glVertexAttribPointer(attrib_location_position_, 3, GL_FLOAT, GL_FALSE,
-      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
-  glVertexAttribPointer(attrib_location_uv_, 2, GL_FLOAT, GL_FALSE,
-      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, uv));
-  glVertexAttribPointer(attrib_location_color_, 4, GL_FLOAT, GL_FALSE,
-      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
-
   std::string msg;
   if (checkGLError2(msg)) {
     return false;
   }
 
   return true;
+}
+
+void ShaderSet::draw()
+{
+  std::stringstream ss;
+  ss << "shader: " << name_ << " " << shader_handle_ << ", vert " << vert_handle_
+      << ", geometry " << geometry_handle_ << ", frag " << frag_handle_;
+  ss << "\n";
+  ss << "tex " << attrib_location_tex_ << ", ";
+  ss << "proj " << attrib_location_proj_mtx_ << ", ";
+  ss << "pos " << attrib_location_position_ << ", ";
+  ss << "uv " << attrib_location_uv_ << ", ";
+  ss << "col " << attrib_location_color_ << "\n";
+
+  ss << "proj: ";
+  ss << "scale " << attrib_location_projected_texture_scale_ << ", ";
+  ss << "tex " << attrib_location_proj_tex_ << ", ";
+  ss << "tex mtx " << attrib_location_proj_tex_mtx_ << " ";
+
+  ss << "\n--------------------------";
+  ss << vertex_code_ << "\n";
+  ss << "--------------------------";
+  ss << geometry_code_ << "\n";
+  ss << "--------------------------";
+  ss << fragment_code_ << "\n";
+  ss << "--------------------------";
+
+  ImGui::Text("%s", ss.str().c_str());
 }
 
 void Shape::init()
@@ -220,10 +255,18 @@ void Shape::init()
       (const GLvoid*)vertices_.Data, GL_STREAM_DRAW);
 
   glGenBuffers(1, &elements_handle_);
+  checkGLError(__FILE__, __LINE__);
+#if 0
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)indices_.Size * sizeof(ImDrawIdx),
       (const GLvoid*)indices_.Data, GL_STREAM_DRAW);
-  checkGLError(__FILE__, __LINE__);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+#endif
+
+#if 0
+  glBindVertexArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+#endif
 }
 
 RenderTexture::RenderTexture(const std::string name, std::shared_ptr<rclcpp::Node> node) :
@@ -292,12 +335,13 @@ RenderTexture::~RenderTexture()
 
 void RenderTexture::draw()
 {
+  // std::string name = name_ + "##";
   ImGui::Begin(name_.c_str());
   // TODO(lucasw) later re-use code in RosImage
   ImGui::Checkbox("render to texture", &enable_rtt_);
   if (enable_rtt_) {
     image_->draw();
-  }
+   }
   ImGui::End();
 }
 
@@ -317,6 +361,11 @@ Viz3D::Viz3D(const std::string name,
     tf_buffer_(tf_buffer),
     node_(node)
 {
+  render_message_.precision(2);
+  render_message_.fill('0');
+
+  glsl_version_string_ = renderer->GlslVersionString;
+
   textures_["default"] = std::make_shared<RosImage>("default", "/image_out", node);
   // TODO(lucasw) add this via service, also make it optionally output the image
   // on a topic.
@@ -362,23 +411,67 @@ void Viz3D::addShaders(const std::shared_ptr<imgui_ros::srv::AddShaders::Request
     return;
   }
 
+  if (req->name != "default") {
+    res->message = "only 1 set of shaders currently supported in 'default' slot";
+    res->success = false;
+    return;
+  }
+
   auto shaders = std::make_shared<ShaderSet>(req->name, req->vertex,
       req->geometry, req->fragment);
 
-  std::shared_ptr<ImGuiImplOpenGL3> renderer = renderer_.lock();
-  if (!renderer) {
-    // TODO(lucasw) maybe should store them and try to initialize them
-    // later?
-    res->message = "no renderer, not ready for shaders";
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (!shaders->init(glsl_version_string_, res->message)) {
     res->success = false;
     return;
   }
 
-  if (!shaders->init(renderer->GlslVersionString, res->message)) {
-    res->success = false;
-    return;
+  for (auto shape_pair : shapes_) {
+    auto shape = shape_pair.second;
+    if (!updateShaderShapes(shaders, shape)) {
+      res->message = "couldn't update shape " + shape->name_ + " vaos with new shaders ";
+      res->success = false;
+      return;
+    }
   }
+
+  res->message = "succesfully added shaders `" + shaders->name_ + "'";
+
   shader_sets_[req->name] = shaders;
+}
+
+// need to update the connnection between the shader and the shape
+// whenever either is replaced
+bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_ptr<Shape> shape)
+{
+  std::cout << "binding to shape vao " << shape->name_ << " " << shape->vao_handle_ << std::endl;
+
+  glBindVertexArray(shape->vao_handle_);
+  glEnableVertexAttribArray(shaders->attrib_location_position_);
+  glEnableVertexAttribArray(shaders->attrib_location_uv_);
+  glEnableVertexAttribArray(shaders->attrib_location_color_);
+  // TODO(lucasw) check GL
+
+  std::cout << "binding to shape vbo " << shape->name_ << " " << shape->vbo_handle_ << std::endl;
+
+  glBindBuffer(GL_ARRAY_BUFFER, shape->vbo_handle_);
+  glVertexAttribPointer(shaders->attrib_location_position_, 3, GL_FLOAT, GL_FALSE,
+      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
+  glVertexAttribPointer(shaders->attrib_location_uv_, 2, GL_FLOAT, GL_FALSE,
+      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, uv));
+  glVertexAttribPointer(shaders->attrib_location_color_, 4, GL_FLOAT, GL_FALSE,
+      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape->elements_handle_);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)shape->indices_.Size * sizeof(ImDrawIdx),
+      (const GLvoid*)shape->indices_.Data, GL_STREAM_DRAW);
+
+#if 0
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+#endif
+  return true;
 }
 
 void Viz3D::addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request> req,
@@ -402,41 +495,58 @@ void Viz3D::addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request
 void Viz3D::addShape(const std::shared_ptr<imgui_ros::srv::AddShape::Request> req,
                 std::shared_ptr<imgui_ros::srv::AddShape::Response> res)
 {
+  res->success = true;
   for (auto textured_shape : req->shapes) {
     auto shape = std::make_shared<imgui_ros::msg::TexturedShape>(textured_shape);
-    texturedShapeCallback(shape);
+    if (!addShape2(shape, res->message)) {
+      res->success = false;
+    }
     res->message += " " + shape->name;
   }
-
-  res->success = true;
+  return;
 }
 
 // TODO(lucasw) Shape -> Mesh?
 void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr msg)
 {
+  std::string message;
+  addShape2(msg, message);
+  // TODO(lucasw) make a macro or function for this
+  std::shared_ptr<rclcpp::Node> node = node_.lock();
+  // RCLCPP_INFO(node->get_logger(), message);
+}
+
+bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::string& message)
+{
   if (msg->name == "") {
-    std::cerr << "mesh needs name\n";
-    return;
+    message += "mesh needs name";
+    return false;
   }
 
   if (msg->add == false) {
     if (shapes_.count(msg->name) > 0) {
       shapes_.erase(msg->name);
-      return;
+      message += msg->name + " erased";
+      return true;
     }
-    return;
+    message += msg->name + " doesn't exist, can't delete it";
+    return true;
   }
 
   bool use_uv = msg->uv.size() > 0;
   if ((use_uv) && (msg->uv.size() != msg->mesh.vertices.size())) {
-    std::cerr << "mismatching uv sizes " << msg->uv.size() << " "
+    std::stringstream ss;
+    ss << "mismatching uv sizes " << msg->uv.size() << " "
         << msg->mesh.vertices.size() << "\n";
+    message += ss.str();
     use_uv = false;
   }
   bool use_color = msg->colors.size() > 0;
   if ((use_color) && (msg->colors.size() != msg->mesh.vertices.size())) {
-    std::cerr << "mismatching color sizes " << msg->colors.size() << " "
+    std::stringstream ss;
+    ss << "mismatching color sizes " << msg->colors.size() << " "
         << msg->mesh.vertices.size() << "\n";
+    message += ss.str();
     use_uv = false;
   }
   glm::vec4 default_color = glm::vec4(1.0, 1.0, 1.0, 1.0);
@@ -445,6 +555,7 @@ void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr
     default_color.y = msg->colors[0].g;
     default_color.z = msg->colors[0].b;
     default_color.w = msg->colors[0].a;
+    message += ", using single color";
   }
 
   auto shape = std::make_shared<Shape>();
@@ -485,15 +596,30 @@ void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr
         std::cerr << "bad triangle index " << ind << " >= "
             << shape->vertices_.Size << "\n";
         // TODO(lucasw) or set to zero, or Size - 1?
-        return;
+        return false;
       }
       shape->indices_.push_back(ind);
     }
   }
 
+  std::lock_guard<std::mutex> lock(mutex_);
   shape->init();
-  shape->print();
+  message += ", " + shape->print();
+
+  if (shader_sets_.count("default") < 1) {
+    // this isn't a failure, just a race condition probably
+    std::cout << "no shaders yet, will retry when one is set\n";
+  } else {
+    // TODO(lucasw) for now just use the last shader set
+    auto shaders = shader_sets_["default"];
+    if (!updateShaderShapes(shaders, shape)) {
+      message += "couldn't update shapes vao with new shaders";
+      return false;
+    }
+  }
+
   shapes_[shape->name_] = shape;
+  return true;
 }
 
 void Viz3D::draw()
@@ -502,9 +628,36 @@ void Viz3D::draw()
 {
   render_texture_->draw();
 
-  ImGui::Begin("camera");
+  ImGui::Begin("viz3d");
   // ImGuiIO& io = ImGui::GetIO();
 
+  ImGui::Text(render_message_.str().c_str());
+
+  ImGui::Separator();
+  ImGui::Text("shapes");
+  for (auto shape_pair : shapes_) {
+    ImGui::Separator();
+    auto shape = shape_pair.second;
+    shape->draw();
+  }
+  ImGui::Separator();
+  ImGui::Text("textures");
+  for (auto texture_pair : textures_) {
+    ImGui::Separator();
+    // text status, only optionally display the actual image with checkbox
+    texture_pair.second->draw();
+  }
+  ImGui::Separator();
+  std::stringstream ss;
+  ss << "shaders " << shader_sets_.size();
+  ImGui::Text(ss.str().c_str());
+  for (auto shaders_pair : shader_sets_) {
+    ImGui::Separator();
+    shaders_pair.second->draw();
+  }
+  ImGui::Separator();
+
+  ImGui::Text("projector");
   {
     // TODO(lucasw) make this a ros topic, use a regular PUB + SUB gui widget
     // const bool changed =
@@ -515,6 +668,7 @@ void Viz3D::draw()
     ImGui::SliderScalar("projected_texture_aov y", ImGuiDataType_Double,
         &projected_texture_aov_y_, &min, &max, "%lf");
   }
+  ImGui::Text("main camera");
   {
     double min = 0.0001;
     double max = 0.1;
@@ -549,7 +703,7 @@ void Viz3D::draw()
   auto rot_mat = transform_.getBasis();
   tf2::Vector3 vel_in_world = rot_mat * velocity_;
 
-  std::stringstream ss;
+  ss.str("");
   ss << "velocity in view: " << velocity_.x()  << " " << velocity_.y() << " " << velocity_.z();
   ImGui::Text("%s", ss.str().c_str());
   ss.str("");
@@ -594,7 +748,9 @@ void Viz3D::draw()
   rot.setRPY(pitch_, yaw_, 0.0);
   transform_.setRotation(rot);
 
-  if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
+  if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow |
+      ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)) {
+  // if (!ImGui::IsRootWindowOrAnyChildHovered()) {
     if (!dragging_view_ && ImGui::IsMouseClicked(0)) {
       drag_point_ = mouse_pos_in_canvas;
       dragging_view_ = true;
@@ -650,14 +806,12 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
     tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
         tf2::TimePointZero, transform, time_out);
     #endif
-
+    render_message_ << ", frames: " << frame_id_ << " -> " << child_frame_id << "\n";
     glm::dmat4 model_matrix_double;
     stamped_transform.getOpenGLMatrix(&model_matrix_double[0][0]);
     dmat4Todmat(model_matrix_double, model_matrix);
   } catch (tf2::TransformException& ex) {
-    // TODO(lucasw) display exception on gui, but this isn't currently the correct
-    // time.
-    // ImGui::Text("%s", ex.what());
+    render_message_ << "\n" << ex.what();
     return false;
   }
 
@@ -670,14 +824,11 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
   mvp = projection_matrix * view_matrix * model_matrix;
 
   {
-    static bool has_printed = false;
-    if (!has_printed) {
-      has_printed = true;
-      printMat(projection_matrix, "projection " + child_frame_id);
-      printMat(view_matrix, "view_matrix " + child_frame_id);
-      printMat(model_matrix, "model_matrix " + child_frame_id);
-      printMat(mvp, "m * v * p");
-    }
+    render_message_ << "\nmatrices:\n";
+    render_message_ << "model " << child_frame_id << ":\n" << printMat(model_matrix);
+    render_message_ << "view:\n" << printMat(view_matrix);
+    render_message_ << "projection:\n" << printMat(projection_matrix);
+    render_message_ << "mvp:\n" << printMat(mvp);
   }
 
   return true;
@@ -702,20 +853,16 @@ bool Viz3D::setupProjectedTexture(const std::string& shape_frame_id)
     tf = tf_buffer_->lookupTransform(frame_id_,
         projected_texture_frame_id_, tf2::TimePointZero);
     tf2::fromMsg(tf, stamped_transform);
+    render_message_ << "\nprojected texture transform "
+        << frame_id_ << " " << projected_texture_frame_id_ << " "
+        << printTransform(stamped_transform);
   } catch (tf2::TransformException& ex) {
     // TODO(lucasw) display exception on gui, but this isn't currently the correct
     // time.
-    // ImGui::Text("%s", ex.what());
+    render_message_ << "\n" << ex.what();
     return false;
   }
 
-  {
-    static bool has_printed = false;
-    if (!has_printed) {
-      has_printed = true;
-      printTransform(stamped_transform, "projection transform");
-    }
-  }
 
   // texture projection
   glm::mat4 mtp;
@@ -743,12 +890,15 @@ void Viz3D::render(const int fb_width, const int fb_height,
   (void)display_size_x;
   (void)display_size_y;
 
+  render_message_.str("");
+
   if (shapes_.size() == 0) {
+    render_message_ << "no shapes to render";
     return;
   }
 
   if (fb_width <= 0 || fb_height <= 0) {
-    std::cerr << "bad width height " << fb_width << " " << fb_height << "\n";
+    render_message_ << "bad width height " << fb_width << " " << fb_height << "\n";
     return;
   }
 
@@ -760,7 +910,9 @@ void Viz3D::render(const int fb_width, const int fb_height,
   }
 #endif
 
-    checkGLError(__FILE__, __LINE__);
+  checkGLError(__FILE__, __LINE__);
+
+  render_message_ << "textures " << textures_.size();
 
   for (auto texture_pair : textures_) {
     texture_pair.second->updateTexture();
@@ -788,6 +940,7 @@ void Viz3D::renderToTexture()
   if (!render_texture_->enable_rtt_) {
     return;
   }
+  render_message_ << "\nrender to texture\n";
   GLState gl_state;
   gl_state.backup();
 
@@ -806,6 +959,9 @@ void Viz3D::renderToTexture()
 
 void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert)
 {
+  // TODO(lucasw) should give up if can't lock, just don't render now
+  std::lock_guard<std::mutex> lock(mutex_);
+
     // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
@@ -834,18 +990,30 @@ void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert
   if (shader_sets_.size() == 0) {
     return;
   }
-
-  // TODO(lucasw) for now just use the last shader set
-  for (auto shaders_pair : shader_sets_) {
-    shaders = shaders_pair.second;
+  if (shader_sets_.count("default") < 1) {
+    return;
   }
+  // TODO(lucasw) for now just use the last shader set
+  shaders = shader_sets_["default"];
+  render_message_ << ", shader " << shaders->name_ << " " << shaders->shader_handle_;
+  // for (auto shaders_pair : shader_sets_) {
+  //  shaders = shaders_pair.second;
+  //}
+  render_message_ << "\n";
+
+  // TEMP
+  std::shared_ptr<Shape> first_shape;
 
   for (auto shape_pair : shapes_) {
     auto shape = shape_pair.second;
+    // TEMP
+    if (first_shape == nullptr)
+      first_shape = shape;
+
+    render_message_ << "shape: " << shape->name_;
 
     // TODO(lucasw) later a shape can use certain shaders or just default
     glUseProgram(shaders->shader_handle_);
-
     {
       glm::mat4 mvp;
       if (!setupCamera(transform_, shape->frame_id_,
@@ -865,12 +1033,14 @@ void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert
     const bool use_texture_projection = enable_projected_texture_ &&
         setupProjectedTexture(shape->frame_id_);
 
+
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
     // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
 #endif
 
     glBindVertexArray(shape->vao_handle_);
+    render_message_ << "vao handle " << shape->vao_handle_;
 
     ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
     glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
@@ -878,15 +1048,7 @@ void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert
     if (checkGLError(__FILE__, __LINE__))
       return;
 
-#if 0
-    {
-      static bool has_printed = false;
-      if (!has_printed) {
-        has_printed = true;
-        shape->print();
-      }
-    }
-#endif
+    render_message_ << "\n";
 
     // Bind texture- if it is null then the color is black
     // if (texture_id_ != nullptr)
@@ -894,10 +1056,14 @@ void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert
       GLuint tex_id = 0;
       if ((shape->texture_ != "") && (textures_.count(shape->texture_) > 0)) {
         tex_id = (GLuint)(intptr_t)textures_[shape->texture_]->texture_id_;
+        render_message_ << "texture " << shape->texture_ << " " << tex_id;
       } else if (textures_.count("default") > 0) {
         tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
+        render_message_ << ", default texture " << tex_id;
+      } else {
+        // TODO(lucasw) else stop rendering?
+        render_message_ << ", no texture to use";
       }
-      // TODO(lucasw) else stop rendering?
       glActiveTexture(GL_TEXTURE0);
       // Bind texture- if it is null then the color is black
       glBindTexture(GL_TEXTURE_2D, tex_id);
@@ -913,8 +1079,12 @@ void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert
       const std::string name = projected_texture_name_;
       if (textures_.count(name) > 0) {
         tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
+        render_message_ << "\nprojected texture " << name << " " << tex_id;
       } else if (textures_.count("default") > 0) {
         tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
+        render_message_ << "\ndefault projected texture " << tex_id;
+      } else {
+        render_message_ << ", no texture to use";
       }
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, tex_id);
@@ -926,6 +1096,9 @@ void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert
       glUniform1f(shaders->attrib_location_projected_texture_scale_, 0.0);
     }
 
+    // TEMP
+    shape = first_shape;
+
     {
       glBindBuffer(GL_ARRAY_BUFFER, shape->vbo_handle_);  // needed before bind texture?
       const ImDrawIdx* idx_buffer_offset = 0;
@@ -934,8 +1107,12 @@ void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert
       // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
       if (checkGLError(__FILE__, __LINE__))
         return;
+      render_message_ << ", shape indices " << shape->indices_.Size;
       // idx_buffer_offset += pcmd->ElemCount;
+      // glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
+    render_message_ << "\n\n";
+    // glBindVertexArray(0);
   }
 
   return;

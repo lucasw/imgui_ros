@@ -73,6 +73,9 @@ struct RosImage : public GlImage {
 private:
   std::weak_ptr<rclcpp::Node> node_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
+
+  bool enable_info_ = true;
+  bool enable_draw_image_ = false;
 };  // RosImage
 
 struct CvImage : public GlImage {

@@ -66,7 +66,11 @@ namespace imgui_ros {
 
     tf_pub_ = create_publisher<tf2_msgs::msg::TFMessage>("/tf");
     clock_ = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
+    #if 1
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(clock_);
+    #else
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>();
+    #endif
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
     // TODO(lucasw) check if width and height are > minimum value

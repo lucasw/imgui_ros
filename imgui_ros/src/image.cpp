@@ -160,18 +160,24 @@ using std::placeholders::_1;
     updateTexture();
     {
       std::lock_guard<std::mutex> lock(mutex_);
-      if ((texture_id_ != 0) && (width_ != 0) && (height_ != 0)) {
-        static int count = 0;
 
-        if (false) {
-          std::stringstream ss;
-          ss << texture_id_ << " " << topic_ << " "
-              << width_ << " " << height_ << " " << count++;
-          // const char* text = ss.str().c_str();
-          std::string text = ss.str();
-          // std::cout << "draw " << text << "\n";
-          ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
-        }
+      // const std::string checkbox_text = "info##" + name;
+      // ImGui::Checkbox(checkbox_text.c_str(), &enable_info_);
+      if (enable_info_) {
+        std::stringstream ss;
+        ss << name_ << " " << texture_id_ << " " << topic_ << " "
+            << width_ << " " << height_;  // << " " << count++;
+        // const char* text = ss.str().c_str();
+        // TODO(lucasw) write text value of 10-20 pixels values
+        std::string text = ss.str();
+        // std::cout << "draw " << text << "\n";
+        ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+      }
+
+      const std::string checkbox_text2 = "show image##" + name_;
+      ImGui::Checkbox(checkbox_text2.c_str(), &enable_draw_image_);
+      if ((enable_draw_image_) && (texture_id_ != 0) && (width_ != 0) && (height_ != 0)) {
+        static int count = 0;
         ImVec2 win_size = ImGui::GetWindowSize();
         const double fr_x = win_size.x / width_;
         const double fr_y = win_size.y / height_;
@@ -185,8 +191,10 @@ using std::placeholders::_1;
         image_size.y = height_ * fr - 15;
         // have to get a new scale factor because of the manual offset
         image_size.x = width_ * (image_size.y / height_);
+        const float y = ImGui::GetCursorPosY();
         ImGui::SetCursorPos(ImVec2((win_size.x - image_size.x) * 0.5f,
-            (win_size.y - image_size.y) * 0.5f));
+             y));
+             // y + (win_size.y - image_size.y) * 0.5f));
         ImGui::Image((void*)(intptr_t)texture_id_, image_size);
       }
     }
