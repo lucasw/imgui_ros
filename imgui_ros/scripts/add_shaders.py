@@ -63,8 +63,7 @@ class AddShadersNode(Node):
 
     def add_shaders(self):
         req = AddShaders.Request()
-        # blank for default
-        req.name = ''
+        req.name = 'default'
         # TODO(lucasw) load from disk later
         req.vertex = '''
 uniform mat4 ProjMtx;
@@ -120,11 +119,13 @@ void main()
 def main(args=None):
     rclpy.init(args=args)
 
-    demo = AddShadersNode()
-    demo.run()
-
-    demo.destroy_node()
-    rclpy.shutdown()
+    try:
+        demo = AddShadersNode()
+        demo.run()
+        rclpy.spin(demo)
+    finally:
+        demo.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

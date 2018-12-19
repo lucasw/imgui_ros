@@ -332,11 +332,13 @@ class Demo(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    demo = Demo()
-    demo.run()
-
-    demo.destroy_node()
-    rclpy.shutdown()
+    try:
+        demo = Demo()
+        demo.run()
+        rclpy.spin(demo)
+    finally:
+        demo.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':
