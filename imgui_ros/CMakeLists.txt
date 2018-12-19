@@ -112,7 +112,7 @@ install(TARGETS param_to_topic DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 # TODO(lucasw) glob
-file(GLOB SCRIPT_FILES scripts/*)
+file(GLOB SCRIPT_FILES scripts/*py)
 install(PROGRAMS ${SCRIPT_FILES}
   DESTINATION lib/${PROJECT_NAME})
 
