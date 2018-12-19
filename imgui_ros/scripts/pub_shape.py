@@ -13,12 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import cv2
 import cv_bridge
 import math
 # TODO(lucasW) this doesn't exist in python yet?
 # import tf2_ros
 import rclpy
+import sys
 
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Point, TransformStamped, Vector3
@@ -44,6 +46,13 @@ class Demo(Node):
 
         self.bridge = cv_bridge.CvBridge()
 
+        parser = argparse.ArgumentParser(description='imgui_ros demo')
+        parser.add_argument('-nt', '--no-textures', dest='no_textures',  # type=bool,
+                help='enable textures', action='store_true')  # , default=True)
+        parser.add_argument('-ns', '--no-shapes', dest='no_shapes',  # type=bool,
+                help='enable shapes', action='store_true')  # , default=True)
+        self.args, unknown = parser.parse_known_args(sys.argv)
+
     # TODO(lucasw) can't this be a callback instead?
     def wait_for_response(self):
         while rclpy.ok():
@@ -59,9 +68,16 @@ class Demo(Node):
                 break
 
     def run(self):
-        self.add_texture('diffract', 'image_manip', 'diffract1.png')
-        self.add_texture('projected_texture', 'image_manip', 'maze1.png')
-        self.add_shapes()
+        # print(self.args.no_textures)
+        # print(self.args.no_shapes)
+        if not self.args.no_textures:
+            self.add_texture('diffract', 'image_manip', 'diffract1.png')
+            self.add_texture('projected_texture', 'image_manip', 'maze1.png')
+        if not self.args.no_shapes:
+            # TODO(lucasw) there is something wrong with storing new shapes
+            # on top of old ones, all the shapes disappear until
+            # add_shaders is run again.
+            self.add_shapes()
 
     def add_texture(self, name='diffract', pkg_name='image_manip', image_name='diffract1.png'):
         self.texture_cli = self.create_client(AddTexture, 'add_texture')
@@ -70,7 +86,7 @@ class Demo(Node):
 
         # imread an image
         image_dir = get_package_share_directory(pkg_name)
-        print('image_manip dir ' + image_dir)
+        # print('image dir ' + image_dir)
         image = cv2.imread(image_dir + "/data/" + image_name, 1)
         # cv2.imshow("image", image)
         # cv2.waitKey(0)
@@ -82,7 +98,8 @@ class Demo(Node):
         self.future = self.texture_cli.call_async(req)
         self.wait_for_response()
 
-    def make_cylinder(self, name='cylinder', radius=0.5, length=2.5, segs=16):
+    def make_cylinder(self, name='cylinder', radius=0.5, length=2.5, segs=16,
+            off_x=0.0, off_y=0.0):
         shape = TexturedShape()
         shape.name = name
         shape.header.frame_id = 'bar2'
@@ -92,8 +109,8 @@ class Demo(Node):
             fr = float(i) / float(segs - 1)
             theta = fr * 2.0 * math.pi
             # print("{} {}".format(i, theta))
-            x = radius * math.cos(theta)
-            y = radius * math.sin(theta)
+            x = radius * math.cos(theta) + off_x
+            y = radius * math.sin(theta) + off_y
 
             ind0 = len(shape.mesh.vertices)
             ind1 = ind0 + 1
@@ -125,10 +142,11 @@ class Demo(Node):
             uv.y = 0.0
             shape.uv.append(uv)
 
+            val = 0.95
             col = ColorRGBA()
-            col.r = 0.0
-            col.g = 1.0
-            col.b = 0.0
+            col.r = val
+            col.g = val
+            col.b = val
             col.a = 1.0
             shape.colors.append(col);
 
@@ -144,9 +162,9 @@ class Demo(Node):
             shape.uv.append(uv)
 
             col = ColorRGBA()
-            col.r = 0.0
-            col.g = 1.0
-            col.b = 0.0
+            col.r = val
+            col.g = val
+            col.b = val
             col.a = 1.0
             shape.colors.append(col);
 
@@ -155,7 +173,7 @@ class Demo(Node):
     def make_planes(self):
         shape = TexturedShape()
         shape.name = "foo"
-        shape.header.frame_id = 'bar'
+        shape.header.frame_id = 'bar2'
         shape.texture = 'diffract'
         # shape.header.stamp = self.now()
 
@@ -221,7 +239,7 @@ class Demo(Node):
                 col.a = 1.0
                 shape.colors.append(col);
 
-        print("shape {} {} {}".format(shape.name, len(shape.mesh.vertices),
+        self.get_logger().info("shape {} {} {}".format(shape.name, len(shape.mesh.vertices),
               len(shape.mesh.triangles) * 3))
         # self.shape_pub.publish(shape)
         shape.add = True
@@ -229,11 +247,23 @@ class Demo(Node):
 
     def add_shapes(self):
         req = AddShape.Request()
-        shape = self.make_planes()
-        shape.add = False
-        req.shapes.append(shape)
-        shape = self.make_cylinder()
-        req.shapes.append(shape)
+        if True:
+            shape = self.make_planes()
+            shape.add = True
+            req.shapes.append(shape)
+        if True:
+            shape = self.make_cylinder(name='cylinder2', radius=0.03, length=0.1,
+                off_x = 0.0)
+            shape.add = True
+            shape.texture = 'projected_texture'
+            shape.header.frame_id = 'projected_texture'
+            req.shapes.append(shape)
+        if True:
+            shape = self.make_cylinder(name='cylinder3')
+            shape.add = True
+            shape.texture = 'rendered'
+            shape.header.frame_id = 'bar2'
+            req.shapes.append(shape)
         self.future = self.cli.call_async(req)
         self.wait_for_response()
         sleep(1.0)
@@ -241,11 +271,13 @@ class Demo(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    demo = Demo()
-    demo.run()
-
-    demo.destroy_node()
-    rclpy.shutdown()
+    try:
+        demo = Demo()
+        demo.run()
+        rclpy.spin(demo)
+    finally:
+        demo.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
