@@ -47,13 +47,17 @@ using std::placeholders::_1;
     glDeleteTextures(1, &texture_id_);
   }
 
-  RosImage::RosImage(const std::string name, const std::string topic,
+  RosImage::RosImage(const std::string name, const std::string topic, const bool sub_not_pub,
                      std::shared_ptr<rclcpp::Node> node) : GlImage(name, topic), node_(node) {
 
     if (topic != "") {
-      std::cout << "subscribing to topic " << topic << "\n";
-      sub_ = node->create_subscription<sensor_msgs::msg::Image>(topic,
-          std::bind(&RosImage::imageCallback, this, _1));
+      if (sub_not_pub) {
+        std::cout << "subscribing to topic " << topic << "\n";
+        sub_ = node->create_subscription<sensor_msgs::msg::Image>(topic,
+            std::bind(&RosImage::imageCallback, this, _1));
+      } else {
+        pub_ = node->create_publisher<sensor_msgs::msg::Image>(topic);
+      }
     }
   }
 
@@ -160,7 +164,49 @@ using std::placeholders::_1;
 
     // ROS_INFO_STREAM(texture_id_ << " " << image.size());
     // std::cout << "update texture done " << texture_id_ << "\n";
+    glBindTexture(GL_TEXTURE_2D, 0);
     return true;
+  }
+
+  void RosImage::publish() {
+    // std::cout << name_ << " " << pub_ << " " << image_ << " " <<  texture_id_ << "\n";
+    if (!pub_) {
+      return;
+    }
+    if (!image_) {
+      // TODO(lucasw) debug message
+      return;
+    }
+    // TODO(lucasw) check to see if there are any subscribers?  If none return.
+
+    // TODO(lucasw) lock image_
+    glBindTexture(GL_TEXTURE_2D, texture_id_);
+    if (image_->encoding == "bgr8") {
+      // glGetTextureImage, glGetnTexImage not available
+      glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR,
+                     GL_UNSIGNED_BYTE,
+                     // image_->width * image_->height * 3,
+                     &image_->data[0]);
+    } else if (image_->encoding == "rgb8") {
+      glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB,
+                     GL_UNSIGNED_BYTE,
+                     // image_->width * image_->height * 3,
+                     &image_->data[0]);
+    } else {
+      glBindTexture(GL_TEXTURE_2D, 0);
+      // TODO(lucasw) set debug message to this
+      std::cerr << name_ << " unsupported image type: " << image_->encoding << "\n";
+      return;
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    {
+      auto node = node_.lock();
+      if (node) {
+        image_->header.stamp = node->now();
+      }
+    }
+    pub_->publish(image_);
   }
 
   // TODO(lucasw) factor out common code

@@ -58,6 +58,7 @@ struct GlImage : public Widget {
 // have a single node in the imgui parent?
 struct RosImage : public GlImage {
   RosImage(const std::string name, const std::string topic = "",
+           const bool pub_not_sub = false,
            std::shared_ptr<rclcpp::Node> node = nullptr);
 
   void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
@@ -69,10 +70,14 @@ struct RosImage : public GlImage {
   // TODO(lucasw) factor out common code
   virtual void draw();
 
+  virtual void publish();
+
   sensor_msgs::msg::Image::SharedPtr image_;
 private:
   std::weak_ptr<rclcpp::Node> node_;
+  // TODO(lucasw) split these into two separate subclasses?
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
 
   bool enable_info_ = true;
   bool enable_draw_image_ = false;

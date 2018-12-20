@@ -170,7 +170,9 @@ struct Shape {
 
 struct Camera {
   Camera(const std::string name,
+      const std::string texture_name,
       const std::string frame_id,
+      const std::string topic,
       const size_t width,
       const size_t height,
       std::shared_ptr<rclcpp::Node> node);

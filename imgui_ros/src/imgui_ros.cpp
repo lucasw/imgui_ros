@@ -234,7 +234,8 @@ namespace imgui_ros {
       std::string& message, std::shared_ptr<Widget>& imgui_widget) {
     if (widget.type == imgui_ros::msg::Widget::IMAGE) {
       std::shared_ptr<RosImage> ros_image;
-      ros_image.reset(new RosImage(widget.name, widget.topic, shared_from_this()));
+      const bool sub_not_pub = true;
+      ros_image.reset(new RosImage(widget.name, widget.topic, sub_not_pub, shared_from_this()));
       imgui_widget = ros_image;
       return true;
     // publisher types

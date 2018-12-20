@@ -271,16 +271,33 @@ void Shape::init()
 
 // TODO(lucasw) 'Camera' -> 'TextureCamera'
 Camera::Camera(const std::string name,
+    const std::string texture_name,
     const std::string frame_id,
+    const std::string topic,
     const size_t width,
     const size_t height,
     std::shared_ptr<rclcpp::Node> node) :
     name_(name),
     frame_id_(frame_id)
 {
-  image_ = std::make_shared<RosImage>("rendered", "", node);
-  image_->width_ = width;
-  image_->height_ = height;
+
+  const bool sub_not_pub = false;
+  image_ = std::make_shared<RosImage>(texture_name, topic, sub_not_pub, node);
+  if (topic != "") {
+    // node is bad
+    // RCLCPP_INFO(node->get_logger(), "creating camera %s %d %d", name, width, height);
+    std::cout << "creating camera " << name << " " << width << " " << height << "\n";
+    image_->width_ = width;
+    image_->height_ = height;
+
+    image_->image_ = std::make_shared<sensor_msgs::msg::Image>();
+    image_->image_->header.frame_id = frame_id;
+    image_->image_->width = width;
+    image_->image_->height = height;
+    image_->image_->encoding = "bgr8";
+    image_->image_->step = width * 3;
+    image_->image_->data.resize(width * height * 3);
+  }
 
   {
     cv::Mat tmp(cv::Size(image_->width_, image_->height_), CV_8UC4, cv::Scalar(100, 50, 20, 255));
@@ -347,8 +364,11 @@ void Camera::draw()
   ImGui::Checkbox(("render to texture##" + name_).c_str(), &enable_);
   if (enable_) {
     image_->draw();
-   }
+  }
   ImGui::End();
+
+  // this does nothing if the image doesn't have a publisher set up
+  image_->publish();
 }
 
 // Camera::render()
@@ -372,9 +392,8 @@ Viz3D::Viz3D(const std::string name,
 
   glsl_version_string_ = renderer->GlslVersionString;
 
-  textures_["default"] = std::make_shared<RosImage>("default", "/image_out", node);
-  // TODO(lucasw) add this via service, also make it optionally output the image
-  // on a topic.
+  const bool sub_not_pub = true;
+  textures_["default"] = std::make_shared<RosImage>("default", "/image_out", sub_not_pub, node);
 
   transform_.setIdentity();
 
@@ -416,7 +435,9 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
     return;
   }
   auto render_texture = std::make_shared<Camera>(req->camera.name,
-      req->camera.header.frame_id, req->camera.width, req->camera.height, node);
+      req->camera.texture_name,
+      req->camera.header.frame_id, req->camera.topic,
+      req->camera.width, req->camera.height, node);
   textures_[req->camera.texture_name] = render_texture->image_;
   cameras_[req->camera.name] = render_texture;
 

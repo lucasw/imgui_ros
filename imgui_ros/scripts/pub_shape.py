@@ -90,6 +90,7 @@ class Demo(Node):
         req.camera.header.frame_id = 'camera1'
         req.camera.name = 'camera1'
         req.camera.texture_name = 'camera1'
+        req.camera.topic = 'camera1'
         req.camera.width = 256
         req.camera.height = 256
         self.future = self.camera_cli.call_async(req)
