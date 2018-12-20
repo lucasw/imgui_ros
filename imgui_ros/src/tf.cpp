@@ -91,7 +91,7 @@ void TfEcho::draw()
     geometry_msgs::msg::TransformStamped tf;
     tf = tf_buffer_->lookupTransform(parent_, child_, tf2::TimePointZero);
     std::stringstream ss;
-    ss << name_ << ": time "
+    ss << name_ << " " << parent_ << " -> " << child_ << "\n" << "time: "
     //    << std::setprecision(3) << std::setw(4) << std::setfill('0') << std::internal
         << tf.header.stamp.sec << "." << tf.header.stamp.nanosec;
     ImGui::Text("%s", ss.str().c_str());
@@ -158,6 +158,12 @@ void TfBroadcaster::update()
   if (ts_.child_frame_id == "")
     return;
 
+#if 0
+  auto node = node_.lock();
+  if (node) {
+    ts_.header.stamp = node->now();
+  }
+#endif
   // tf_broadcaster_->sendTransform(ts_);
   // tf2_msgs::msg::TFMessage tfs;
   // tfs.transforms.push_back(ts_);

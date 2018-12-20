@@ -71,9 +71,10 @@ struct TfBroadcaster : public Pub {
 
   ~TfBroadcaster() {}
 
-  virtual void addTF(tf2_msgs::msg::TFMessage& tfm)
+  virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& stamp)
   {
     if ((ts_.header.frame_id != "") && (ts_.child_frame_id != "")) {
+      ts_.header.stamp = stamp;
       tfm.transforms.push_back(ts_);
     }
   }

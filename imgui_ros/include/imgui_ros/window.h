@@ -35,6 +35,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <rclcpp/rclcpp.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
 #include <vector>
 
@@ -45,9 +46,10 @@ struct Widget {
   virtual void draw() = 0;
   std::string name_ = "";
 
-  virtual void addTF(tf2_msgs::msg::TFMessage& tfm)
+  virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now)
   {
     (void)tfm;
+    (void)now;
   }
 protected:
   bool dirty_ = true;
@@ -61,10 +63,10 @@ struct Window {
   ~Window() {}
   virtual void draw();
   void add(std::shared_ptr<Widget> widget);
-  virtual void addTF(tf2_msgs::msg::TFMessage& tfm) {
+  virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now) {
     for (auto& name : widget_order_) {
       if (widgets_[name]) {
-        widgets_[name]->addTF(tfm);
+        widgets_[name]->addTF(tfm, now);
       }
     }
   }

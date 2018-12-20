@@ -66,7 +66,7 @@ namespace imgui_ros {
 
     tf_pub_ = create_publisher<tf2_msgs::msg::TFMessage>("/tf");
     clock_ = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
-    #if 1
+    #if 0
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(clock_);
     #else
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>();
@@ -607,9 +607,10 @@ namespace imgui_ros {
     }
 
     tf2_msgs::msg::TFMessage tfs;
+    rclcpp::Time cur = now();
     for (auto& window : windows_) {
       if (window.second) {
-        window.second->addTF(tfs);
+        window.second->addTF(tfs, cur);
       }
     }
     if (tfs.transforms.size() > 0) {

@@ -661,13 +661,19 @@ void Viz3D::draw()
   {
     // TODO(lucasw) make this a ros topic, use a regular PUB + SUB gui widget
     // const bool changed =
-    ImGui::Checkbox("projected texture", &enable_projected_texture_);
+    ImGui::Checkbox("enable texture##projected", &enable_projected_texture_);
     // TODO(lucasw) switch to ortho projection if angle is zero
-    double min = 1.0;
+    double min = 0.1;
     double max = 170.0;
-    ImGui::SliderScalar("projected_texture_aov y", ImGuiDataType_Double,
-        &projected_texture_aov_y_, &min, &max, "%lf");
+    ImGui::SliderScalar("texture aov y##projected", ImGuiDataType_Double,
+        &projected_texture_aov_y_, &min, &max, "%0.2f", 2);
+
+    min = 0.01;
+    max = 100.0;
+    ImGui::SliderScalar("aspect scale##projected", ImGuiDataType_Double,
+        &projected_aspect_scale_, &min, &max, "%.3f", 2);
   }
+  ImGui::Separator();
   ImGui::Text("main camera");
   {
     double min = 0.0001;
@@ -788,9 +794,10 @@ void Viz3D::draw()
 // transforming all the data of every object.
 bool Viz3D::setupCamera(const tf2::Transform& view_transform,
     const std::string child_frame_id, const double aov_y,
-    const int fb_width, const int fb_height, glm::mat4& mvp, float sc_vert)
+    const int fb_width, const int fb_height, glm::mat4& mvp,
+    float aspect_scale, float sc_vert)
 {
-  const float aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height) * aspect_scale_;
+  const float aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height) * aspect_scale;
   glm::mat4 projection_matrix = glm::perspective(static_cast<float>(sc_vert * glm::radians(aov_y)),
       sc_vert * aspect, near_, far_);
 
@@ -869,7 +876,9 @@ bool Viz3D::setupProjectedTexture(const std::string& shape_frame_id)
   if (!setupCamera(stamped_transform, shape_frame_id,
       projected_texture_aov_y_,
       width, height,
-      mtp))
+      mtp,
+      projected_aspect_scale_  // TODO(lucasw) relate to aspect_scale_ also?
+      ))
     return false;
 
   for (auto shaders : shader_sets_) {
@@ -1019,7 +1028,7 @@ void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert
       if (!setupCamera(transform_, shape->frame_id_,
           aov_y_,
           fb_width, fb_height,
-          mvp, sc_vert))
+          mvp, aspect_scale_, sc_vert))
         continue;
       // TODO(lucasw) use double in the future?
       // glUniformMatrix4dv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);

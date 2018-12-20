@@ -229,7 +229,8 @@ protected:
   bool setupCamera(const tf2::Transform& view_transform, const std::string child_frame_id,
       const double aov_y,
       const int fb_width, const int fb_height,
-      glm::mat4& mvp, const float sc_vert = 1.0);
+      glm::mat4& mvp,
+      const float aspect_scale = 1.0, const float sc_vert = 1.0);
 
   std::string glsl_version_string_ = "";
 #if 0
@@ -291,6 +292,7 @@ protected:
 
   // TODO(lucasw) need to encapsulate this
   // projected texture
+  double projected_aspect_scale_ = 1.0f;
   bool enable_projected_texture_ = false;
   double projected_texture_aov_y_ = 25.0;
   bool setupProjectedTexture(const std::string& shape_frame_id);
