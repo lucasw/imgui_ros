@@ -80,10 +80,6 @@ void main()
   FraColor = Color;
   gl_Position = ProjMtx * vec4(Position.xyz, 1.0);
   ProjectedTexturePosition = ProjTexMtx * vec4(Position.xyz, 1.0);
-  // ProjectedTexturePosition = ProjMtx * vec4(Position.xyz, 1.0);
-  // transform to clip space
-  ProjectedTexturePosition.xyz += 1.0;
-  ProjectedTexturePosition.xyz /= 2.0;
 }
 
 '''
@@ -102,14 +98,25 @@ out vec4 Out_Color;
 void main()
 {
     vec4 projected_texture_position = ProjectedTexturePosition;
+    // transform to clip space
     projected_texture_position.xyz /= projected_texture_position.w;
+    projected_texture_position.xy += 0.5;
+    projected_texture_position.z -= 1.0;
+    float enable_proj = step(0.0, projected_texture_position.z);
+    // TODO(lucasw) this is a manual clamp, can specify this elsewhere and
+    // later make it changeable live.
+    enable_proj = enable_proj * step(0.0, projected_texture_position.z) *
+        (1.0 - step(1.0, projected_texture_position.x)) *
+        step(0.0, projected_texture_position.x) *
+        (1.0 - step(1.0, projected_texture_position.y)) *
+        step(0.0, projected_texture_position.y);
     // vec3 in_proj_vec = step(0.0, ProjectedTexturePosition.xyz) * (1.0 - step(1.0, ProjectedTexturePosition.xyz));
     // TODO(lwalter) can skip this if always border textures with alpha 0.0
     // float in_proj_bounds = normalize(dot(in_proj_vec, in_proj_vec));
     // Out_Color = FraColor * texture(Texture, FraUV.st) + in_proj_bounds * texture(ProjectedTexture, ProjectedTexturePosition.xy);
     vec2 uv = projected_texture_position.xy;
     // uv.t = 1.0 - uv.t;
-    Out_Color = FraColor * texture(Texture, FraUV.st) + projected_texture_scale * texture(ProjectedTexture, uv.st);
+    Out_Color = FraColor * texture(Texture, FraUV.st) + enable_proj * projected_texture_scale * texture(ProjectedTexture, uv.st);
 }
 
 '''
