@@ -66,6 +66,33 @@
 #endif
 #pragma GCC diagnostic pop
 
+struct Projector
+{
+  Projector(const std::string name, const std::string frame_id,
+      const std::string texture_name) :
+    name_(name),
+    frame_id_(frame_id),
+    texture_name_(texture_name)
+  {
+
+  }
+
+  void draw();
+
+  const std::string name_;
+  // this frame needs to follow opengl coordinates,
+  const std::string frame_id_;
+  const std::string texture_name_;
+  // std::shared_ptr<RosImage> texture_;
+  bool enable_ = true;
+  // the horizontal aov is determined by the aov_y and the
+  // aspect ratio of the image
+  double aspect_scale_ = 1.0f;
+  double aov_y_ = 25.0;
+
+  std::stringstream render_message_;
+};
+
 struct ShaderSet {
   ShaderSet(const std::string& name, const std::string& vertex_code,
       const std::string& geometry_code, const std::string& fragment_code) :
@@ -102,6 +129,7 @@ struct ShaderSet {
   int attrib_location_uv_ = 0;
   int attrib_location_color_ = 0;
 
+  // TODO(lucasw) will need some fixed number of these
   int attrib_location_projected_texture_scale_ = 0;
   int attrib_location_proj_tex_ = 0;
   int attrib_location_proj_tex_mtx_ = 0;
@@ -219,6 +247,11 @@ protected:
       glm::mat4& mvp,
       const float aspect_scale = 1.0, const float sc_vert = 1.0);
 
+  // this is done for every shape - probably can refactor to
+  // get only the relevant parts that change per shape
+  bool setupWithShape(std::shared_ptr<Projector> projector,
+      const std::string& main_frame_id, const std::string& shape_frame_id);
+
   std::string glsl_version_string_ = "";
 #if 0
   // temp texture test
@@ -281,15 +314,7 @@ protected:
 
   bool initialized_ = false;
 
-  // TODO(lucasw) need to encapsulate this
-  // projected texture
-  double projected_aspect_scale_ = 1.0f;
-  bool enable_projected_texture_ = false;
-  double projected_texture_aov_y_ = 25.0;
-  bool setupProjectedTexture(const std::string& shape_frame_id);
-  const std::string projected_texture_name_ = "projected_texture";
-  // this frame needs to follow opengl coordinates
-  const std::string projected_texture_frame_id_ = "projected_texture";
+  std::shared_ptr<Projector> projector_;
 
   std::mutex mutex_;
 };

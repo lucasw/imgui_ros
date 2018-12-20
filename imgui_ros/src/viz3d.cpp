@@ -127,6 +127,87 @@ void makeTestShape(std::shared_ptr<Shape> shape)
   }
 }
 
+void Projector::draw()
+{
+  ImGui::Text("projector");
+  // TODO(lucasw) make this a ros topic, use a regular PUB + SUB gui widget
+  // const bool changed =
+  std::string text;
+  text = "enable##projected" + name_;
+  ImGui::Checkbox(text.c_str(), &enable_);
+  // TODO(lucasw) switch to ortho projection if angle is zero
+  double min = 0.1;
+  double max = 170.0;
+  text = "aov y##projected" + name_;
+  ImGui::SliderScalar(text.c_str(), ImGuiDataType_Double,
+      &aov_y_, &min, &max, "%0.2f", 2);
+
+  min = 0.01;
+  max = 100.0;
+  text = "aspect scale##projected" + name_;
+  ImGui::SliderScalar(text.c_str(), ImGuiDataType_Double,
+      &aspect_scale_, &min, &max, "%.3f", 2);
+
+  ImGui::Text("%s", render_message_.str().c_str());
+  render_message_.str("");
+}
+
+// TODO(lucasw) make this work outside of Viz3D
+bool Viz3D::setupWithShape(std::shared_ptr<Projector> projector,
+    const std::string& main_frame_id,
+    const std::string& shape_frame_id)
+{
+  std::shared_ptr<RosImage> texture;
+  if (textures_.count(projector->texture_name_) < 1) {
+    render_message_ << "no texture " << projector->texture_name_ << ", ";
+    return false;
+  }
+  texture = textures_[projector->texture_name_];
+  if (!texture) {
+    render_message_ << "no texture, ";
+    return false;
+  }
+  if (!texture->image_) {
+    render_message_ << "no texture image, ";
+    return false;
+  }
+
+  // this is the view of the projector
+  tf2::Stamped<tf2::Transform> stamped_transform;
+  try {
+    geometry_msgs::msg::TransformStamped tf;
+    tf = tf_buffer_->lookupTransform(main_frame_id,
+        projector->frame_id_, tf2::TimePointZero);
+    tf2::fromMsg(tf, stamped_transform);
+    render_message_ << "\nprojected texture transform "
+        << main_frame_id << " " << projector->frame_id_ << " "
+        << printTransform(stamped_transform);
+  } catch (tf2::TransformException& ex) {
+    // TODO(lucasw) display exception on gui, but this isn't currently the correct
+    // time.
+    render_message_ << "\n" << ex.what();
+    return false;
+  }
+
+  const int width = texture->image_->width;
+  const int height = texture->image_->height;
+  glm::mat4 mtp;
+  if (!setupCamera(stamped_transform, shape_frame_id,
+      projector->aov_y_,
+      width, height,
+      mtp,
+      projector->aspect_scale_  // TODO(lucasw) relate to aspect_scale_ also?
+      ))
+    return false;
+
+  for (auto shaders : shader_sets_) {
+    glUniformMatrix4fv(shaders.second->attrib_location_proj_tex_mtx_, 1, GL_FALSE, &mtp[0][0]);
+    // assign this texture to the TEXTURE1 slot
+    glUniform1i(shaders.second->attrib_location_proj_tex_, 1);
+    checkGLError(__FILE__, __LINE__);
+  }
+  return true;
+}
 ////////////////////////////////////////////////////////////
 ShaderSet::~ShaderSet()
 {
@@ -288,6 +369,8 @@ Viz3D::Viz3D(const std::string name,
 
   const bool sub_not_pub = true;
   textures_["default"] = std::make_shared<RosImage>("default", "/image_out", sub_not_pub, node);
+
+  projector_ = std::make_shared<Projector>("projector1", "projected_texture", "projected_texture");
 
   transform_.setIdentity();
 
@@ -594,23 +677,7 @@ void Viz3D::draw()
     shaders_pair.second->draw();
   }
   ImGui::Separator();
-
-  ImGui::Text("projector");
-  {
-    // TODO(lucasw) make this a ros topic, use a regular PUB + SUB gui widget
-    // const bool changed =
-    ImGui::Checkbox("enable texture##projected", &enable_projected_texture_);
-    // TODO(lucasw) switch to ortho projection if angle is zero
-    double min = 0.1;
-    double max = 170.0;
-    ImGui::SliderScalar("texture aov y##projected", ImGuiDataType_Double,
-        &projected_texture_aov_y_, &min, &max, "%0.2f", 2);
-
-    min = 0.01;
-    max = 100.0;
-    ImGui::SliderScalar("aspect scale##projected", ImGuiDataType_Double,
-        &projected_aspect_scale_, &min, &max, "%.3f", 2);
-  }
+  projector_->draw();
   ImGui::Separator();
   ImGui::Text("main camera");
   {
@@ -784,55 +851,6 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
     render_message_ << "mvp:\n" << printMat(mvp);
   }
 
-  return true;
-}
-
-bool Viz3D::setupProjectedTexture(const std::string& shape_frame_id)
-{
-  const std::string name = projected_texture_name_;
-  if (textures_.count(name) < 1) {
-    return false;
-  }
-  if (!textures_[name]->image_) {
-    return false;
-  }
-  const int width = textures_[name]->image_->width;
-  const int height = textures_[name]->image_->height;
-
-  // this is the view of the projector
-  tf2::Stamped<tf2::Transform> stamped_transform;
-  try {
-    geometry_msgs::msg::TransformStamped tf;
-    tf = tf_buffer_->lookupTransform(frame_id_,
-        projected_texture_frame_id_, tf2::TimePointZero);
-    tf2::fromMsg(tf, stamped_transform);
-    render_message_ << "\nprojected texture transform "
-        << frame_id_ << " " << projected_texture_frame_id_ << " "
-        << printTransform(stamped_transform);
-  } catch (tf2::TransformException& ex) {
-    // TODO(lucasw) display exception on gui, but this isn't currently the correct
-    // time.
-    render_message_ << "\n" << ex.what();
-    return false;
-  }
-
-
-  // texture projection
-  glm::mat4 mtp;
-  if (!setupCamera(stamped_transform, shape_frame_id,
-      projected_texture_aov_y_,
-      width, height,
-      mtp,
-      projected_aspect_scale_  // TODO(lucasw) relate to aspect_scale_ also?
-      ))
-    return false;
-
-  for (auto shaders : shader_sets_) {
-    glUniformMatrix4fv(shaders.second->attrib_location_proj_tex_mtx_, 1, GL_FALSE, &mtp[0][0]);
-    // assign this texture to the TEXTURE1 slot
-    glUniform1i(shaders.second->attrib_location_proj_tex_, 1);
-    checkGLError(__FILE__, __LINE__);
-  }
   return true;
 }
 
@@ -1010,9 +1028,8 @@ void Viz3D::render2(const tf2::Transform& transform,
     }
 
     // TODO(lucasw) add imgui use texture projection checkbox
-    const bool use_texture_projection = enable_projected_texture_ &&
-        setupProjectedTexture(shape->frame_id_);
-
+    const bool use_texture_projection = projector_->enable_ &&
+        setupWithShape(projector_, frame_id_, shape->frame_id_);
 
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
@@ -1056,7 +1073,7 @@ void Viz3D::render2(const tf2::Transform& transform,
       glUniform1f(shaders->attrib_location_projected_texture_scale_, 1.0);
       GLuint tex_id = 0;
       // TODO(lucasw) currently hardcoded, later make more flexible
-      const std::string name = projected_texture_name_;
+      const std::string name = projector_->texture_name_;
       if (textures_.count(name) > 0) {
         tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
         render_message_ << "\nprojected texture " << name << " " << tex_id;
