@@ -186,7 +186,6 @@ using std::placeholders::_1;
       const std::string checkbox_text2 = "show image##" + name_;
       ImGui::Checkbox(checkbox_text2.c_str(), &enable_draw_image_);
       if ((enable_draw_image_) && (texture_id_ != 0) && (width_ != 0) && (height_ != 0)) {
-        static int count = 0;
         ImVec2 win_size = ImGui::GetWindowSize();
         const double fr_x = win_size.x / width_;
         const double fr_y = win_size.y / height_;

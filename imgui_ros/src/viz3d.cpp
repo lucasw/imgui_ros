@@ -631,8 +631,6 @@ void Viz3D::draw()
   ImGui::Begin("viz3d");
   // ImGuiIO& io = ImGui::GetIO();
 
-  ImGui::Text(render_message_.str().c_str());
-
   ImGui::Separator();
   ImGui::Text("shapes");
   for (auto shape_pair : shapes_) {
@@ -650,7 +648,7 @@ void Viz3D::draw()
   ImGui::Separator();
   std::stringstream ss;
   ss << "shaders " << shader_sets_.size();
-  ImGui::Text(ss.str().c_str());
+  ImGui::Text("%s", ss.str().c_str());
   for (auto shaders_pair : shader_sets_) {
     ImGui::Separator();
     shaders_pair.second->draw();
@@ -786,6 +784,14 @@ void Viz3D::draw()
     ss << translation.x()  << " " << translation.y() << " " << translation.z() << ", "
         << pitch_;
     ImGui::Text("%s", ss.str().c_str());
+  }
+
+  {
+    ImGui::Separator();
+    ImGui::Checkbox("debug output", &enable_render_message_);
+    if (enable_render_message_) {
+      ImGui::Text("%s", render_message_.str().c_str());
+    }
   }
   ImGui::End();
 }
