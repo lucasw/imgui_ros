@@ -33,6 +33,7 @@
 
 #include <glm/glm.hpp>
 #include <imgui.h>
+#include <imgui_ros/camera.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
 #include <imgui_ros/msg/textured_shape.hpp>
@@ -166,31 +167,6 @@ struct Shape {
   GLuint vao_handle_ = 0;
   GLuint vbo_handle_ = 0;
   GLuint elements_handle_ = 0;
-};
-
-struct Camera {
-  Camera(const std::string name,
-      const std::string texture_name,
-      const std::string frame_id,
-      const std::string topic,
-      const size_t width,
-      const size_t height,
-      std::shared_ptr<rclcpp::Node> node);
-  ~Camera();
-  void draw();
-  // void render();
-
-  std::string name_;
-  std::string frame_id_;
-  tf2::Stamped<tf2::Transform> stamped_transform_;
-  std::shared_ptr<RosImage> image_;
-
-  // TODO(lucasw) put in own class later
-  bool enable_ = true;
-  GLuint frame_buffer_;
-  GLuint depth_buffer_;
-  // TODO(lucasw) not sure about this
-  GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
 };
 
 // TODO(lucasw) need to support covering the entire background,

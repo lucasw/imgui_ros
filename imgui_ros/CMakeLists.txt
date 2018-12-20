@@ -61,6 +61,7 @@ include_directories(
 )
 
 add_executable(imgui_ros_node
+  src/camera.cpp
   src/imgui_ros.cpp
   src/image.cpp
   # src/param.cpp
