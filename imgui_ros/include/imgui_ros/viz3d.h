@@ -36,6 +36,7 @@
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
 #include <imgui_ros/msg/textured_shape.hpp>
+#include <imgui_ros/srv/add_camera.hpp>
 #include <imgui_ros/srv/add_shaders.hpp>
 #include <imgui_ros/srv/add_shape.hpp>
 #include <imgui_ros/srv/add_texture.hpp>
@@ -167,13 +168,13 @@ struct Shape {
   GLuint elements_handle_ = 0;
 };
 
-struct RenderTexture {
-  RenderTexture(const std::string name,
+struct Camera {
+  Camera(const std::string name,
       const std::string frame_id,
       const size_t width,
       const size_t height,
       std::shared_ptr<rclcpp::Node> node);
-  ~RenderTexture();
+  ~Camera();
   void draw();
   // void render();
 
@@ -183,7 +184,7 @@ struct RenderTexture {
   std::shared_ptr<RosImage> image_;
 
   // TODO(lucasw) put in own class later
-  bool enable_rtt_ = false;
+  bool enable_ = true;
   GLuint frame_buffer_;
   GLuint depth_buffer_;
   // TODO(lucasw) not sure about this
@@ -263,6 +264,10 @@ protected:
   GLuint vertex_buffer_;
 #endif
 
+  rclcpp::Service<imgui_ros::srv::AddCamera>::SharedPtr add_camera_;
+  void addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> req,
+                  std::shared_ptr<imgui_ros::srv::AddCamera::Response> res);
+  std::map<std::string, std::shared_ptr<Camera> > cameras_;
 
   rclcpp::Service<imgui_ros::srv::AddShaders>::SharedPtr add_shaders_;
   void addShaders(const std::shared_ptr<imgui_ros::srv::AddShaders::Request> req,
@@ -307,8 +312,6 @@ protected:
   const std::string projected_texture_name_ = "projected_texture";
   // this frame needs to follow opengl coordinates
   const std::string projected_texture_frame_id_ = "projected_texture";
-
-  std::shared_ptr<RenderTexture> render_texture_;
 
   std::mutex mutex_;
 };

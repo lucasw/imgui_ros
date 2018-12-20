@@ -269,7 +269,8 @@ void Shape::init()
 #endif
 }
 
-RenderTexture::RenderTexture(const std::string name,
+// TODO(lucasw) 'Camera' -> 'TextureCamera'
+Camera::Camera(const std::string name,
     const std::string frame_id,
     const size_t width,
     const size_t height,
@@ -332,25 +333,25 @@ RenderTexture::RenderTexture(const std::string name,
   }
 }
 
-RenderTexture::~RenderTexture()
+Camera::~Camera()
 {
   glDeleteRenderbuffers(1, &depth_buffer_);
   glDeleteFramebuffers(1, &frame_buffer_);
 }
 
-void RenderTexture::draw()
+void Camera::draw()
 {
-  // std::string name = name_ + "##";
-  ImGui::Begin(name_.c_str());
+  std::string name = name_ + "##camera";
+  ImGui::Begin(name.c_str());
   // TODO(lucasw) later re-use code in RosImage
-  ImGui::Checkbox("render to texture", &enable_rtt_);
-  if (enable_rtt_) {
+  ImGui::Checkbox(("render to texture##" + name_).c_str(), &enable_);
+  if (enable_) {
     image_->draw();
    }
   ImGui::End();
 }
 
-// RenderTexture::render()
+// Camera::render()
 // {
 // }
 
@@ -374,15 +375,14 @@ Viz3D::Viz3D(const std::string name,
   textures_["default"] = std::make_shared<RosImage>("default", "/image_out", node);
   // TODO(lucasw) add this via service, also make it optionally output the image
   // on a topic.
-  render_texture_ = std::make_shared<RenderTexture>("render_texture",
-      "bar", 512, 512, node);
-  textures_["rendered"] = render_texture_->image_;
 
   transform_.setIdentity();
 
   textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
 
+  add_camera_ = node->create_service<imgui_ros::srv::AddCamera>("add_camera",
+      std::bind(&Viz3D::addCamera, this, _1, _2));
   add_shaders_ = node->create_service<imgui_ros::srv::AddShaders>("add_shaders",
       std::bind(&Viz3D::addShaders, this, _1, _2));
   add_texture_ = node->create_service<imgui_ros::srv::AddTexture>("add_texture",
@@ -403,6 +403,25 @@ Viz3D::~Viz3D()
 #if 0
   glDeleteTextures(1, &texture_id_);
 #endif
+}
+
+void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> req,
+                      std::shared_ptr<imgui_ros::srv::AddCamera::Response> res)
+{
+  auto node = node_.lock();
+  if (!node) {
+    res->message = "couldn't get node for camera '" + req->camera.name + "' '" +
+        req->camera.texture_name + "'";
+    res->success = false;
+    return;
+  }
+  auto render_texture = std::make_shared<Camera>(req->camera.name,
+      req->camera.header.frame_id, req->camera.width, req->camera.height, node);
+  textures_[req->camera.texture_name] = render_texture->image_;
+  cameras_[req->camera.name] = render_texture;
+
+  res->message = "added camera '" + req->camera.name + "' '" + req->camera.texture_name + "'";
+  res->success = true;
 }
 
 void Viz3D::addShaders(const std::shared_ptr<imgui_ros::srv::AddShaders::Request> req,
@@ -629,10 +648,10 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
 }
 
 void Viz3D::draw()
-//  const int pos_x, const int pos_y,
-//  const int size_x, const int size_y)
 {
-  render_texture_->draw();
+  for (auto camera : cameras_) {
+    camera.second->draw();
+  }
 
   ImGui::Begin("viz3d");
   // ImGuiIO& io = ImGui::GetIO();
@@ -955,48 +974,50 @@ void Viz3D::render(const int fb_width, const int fb_height,
 // don't interleave this with regular 3d rendering imgui rendering
 void Viz3D::renderToTexture()
 {
-  // TODO(lucasw) later make this a for loop through map
-  // render_texture_->render();
-  // TODO(lucasw) make a checkbox to enable this 
-  if (!render_texture_->enable_rtt_) {
+  if (cameras_.size() == 0)
     return;
-  }
-  render_message_ << "\nrender to texture " << render_texture_->name_ << "\n";
+
   GLState gl_state;
   gl_state.backup();
+  for (auto camera_pair : cameras_) {
+    auto camera = camera_pair.second;
+    if (!camera->enable_) {
+      return;
+    }
+    render_message_ << "\nrender to texture " << camera->name_ << "\n";
 
-  glBindFramebuffer(GL_FRAMEBUFFER, render_texture_->frame_buffer_);
-  glClearColor(0.1, 0.1, 5.0, 1.0);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  // TODO(lucasw) if render width/height change need to update rendered_texture
+    glBindFramebuffer(GL_FRAMEBUFFER, camera->frame_buffer_);
+    glClearColor(0.1, 0.1, 5.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // TODO(lucasw) if render width/height change need to update rendered_texture
 
-  try {
-    geometry_msgs::msg::TransformStamped tf;
-    tf = tf_buffer_->lookupTransform(frame_id_,
-        render_texture_->frame_id_, tf2::TimePointZero);
-    tf2::fromMsg(tf, render_texture_->stamped_transform_);
-    #if 0
-    tf2::TimePoint time_out;
-    // this is private, so doesn't work
-    tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
-        tf2::TimePointZero, transform, time_out);
-    #endif
-    render_message_ << ", frames: " << frame_id_ << " -> "
-        << render_texture_->frame_id_ << "\n";
-  } catch (tf2::TransformException& ex) {
-    render_message_ << "\n" << ex.what();
-    return;
+    try {
+      geometry_msgs::msg::TransformStamped tf;
+      tf = tf_buffer_->lookupTransform(frame_id_,
+          camera->frame_id_, tf2::TimePointZero);
+      tf2::fromMsg(tf, camera->stamped_transform_);
+      #if 0
+      tf2::TimePoint time_out;
+      // this is private, so doesn't work
+      tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
+          tf2::TimePointZero, transform, time_out);
+      #endif
+      render_message_ << ", frames: " << frame_id_ << " -> "
+          << camera->frame_id_ << "\n";
+    } catch (tf2::TransformException& ex) {
+      render_message_ << "\n" << ex.what();
+      continue;
+    }
+
+    render2(camera->stamped_transform_,
+        camera->image_->width_,
+        camera->image_->height_, -1.0);
+
+    // TODO(lucasw) copy the date from the texture out to a cv::Mat?
+    checkGLError(__FILE__, __LINE__);
   }
-
-  render2(render_texture_->stamped_transform_,
-      render_texture_->image_->width_,
-      render_texture_->image_->height_, -1.0);
-
-  // TODO(lucasw) copy the date from the texture out to a cv::Mat?
-  checkGLError(__FILE__, __LINE__);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   gl_state.backup();
-
 }
 
 void Viz3D::render2(const tf2::Transform& transform,

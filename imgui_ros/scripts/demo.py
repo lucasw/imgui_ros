@@ -215,6 +215,26 @@ class Demo(Node):
         req.widgets.append(widget)
 
         widget = Widget()
+        widget.name = "camera1 pub tf"
+        widget.type = Widget.PUB
+        widget.sub_type = Widget.TF
+        widget.min = -4.0
+        widget.max = 4.0
+        widget.items.append("map")
+        widget.items.append("camera1")
+        req.widgets.append(widget)
+
+        widget = Widget()
+        widget.name = "camera2 pub tf"
+        widget.type = Widget.PUB
+        widget.sub_type = Widget.TF
+        widget.min = -4.0
+        widget.max = 4.0
+        widget.items.append("map")
+        widget.items.append("camera2")
+        req.widgets.append(widget)
+
+        widget = Widget()
         widget.name = "map pub tf"
         widget.type = Widget.PUB
         widget.sub_type = Widget.TF

@@ -37,8 +37,10 @@ find_package(tf2_ros REQUIRED)
 find_package(visualization_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/Camera.msg"
   "msg/Widget.msg"
   "msg/TexturedShape.msg"
+  "srv/AddCamera.srv"
   "srv/AddTexture.srv"
   "srv/AddWindow.srv"
   "srv/AddShape.srv"

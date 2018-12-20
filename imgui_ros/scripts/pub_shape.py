@@ -25,7 +25,7 @@ import sys
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Point, TransformStamped, Vector3
 from imgui_ros.msg import TexturedShape, Widget
-from imgui_ros.srv import AddShaders, AddShape, AddTexture, AddWindow
+from imgui_ros.srv import AddCamera, AddShaders, AddShape, AddTexture, AddWindow
 from rclpy.node import Node
 from shape_msgs.msg import MeshTriangle, Mesh
 from std_msgs.msg import ColorRGBA
@@ -40,10 +40,11 @@ class Demo(Node):
         # self.marker_pub = self.create_publisher(Marker, 'marker')
         # self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
         sleep(1.0)
+
         self.cli = self.create_client(AddShape, 'add_shape')
         while not self.cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('service not available, waiting again...')
-
+            self.get_logger().info('shape service not available, waiting again...')
+ 
         self.bridge = cv_bridge.CvBridge()
 
         parser = argparse.ArgumentParser(description='imgui_ros demo')
@@ -78,6 +79,30 @@ class Demo(Node):
             # on top of old ones, all the shapes disappear until
             # add_shaders is run again.
             self.add_shapes()
+        self.add_cameras()
+
+    def add_cameras(self):
+        self.camera_cli = self.create_client(AddCamera, 'add_camera')
+        while not self.camera_cli.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('camera service not available, waiting again...')
+
+        req = AddCamera.Request()
+        req.camera.header.frame_id = 'camera1'
+        req.camera.name = 'camera1'
+        req.camera.texture_name = 'camera1'
+        req.camera.width = 256
+        req.camera.height = 256
+        self.future = self.camera_cli.call_async(req)
+        self.wait_for_response()
+
+        req = AddCamera.Request()
+        req.camera.header.frame_id = 'camera2'
+        req.camera.name = 'camera2'
+        req.camera.texture_name = 'camera2'
+        req.camera.width = 256
+        req.camera.height = 256
+        self.future = self.camera_cli.call_async(req)
+        self.wait_for_response()
 
     def add_texture(self, name='diffract', pkg_name='image_manip', image_name='diffract1.png'):
         self.texture_cli = self.create_client(AddTexture, 'add_texture')
@@ -261,7 +286,7 @@ class Demo(Node):
         if True:
             shape = self.make_cylinder(name='cylinder3')
             shape.add = True
-            shape.texture = 'rendered'
+            shape.texture = 'camera1'
             shape.header.frame_id = 'bar2'
             req.shapes.append(shape)
         self.future = self.cli.call_async(req)
