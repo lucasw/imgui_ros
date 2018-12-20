@@ -168,12 +168,18 @@ struct Shape {
 };
 
 struct RenderTexture {
-  RenderTexture(const std::string name, std::shared_ptr<rclcpp::Node> node);
+  RenderTexture(const std::string name,
+      const std::string frame_id,
+      const size_t width,
+      const size_t height,
+      std::shared_ptr<rclcpp::Node> node);
   ~RenderTexture();
   void draw();
   // void render();
 
   std::string name_;
+  std::string frame_id_;
+  tf2::Stamped<tf2::Transform> stamped_transform_;
   std::shared_ptr<RosImage> image_;
 
   // TODO(lucasw) put in own class later
@@ -199,7 +205,8 @@ struct Viz3D {
       const int display_pos_x, const int display_pos_y,
       const int display_size_x, const int display_size_y);
   void renderToTexture();
-  void render2(const int fb_width, const int fb_height, const float sc_vert = 1.0);
+  void render2(const tf2::Transform& transform,
+      const int fb_width, const int fb_height, const float sc_vert = 1.0);
 
   bool enable_render_message_ = false;
   std::stringstream render_message_;

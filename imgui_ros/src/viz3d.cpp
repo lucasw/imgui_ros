@@ -269,12 +269,17 @@ void Shape::init()
 #endif
 }
 
-RenderTexture::RenderTexture(const std::string name, std::shared_ptr<rclcpp::Node> node) :
-    name_(name)
+RenderTexture::RenderTexture(const std::string name,
+    const std::string frame_id,
+    const size_t width,
+    const size_t height,
+    std::shared_ptr<rclcpp::Node> node) :
+    name_(name),
+    frame_id_(frame_id)
 {
   image_ = std::make_shared<RosImage>("rendered", "", node);
-  image_->width_ = 512;
-  image_->height_ = 512;
+  image_->width_ = width;
+  image_->height_ = height;
 
   {
     cv::Mat tmp(cv::Size(image_->width_, image_->height_), CV_8UC4, cv::Scalar(100, 50, 20, 255));
@@ -369,7 +374,8 @@ Viz3D::Viz3D(const std::string name,
   textures_["default"] = std::make_shared<RosImage>("default", "/image_out", node);
   // TODO(lucasw) add this via service, also make it optionally output the image
   // on a topic.
-  render_texture_ = std::make_shared<RenderTexture>("render_texture", node);
+  render_texture_ = std::make_shared<RenderTexture>("render_texture",
+      "bar", 512, 512, node);
   textures_["rendered"] = render_texture_->image_;
 
   transform_.setIdentity();
@@ -940,7 +946,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     // and then draw the texture to the screen with a textured quad fragment
     // shader, this allows rendering at a different resolution that the screen
     // which might be desirable if performance is suffering.
-    render2(fb_width, fb_height);
+    render2(transform_, fb_width, fb_height);
 
     gl_state.backup();
     checkGLError(__FILE__, __LINE__);
@@ -955,7 +961,7 @@ void Viz3D::renderToTexture()
   if (!render_texture_->enable_rtt_) {
     return;
   }
-  render_message_ << "\nrender to texture\n";
+  render_message_ << "\nrender to texture " << render_texture_->name_ << "\n";
   GLState gl_state;
   gl_state.backup();
 
@@ -963,7 +969,28 @@ void Viz3D::renderToTexture()
   glClearColor(0.1, 0.1, 5.0, 1.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   // TODO(lucasw) if render width/height change need to update rendered_texture
-  render2(render_texture_->image_->width_, render_texture_->image_->height_, -1.0);
+
+  try {
+    geometry_msgs::msg::TransformStamped tf;
+    tf = tf_buffer_->lookupTransform(frame_id_,
+        render_texture_->frame_id_, tf2::TimePointZero);
+    tf2::fromMsg(tf, render_texture_->stamped_transform_);
+    #if 0
+    tf2::TimePoint time_out;
+    // this is private, so doesn't work
+    tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
+        tf2::TimePointZero, transform, time_out);
+    #endif
+    render_message_ << ", frames: " << frame_id_ << " -> "
+        << render_texture_->frame_id_ << "\n";
+  } catch (tf2::TransformException& ex) {
+    render_message_ << "\n" << ex.what();
+    return;
+  }
+
+  render2(render_texture_->stamped_transform_,
+      render_texture_->image_->width_,
+      render_texture_->image_->height_, -1.0);
 
   // TODO(lucasw) copy the date from the texture out to a cv::Mat?
   checkGLError(__FILE__, __LINE__);
@@ -972,7 +999,9 @@ void Viz3D::renderToTexture()
 
 }
 
-void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert)
+void Viz3D::render2(const tf2::Transform& transform,
+    const int fb_width, const int fb_height,
+    const float sc_vert)
 {
   // TODO(lucasw) should give up if can't lock, just don't render now
   std::lock_guard<std::mutex> lock(mutex_);
@@ -1031,7 +1060,7 @@ void Viz3D::render2(const int fb_width, const int fb_height, const float sc_vert
     glUseProgram(shaders->shader_handle_);
     {
       glm::mat4 mvp;
-      if (!setupCamera(transform_, shape->frame_id_,
+      if (!setupCamera(transform, shape->frame_id_,
           aov_y_,
           fb_width, fb_height,
           mvp, aspect_scale_, sc_vert))
