@@ -326,7 +326,7 @@ namespace imgui_ros {
       return true;
     // subscription types
     } else if (widget.type == imgui_ros::msg::Widget::SUB) {
-      RCLCPP_INFO(get_logger(), "new sub %s %d", widget.name.c_str(), widget.sub_type);
+      RCLCPP_DEBUG(get_logger(), "new sub %s %d", widget.name.c_str(), widget.sub_type);
       std::shared_ptr<Sub> sub;
       if (widget.sub_type == msg::Widget::FLOAT32) {
         sub.reset(new GenericSub<std_msgs::msg::Float32>(

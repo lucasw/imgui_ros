@@ -336,7 +336,12 @@ void Shape::init()
       (const GLvoid*)vertices_.Data, GL_STREAM_DRAW);
 
   glGenBuffers(1, &elements_handle_);
+
   checkGLError(__FILE__, __LINE__);
+  std::cout << name_ << " init vao " << vao_handle_
+      << ", vbo " << vbo_handle_ << ", elements " << elements_handle_
+      << ", vertices size " << vertices_.Size << "\n";
+
 #if 0
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)indices_.Size * sizeof(ImDrawIdx),
@@ -348,6 +353,7 @@ void Shape::init()
   glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 #endif
+  checkGLError(__FILE__, __LINE__);
 }
 
 // render the entire background
@@ -411,13 +417,18 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
     res->success = false;
     return;
   }
-  auto render_texture = std::make_shared<Camera>(req->camera.name,
-      req->camera.texture_name,
-      req->camera.header.frame_id, req->camera.topic,
-      req->camera.width, req->camera.height, node);
-  textures_[req->camera.texture_name] = render_texture->image_;
-  cameras_[req->camera.name] = render_texture;
-
+  try {
+    auto render_texture = std::make_shared<Camera>(req->camera.name,
+        req->camera.texture_name,
+        req->camera.header.frame_id, req->camera.topic,
+        req->camera.width, req->camera.height, node);
+    textures_[req->camera.texture_name] = render_texture->image_;
+    cameras_[req->camera.name] = render_texture;
+  } catch (std::runtime_error& ex) {
+    res->message = ex.what();
+    res->success = false;
+    return;
+  }
   res->message = "added camera '" + req->camera.name + "' '" + req->camera.texture_name + "'";
   res->success = true;
 }
@@ -467,7 +478,12 @@ void Viz3D::addShaders(const std::shared_ptr<imgui_ros::srv::AddShaders::Request
 // whenever either is replaced
 bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_ptr<Shape> shape)
 {
-  std::cout << "binding to shape vao " << shape->name_ << " " << shape->vao_handle_ << std::endl;
+  // std::shared_ptr<rclcpp::Node> node = node_.lock();
+  // std::stringstream ss;
+  std::cout << "updating shape shader connections '"
+      << shape->name_ << "' '" << shaders->name_ << "'\n";
+  std::cout << "vao handle: " << shape->vao_handle_ << ", ";
+  std::cout << "vbo handle: " << shape->vbo_handle_ << "\n";
 
   glBindVertexArray(shape->vao_handle_);
   glEnableVertexAttribArray(shaders->attrib_location_position_);
@@ -475,7 +491,10 @@ bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_p
   glEnableVertexAttribArray(shaders->attrib_location_color_);
   // TODO(lucasw) check GL
 
-  std::cout << "binding to shape vbo " << shape->name_ << " " << shape->vbo_handle_ << std::endl;
+
+  std::cout << "attribs: " << shaders->attrib_location_position_ << " "
+      << shaders->attrib_location_uv_ << " "
+      << shaders->attrib_location_color_ << "\n";
 
   glBindBuffer(GL_ARRAY_BUFFER, shape->vbo_handle_);
   glVertexAttribPointer(shaders->attrib_location_position_, 3, GL_FLOAT, GL_FALSE,
@@ -485,15 +504,19 @@ bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_p
   glVertexAttribPointer(shaders->attrib_location_color_, 4, GL_FLOAT, GL_FALSE,
       sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
 
+#if 1
+  std::cout << "elements " << shape->elements_handle_ << ", size " << shape->indices_.Size << "\n";
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape->elements_handle_);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)shape->indices_.Size * sizeof(ImDrawIdx),
       (const GLvoid*)shape->indices_.Data, GL_STREAM_DRAW);
+#endif
 
 #if 0
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 #endif
+  checkGLError(__FILE__, __LINE__);
   return true;
 }
 
@@ -535,7 +558,7 @@ void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr
   std::string message;
   addShape2(msg, message);
   // TODO(lucasw) make a macro or function for this
-  std::shared_ptr<rclcpp::Node> node = node_.lock();
+  // std::shared_ptr<rclcpp::Node> node = node_.lock();
   // RCLCPP_INFO(node->get_logger(), message);
 }
 

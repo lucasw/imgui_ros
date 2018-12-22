@@ -106,10 +106,12 @@ Camera::Camera(const std::string name,
     // glNamedFramebufferDrawBuffers(frame_buffer_, 1, DrawBuffers);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-      RCLCPP_ERROR(node->get_logger(), "Framebuffer is not complete %s", glGetError());
+      std::stringstream ss;
+      ss << name_ << " framebuffer is not complete " << glGetError();
+      throw std::runtime_error(ss.str());
     } else {
-      RCLCPP_INFO(node->get_logger(), "Framebuffer setup complete %d %d %d",
-          frame_buffer_, depth_buffer_, image_->texture_id_);
+      RCLCPP_INFO(node->get_logger(), "camera '%s' framebuffer setup complete, fb %d, depth %d, tex id %d",
+          name_.c_str(), frame_buffer_, depth_buffer_, image_->texture_id_);
     }
 
     // restore default frame buffer
@@ -118,6 +120,7 @@ Camera::Camera(const std::string name,
 
   std::string msg;
   if (checkGLError2(msg)) {
+    std::cerr << msg << std::endl;
     throw std::runtime_error(msg);
   }
 }

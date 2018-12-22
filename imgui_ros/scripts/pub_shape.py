@@ -96,14 +96,16 @@ class Demo(Node):
         self.future = self.camera_cli.call_async(req)
         self.wait_for_response()
 
-        req = AddCamera.Request()
-        req.camera.header.frame_id = 'camera2'
-        req.camera.name = 'camera2'
-        req.camera.texture_name = 'camera2'
-        req.camera.width = 256
-        req.camera.height = 256
-        self.future = self.camera_cli.call_async(req)
-        self.wait_for_response()
+        # this is getting framebuffer not complete errors
+        if False:
+            req = AddCamera.Request()
+            req.camera.header.frame_id = 'camera2'
+            req.camera.name = 'camera2'
+            req.camera.texture_name = 'camera2'
+            req.camera.width = 256
+            req.camera.height = 256
+            self.future = self.camera_cli.call_async(req)
+            self.wait_for_response()
 
     def add_texture(self, name='diffract', pkg_name='image_manip', image_name='diffract1.png'):
         self.texture_cli = self.create_client(AddTexture, 'add_texture')
@@ -273,19 +275,20 @@ class Demo(Node):
 
     def add_shapes(self):
         req = AddShape.Request()
-        if True:
+        if False:
             shape = self.make_planes()
             shape.add = True
             req.shapes.append(shape)
         if True:
             shape = self.make_cylinder(name='cylinder2', radius=0.03, length=0.1,
-                off_x = 0.0)
+                segs=50,
+                off_y=0.1)
             shape.add = True
             shape.texture = 'projected_texture'
             shape.header.frame_id = 'projected_texture'
             req.shapes.append(shape)
         if True:
-            shape = self.make_cylinder(name='cylinder3')
+            shape = self.make_cylinder(name='cylinder3', segs=51)
             shape.add = True
             shape.texture = 'camera1'
             shape.header.frame_id = 'bar2'

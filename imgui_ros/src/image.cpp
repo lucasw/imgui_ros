@@ -52,7 +52,8 @@ using std::placeholders::_1;
 
     if (topic != "") {
       if (sub_not_pub) {
-        std::cout << "subscribing to topic " << topic << "\n";
+        RCLCPP_DEBUG(node->get_logger(), "%s subscribing to topic '%s'",
+            name.c_str(), topic.c_str());
         sub_ = node->create_subscription<sensor_msgs::msg::Image>(topic,
             std::bind(&RosImage::imageCallback, this, _1));
       } else {
