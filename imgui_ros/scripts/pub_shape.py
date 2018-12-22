@@ -281,14 +281,14 @@ class Demo(Node):
             req.shapes.append(shape)
         if True:
             shape = self.make_cylinder(name='cylinder2', radius=0.03, length=0.1,
-                segs=50,
+                segs=20,
                 off_y=0.1)
             shape.add = True
             shape.texture = 'projected_texture'
             shape.header.frame_id = 'projected_texture'
             req.shapes.append(shape)
         if True:
-            shape = self.make_cylinder(name='cylinder3', segs=51)
+            shape = self.make_cylinder(name='cylinder3', segs=25)
             shape.add = True
             shape.texture = 'camera1'
             shape.header.frame_id = 'bar2'

@@ -148,12 +148,7 @@ struct Shape {
   ImVector<ImDrawIdx> indices_;
   std::string texture_;
 
-  ~Shape()
-  {
-    glDeleteBuffers(1, &elements_handle_);
-    glDeleteBuffers(1, &vbo_handle_);
-    glDeleteVertexArrays(1, &vao_handle_);
-  }
+  ~Shape();
 
   // transfer to gpu
   void init();

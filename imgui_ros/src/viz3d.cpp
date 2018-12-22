@@ -313,15 +313,25 @@ void ShaderSet::draw()
   ss << "tex " << attrib_location_proj_tex_ << ", ";
   ss << "tex mtx " << attrib_location_proj_tex_mtx_ << " ";
 
-  ss << "\n--------------------------";
-  ss << vertex_code_ << "\n";
-  ss << "--------------------------";
-  ss << geometry_code_ << "\n";
-  ss << "--------------------------";
-  ss << fragment_code_ << "\n";
-  ss << "--------------------------";
+  if (false) {
+    ss << "\n--------------------------";
+    ss << vertex_code_ << "\n";
+    ss << "--------------------------";
+    ss << geometry_code_ << "\n";
+    ss << "--------------------------";
+    ss << fragment_code_ << "\n";
+    ss << "--------------------------";
+  }
 
   ImGui::Text("%s", ss.str().c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+Shape::~Shape()
+{
+  glDeleteBuffers(1, &elements_handle_);
+  glDeleteBuffers(1, &vbo_handle_);
+  glDeleteVertexArrays(1, &vao_handle_);
 }
 
 void Shape::init()
@@ -338,20 +348,20 @@ void Shape::init()
   glGenBuffers(1, &elements_handle_);
 
   checkGLError(__FILE__, __LINE__);
-  std::cout << name_ << " init vao " << vao_handle_
-      << ", vbo " << vbo_handle_ << ", elements " << elements_handle_
-      << ", vertices size " << vertices_.Size << "\n";
+  std::cout << name_ << " init vao " << vao_handle_ << ", "
+      << "vbo " << vbo_handle_ << ", elements " << elements_handle_ << ", "
+      << "vertices size " << vertices_.Size << ", "
+      << "indices size " << indices_.Size << "\n";
 
-#if 0
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)indices_.Size * sizeof(ImDrawIdx),
       (const GLvoid*)indices_.Data, GL_STREAM_DRAW);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-#endif
 
 #if 0
-  glBindVertexArray(0);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
 #endif
   checkGLError(__FILE__, __LINE__);
 }
@@ -402,9 +412,6 @@ Viz3D::Viz3D(const std::string name,
 
 Viz3D::~Viz3D()
 {
-#if 0
-  glDeleteTextures(1, &texture_id_);
-#endif
 }
 
 void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> req,
@@ -481,9 +488,9 @@ bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_p
   // std::shared_ptr<rclcpp::Node> node = node_.lock();
   // std::stringstream ss;
   std::cout << "updating shape shader connections '"
-      << shape->name_ << "' '" << shaders->name_ << "'\n";
+      << shape->name_ << "' to '" << shaders->name_ << "'\n";
   std::cout << "vao handle: " << shape->vao_handle_ << ", ";
-  std::cout << "vbo handle: " << shape->vbo_handle_ << "\n";
+  std::cout << "vbo handle: " << shape->vbo_handle_ << ", ";
 
   glBindVertexArray(shape->vao_handle_);
   glEnableVertexAttribArray(shaders->attrib_location_position_);
@@ -503,13 +510,6 @@ bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_p
       sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, uv));
   glVertexAttribPointer(shaders->attrib_location_color_, 4, GL_FLOAT, GL_FALSE,
       sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
-
-#if 1
-  std::cout << "elements " << shape->elements_handle_ << ", size " << shape->indices_.Size << "\n";
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape->elements_handle_);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)shape->indices_.Size * sizeof(ImDrawIdx),
-      (const GLvoid*)shape->indices_.Data, GL_STREAM_DRAW);
-#endif
 
 #if 0
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -866,7 +866,7 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
 
   mvp = projection_matrix * view_matrix * model_matrix;
 
-  {
+  if (false) {
     render_message_ << "\nmatrices:\n";
     render_message_ << "model " << child_frame_id << ":\n" << printMat(model_matrix);
     render_message_ << "view:\n" << printMat(view_matrix);
@@ -1116,18 +1116,15 @@ void Viz3D::render2(const tf2::Transform& transform,
       glUniform1f(shaders->attrib_location_projected_texture_scale_, 0.0);
     }
 
-    // TEMP
-    shape = first_shape;
-
     {
-      glBindBuffer(GL_ARRAY_BUFFER, shape->vbo_handle_);  // needed before bind texture?
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape->elements_handle_);
       const ImDrawIdx* idx_buffer_offset = 0;
       glDrawElements(GL_TRIANGLES, (GLsizei)shape->indices_.Size,
           sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
       // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
       if (checkGLError(__FILE__, __LINE__))
         return;
-      render_message_ << ", shape indices " << shape->indices_.Size;
+      render_message_ << ", shape " << shape->name_ << " indices " << shape->indices_.Size;
       // idx_buffer_offset += pcmd->ElemCount;
       // glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
