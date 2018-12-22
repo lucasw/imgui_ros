@@ -428,7 +428,9 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
     auto render_texture = std::make_shared<Camera>(req->camera.name,
         req->camera.texture_name,
         req->camera.header.frame_id, req->camera.topic,
-        req->camera.width, req->camera.height, node);
+        req->camera.width, req->camera.height,
+        req->camera.aov_y,
+        node);
     textures_[req->camera.texture_name] = render_texture->image_;
     cameras_[req->camera.name] = render_texture;
   } catch (std::runtime_error& ex) {
@@ -802,7 +804,7 @@ void Viz3D::draw()
   double min = 1.0;
   double max = 170.0;
   ImGui::SliderScalar("aov y", ImGuiDataType_Double,
-      &aov_y_, &min, &max, "%lf");
+      &aov_y_, &min, &max, "%lf", 2);
 
   min = 0.1;
   max = 10.0;
@@ -921,7 +923,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     // and then draw the texture to the screen with a textured quad fragment
     // shader, this allows rendering at a different resolution that the screen
     // which might be desirable if performance is suffering.
-    render2(transform_, fb_width, fb_height);
+    render2(transform_, fb_width, fb_height, aov_y_);
 
     gl_state.backup();
     checkGLError(__FILE__, __LINE__);
@@ -967,7 +969,9 @@ void Viz3D::renderToTexture()
 
     render2(camera->stamped_transform_,
         camera->image_->width_,
-        camera->image_->height_, -1.0);
+        camera->image_->height_,
+        camera->aov_y_,
+        -1.0);
 
     // TODO(lucasw) copy the date from the texture out to a cv::Mat?
     checkGLError(__FILE__, __LINE__);
@@ -978,6 +982,7 @@ void Viz3D::renderToTexture()
 
 void Viz3D::render2(const tf2::Transform& transform,
     const int fb_width, const int fb_height,
+    const float aov_y,
     const float sc_vert)
 {
   // TODO(lucasw) should give up if can't lock, just don't render now
@@ -1038,7 +1043,7 @@ void Viz3D::render2(const tf2::Transform& transform,
     {
       glm::mat4 mvp;
       if (!setupCamera(transform, shape->frame_id_,
-          aov_y_,
+          aov_y,
           fb_width, fb_height,
           mvp, aspect_scale_, sc_vert))
         continue;

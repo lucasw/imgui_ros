@@ -208,7 +208,8 @@ struct Viz3D {
       const int display_size_x, const int display_size_y);
   void renderToTexture();
   void render2(const tf2::Transform& transform,
-      const int fb_width, const int fb_height, const float sc_vert = 1.0);
+      const int fb_width, const int fb_height,
+      const float aov_y, const float sc_vert = 1.0);
 
   bool enable_render_message_ = false;
   std::stringstream render_message_;

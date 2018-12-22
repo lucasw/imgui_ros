@@ -68,6 +68,7 @@ struct Camera {
       const std::string topic,
       const size_t width,
       const size_t height,
+      const double aov_y,
       std::shared_ptr<rclcpp::Node> node);
   ~Camera();
   void draw();
@@ -77,6 +78,9 @@ struct Camera {
   std::string frame_id_;
   tf2::Stamped<tf2::Transform> stamped_transform_;
   std::shared_ptr<RosImage> image_;
+
+  // TODO(lucasw) later need to use this and resolution to make a CameraInfo
+  double aov_y_;
 
   // TODO(lucasw) put in own class later
   bool enable_ = true;

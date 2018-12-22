@@ -86,24 +86,28 @@ class Demo(Node):
         while not self.camera_cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('camera service not available, waiting again...')
 
-        req = AddCamera.Request()
-        req.camera.header.frame_id = 'camera1'
-        req.camera.name = 'camera1'
-        req.camera.texture_name = 'camera1'
-        req.camera.topic = 'camera1'
-        req.camera.width = 256
-        req.camera.height = 256
-        self.future = self.camera_cli.call_async(req)
-        self.wait_for_response()
+        if True:
+            req = AddCamera.Request()
+            req.camera.header.frame_id = 'camera1'
+            req.camera.name = 'camera1'
+            req.camera.texture_name = 'camera1'
+            req.camera.topic = 'camera1'
+            req.camera.width = 256
+            req.camera.height = 256
+            req.camera.aov_y = 120.0
+            self.future = self.camera_cli.call_async(req)
+            self.wait_for_response()
 
         # this is getting framebuffer not complete errors
-        if False:
+        if True:
             req = AddCamera.Request()
             req.camera.header.frame_id = 'camera2'
             req.camera.name = 'camera2'
             req.camera.texture_name = 'camera2'
+            # req.camera.topic = 'camera2'
             req.camera.width = 256
             req.camera.height = 256
+            req.camera.aov_y = 20.0
             self.future = self.camera_cli.call_async(req)
             self.wait_for_response()
 
