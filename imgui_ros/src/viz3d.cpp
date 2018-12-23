@@ -402,6 +402,8 @@ Viz3D::Viz3D(const std::string name,
 
   add_camera_ = node->create_service<imgui_ros::srv::AddCamera>("add_camera",
       std::bind(&Viz3D::addCamera, this, _1, _2));
+  add_camera_ = node->create_service<imgui_ros::srv::AddProjector>("add_projector",
+      std::bind(&Viz3D::addProjector, this, _1, _2));
   add_shaders_ = node->create_service<imgui_ros::srv::AddShaders>("add_shaders",
       std::bind(&Viz3D::addShaders, this, _1, _2));
   add_texture_ = node->create_service<imgui_ros::srv::AddTexture>("add_texture",
@@ -446,6 +448,41 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
     return;
   }
   res->message = "added camera '" + req->camera.name + "' '" + req->camera.texture_name + "'";
+  res->success = true;
+}
+
+void Viz3D::addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Request> req,
+                         std::shared_ptr<imgui_ros::srv::AddProjector::Response> res)
+{
+  auto node = node_.lock();
+  if (!node) {
+    res->message = "couldn't get node for projector '" + req->projector.name + "' '" +
+        req->projector.texture_name + "'";
+    res->success = false;
+    return;
+  }
+  try {
+    auto projector = std::make_shared<Projector>(req->projector.camera.name,
+        req->projector.camera.texture_name,
+        req->projector.camera.header.frame_id,
+        req->projector.camera.topic,
+        req->projector.camera.width,
+        req->projector.camera.height,
+        req->projector.camera.aov_y,
+        req->projector.max_range,
+        req->projector.constant_attenuation,
+        req->projector.linear_attenuation,
+        req->projector.quadratic_attenuation,
+        node);
+    textures_[req->projector.camera.texture_name] = projector->image_;
+    projectors_[req->projector.camera.name] = projector;
+  } catch (std::runtime_error& ex) {
+    res->message = ex.what();
+    res->success = false;
+    return;
+  }
+  res->message = "added projector.camera '" + req->projector.camera.name +
+      "' '" + req->projector.camera.texture_name + "'";
   res->success = true;
 }
 

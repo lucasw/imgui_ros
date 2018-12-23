@@ -37,7 +37,9 @@
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
 #include <imgui_ros/msg/textured_shape.hpp>
+#include <imgui_ros/projector.h>
 #include <imgui_ros/srv/add_camera.hpp>
+#include <imgui_ros/srv/add_projector.hpp>
 #include <imgui_ros/srv/add_shaders.hpp>
 #include <imgui_ros/srv/add_shape.hpp>
 #include <imgui_ros/srv/add_texture.hpp>
@@ -268,6 +270,11 @@ protected:
   void addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> req,
                   std::shared_ptr<imgui_ros::srv::AddCamera::Response> res);
   std::map<std::string, std::shared_ptr<Camera> > cameras_;
+
+  rclcpp::Service<imgui_ros::srv::AddProjector>::SharedPtr add_camera_;
+  void addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Request> req,
+                  std::shared_ptr<imgui_ros::srv::AddProjector::Response> res);
+  std::map<std::string, std::shared_ptr<Projector> > projectors_;
 
   rclcpp::Service<imgui_ros::srv::AddShaders>::SharedPtr add_shaders_;
   void addShaders(const std::shared_ptr<imgui_ros::srv::AddShaders::Request> req,

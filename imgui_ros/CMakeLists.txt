@@ -38,10 +38,12 @@ find_package(visualization_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Camera.msg"
+  "msg/Projector.msg"
   "msg/Vertex.msg"
   "msg/Widget.msg"
   "msg/TexturedShape.msg"
   "srv/AddCamera.srv"
+  "srv/AddProjector.srv"
   "srv/AddTexture.srv"
   "srv/AddWindow.srv"
   "srv/AddShape.srv"
@@ -67,6 +69,7 @@ add_executable(imgui_ros_node
   src/image.cpp
   # src/param.cpp
   src/pub.cpp
+  src/projector.cpp
   src/sub.cpp
   src/tf.cpp
   src/viz2d.cpp
