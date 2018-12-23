@@ -123,16 +123,9 @@ struct ShaderSet {
 
   GLuint shader_handle_ = 0;
 
-  int attrib_location_tex_ = 0;
-  int attrib_location_proj_mtx_ = 0;
-  int attrib_location_position_ = 0;
-  int attrib_location_uv_ = 0;
-  int attrib_location_color_ = 0;
-
-  // TODO(lucasw) will need some fixed number of these
-  int attrib_location_projected_texture_scale_ = 0;
-  int attrib_location_proj_tex_ = 0;
-  int attrib_location_proj_tex_mtx_ = 0;
+  // TODO(lucasw) use a std::map<std::string, int> for all of these?
+  std::map<std::string, int> attrib_locations_;
+  std::map<std::string, int> uniform_locations_;
 };
 
 struct DrawVert {

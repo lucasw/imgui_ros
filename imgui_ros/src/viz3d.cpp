@@ -201,9 +201,9 @@ bool Viz3D::setupWithShape(std::shared_ptr<Projector> projector,
     return false;
 
   for (auto shaders : shader_sets_) {
-    glUniformMatrix4fv(shaders.second->attrib_location_proj_tex_mtx_, 1, GL_FALSE, &mtp[0][0]);
+    glUniformMatrix4fv(shaders.second->uniform_locations_["ProjTexMtx"], 1, GL_FALSE, &mtp[0][0]);
     // assign this texture to the TEXTURE1 slot
-    glUniform1i(shaders.second->attrib_location_proj_tex_, 1);
+    glUniform1i(shaders.second->uniform_locations_["ProjectedTexture"], 1);
     checkGLError(__FILE__, __LINE__);
   }
   return true;
@@ -278,15 +278,27 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
 
   // TODO(lucasw) make these generic - provide a list of uniforms
   // in request
-  attrib_location_tex_ = glGetUniformLocation(shader_handle_, "Texture");
-  attrib_location_proj_mtx_ = glGetUniformLocation(shader_handle_, "ProjMtx");
-  attrib_location_position_ = glGetAttribLocation(shader_handle_, "Position");
-  attrib_location_uv_ = glGetAttribLocation(shader_handle_, "UV");
-  attrib_location_color_ = glGetAttribLocation(shader_handle_, "Color");
+  std::vector<std::string> attribs = {
+      "Position",
+      // "Normal",
+      "UV",
+      "Color",
+      // "LightDirection",
+  };
+  for (std::string name : attribs) {
+    attrib_locations_[name] = glGetAttribLocation(shader_handle_, name.c_str());
+  }
 
-  attrib_location_projected_texture_scale_ = glGetUniformLocation(shader_handle_, "projected_texture_scale");
-  attrib_location_proj_tex_ = glGetUniformLocation(shader_handle_, "ProjectedTexture");
-  attrib_location_proj_tex_mtx_ = glGetUniformLocation(shader_handle_, "ProjTexMtx");
+  std::vector<std::string> uniforms = {
+      "Texture",
+      "ProjMtx",
+      "projected_texture_scale",
+      "ProjectedTexture",
+      "ProjTexMtx"
+  };
+  for (std::string name : uniforms) {
+    uniform_locations_[name] = glGetUniformLocation(shader_handle_, name.c_str());
+  }
 
   std::string msg;
   if (checkGLError2(msg)) {
@@ -302,16 +314,11 @@ void ShaderSet::draw()
   ss << "shader: " << name_ << " " << shader_handle_ << ", vert " << vert_handle_
       << ", geometry " << geometry_handle_ << ", frag " << frag_handle_;
   ss << "\n";
-  ss << "tex " << attrib_location_tex_ << ", ";
-  ss << "proj " << attrib_location_proj_mtx_ << ", ";
-  ss << "pos " << attrib_location_position_ << ", ";
-  ss << "uv " << attrib_location_uv_ << ", ";
-  ss << "col " << attrib_location_color_ << "\n";
 
-  ss << "proj: ";
-  ss << "scale " << attrib_location_projected_texture_scale_ << ", ";
-  ss << "tex " << attrib_location_proj_tex_ << ", ";
-  ss << "tex mtx " << attrib_location_proj_tex_mtx_ << " ";
+  for (auto name_pair : attrib_locations_) {
+    std::string name = name_pair.first;
+    ss << name << ": " << attrib_locations_[name] << ", ";
+  }
 
   if (false) {
     ss << "\n--------------------------";
@@ -495,22 +502,25 @@ bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_p
   std::cout << "vbo handle: " << shape->vbo_handle_ << ", ";
 
   glBindVertexArray(shape->vao_handle_);
-  glEnableVertexAttribArray(shaders->attrib_location_position_);
-  glEnableVertexAttribArray(shaders->attrib_location_uv_);
-  glEnableVertexAttribArray(shaders->attrib_location_color_);
+  glEnableVertexAttribArray(shaders->attrib_locations_["Position"]);
+  // glEnableVertexAttribArray(shaders->attrib_locations_["Normal"]);
+  glEnableVertexAttribArray(shaders->attrib_locations_["UV"]);
+  glEnableVertexAttribArray(shaders->attrib_locations_["Color"]);
   // TODO(lucasw) check GL
 
-
-  std::cout << "attribs: " << shaders->attrib_location_position_ << " "
-      << shaders->attrib_location_uv_ << " "
-      << shaders->attrib_location_color_ << "\n";
+  std::cout << "attribs: " << shaders->attrib_locations_["Position"] << " "
+      // << shaders->attrib_locations_["Normal"] << " "
+      << shaders->attrib_locations_["UV"] << " "
+      << shaders->attrib_locations_["Color"] << "\n";
 
   glBindBuffer(GL_ARRAY_BUFFER, shape->vbo_handle_);
-  glVertexAttribPointer(shaders->attrib_location_position_, 3, GL_FLOAT, GL_FALSE,
+  glVertexAttribPointer(shaders->attrib_locations_["Position"], 3, GL_FLOAT, GL_FALSE,
       sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
-  glVertexAttribPointer(shaders->attrib_location_uv_, 2, GL_FLOAT, GL_FALSE,
+  // glVertexAttribPointer(shaders->attrib_locations_["Normal"], 3, GL_FLOAT, GL_FALSE,
+  //    sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
+  glVertexAttribPointer(shaders->attrib_locations_["UV"], 2, GL_FLOAT, GL_FALSE,
       sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, uv));
-  glVertexAttribPointer(shaders->attrib_location_color_, 4, GL_FLOAT, GL_FALSE,
+  glVertexAttribPointer(shaders->attrib_locations_["Color"], 4, GL_FLOAT, GL_FALSE,
       sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
 
 #if 0
@@ -1023,9 +1033,9 @@ void Viz3D::render2(const tf2::Transform& transform,
           mvp, aspect_scale_, sc_vert))
         continue;
       // TODO(lucasw) use double in the future?
-      // glUniformMatrix4dv(shape->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
-      glUniformMatrix4fv(shaders->attrib_location_proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
-      glUniform1i(shaders->attrib_location_tex_, 0);
+      // glUniformMatrix4dv(shape->attrib_location.proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
+      glUniformMatrix4fv(shaders->uniform_locations_["ProjMtx"], 1, GL_FALSE, &mvp[0][0]);
+      glUniform1i(shaders->uniform_locations_["Texture"], 0);
       if (checkGLError(__FILE__, __LINE__))
         return;
     }
@@ -1073,7 +1083,7 @@ void Viz3D::render2(const tf2::Transform& transform,
 
     if (use_texture_projection) {
       // TODO(lucasw) later the scale could be a brightness setting
-      glUniform1f(shaders->attrib_location_projected_texture_scale_, 1.0);
+      glUniform1f(shaders->uniform_locations_["projected_texture_scale"], 1.0);
       GLuint tex_id = 0;
       // TODO(lucasw) currently hardcoded, later make more flexible
       const std::string name = projector_->texture_name_;
@@ -1093,7 +1103,7 @@ void Viz3D::render2(const tf2::Transform& transform,
     } else {
       // turn off projection in fragment shader, otherwise last updated
       // uniform values will be used
-      glUniform1f(shaders->attrib_location_projected_texture_scale_, 0.0);
+      glUniform1f(shaders->uniform_locations_["projected_texture_scale"], 0.0);
     }
 
     {

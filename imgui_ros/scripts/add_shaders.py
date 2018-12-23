@@ -69,6 +69,7 @@ class AddShadersNode(Node):
 uniform mat4 ProjMtx;
 uniform mat4 ProjTexMtx;
 in vec3 Position;
+// in vec3 Normal;
 in vec2 UV;
 in vec4 Color;
 out vec2 FraUV;
