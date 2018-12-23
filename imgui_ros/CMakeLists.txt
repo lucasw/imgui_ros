@@ -38,6 +38,7 @@ find_package(visualization_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Camera.msg"
+  "msg/Vertex.msg"
   "msg/Widget.msg"
   "msg/TexturedShape.msg"
   "srv/AddCamera.srv"

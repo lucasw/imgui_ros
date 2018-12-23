@@ -24,7 +24,7 @@ import sys
 
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Point, TransformStamped, Vector3
-from imgui_ros.msg import TexturedShape, Widget
+from imgui_ros.msg import TexturedShape, Vertex, Widget
 from imgui_ros.srv import AddCamera, AddShaders, AddShape, AddTexture, AddWindow
 from rclpy.node import Node
 from shape_msgs.msg import MeshTriangle, Mesh
@@ -144,7 +144,7 @@ class Demo(Node):
             x = radius * math.cos(theta) + off_x
             y = radius * math.sin(theta) + off_y
 
-            ind0 = len(shape.mesh.vertices)
+            ind0 = len(shape.vertices)
             ind1 = ind0 + 1
             ind2 = ind0 + 2
             ind3 = ind0 + 3
@@ -154,51 +154,43 @@ class Demo(Node):
                 triangle.vertex_indices[0] = ind0
                 triangle.vertex_indices[1] = ind3
                 triangle.vertex_indices[2] = ind1
-                shape.mesh.triangles.append(triangle)
+                shape.triangles.append(triangle)
 
                 if True:
                     triangle = MeshTriangle()
                     triangle.vertex_indices[0] = ind0
                     triangle.vertex_indices[1] = ind2
                     triangle.vertex_indices[2] = ind3
-                    shape.mesh.triangles.append(triangle)
+                    shape.triangles.append(triangle)
 
-            pt = Point()
-            pt.x = x
-            pt.y = y
-            pt.z = -length * 0.5
-            shape.mesh.vertices.append(pt)
+            vertex = Vertex()
+            vertex.vertex.x = x
+            vertex.vertex.y = y
+            vertex.vertex.z = -length * 0.5
 
-            uv = Vector3()
-            uv.x = fr
-            uv.y = 0.0
-            shape.uv.append(uv)
+            vertex.uv.x = fr
+            vertex.uv.y = 0.0
 
             val = 0.95
-            col = ColorRGBA()
-            col.r = val
-            col.g = val
-            col.b = val
-            col.a = 1.0
-            shape.colors.append(col);
+            vertex.color.r = val
+            vertex.color.g = val
+            vertex.color.b = val
+            vertex.color.a = 1.0
+            shape.vertices.append(vertex)
 
-            pt = Point()
-            pt.x = x
-            pt.y = y
-            pt.z = length * 0.5
-            shape.mesh.vertices.append(pt)
+            vertex = Vertex()
+            vertex.vertex.x = x
+            vertex.vertex.y = y
+            vertex.vertex.z = length * 0.5
 
-            uv = Vector3()
-            uv.x = fr
-            uv.y = 1.0
-            shape.uv.append(uv)
+            vertex.uv.x = fr
+            vertex.uv.y = 1.0
 
-            col = ColorRGBA()
-            col.r = val
-            col.g = val
-            col.b = val
-            col.a = 1.0
-            shape.colors.append(col);
+            vertex.color.r = val
+            vertex.color.g = val
+            vertex.color.b = val
+            vertex.color.a = 1.0
+            shape.vertices.append(vertex)
 
         return shape
 
@@ -217,62 +209,55 @@ class Demo(Node):
         off_z = -sc * num_rows
         for j in range(num_rows):
             for i in range(0, num * 2 - 3, 2):
-                ind = i + len(shape.mesh.vertices)
+                ind = i + len(shape.vertices)
                 triangle = MeshTriangle()
                 triangle.vertex_indices[0] = ind
                 triangle.vertex_indices[1] = ind + 1
                 triangle.vertex_indices[2] = ind + 3
-                shape.mesh.triangles.append(triangle)
+                shape.triangles.append(triangle)
 
                 if True:
                     triangle = MeshTriangle()
                     triangle.vertex_indices[0] = ind
                     triangle.vertex_indices[1] = ind + 3
                     triangle.vertex_indices[2] = ind + 2
-                    shape.mesh.triangles.append(triangle)
+                    shape.triangles.append(triangle)
 
             for i in range(num):
                 x = i * sc + off_x
                 z = j * sc * 2.0 + off_z
-                pt = Point()
-                pt.x = x
-                pt.y = off_y
-                pt.z = z
-                shape.mesh.vertices.append(pt)
+
+                vertex = Vertex()
+                vertex.vertex.x = x
+                vertex.vertex.y = off_y
+                vertex.vertex.z = z
 
                 fr = float(i) / float(num)
-                uv = Vector3()
-                uv.x = fr
-                uv.y = 0.0
-                shape.uv.append(uv)
+                vertex.uv.x = fr
+                vertex.uv.y = 0.0
 
-                col = ColorRGBA()
-                col.r = float(j) / float(num_rows)
-                col.g = 1.0
-                col.b = float(i) / float(num)
-                col.a = 1.0
-                shape.colors.append(col);
+                vertex.color.r = float(j) / float(num_rows)
+                vertex.color.g = 1.0
+                vertex.color.b = float(i) / float(num)
+                vertex.color.a = 1.0
+                shape.vertices.append(vertex)
 
-                pt = Point()
-                pt.x = x
-                pt.y = off_y + sc * 2.0
-                pt.z = z
-                shape.mesh.vertices.append(pt)
+                vertex = Vertex()
+                vertex.vertex.x = x
+                vertex.vertex.y = off_y + sc * 2.0
+                vertex.vertex.z = z
 
-                uv = Vector3()
-                uv.x = fr
-                uv.y = 1.0
-                shape.uv.append(uv)
+                vertex.uv.x = fr
+                vertex.uv.y = 1.0
 
-                col = ColorRGBA()
-                col.r = float(j) / float(num_rows)
-                col.g = 0.3
-                col.b = 1.0 - float(i) / float(num)
-                col.a = 1.0
-                shape.colors.append(col);
+                vertex.color.r = float(j) / float(num_rows)
+                vertex.color.g = 0.3
+                vertex.color.b = 1.0 - float(i) / float(num)
+                vertex.color.a = 1.0
+                shape.vertices.append(vertex)
 
-        self.get_logger().info("shape {} {} {}".format(shape.name, len(shape.mesh.vertices),
-              len(shape.mesh.triangles) * 3))
+        self.get_logger().info("shape {} {} {}".format(shape.name, len(shape.vertices),
+              len(shape.triangles) * 3))
         # self.shape_pub.publish(shape)
         shape.add = True
         return shape

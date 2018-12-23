@@ -581,30 +581,7 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
     return true;
   }
 
-  bool use_uv = msg->uv.size() > 0;
-  if ((use_uv) && (msg->uv.size() != msg->mesh.vertices.size())) {
-    std::stringstream ss;
-    ss << "mismatching uv sizes " << msg->uv.size() << " "
-        << msg->mesh.vertices.size() << "\n";
-    message += ss.str();
-    use_uv = false;
-  }
-  bool use_color = msg->colors.size() > 0;
-  if ((use_color) && (msg->colors.size() != msg->mesh.vertices.size())) {
-    std::stringstream ss;
-    ss << "mismatching color sizes " << msg->colors.size() << " "
-        << msg->mesh.vertices.size() << "\n";
-    message += ss.str();
-    use_uv = false;
-  }
-  glm::vec4 default_color = glm::vec4(1.0, 1.0, 1.0, 1.0);
-  if ((!use_color) && (msg->colors.size() == 1)) {
-    default_color.x = msg->colors[0].r;
-    default_color.y = msg->colors[0].g;
-    default_color.z = msg->colors[0].b;
-    default_color.w = msg->colors[0].a;
-    message += ", using single color";
-  }
+  const glm::vec4 default_color = glm::vec4(1.0, 1.0, 1.0, 1.0);
 
   auto shape = std::make_shared<Shape>();
   shape->name_ = msg->name;
@@ -616,30 +593,28 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
   // if msg->image isn't empty create a RosImage and initialize the image
   // with it (RosImage doesn't support that yet).
 
-  for (size_t i = 0; i < msg->mesh.vertices.size(); ++i) {
+  for (size_t i = 0; i < msg->vertices.size(); ++i) {
     DrawVert p1;
-    p1.pos.x = msg->mesh.vertices[i].x;
-    p1.pos.y = msg->mesh.vertices[i].y;
-    p1.pos.z = msg->mesh.vertices[i].z;
-    if (use_uv) {
-      p1.uv.x = msg->uv[i].x;
-      p1.uv.y = msg->uv[i].y;
-    }
+    p1.pos.x = msg->vertices[i].vertex.x;
+    p1.pos.y = msg->vertices[i].vertex.y;
+    p1.pos.z = msg->vertices[i].vertex.z;
+    p1.uv.x = msg->vertices[i].uv.x;
+    p1.uv.y = msg->vertices[i].uv.y;
     // These colors multiply with the texture color
-    if (use_color) {
-      p1.col.x = msg->colors[i].r;
-      p1.col.y = msg->colors[i].g;
-      p1.col.z = msg->colors[i].b;
-      p1.col.w = msg->colors[i].a;
+    if (true) {
+      p1.col.x = msg->vertices[i].color.r;
+      p1.col.y = msg->vertices[i].color.g;
+      p1.col.z = msg->vertices[i].color.b;
+      p1.col.w = msg->vertices[i].color.a;
     } else {
       p1.col = default_color;
     }
     shape->vertices_.push_back(p1);
   }
 
-  for (size_t i = 0; i < msg->mesh.triangles.size(); ++i) {
-    for (size_t j = 0; j < msg->mesh.triangles[i].vertex_indices.size(); ++j) {
-      const int ind = msg->mesh.triangles[i].vertex_indices[j];
+  for (size_t i = 0; i < msg->triangles.size(); ++i) {
+    for (size_t j = 0; j < msg->triangles[i].vertex_indices.size(); ++j) {
+      const int ind = msg->triangles[i].vertex_indices[j];
       if ((ind < 0) || (ind >= shape->vertices_.Size)) {
         std::cerr << "bad triangle index " << ind << " >= "
             << shape->vertices_.Size << "\n";
