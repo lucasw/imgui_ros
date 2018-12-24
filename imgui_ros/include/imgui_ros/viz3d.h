@@ -68,33 +68,6 @@
 #endif
 #pragma GCC diagnostic pop
 
-struct Projector
-{
-  Projector(const std::string name, const std::string frame_id,
-      const std::string texture_name) :
-    name_(name),
-    frame_id_(frame_id),
-    texture_name_(texture_name)
-  {
-
-  }
-
-  void draw();
-
-  const std::string name_;
-  // this frame needs to follow opengl coordinates,
-  const std::string frame_id_;
-  const std::string texture_name_;
-  // std::shared_ptr<RosImage> texture_;
-  bool enable_ = true;
-  // the horizontal aov is determined by the aov_y and the
-  // aspect ratio of the image
-  double aspect_scale_ = 1.0f;
-  double aov_y_ = 25.0;
-
-  std::stringstream render_message_;
-};
-
 struct ShaderSet {
   ShaderSet(const std::string& name, const std::string& vertex_code,
       const std::string& geometry_code, const std::string& fragment_code) :
@@ -234,6 +207,7 @@ protected:
   // though later will do the matrix multiplication inside shader?
   bool setupCamera(const tf2::Transform& view_transform, const std::string child_frame_id,
       const double aov_y,
+      // const double aov_x,
       const int fb_width, const int fb_height,
       glm::mat4& mvp,
       const float aspect_scale = 1.0, const float sc_vert = 1.0);
@@ -271,7 +245,7 @@ protected:
                   std::shared_ptr<imgui_ros::srv::AddCamera::Response> res);
   std::map<std::string, std::shared_ptr<Camera> > cameras_;
 
-  rclcpp::Service<imgui_ros::srv::AddProjector>::SharedPtr add_camera_;
+  rclcpp::Service<imgui_ros::srv::AddProjector>::SharedPtr add_projector_;
   void addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Request> req,
                   std::shared_ptr<imgui_ros::srv::AddProjector::Response> res);
   std::map<std::string, std::shared_ptr<Projector> > projectors_;
@@ -309,8 +283,6 @@ protected:
   std::map<std::string, std::shared_ptr<RosImage> > textures_;
 
   bool initialized_ = false;
-
-  std::shared_ptr<Projector> projector_;
 
   std::mutex mutex_;
 };

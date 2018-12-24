@@ -135,14 +135,14 @@ Camera::~Camera()
 
 void Camera::draw()
 {
-  std::string name = name_ + "##camera";
+  std::string name = name_ + " camera";
   ImGui::Begin(name.c_str());
   // TODO(lucasw) later re-use code in RosImage
-  ImGui::Checkbox(("render to texture##" + name_).c_str(), &enable_);
+  ImGui::Checkbox(("render to texture##" + name).c_str(), &enable_);
 
   double min = 1.0;
   double max = 170.0;
-  ImGui::SliderScalar(("aov y##" + name_).c_str(), ImGuiDataType_Double,
+  ImGui::SliderScalar(("aov y##" + name).c_str(), ImGuiDataType_Double,
       &aov_y_, &min, &max, "%lf", 2);
 
   if (enable_) {

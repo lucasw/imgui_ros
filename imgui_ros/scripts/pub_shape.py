@@ -25,7 +25,7 @@ import sys
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Point, TransformStamped, Vector3
 from imgui_ros.msg import TexturedShape, Vertex, Widget
-from imgui_ros.srv import AddCamera, AddShaders, AddShape, AddTexture, AddWindow
+from imgui_ros.srv import AddCamera, AddProjector, AddShaders, AddShape, AddTexture, AddWindow
 from rclpy.node import Node
 from shape_msgs.msg import MeshTriangle, Mesh
 from std_msgs.msg import ColorRGBA
@@ -44,7 +44,7 @@ class Demo(Node):
         self.cli = self.create_client(AddShape, 'add_shape')
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('shape service not available, waiting again...')
- 
+
         self.bridge = cv_bridge.CvBridge()
 
         parser = argparse.ArgumentParser(description='imgui_ros demo')
@@ -73,13 +73,29 @@ class Demo(Node):
         # print(self.args.no_shapes)
         if not self.args.no_textures:
             self.add_texture('diffract', 'image_manip', 'diffract1.png')
-            self.add_texture('projected_texture', 'image_manip', 'maze1.png')
+            # self.add_texture('projected_texture', 'image_manip', 'gradient_radial.png')
+            self.add_texture('projected_texture', 'image_manip', 'plasma.png')
         if not self.args.no_shapes:
             # TODO(lucasw) there is something wrong with storing new shapes
             # on top of old ones, all the shapes disappear until
             # add_shaders is run again.
             self.add_shapes()
         self.add_cameras()
+        self.add_projectors()
+
+    def add_projectors(self):
+        self.projector_cli = self.create_client(AddProjector, 'add_projector')
+        while not self.projector_cli.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('projector service not available, waiting again...')
+
+        req = AddProjector.Request()
+        req.projector.camera.header.frame_id = 'projected_texture'
+        req.projector.camera.name = 'default'
+        req.projector.camera.texture_name = 'projected_texture'
+        req.projector.camera.aov_y = 10.0
+        req.projector.camera.aov_x = 50.0
+        self.future = self.projector_cli.call_async(req)
+        self.wait_for_response()
 
     def add_cameras(self):
         self.camera_cli = self.create_client(AddCamera, 'add_camera')
@@ -271,7 +287,7 @@ class Demo(Node):
         if True:
             shape = self.make_cylinder(name='cylinder2', radius=0.03, length=0.1,
                 segs=20,
-                off_y=0.1)
+                off_y=0.0)
             shape.add = True
             shape.texture = 'projected_texture'
             shape.header.frame_id = 'projected_texture'
@@ -279,7 +295,7 @@ class Demo(Node):
         if True:
             shape = self.make_cylinder(name='cylinder3', segs=25)
             shape.add = True
-            shape.texture = 'camera1'
+            shape.texture = 'diffract'  # 'camera1'
             shape.header.frame_id = 'bar2'
             req.shapes.append(shape)
         self.future = self.cli.call_async(req)

@@ -42,6 +42,7 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
+// TODO(lucasw) move to utility file
 // TODO(lucasw) is there a glm double to float conversion function?
 void dmat4Todmat(const glm::dmat4& dmat, glm::mat4& mat)
 {
@@ -127,37 +128,14 @@ void makeTestShape(std::shared_ptr<Shape> shape)
   }
 }
 
-void Projector::draw()
-{
-  ImGui::Text("projector");
-  // TODO(lucasw) make this a ros topic, use a regular PUB + SUB gui widget
-  // const bool changed =
-  std::string text;
-  text = "enable##projected" + name_;
-  ImGui::Checkbox(text.c_str(), &enable_);
-  // TODO(lucasw) switch to ortho projection if angle is zero
-  double min = 0.1;
-  double max = 170.0;
-  text = "aov y##projected" + name_;
-  ImGui::SliderScalar(text.c_str(), ImGuiDataType_Double,
-      &aov_y_, &min, &max, "%0.2f", 2);
-
-  min = 0.01;
-  max = 100.0;
-  text = "aspect scale##projected" + name_;
-  ImGui::SliderScalar(text.c_str(), ImGuiDataType_Double,
-      &aspect_scale_, &min, &max, "%.3f", 2);
-
-  ImGui::Text("%s", render_message_.str().c_str());
-  render_message_.str("");
-}
-
+/////////////////////////////////////////////////////////////////
 // TODO(lucasw) make this work outside of Viz3D
 bool Viz3D::setupWithShape(std::shared_ptr<Projector> projector,
     const std::string& main_frame_id,
     const std::string& shape_frame_id)
 {
   std::shared_ptr<RosImage> texture;
+
   if (textures_.count(projector->texture_name_) < 1) {
     render_message_ << "no texture " << projector->texture_name_ << ", ";
     return false;
@@ -194,20 +172,26 @@ bool Viz3D::setupWithShape(std::shared_ptr<Projector> projector,
   glm::mat4 mtp;
   if (!setupCamera(stamped_transform, shape_frame_id,
       projector->aov_y_,
+      // projector->aov_x_,
       width, height,
       mtp,
-      projector->aspect_scale_  // TODO(lucasw) relate to aspect_scale_ also?
+      1.0  // projector->aspect_scale_  // TODO(lucasw) relate to aspect_scale_ also?
       ))
     return false;
 
+  // this will change with a variable number of projectors
+  // corresponds to glActiveTexture(GL_TEXTURE1) if is 1
+  const int texture_unit = 1;
   for (auto shaders : shader_sets_) {
     glUniformMatrix4fv(shaders.second->uniform_locations_["ProjTexMtx"], 1, GL_FALSE, &mtp[0][0]);
     // assign this texture to the TEXTURE1 slot
-    glUniform1i(shaders.second->uniform_locations_["ProjectedTexture"], 1);
+    glUniform1i(shaders.second->uniform_locations_["ProjectedTexture"], texture_unit);
     checkGLError(__FILE__, __LINE__);
   }
   return true;
 }
+
+// TODO(lucasw) move to shaders.cpp
 ////////////////////////////////////////////////////////////
 ShaderSet::~ShaderSet()
 {
@@ -393,8 +377,6 @@ Viz3D::Viz3D(const std::string name,
   const bool sub_not_pub = true;
   textures_["default"] = std::make_shared<RosImage>("default", "/image_out", sub_not_pub, node);
 
-  projector_ = std::make_shared<Projector>("projector1", "projected_texture", "projected_texture");
-
   transform_.setIdentity();
 
   textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
@@ -402,7 +384,7 @@ Viz3D::Viz3D(const std::string name,
 
   add_camera_ = node->create_service<imgui_ros::srv::AddCamera>("add_camera",
       std::bind(&Viz3D::addCamera, this, _1, _2));
-  add_camera_ = node->create_service<imgui_ros::srv::AddProjector>("add_projector",
+  add_projector_ = node->create_service<imgui_ros::srv::AddProjector>("add_projector",
       std::bind(&Viz3D::addProjector, this, _1, _2));
   add_shaders_ = node->create_service<imgui_ros::srv::AddShaders>("add_shaders",
       std::bind(&Viz3D::addShaders, this, _1, _2));
@@ -456,32 +438,35 @@ void Viz3D::addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Req
 {
   auto node = node_.lock();
   if (!node) {
-    res->message = "couldn't get node for projector '" + req->projector.name + "' '" +
-        req->projector.texture_name + "'";
+    res->message = "couldn't get node for projector '" + req->projector.camera.name + "' '" +
+        req->projector.camera.texture_name + "'";
+    res->success = false;
+    return;
+  }
+  if (req->projector.camera.name != "default") {
+    res->message = "only 1 projector currently supported in 'default' slot";
     res->success = false;
     return;
   }
   try {
-    auto projector = std::make_shared<Projector>(req->projector.camera.name,
+    auto projector = std::make_shared<Projector>(
+        req->projector.camera.name,
         req->projector.camera.texture_name,
         req->projector.camera.header.frame_id,
-        req->projector.camera.topic,
-        req->projector.camera.width,
-        req->projector.camera.height,
         req->projector.camera.aov_y,
+        req->projector.camera.aov_x,
         req->projector.max_range,
         req->projector.constant_attenuation,
         req->projector.linear_attenuation,
         req->projector.quadratic_attenuation,
         node);
-    textures_[req->projector.camera.texture_name] = projector->image_;
     projectors_[req->projector.camera.name] = projector;
   } catch (std::runtime_error& ex) {
     res->message = ex.what();
     res->success = false;
     return;
   }
-  res->message = "added projector.camera '" + req->projector.camera.name +
+  res->message = "added projector '" + req->projector.camera.name +
       "' '" + req->projector.camera.texture_name + "'";
   res->success = true;
 }
@@ -724,7 +709,11 @@ void Viz3D::draw()
     shaders_pair.second->draw();
   }
   ImGui::Separator();
-  projector_->draw();
+  ImGui::Text("projectors %lu", projectors_.size());
+  for (auto projector_pair : projectors_) {
+    ImGui::Separator();
+    projector_pair.second->draw();
+  }
   ImGui::Separator();
   ImGui::Text("main camera");
   {
@@ -761,12 +750,10 @@ void Viz3D::draw()
   auto rot_mat = transform_.getBasis();
   tf2::Vector3 vel_in_world = rot_mat * velocity_;
 
-  ss.str("");
-  ss << "velocity in view: " << velocity_.x()  << " " << velocity_.y() << " " << velocity_.z();
-  ImGui::Text("%s", ss.str().c_str());
-  ss.str("");
-  ss << "velocity in world: " << vel_in_world.x()  << " " << vel_in_world.y() << " " << vel_in_world.z();
-  ImGui::Text("%s", ss.str().c_str());
+  ImGui::Text("velocity in view %0.2lf %0.2lf %0.2lf",
+      velocity_.x(), velocity_.y(), velocity_.z());
+  ImGui::Text("velocity in world %0.2lf %0.2lf %0.2lf",
+      vel_in_world.x(), vel_in_world.y(), vel_in_world.z());
 
   tf2::Vector3 translation = transform_.getOrigin();
   translation = translation + vel_in_world;
@@ -853,7 +840,9 @@ void Viz3D::draw()
 // Currently calling setupcamera for every object- that seems efficient vs.
 // transforming all the data of every object.
 bool Viz3D::setupCamera(const tf2::Transform& view_transform,
-    const std::string child_frame_id, const double aov_y,
+    const std::string child_frame_id,
+    const double aov_y,
+    // const double aov_x,
     const int fb_width, const int fb_height, glm::mat4& mvp,
     float aspect_scale, float sc_vert)
 {
@@ -1072,14 +1061,16 @@ void Viz3D::render2(const tf2::Transform& transform,
       // TODO(lucasw) use double in the future?
       // glUniformMatrix4dv(shape->attrib_location.proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
       glUniformMatrix4fv(shaders->uniform_locations_["ProjMtx"], 1, GL_FALSE, &mvp[0][0]);
-      glUniform1i(shaders->uniform_locations_["Texture"], 0);
+      const int texture_unit = 0;
+      glUniform1i(shaders->uniform_locations_["Texture"], texture_unit);
       if (checkGLError(__FILE__, __LINE__))
         return;
     }
 
     // TODO(lucasw) add imgui use texture projection checkbox
-    const bool use_texture_projection = projector_->enable_ &&
-        setupWithShape(projector_, frame_id_, shape->frame_id_);
+    bool use_texture_projection = (projectors_.count("default") > 0) &&
+        projectors_["default"]->enable_ &&
+        setupWithShape(projectors_["default"], frame_id_, shape->frame_id_);
 
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
@@ -1120,10 +1111,9 @@ void Viz3D::render2(const tf2::Transform& transform,
 
     if (use_texture_projection) {
       // TODO(lucasw) later the scale could be a brightness setting
-      glUniform1f(shaders->uniform_locations_["projected_texture_scale"], 1.0);
       GLuint tex_id = 0;
       // TODO(lucasw) currently hardcoded, later make more flexible
-      const std::string name = projector_->texture_name_;
+      const std::string name = projectors_["default"]->texture_name_;
       if (textures_.count(name) > 0) {
         tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
         render_message_ << "\nprojected texture " << name << " " << tex_id;
@@ -1133,6 +1123,7 @@ void Viz3D::render2(const tf2::Transform& transform,
       } else {
         render_message_ << ", no texture to use";
       }
+      glUniform1f(shaders->uniform_locations_["projected_texture_scale"], 1.0);
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, tex_id);
       if (checkGLError(__FILE__, __LINE__))

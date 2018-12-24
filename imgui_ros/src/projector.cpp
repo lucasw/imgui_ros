@@ -33,7 +33,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 // #include "imgui_impl_sdl.h"
-#include <imgui_ros/camera.h>
+#include <imgui_ros/projector.h>
 #include <iomanip>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -41,84 +41,29 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-// TODO(lucasw) 'Camera' -> 'TextureCamera'
-Camera::Camera(const std::string name,
+Projector::Projector(
+    const std::string name,
     const std::string texture_name,
     const std::string frame_id,
-    const std::string topic,
-    const size_t width,
-    const size_t height,
     const double aov_y,
+    const double aov_x,
+    const double max_range,
+    const double constant_attenuation,
+    const double linear_attenuation,
+    const double quadratic_attenuation,
     std::shared_ptr<rclcpp::Node> node) :
     name_(name),
+    texture_name_(texture_name),
     frame_id_(frame_id),
-    aov_y_(aov_y)
+    aov_y_(aov_y),
+    aov_x_(aov_x),
+    max_range_(max_range),
+    constant_attenuation_(constant_attenuation),
+    linear_attenuation_(linear_attenuation),
+    quadratic_attenuation_(quadratic_attenuation),
+    node_(node)
 {
-  std::cout << "creating camera " << name << " " << width << " " << height
-      << " " << aov_y << "\n";
-  const bool sub_not_pub = false;
-  image_ = std::make_shared<RosImage>(texture_name, topic, sub_not_pub, node);
-  {
-    // node is bad
-    // RCLCPP_INFO(node->get_logger(), "creating camera %s %d %d", name, width, height);
-    image_->width_ = width;
-    image_->height_ = height;
-
-    image_->image_ = std::make_shared<sensor_msgs::msg::Image>();
-    image_->image_->header.frame_id = frame_id;
-    image_->image_->width = width;
-    image_->image_->height = height;
-    image_->image_->encoding = "bgr8";
-    image_->image_->step = width * 3;
-    image_->image_->data.resize(width * height * 3);
-  }
-
-  {
-    cv::Mat tmp(cv::Size(image_->width_, image_->height_), CV_8UC4, cv::Scalar(100, 50, 20, 255));
-    glGenTextures(1, &image_->texture_id_);
-    glBindTexture(GL_TEXTURE_2D, image_->texture_id_);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_->width_, image_->height_, 0, GL_RGBA,
-        GL_UNSIGNED_BYTE, &tmp.data[0]);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    // unbind - TODO(lucasw) needed?
-    glBindTexture(GL_TEXTURE_2D, 0);
-  }
-
-  {
-    glGenRenderbuffers(1, &depth_buffer_);
-    glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer_);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
-        image_->width_, image_->height_);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-  }
-
-  {
-    glGenFramebuffers(1, &frame_buffer_);
-    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-        GL_TEXTURE_2D, image_->texture_id_, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-        GL_RENDERBUFFER, depth_buffer_);
-
-    glDrawBuffers(1, DrawBuffers);
-    // OpenGL 4?
-    // glNamedFramebufferDrawBuffers(frame_buffer_, 1, DrawBuffers);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-      std::stringstream ss;
-      ss << name_ << " framebuffer is not complete " << glGetError();
-      throw std::runtime_error(ss.str());
-    } else {
-      RCLCPP_INFO(node->get_logger(), "camera '%s' framebuffer setup complete, fb %d, depth %d, tex id %d",
-          name_.c_str(), frame_buffer_, depth_buffer_, image_->texture_id_);
-    }
-
-    // restore default frame buffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  }
+  std::cout << "creating projector " << print() << "\n";
 
   std::string msg;
   if (checkGLError2(msg)) {
@@ -127,33 +72,60 @@ Camera::Camera(const std::string name,
   }
 }
 
-Camera::~Camera()
+Projector::~Projector()
 {
-  glDeleteRenderbuffers(1, &depth_buffer_);
-  glDeleteFramebuffers(1, &frame_buffer_);
 }
 
-void Camera::draw()
+std::string Projector::print()
 {
-  std::string name = name_ + "##camera";
-  ImGui::Begin(name.c_str());
-  // TODO(lucasw) later re-use code in RosImage
-  ImGui::Checkbox(("render to texture##" + name_).c_str(), &enable_);
+  std::stringstream ss;
+  ss << name_ << " ";
+  ss << texture_name_ << " ";
+  ss << frame_id_ << " ";
+  ss << aov_y_ << " ";
+  ss << aov_x_ << " ";
+  return ss.str();
+}
 
-  double min = 1.0;
-  double max = 170.0;
-  ImGui::SliderScalar(("aov y##" + name_).c_str(), ImGuiDataType_Double,
+void Projector::draw()
+{
+  std::string name = name_ + " projector";
+  // ImGui::Begin(name.c_str());
+  // TODO(lucasw) later re-use code in RosImage
+  ImGui::Checkbox(("projector##" + name).c_str(), &enable_);
+
+  ImGui::Text("texture: %s", texture_name_.c_str());
+
+  double min, max;
+
+  // 0.0 means use texture width / height * aov_y
+  min = 0.0;
+  max = 170.0;
+  ImGui::SliderScalar(("aov x##" + name).c_str(), ImGuiDataType_Double,
+      &aov_x_, &min, &max, "%lf", 2);
+
+  // TODO(lucasw) 0.0 should be orthogonal
+  min = 1.0;
+  max = 170.0;
+  ImGui::SliderScalar(("aov y##" + name).c_str(), ImGuiDataType_Double,
       &aov_y_, &min, &max, "%lf", 2);
 
-  if (enable_) {
-    image_->draw();
-  }
-  ImGui::End();
+  min = 0.0;
+  max = 100.0;
+  ImGui::SliderScalar(("max range##" + name).c_str(), ImGuiDataType_Double,
+      &max_range_, &min, &max, "%lf", 3);
+  min = 0.0;
+  max = 100.0;
+  ImGui::SliderScalar(("constant attenuation##" + name).c_str(), ImGuiDataType_Double,
+      &constant_attenuation_, &min, &max, "%lf", 3);
+  ImGui::SliderScalar(("linear attenuation##" + name).c_str(), ImGuiDataType_Double,
+      &linear_attenuation_, &min, &max, "%lf", 3);
+  ImGui::SliderScalar(("quadratic attenuation##" + name).c_str(), ImGuiDataType_Double,
+      &quadratic_attenuation_, &min, &max, "%lf", 3);
 
-  // this does nothing if the image doesn't have a publisher set up
-  image_->publish();
+  // ImGui::End();
 }
 
-// Camera::render()
+// Projector::render()
 // {
 // }

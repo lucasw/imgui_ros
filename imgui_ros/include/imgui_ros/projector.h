@@ -66,25 +66,38 @@ struct Projector {
   Projector(const std::string name,
       const std::string texture_name,
       const std::string frame_id,
-      const std::string topic,
-      const size_t width,
-      const size_t height,
       const double aov_y,
+      const double aov_x,
+      const double max_range,
+      const double constant_attenuation,
+      const double linear_attenuation,
+      const double quadratic_attenuation,
       std::shared_ptr<rclcpp::Node> node);
   ~Projector();
+
+  std::string print();
   void draw();
   // void render();
 
   std::string name_;
+  std::string texture_name_;
   std::string frame_id_;
-  tf2::Stamped<tf2::Transform> stamped_transform_;
-  std::shared_ptr<RosImage> image_;
+  // tf2::Stamped<tf2::Transform> stamped_transform_;
 
   // TODO(lucasw) later need to use this and resolution to make a CameraInfo
   double aov_y_;
+  double aov_x_;
+
+  // set to > 0.0 to be used
+  double max_range_ = 0.0;
+  double constant_attenuation_ = 0.0;
+  double linear_attenuation_ = 0.0;
+  double quadratic_attenuation_ = 0.0;
 
   // TODO(lucasw) put in own class later
   bool enable_ = true;
+
+  std::weak_ptr<rclcpp::Node> node_;
 };
 
 #endif  // IMGUI_ROS_PROJECTOR_H
