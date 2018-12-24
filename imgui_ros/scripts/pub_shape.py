@@ -73,8 +73,9 @@ class Demo(Node):
         # print(self.args.no_shapes)
         if not self.args.no_textures:
             self.add_texture('diffract', 'image_manip', 'diffract1.png')
-            # self.add_texture('projected_texture', 'image_manip', 'gradient_radial.png')
-            self.add_texture('projected_texture', 'image_manip', 'plasma.png')
+            self.add_texture('chess', 'image_manip', 'chess.png')
+            self.add_texture('projected_texture', 'image_manip', 'gradient_radial.png')
+            # self.add_texture('projected_texture', 'image_manip', 'plasma.png')
         if not self.args.no_shapes:
             # TODO(lucasw) there is something wrong with storing new shapes
             # on top of old ones, all the shapes disappear until
@@ -153,6 +154,7 @@ class Demo(Node):
         shape.header.frame_id = 'bar2'
         shape.texture = 'diffract'
 
+        repeat = 4.0
         for i in range(segs):
             fr = float(i) / float(segs - 1)
             theta = fr * 2.0 * math.pi
@@ -184,7 +186,7 @@ class Demo(Node):
             vertex.vertex.y = y
             vertex.vertex.z = -length * 0.5
 
-            vertex.uv.x = fr
+            vertex.uv.x = repeat * fr
             vertex.uv.y = 0.0
 
             val = 0.95
@@ -199,8 +201,8 @@ class Demo(Node):
             vertex.vertex.y = y
             vertex.vertex.z = length * 0.5
 
-            vertex.uv.x = fr
-            vertex.uv.y = 1.0
+            vertex.uv.x = repeat * fr
+            vertex.uv.y = repeat
 
             vertex.color.r = val
             vertex.color.g = val

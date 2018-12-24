@@ -48,7 +48,11 @@ using std::placeholders::_1;
   }
 
   RosImage::RosImage(const std::string name, const std::string topic, const bool sub_not_pub,
-                     std::shared_ptr<rclcpp::Node> node) : GlImage(name, topic), node_(node) {
+                     std::shared_ptr<rclcpp::Node> node) : GlImage(name, topic), node_(node)
+  {
+    wrap_modes_.push_back(GL_CLAMP_TO_EDGE);
+    wrap_modes_.push_back(GL_MIRRORED_REPEAT);
+    wrap_modes_.push_back(GL_REPEAT);
 
     if (topic != "") {
       if (sub_not_pub) {
@@ -123,8 +127,8 @@ using std::placeholders::_1;
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     // Set texture clamping method - GL_CLAMP isn't defined
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_modes_[wrap_s_ind_]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_modes_[wrap_t_ind_]);
 
     // Copy the data to the graphics memory.
     // TODO(lucasw) actually look at the image encoding type and
@@ -217,6 +221,7 @@ using std::placeholders::_1;
     {
       std::lock_guard<std::mutex> lock(mutex_);
 
+      std::string name = name_ + " texture";
       // const std::string checkbox_text = "info##" + name;
       // ImGui::Checkbox(checkbox_text.c_str(), &enable_info_);
       if (enable_info_) {
@@ -230,7 +235,25 @@ using std::placeholders::_1;
         ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
       }
 
-      const std::string checkbox_text2 = "show image##" + name_;
+      // Texture settings
+      {
+        std::string items_null;
+        items_null += std::string("clamp_to_edge") + '\0';
+        items_null += std::string("mirrored_repeat") + '\0';
+        items_null += std::string("repeat") + '\0';
+        const bool s_changed = ImGui::Combo(("wrap_s##" + name).c_str(), &wrap_s_ind_,
+            items_null.c_str());
+        const bool t_changed = ImGui::Combo(("wrap_t##" + name).c_str(), &wrap_t_ind_,
+            items_null.c_str());
+        if (s_changed || t_changed) {
+          glBindTexture(GL_TEXTURE_2D, texture_id_);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_modes_[wrap_s_ind_]);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_modes_[wrap_t_ind_]);
+          glBindTexture(GL_TEXTURE_2D, 0);
+        }
+      }
+
+      const std::string checkbox_text2 = "show image##" + name;
       ImGui::Checkbox(checkbox_text2.c_str(), &enable_draw_image_);
       if ((enable_draw_image_) && (texture_id_ != 0) && (width_ != 0) && (height_ != 0)) {
         ImVec2 win_size = ImGui::GetWindowSize();

@@ -79,6 +79,12 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
 
+  int min_filter_;
+  int mag_filter_;
+  std::vector<int> wrap_modes_;
+  int wrap_s_ind_ = 0;
+  int wrap_t_ind_ = 0;
+
   bool enable_info_ = true;
   bool enable_draw_image_ = false;
 };  // RosImage
