@@ -84,7 +84,7 @@ out vec2 FraUV;
 smooth out vec3 FraNormal;
 out vec4 FraColor;
 out vec4 ProjectedTexturePosition;
-// The coordinate frame of this position needs to be the same as the normal
+// The coordinate frame of this direction needs to be the same as the output normal
 out vec3 projector_dir;
 
 void main()
@@ -102,9 +102,15 @@ void main()
   mat4 projector_mvp = projector_projection_matrix * projector_view_matrix * model_matrix;
   ProjectedTexturePosition = projector_mvp * vec4(Position.xyz, 1.0);
 
-  // put projector dir into world frame
+  // put projector into world frame
   projector_dir = (transpose(projector_view_matrix) * vec4(0.0, 0.0, 1.0, 1.0) -
-        transpose(projector_view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+      transpose(projector_view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  // TODO(lucasw) in order to get the proper direction of the projector
+  // this needs to be done in the fragment shader, where a per fragment
+  // position is needed to get the direction from the projector origin.
+  //projector_dir = -normalize((model_matrix * vec4(Position.xyz, 1.0) -
+  //    transpose(projector_view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)
+  //    ).xyz);
 }
 
 '''
