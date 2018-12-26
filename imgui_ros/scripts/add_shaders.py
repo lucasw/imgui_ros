@@ -70,7 +70,8 @@ uniform mat4 model_matrix;
 uniform mat4 view_matrix;
 uniform mat4 projection_matrix;
 // TODO(lucasw) need multiples of these for each projector
-uniform mat4 projector_model_matrix;
+// this is the model matrix of the object being drawn
+// uniform mat4 projector_model_matrix;
 uniform mat4 projector_view_matrix;
 uniform mat4 projector_projection_matrix;
 
@@ -83,19 +84,27 @@ out vec2 FraUV;
 smooth out vec3 FraNormal;
 out vec4 FraColor;
 out vec4 ProjectedTexturePosition;
+// The coordinate frame of this position needs to be the same as the normal
+out vec3 projector_dir;
 
 void main()
 {
   FraUV = UV;
   FraColor = Color;
-  FraNormal = (view_matrix * model_matrix * vec4(Normal, 1.0)).xyz;
+  // put normal into world frame
+  FraNormal = (model_matrix * vec4(Normal, 1.0)).xyz -
+        (model_matrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
   // FraProjectorPosition =
 
   mat4 mvp = projection_matrix * view_matrix * model_matrix;
   gl_Position = mvp * vec4(Position.xyz, 1.0);
 
-  mat4 projector_mvp = projector_projection_matrix * projector_view_matrix * projector_model_matrix;
+  mat4 projector_mvp = projector_projection_matrix * projector_view_matrix * model_matrix;
   ProjectedTexturePosition = projector_mvp * vec4(Position.xyz, 1.0);
+
+  // put projector dir into world frame
+  projector_dir = (transpose(projector_view_matrix) * vec4(0.0, 0.0, 1.0, 1.0) -
+        transpose(projector_view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 }
 
 '''
@@ -110,6 +119,7 @@ uniform float projected_texture_scale;
 in vec2 FraUV;
 in vec4 FraColor;
 smooth in vec3 FraNormal;
+in vec3 projector_dir;
 in vec4 ProjectedTexturePosition;
 out vec4 Out_Color;
 void main()
@@ -130,7 +140,10 @@ void main()
     */
 
     // if normal is facing away from projector disable projection
-    // enable_proj = enable_proj * step(0.0, FraNormal.y);
+
+    // TODO
+    float projector_intensity = -dot(FraNormal, projector_dir);
+    enable_proj = enable_proj * projector_intensity * step(0.0, projector_intensity);
 
     // vec3 in_proj_vec = step(0.0, ProjectedTexturePosition.xyz) * (1.0 - step(1.0, ProjectedTexturePosition.xyz));
     // TODO(lwalter) can skip this if always border textures with alpha 0.0

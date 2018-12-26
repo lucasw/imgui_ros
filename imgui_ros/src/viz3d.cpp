@@ -185,8 +185,8 @@ bool Viz3D::setupWithShape(std::shared_ptr<Projector> projector,
   // corresponds to glActiveTexture(GL_TEXTURE1) if is 1
   const int texture_unit = 1;
   for (auto shaders : shader_sets_) {
-    glUniformMatrix4fv(shaders.second->uniform_locations_["projector_model_matrix"],
-        1, GL_FALSE, &model[0][0]);
+    // glUniformMatrix4fv(shaders.second->uniform_locations_["projector_model_matrix"],
+    //     1, GL_FALSE, &model[0][0]);
     glUniformMatrix4fv(shaders.second->uniform_locations_["projector_view_matrix"],
         1, GL_FALSE, &view[0][0]);
     glUniformMatrix4fv(shaders.second->uniform_locations_["projector_projection_matrix"],
