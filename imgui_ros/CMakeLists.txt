@@ -71,6 +71,7 @@ add_executable(imgui_ros_node
   src/pub.cpp
   src/projector.cpp
   src/sub.cpp
+  src/surface.cpp
   src/tf.cpp
   src/viz2d.cpp
   src/imgui_impl_opengl3.cpp

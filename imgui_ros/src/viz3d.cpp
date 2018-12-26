@@ -317,46 +317,7 @@ void ShaderSet::draw()
   ImGui::Text("%s", ss.str().c_str());
 }
 
-///////////////////////////////////////////////////////////////////////////////
-Shape::~Shape()
-{
-  glDeleteBuffers(1, &elements_handle_);
-  glDeleteBuffers(1, &vbo_handle_);
-  glDeleteVertexArrays(1, &vao_handle_);
-}
-
-void Shape::init()
-{
-  glGenVertexArrays(1, &vao_handle_);
-  glBindVertexArray(vao_handle_);
-
-  glGenBuffers(1, &vbo_handle_);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo_handle_);
-  // copy data to gpu
-  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)vertices_.Size * sizeof(DrawVert),
-      (const GLvoid*)vertices_.Data, GL_STREAM_DRAW);
-
-  glGenBuffers(1, &elements_handle_);
-
-  checkGLError(__FILE__, __LINE__);
-  std::cout << name_ << " init vao " << vao_handle_ << ", "
-      << "vbo " << vbo_handle_ << ", elements " << elements_handle_ << ", "
-      << "vertices size " << vertices_.Size << ", "
-      << "indices size " << indices_.Size << "\n";
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)indices_.Size * sizeof(ImDrawIdx),
-      (const GLvoid*)indices_.Data, GL_STREAM_DRAW);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-#if 0
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
-#endif
-  checkGLError(__FILE__, __LINE__);
-}
-
+///////////////////////////////////////////////////////////////////
 // render the entire background
 // this probably will be split out into a widget also.
 Viz3D::Viz3D(const std::string name,
@@ -615,11 +576,8 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
 
   const glm::vec4 default_color = glm::vec4(1.0, 1.0, 1.0, 1.0);
 
-  auto shape = std::make_shared<Shape>();
-  shape->name_ = msg->name;
-  shape->frame_id_ = msg->header.frame_id;
-  shape->tf_buffer_ = tf_buffer_;
-  shape->texture_ = msg->texture;
+  auto shape = std::make_shared<Shape>(msg->name,
+      msg->header.frame_id, msg->texture, tf_buffer_);
 
   // TODO(lucasw) if is_topic then create RosImage subscriber
   // if msg->image isn't empty create a RosImage and initialize the image
@@ -690,8 +648,12 @@ void Viz3D::draw()
   ImGui::Text("shapes");
   for (auto shape_pair : shapes_) {
     ImGui::Separator();
-    auto shape = shape_pair.second;
-    shape->draw();
+    const auto shape = shape_pair.second;
+    try {
+      shape->draw();
+    } catch (std::logic_error& ex) {
+      render_message_ << ex.what() << "\n";
+    }
   }
   ImGui::Separator();
   ImGui::Text("textures");
@@ -1038,16 +1000,18 @@ void Viz3D::render2(const tf2::Transform& transform,
   //}
   render_message_ << "\n";
 
-  // TEMP
-  std::shared_ptr<Shape> first_shape;
-
   for (auto shape_pair : shapes_) {
     auto shape = shape_pair.second;
-    // TEMP
-    if (first_shape == nullptr)
-      first_shape = shape;
+    if (!shape) {
+      render_message_ << " null shape\n";
+      continue;
+    }
 
     render_message_ << "shape: " << shape->name_;
+    if (!shape->enable_) {
+      render_message_ << " disabled";
+      continue;
+    }
 
     // TODO(lucasw) later a shape can use certain shaders or just default
     glUseProgram(shaders->shader_handle_);

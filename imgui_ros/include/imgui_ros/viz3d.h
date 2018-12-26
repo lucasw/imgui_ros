@@ -38,6 +38,7 @@
 #include <imgui_ros/image.h>
 #include <imgui_ros/msg/textured_shape.hpp>
 #include <imgui_ros/projector.h>
+#include <imgui_ros/surface.h>
 #include <imgui_ros/srv/add_camera.hpp>
 #include <imgui_ros/srv/add_projector.hpp>
 #include <imgui_ros/srv/add_shaders.hpp>
@@ -101,63 +102,6 @@ struct ShaderSet {
   // TODO(lucasw) use a std::map<std::string, int> for all of these?
   std::map<std::string, int> attrib_locations_;
   std::map<std::string, int> uniform_locations_;
-};
-
-struct DrawVert {
-  glm::vec3 pos;
-  glm::vec2 uv;
-  glm::vec4 col;
-};
-
-struct Shape {
-  std::string name_;
-  std::string frame_id_;
-  ImVector<DrawVert> vertices_;
-  ImVector<ImDrawIdx> indices_;
-  std::string texture_;
-
-  ~Shape();
-
-  // transfer to gpu
-  void init();
-
-  void draw()
-  {
-    std::stringstream ss;
-    ss << "shape: " << name_ << ", frame: " << frame_id_ << ", texture: "  << texture_ << "\n";
-    ss << " `- vertices: " << vertices_.size() << ", indices " << indices_.size() << "\n";
-    ss << " `- vao: " << vao_handle_ << ", vbo " << vbo_handle_
-        << ", elements " << elements_handle_ << "\n";
-    // ss << msg_;
-    // TODO(lucasw) add interactive way to browse vertices and indices
-    ImGui::Text("%s", ss.str().c_str());
-  }
-
-  std::string print() {
-    std::stringstream ss;
-    ss << "shape " << name_ << " " << texture_ << " "
-        << vertices_.Size << " " << indices_.Size << "\n";
-    #if 0
-    for (int i = 0; (i < 10) && (i < vertices_.Size); ++i)
-      std::cout << i << "  "
-        << " " << vertices_[i].pos.x
-        << " " << vertices_[i].pos.y
-        << " " << vertices_[i].pos.z << ", ";
-    std::cout << "\n";
-    for (int i = 0; (i < 12) && (i < indices_.Size); ++i)
-      std::cout << " " << indices_[i];
-    std::cout << "\n";
-    #endif
-    return ss.str();
-  }
-
-  // ROS
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-
-  // OpenGL
-  GLuint vao_handle_ = 0;
-  GLuint vbo_handle_ = 0;
-  GLuint elements_handle_ = 0;
 };
 
 // TODO(lucasw) need to support covering the entire background,

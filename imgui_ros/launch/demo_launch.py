@@ -65,6 +65,6 @@ def generate_launch_description():
         # image_pub,
         imgui_ros,
         configure_windows,
-        add_shapes,
         add_shaders,
+        add_shapes,
     ])
