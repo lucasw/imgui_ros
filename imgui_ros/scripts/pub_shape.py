@@ -33,6 +33,9 @@ from time import sleep
 from visualization_msgs.msg import Marker
 
 
+def vector3_len(vec):
+    return math.sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z)
+
 class Demo(Node):
 
     def __init__(self):
@@ -159,8 +162,8 @@ class Demo(Node):
             fr = float(i) / float(segs - 1)
             theta = fr * 2.0 * math.pi
             # print("{} {}".format(i, theta))
-            x = radius * math.cos(theta) + off_x
-            y = radius * math.sin(theta) + off_y
+            x = radius * math.cos(theta)
+            y = radius * math.sin(theta)
 
             ind0 = len(shape.vertices)
             ind1 = ind0 + 1
@@ -182,9 +185,17 @@ class Demo(Node):
                     shape.triangles.append(triangle)
 
             vertex = Vertex()
-            vertex.vertex.x = x
-            vertex.vertex.y = y
+            vertex.vertex.x = x + off_x
+            vertex.vertex.y = y + off_y
             vertex.vertex.z = -length * 0.5
+
+            vertex.normal.x = x
+            vertex.normal.y = y
+            vertex.normal.z = 0.0
+            nrm_len = vector3_len(vertex.normal)
+            vertex.normal.x /= nrm_len
+            vertex.normal.y /= nrm_len
+            vertex.normal.z /= nrm_len
 
             vertex.uv.x = repeat * fr
             vertex.uv.y = 0.0
@@ -197,9 +208,17 @@ class Demo(Node):
             shape.vertices.append(vertex)
 
             vertex = Vertex()
-            vertex.vertex.x = x
-            vertex.vertex.y = y
+            vertex.vertex.x = x + off_x
+            vertex.vertex.y = y + off_y
             vertex.vertex.z = length * 0.5
+
+            vertex.normal.x = x
+            vertex.normal.y = y
+            vertex.normal.z = 0.0
+            nrm_len = vector3_len(vertex.normal)
+            vertex.normal.x /= nrm_len
+            vertex.normal.y /= nrm_len
+            vertex.normal.z /= nrm_len
 
             vertex.uv.x = repeat * fr
             vertex.uv.y = repeat

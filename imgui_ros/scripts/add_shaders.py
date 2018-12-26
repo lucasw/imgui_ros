@@ -66,21 +66,36 @@ class AddShadersNode(Node):
         req.name = 'default'
         # TODO(lucasw) load from disk later
         req.vertex = '''
-uniform mat4 ProjMtx;
-uniform mat4 ProjTexMtx;
+uniform mat4 model_matrix;
+uniform mat4 view_matrix;
+uniform mat4 projection_matrix;
+// TODO(lucasw) need multiples of these for each projector
+uniform mat4 projector_model_matrix;
+uniform mat4 projector_view_matrix;
+uniform mat4 projector_projection_matrix;
+
 in vec3 Position;
-// in vec3 Normal;
+in vec3 Normal;
 in vec2 UV;
 in vec4 Color;
+
 out vec2 FraUV;
+smooth out vec3 FraNormal;
 out vec4 FraColor;
 out vec4 ProjectedTexturePosition;
+
 void main()
 {
   FraUV = UV;
   FraColor = Color;
-  gl_Position = ProjMtx * vec4(Position.xyz, 1.0);
-  ProjectedTexturePosition = ProjTexMtx * vec4(Position.xyz, 1.0);
+  FraNormal = (view_matrix * model_matrix * vec4(Normal, 1.0)).xyz;
+  // FraProjectorPosition =
+
+  mat4 mvp = projection_matrix * view_matrix * model_matrix;
+  gl_Position = mvp * vec4(Position.xyz, 1.0);
+
+  mat4 projector_mvp = projector_projection_matrix * projector_view_matrix * projector_model_matrix;
+  ProjectedTexturePosition = projector_mvp * vec4(Position.xyz, 1.0);
 }
 
 '''
@@ -94,6 +109,7 @@ uniform sampler2D ProjectedTexture;
 uniform float projected_texture_scale;
 in vec2 FraUV;
 in vec4 FraColor;
+smooth in vec3 FraNormal;
 in vec4 ProjectedTexturePosition;
 out vec4 Out_Color;
 void main()
@@ -112,6 +128,10 @@ void main()
         (1.0 - step(1.0, projected_texture_position.y)) *
         step(0.0, projected_texture_position.y);
     */
+
+    // if normal is facing away from projector disable projection
+    // enable_proj = enable_proj * step(0.0, FraNormal.y);
+
     // vec3 in_proj_vec = step(0.0, ProjectedTexturePosition.xyz) * (1.0 - step(1.0, ProjectedTexturePosition.xyz));
     // TODO(lwalter) can skip this if always border textures with alpha 0.0
     // float in_proj_bounds = normalize(dot(in_proj_vec, in_proj_vec));

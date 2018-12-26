@@ -100,7 +100,7 @@ void Shape::draw(const std::vector<std::string>& texture_names_,
 
   // TODO(lucasw) this is a pain
   int texture_ind = 0;
-  for (int i = 0; i < texture_names_.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(texture_names_.size()); ++i) {
     if (texture_names_[i] == texture_) {
       texture_ind = i;
       break;

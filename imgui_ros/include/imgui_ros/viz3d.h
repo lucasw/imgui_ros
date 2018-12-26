@@ -119,7 +119,9 @@ protected:
       const double aov_y,
       const double aov_x,
       const int fb_width, const int fb_height,
-      glm::mat4& mvp,
+      glm::mat4& model_matrix,
+      glm::mat4& view_matrix,
+      glm::mat4& projection_matrix,
       const bool vert_flip = false);
 
   // this is done for every shape - probably can refactor to

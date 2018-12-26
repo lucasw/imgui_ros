@@ -63,6 +63,7 @@
 
 struct DrawVert {
   glm::vec3 pos;
+  glm::vec3 nrm;
   glm::vec2 uv;
   glm::vec4 col;
 };

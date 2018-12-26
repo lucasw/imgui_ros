@@ -113,7 +113,7 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
   // in request
   std::vector<std::string> attribs = {
       "Position",
-      // "Normal",
+      "Normal",
       "UV",
       "Color",
       // "LightDirection",
@@ -124,10 +124,15 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
 
   std::vector<std::string> uniforms = {
       "Texture",
-      "ProjMtx",
+      "model_matrix",
+      "view_matrix",
+      "projection_matrix",
       "projected_texture_scale",
       "ProjectedTexture",
-      "ProjTexMtx"
+      // TODO(lucasw projector1..N?
+      "projector_model_matrix",
+      "projector_view_matrix",
+      "projector_projection_matrix",
   };
   for (std::string name : uniforms) {
     uniform_locations_[name] = glGetUniformLocation(shader_handle_, name.c_str());

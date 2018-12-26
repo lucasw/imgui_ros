@@ -169,12 +169,14 @@ bool Viz3D::setupWithShape(std::shared_ptr<Projector> projector,
 
   const int width = texture->image_->width;
   const int height = texture->image_->height;
-  glm::mat4 mtp;
+  glm::mat4 model, view, projection;
   if (!setupCamera(stamped_transform, shape_frame_id,
       projector->aov_y_,
       projector->aov_x_,
       width, height,
-      mtp,
+      model,
+      view,
+      projection,
       false
       ))
     return false;
@@ -183,7 +185,12 @@ bool Viz3D::setupWithShape(std::shared_ptr<Projector> projector,
   // corresponds to glActiveTexture(GL_TEXTURE1) if is 1
   const int texture_unit = 1;
   for (auto shaders : shader_sets_) {
-    glUniformMatrix4fv(shaders.second->uniform_locations_["ProjTexMtx"], 1, GL_FALSE, &mtp[0][0]);
+    glUniformMatrix4fv(shaders.second->uniform_locations_["projector_model_matrix"],
+        1, GL_FALSE, &model[0][0]);
+    glUniformMatrix4fv(shaders.second->uniform_locations_["projector_view_matrix"],
+        1, GL_FALSE, &view[0][0]);
+    glUniformMatrix4fv(shaders.second->uniform_locations_["projector_projection_matrix"],
+        1, GL_FALSE, &projection[0][0]);
     // assign this texture to the TEXTURE1 slot
     glUniform1i(shaders.second->uniform_locations_["ProjectedTexture"], texture_unit);
     checkGLError(__FILE__, __LINE__);
@@ -361,21 +368,21 @@ bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_p
 
   glBindVertexArray(shape->vao_handle_);
   glEnableVertexAttribArray(shaders->attrib_locations_["Position"]);
-  // glEnableVertexAttribArray(shaders->attrib_locations_["Normal"]);
+  glEnableVertexAttribArray(shaders->attrib_locations_["Normal"]);
   glEnableVertexAttribArray(shaders->attrib_locations_["UV"]);
   glEnableVertexAttribArray(shaders->attrib_locations_["Color"]);
   // TODO(lucasw) check GL
 
   std::cout << "attribs: " << shaders->attrib_locations_["Position"] << " "
-      // << shaders->attrib_locations_["Normal"] << " "
+      << shaders->attrib_locations_["Normal"] << " "
       << shaders->attrib_locations_["UV"] << " "
       << shaders->attrib_locations_["Color"] << "\n";
 
   glBindBuffer(GL_ARRAY_BUFFER, shape->vbo_handle_);
   glVertexAttribPointer(shaders->attrib_locations_["Position"], 3, GL_FLOAT, GL_FALSE,
       sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
-  // glVertexAttribPointer(shaders->attrib_locations_["Normal"], 3, GL_FLOAT, GL_FALSE,
-  //    sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
+  glVertexAttribPointer(shaders->attrib_locations_["Normal"], 3, GL_FLOAT, GL_FALSE,
+      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, nrm));
   glVertexAttribPointer(shaders->attrib_locations_["UV"], 2, GL_FLOAT, GL_FALSE,
       sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, uv));
   glVertexAttribPointer(shaders->attrib_locations_["Color"], 4, GL_FLOAT, GL_FALSE,
@@ -463,6 +470,9 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
     p1.pos.x = msg->vertices[i].vertex.x;
     p1.pos.y = msg->vertices[i].vertex.y;
     p1.pos.z = msg->vertices[i].vertex.z;
+    p1.nrm.x = msg->vertices[i].normal.x;
+    p1.nrm.y = msg->vertices[i].normal.y;
+    p1.nrm.z = msg->vertices[i].normal.z;
     p1.uv.x = msg->vertices[i].uv.x;
     p1.uv.y = msg->vertices[i].uv.y;
     // These colors multiply with the texture color
@@ -682,7 +692,10 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
     const std::string child_frame_id,
     const double aov_y,
     const double aov_x,
-    const int fb_width, const int fb_height, glm::mat4& mvp,
+    const int fb_width, const int fb_height,
+    glm::mat4& model_matrix,
+    glm::mat4& view_matrix,
+    glm::mat4& projection_matrix,
     const bool vert_flip)
 {
   const float pixel_aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height);
@@ -694,11 +707,11 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
 
   const float sc_vert = vert_flip ? -1.0 : 1.0;
 
-  glm::mat4 projection_matrix = glm::perspective(
+  projection_matrix = glm::perspective(
       static_cast<float>(sc_vert * glm::radians(aov_y)),
       sc_vert * aspect, near_, far_);
 
-  glm::mat4 model_matrix = glm::mat4(1.0f);
+  model_matrix = glm::mat4(1.0f);
   try {
     geometry_msgs::msg::TransformStamped tf;
     tf = tf_buffer_->lookupTransform(frame_id_, child_frame_id, tf2::TimePointZero);
@@ -722,17 +735,17 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
   glm::dmat4 view_matrix_double;
   view_transform.inverse().getOpenGLMatrix(&view_matrix_double[0][0]);
   // printMat(view_matrix_double, "view_matrix double");
-  glm::mat4 view_matrix;
   dmat4Todmat(view_matrix_double, view_matrix);
 
-  mvp = projection_matrix * view_matrix * model_matrix;
+  // mv = view_matrix * model_matrix;
+  // mvp = projection_matrix * view_matrix * model_matrix;
 
   if (false) {
     render_message_ << "\nmatrices:\n";
     render_message_ << "model " << child_frame_id << ":\n" << printMat(model_matrix);
     render_message_ << "view:\n" << printMat(view_matrix);
     render_message_ << "projection:\n" << printMat(projection_matrix);
-    render_message_ << "mvp:\n" << printMat(mvp);
+    // render_message_ << "mvp:\n" << printMat(mvp);
   }
 
   return true;
@@ -904,16 +917,22 @@ void Viz3D::render2(const tf2::Transform& transform,
     // TODO(lucasw) later a shape can use certain shaders or just default
     glUseProgram(shaders->shader_handle_);
     {
-      glm::mat4 mvp;
+      glm::mat4 model, view, projection;
       if (!setupCamera(transform, shape->frame_id_,
           aov_y,
           aov_x,
           fb_width, fb_height,
-          mvp, vert_flip))
+          model, view, projection,
+          vert_flip))
         continue;
       // TODO(lucasw) use double in the future?
       // glUniformMatrix4dv(shape->attrib_location.proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
-      glUniformMatrix4fv(shaders->uniform_locations_["ProjMtx"], 1, GL_FALSE, &mvp[0][0]);
+      glUniformMatrix4fv(shaders->uniform_locations_["model_matrix"],
+          1, GL_FALSE, &model[0][0]);
+      glUniformMatrix4fv(shaders->uniform_locations_["view_matrix"],
+          1, GL_FALSE, &view[0][0]);
+      glUniformMatrix4fv(shaders->uniform_locations_["projection_matrix"],
+          1, GL_FALSE, &projection[0][0]);
       const int texture_unit = 0;
       glUniform1i(shaders->uniform_locations_["Texture"], texture_unit);
       if (checkGLError(__FILE__, __LINE__))
