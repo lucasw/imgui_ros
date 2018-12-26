@@ -38,6 +38,7 @@
 #include <imgui_ros/image.h>
 #include <imgui_ros/msg/textured_shape.hpp>
 #include <imgui_ros/projector.h>
+#include <imgui_ros/shaders.h>
 #include <imgui_ros/surface.h>
 #include <imgui_ros/srv/add_camera.hpp>
 #include <imgui_ros/srv/add_projector.hpp>
@@ -68,41 +69,6 @@
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
 #pragma GCC diagnostic pop
-
-struct ShaderSet {
-  ShaderSet(const std::string& name, const std::string& vertex_code,
-      const std::string& geometry_code, const std::string& fragment_code) :
-      name_(name),
-      vertex_code_(vertex_code),
-      geometry_code_(geometry_code),
-      fragment_code_(fragment_code)
-  {
-  }
-
-  ~ShaderSet();
-  void remove();
-
-  bool init(const std::string& glsl_version, std::string& message);
-
-  void draw();
-
-  const std::string name_;
-
-  std::string vertex_code_;
-  GLuint vert_handle_ = 0;
-
-  std::string geometry_code_;
-  GLuint geometry_handle_ = 0;
-
-  std::string fragment_code_;
-  GLuint frag_handle_ = 0;
-
-  GLuint shader_handle_ = 0;
-
-  // TODO(lucasw) use a std::map<std::string, int> for all of these?
-  std::map<std::string, int> attrib_locations_;
-  std::map<std::string, int> uniform_locations_;
-};
 
 // TODO(lucasw) need to support covering the entire background,
 // and being within a widget, possibly with subclassing.

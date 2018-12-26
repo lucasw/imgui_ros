@@ -70,6 +70,7 @@ add_executable(imgui_ros_node
   # src/param.cpp
   src/pub.cpp
   src/projector.cpp
+  src/shaders.cpp
   src/sub.cpp
   src/surface.cpp
   src/tf.cpp
