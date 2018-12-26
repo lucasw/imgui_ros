@@ -545,11 +545,6 @@ void Viz3D::draw()
   auto rot_mat = transform_.getBasis();
   tf2::Vector3 vel_in_world = rot_mat * velocity_;
 
-  ImGui::Text("velocity in view %0.2lf %0.2lf %0.2lf",
-      velocity_.x(), velocity_.y(), velocity_.z());
-  ImGui::Text("velocity in world %0.2lf %0.2lf %0.2lf",
-      vel_in_world.x(), vel_in_world.y(), vel_in_world.z());
-
   tf2::Vector3 translation = transform_.getOrigin();
   translation = translation + vel_in_world;
   transform_.setOrigin(translation);
@@ -598,6 +593,11 @@ void Viz3D::draw()
 
   // ImGuiIO& io = ImGui::GetIO();
   if (ImGui::CollapsingHeader("Viewer")) {
+    ImGui::Text("velocity in view %0.2lf %0.2lf %0.2lf",
+        velocity_.x(), velocity_.y(), velocity_.z());
+    ImGui::Text("velocity in world %0.2lf %0.2lf %0.2lf",
+        vel_in_world.x(), vel_in_world.y(), vel_in_world.z());
+
     {
       double min = 0.0001;
       double max = 0.1;
