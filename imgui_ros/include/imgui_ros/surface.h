@@ -76,7 +76,11 @@ struct Shape {
   // transfer to gpu
   void init();
 
-  void draw();
+  // TODO(lucasw) passing in a lot of texture information
+  // so that the texture can be changed through combo box,
+  // it would be nice to make this streamlined.
+  void draw(const std::vector<std::string>& texture_names,
+      const std::string& texture_items);
 
   std::string print() {
     std::stringstream ss;

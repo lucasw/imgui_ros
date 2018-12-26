@@ -87,14 +87,31 @@ std::string Projector::print()
   return ss.str();
 }
 
-void Projector::draw()
+void Projector::draw(const std::vector<std::string>& texture_names,
+    const std::string& texture_items)
 {
   std::string name = name_ + " projector";
   // ImGui::Begin(name.c_str());
   // TODO(lucasw) later re-use code in RosImage
   ImGui::Checkbox(("projector##" + name).c_str(), &enable_);
 
-  ImGui::Text("texture: %s", texture_name_.c_str());
+  // select texture
+  {
+    // TODO(lucasw) this is a pain
+    int texture_ind = 0;
+    for (int i = 0; i < static_cast<int>(texture_names.size()); ++i) {
+      if (texture_names[i] == texture_name_) {
+        texture_ind = i;
+        break;
+      }
+    }
+
+    const bool changed = ImGui::Combo(("texture##" + name).c_str(), &texture_ind,
+      texture_items.c_str());
+    if (changed) {
+      texture_name_ = texture_names[texture_ind];
+    }
+  }
 
   double min, max;
 

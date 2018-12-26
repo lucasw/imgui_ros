@@ -517,48 +517,6 @@ void Viz3D::draw()
   }
 
   ImGui::Begin("viz3d");
-  // ImGuiIO& io = ImGui::GetIO();
-
-  ImGui::Separator();
-  ImGui::Text("shapes");
-  for (auto shape_pair : shapes_) {
-    ImGui::Separator();
-    const auto shape = shape_pair.second;
-    try {
-      shape->draw();
-    } catch (std::logic_error& ex) {
-      render_message_ << ex.what() << "\n";
-    }
-  }
-  ImGui::Separator();
-  ImGui::Text("textures");
-  for (auto texture_pair : textures_) {
-    ImGui::Separator();
-    // text status, only optionally display the actual image with checkbox
-    texture_pair.second->draw();
-  }
-  ImGui::Separator();
-  std::stringstream ss;
-  ss << "shaders " << shader_sets_.size();
-  ImGui::Text("%s", ss.str().c_str());
-  for (auto shaders_pair : shader_sets_) {
-    ImGui::Separator();
-    shaders_pair.second->draw();
-  }
-  ImGui::Separator();
-  ImGui::Text("projectors %lu", projectors_.size());
-  for (auto projector_pair : projectors_) {
-    ImGui::Separator();
-    projector_pair.second->draw();
-  }
-  ImGui::Separator();
-  ImGui::Text("main camera");
-  {
-    double min = 0.0001;
-    double max = 0.1;
-    ImGui::SliderScalar("move scale", ImGuiDataType_Double,
-          &move_scale_, &min, &max, "%lf");
-  }
 
   double x_move = 0.0;
   double y_move = 0.0;
@@ -601,13 +559,6 @@ void Viz3D::draw()
   // mouse input
   ImVec2 mouse_pos_in_canvas = ImGui::GetIO().MousePos;
 
-  {
-    double min = 5.0;
-    double max = 500.0;
-    ImGui::SliderScalar("rotate scale", ImGuiDataType_Double,
-          &rotate_scale_, &min, &max, "%lf");
-  }
-
   if (dragging_view_) {
     // This allows continued dragging outside the canvas
     ImVec2 offset = ImVec2(
@@ -645,30 +596,82 @@ void Viz3D::draw()
     #endif
   }
 
-  // Maybe aovy should be a ros topic,
-  // and the slider a regular Pub widget.
-  double min = 1.0;
-  double max = 170.0;
-  ImGui::SliderScalar("aov y##viz3d", ImGuiDataType_Double,
-      &aov_y_, &min, &max, "%lf", 2);
+  // ImGuiIO& io = ImGui::GetIO();
+  if (ImGui::CollapsingHeader("Viewer")) {
+    {
+      double min = 0.0001;
+      double max = 0.1;
+      ImGui::SliderScalar("move scale", ImGuiDataType_Double,
+            &move_scale_, &min, &max, "%lf");
+    }
 
-  min = 0.0;
-  ImGui::SliderScalar("aov x##viz3d", ImGuiDataType_Double,
-      &aov_x_, &min, &max, "%lf", 2);
+    {
+      double min = 5.0;
+      double max = 500.0;
+      ImGui::SliderScalar("rotate scale", ImGuiDataType_Double,
+            &rotate_scale_, &min, &max, "%lf");
+    }
 
-  {
-    std::stringstream ss;
-    ss << translation.x()  << " " << translation.y() << " " << translation.z() << ", "
-        << pitch_;
-    ImGui::Text("%s", ss.str().c_str());
+    // Maybe aovy should be a ros topic,
+    // and the slider a regular Pub widget.
+    double min = 1.0;
+    double max = 170.0;
+    ImGui::SliderScalar("aov y##viz3d", ImGuiDataType_Double,
+        &aov_y_, &min, &max, "%lf", 2);
+
+    min = 0.0;
+    ImGui::SliderScalar("aov x##viz3d", ImGuiDataType_Double,
+        &aov_x_, &min, &max, "%lf", 2);
+
+    {
+      std::stringstream ss;
+      ss << translation.x()  << " " << translation.y() << " " << translation.z() << ", "
+          << pitch_;
+      ImGui::Text("%s", ss.str().c_str());
+    }
   }
 
-  {
-    ImGui::Separator();
-    ImGui::Checkbox("debug output", &enable_render_message_);
-    if (enable_render_message_) {
-      ImGui::Text("%s", render_message_.str().c_str());
+  std::vector<std::string> texture_names;
+  std::string texture_items = "";
+  const bool draw_textures = ImGui::CollapsingHeader("Textures");
+  for (auto texture_pair : textures_) {
+    // text status, only optionally display the actual image with checkbox
+    if (draw_textures) {
+      ImGui::Separator();
+      texture_pair.second->draw();
     }
+    texture_names.push_back(texture_pair.first);
+    texture_items += texture_pair.first + '\0';
+  }
+  if (ImGui::CollapsingHeader("Projectors")) {
+    ImGui::Text("projectors %lu", projectors_.size());
+    for (auto projector_pair : projectors_) {
+      ImGui::Separator();
+      projector_pair.second->draw(texture_names, texture_items);
+    }
+  }
+  if (ImGui::CollapsingHeader("Surfaces")) {
+    for (auto shape_pair : shapes_) {
+      ImGui::Separator();
+      const auto shape = shape_pair.second;
+      try {
+        shape->draw(texture_names, texture_items);
+      } catch (std::logic_error& ex) {
+        render_message_ << ex.what() << "\n";
+      }
+    }
+  }
+  if (ImGui::CollapsingHeader("Shaders")) {
+    std::stringstream ss;
+    ss << "shaders " << shader_sets_.size();
+    ImGui::Text("%s", ss.str().c_str());
+    for (auto shaders_pair : shader_sets_) {
+      ImGui::Separator();
+      shaders_pair.second->draw();
+    }
+  }
+  if (ImGui::CollapsingHeader("Debug")) {
+    ImGui::Text("%s", render_message_.str().c_str());
   }
   ImGui::End();
 }

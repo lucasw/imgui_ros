@@ -90,7 +90,6 @@ struct Viz3D {
       const float aov_y, const float aov_x,
       const bool vert_flip = false);
 
-  bool enable_render_message_ = false;
   std::stringstream render_message_;
 
   void draw();

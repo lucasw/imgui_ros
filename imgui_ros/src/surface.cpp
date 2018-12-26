@@ -92,14 +92,32 @@ void Shape::init()
   checkGLError(__FILE__, __LINE__);
 }
 
-void Shape::draw()
+void Shape::draw(const std::vector<std::string>& texture_names_,
+    const std::string& texture_items)
 {
-  std::stringstream ss;
+  std::string name = name_ + " shape";
   ImGui::Checkbox((name_ + "##shape").c_str(), &enable_);
+
+  // TODO(lucasw) this is a pain
+  int texture_ind = 0;
+  for (int i = 0; i < texture_names_.size(); ++i) {
+    if (texture_names_[i] == texture_) {
+      texture_ind = i;
+      break;
+    }
+  }
+
+  const bool changed = ImGui::Combo(("texture##" + name).c_str(), &texture_ind,
+    texture_items.c_str());
+  if (changed) {
+    texture_ = texture_names_[texture_ind];
+  }
+
   // TODO(lucasw) put the frame in a combo box that allows it to be changed
   // to any other existing frame (or typed in?)
   // use tf buffer getFrames()
-  ss << "frame: " << frame_id_ << ", texture: "  << texture_ << "\n";
+  std::stringstream ss;
+  ss << "frame: " << frame_id_ << "\n";
   ss << " `- vertices: " << vertices_.size() << ", indices " << indices_.size() << "\n";
   ss << " `- vao: " << vao_handle_ << ", vbo " << vbo_handle_
     << ", elements " << elements_handle_ << "\n";

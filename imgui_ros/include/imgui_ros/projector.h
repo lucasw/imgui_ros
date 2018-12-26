@@ -76,7 +76,8 @@ struct Projector {
   ~Projector();
 
   std::string print();
-  void draw();
+  void draw(const std::vector<std::string>& texture_names,
+      const std::string& texture_items);
   // void render();
 
   std::string name_;
