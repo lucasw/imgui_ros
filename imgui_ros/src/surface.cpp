@@ -48,7 +48,8 @@ Shape::Shape(const std::string name, const std::string frame_id,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer) :
     name_(name),
     frame_id_(frame_id),
-    texture_(texture_name)
+    texture_(texture_name),
+    tf_buffer_(tf_buffer)
 {
 }
 

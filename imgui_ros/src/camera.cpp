@@ -49,13 +49,15 @@ Camera::Camera(const std::string name,
     const size_t width,
     const size_t height,
     const double aov_y,
+    const double aov_x,
     std::shared_ptr<rclcpp::Node> node) :
     name_(name),
     frame_id_(frame_id),
-    aov_y_(aov_y)
+    aov_y_(aov_y),
+    aov_x_(aov_x)
 {
   std::cout << "creating camera " << name << " " << width << " " << height
-      << " " << aov_y << "\n";
+      << " " << aov_y << " " << aov_x << "\n";
   const bool sub_not_pub = false;
   image_ = std::make_shared<RosImage>(texture_name, topic, sub_not_pub, node);
   {
@@ -144,6 +146,10 @@ void Camera::draw()
   double max = 170.0;
   ImGui::SliderScalar(("aov y##" + name).c_str(), ImGuiDataType_Double,
       &aov_y_, &min, &max, "%lf", 2);
+
+  min = 0.0;
+  ImGui::SliderScalar(("aov x##" + name).c_str(), ImGuiDataType_Double,
+      &aov_x_, &min, &max, "%lf", 2);
 
   if (enable_) {
     image_->draw();

@@ -172,10 +172,10 @@ bool Viz3D::setupWithShape(std::shared_ptr<Projector> projector,
   glm::mat4 mtp;
   if (!setupCamera(stamped_transform, shape_frame_id,
       projector->aov_y_,
-      // projector->aov_x_,
+      projector->aov_x_,
       width, height,
       mtp,
-      1.0  // projector->aspect_scale_  // TODO(lucasw) relate to aspect_scale_ also?
+      false
       ))
     return false;
 
@@ -382,6 +382,7 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
         req->camera.header.frame_id, req->camera.topic,
         req->camera.width, req->camera.height,
         req->camera.aov_y,
+        req->camera.aov_x,
         node);
     textures_[req->camera.texture_name] = render_texture->image_;
     cameras_[req->camera.name] = render_texture;
@@ -774,13 +775,12 @@ void Viz3D::draw()
   // and the slider a regular Pub widget.
   double min = 1.0;
   double max = 170.0;
-  ImGui::SliderScalar("aov y", ImGuiDataType_Double,
+  ImGui::SliderScalar("aov y##viz3d", ImGuiDataType_Double,
       &aov_y_, &min, &max, "%lf", 2);
 
-  min = 0.1;
-  max = 10.0;
-  ImGui::SliderScalar("aspect scale", ImGuiDataType_Double,
-      &aspect_scale_, &min, &max, "%lf");
+  min = 0.0;
+  ImGui::SliderScalar("aov x##viz3d", ImGuiDataType_Double,
+      &aov_x_, &min, &max, "%lf", 2);
 
   {
     std::stringstream ss;
@@ -804,12 +804,21 @@ void Viz3D::draw()
 bool Viz3D::setupCamera(const tf2::Transform& view_transform,
     const std::string child_frame_id,
     const double aov_y,
-    // const double aov_x,
+    const double aov_x,
     const int fb_width, const int fb_height, glm::mat4& mvp,
-    float aspect_scale, float sc_vert)
+    const bool vert_flip)
 {
-  const float aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height) * aspect_scale;
-  glm::mat4 projection_matrix = glm::perspective(static_cast<float>(sc_vert * glm::radians(aov_y)),
+  const float pixel_aspect = static_cast<float>(fb_width) / static_cast<float>(fb_height);
+  float aspect = pixel_aspect;
+  if (aov_x != 0.0) {
+    const float aov_aspect = aov_x / aov_y;
+    aspect = aov_aspect;
+  }
+
+  const float sc_vert = vert_flip ? -1.0 : 1.0;
+
+  glm::mat4 projection_matrix = glm::perspective(
+      static_cast<float>(sc_vert * glm::radians(aov_y)),
       sc_vert * aspect, near_, far_);
 
   glm::mat4 model_matrix = glm::mat4(1.0f);
@@ -896,7 +905,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     // and then draw the texture to the screen with a textured quad fragment
     // shader, this allows rendering at a different resolution that the screen
     // which might be desirable if performance is suffering.
-    render2(transform_, fb_width, fb_height, aov_y_);
+    render2(transform_, fb_width, fb_height, aov_y_, aov_x_);
 
     gl_state.backup();
     checkGLError(__FILE__, __LINE__);
@@ -944,6 +953,7 @@ void Viz3D::renderToTexture()
         camera->image_->width_,
         camera->image_->height_,
         camera->aov_y_,
+        camera->aov_x_,
         -1.0);
 
     // TODO(lucasw) copy the date from the texture out to a cv::Mat?
@@ -956,7 +966,8 @@ void Viz3D::renderToTexture()
 void Viz3D::render2(const tf2::Transform& transform,
     const int fb_width, const int fb_height,
     const float aov_y,
-    const float sc_vert)
+    const float aov_x,
+    const bool vert_flip)
 {
   // TODO(lucasw) should give up if can't lock, just don't render now
   std::lock_guard<std::mutex> lock(mutex_);
@@ -1019,8 +1030,9 @@ void Viz3D::render2(const tf2::Transform& transform,
       glm::mat4 mvp;
       if (!setupCamera(transform, shape->frame_id_,
           aov_y,
+          aov_x,
           fb_width, fb_height,
-          mvp, aspect_scale_, sc_vert))
+          mvp, vert_flip))
         continue;
       // TODO(lucasw) use double in the future?
       // glUniformMatrix4dv(shape->attrib_location.proj_mtx_, 1, GL_FALSE, &mvp[0][0]);

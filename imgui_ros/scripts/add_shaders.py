@@ -106,11 +106,12 @@ void main()
     float enable_proj = step(0.0, projected_texture_position.z);
     // TODO(lucasw) this is a manual clamp, can specify this elsewhere and
     // later make it changeable live.
-    enable_proj = enable_proj * step(0.0, projected_texture_position.z) *
+    enable_proj = enable_proj * step(0.0, projected_texture_position.z); /* *
         (1.0 - step(1.0, projected_texture_position.x)) *
         step(0.0, projected_texture_position.x) *
         (1.0 - step(1.0, projected_texture_position.y)) *
         step(0.0, projected_texture_position.y);
+    */
     // vec3 in_proj_vec = step(0.0, ProjectedTexturePosition.xyz) * (1.0 - step(1.0, ProjectedTexturePosition.xyz));
     // TODO(lwalter) can skip this if always border textures with alpha 0.0
     // float in_proj_bounds = normalize(dot(in_proj_vec, in_proj_vec));

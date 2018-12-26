@@ -86,7 +86,7 @@ struct Projector {
 
   // TODO(lucasw) later need to use this and resolution to make a CameraInfo
   double aov_y_;
-  double aov_x_;
+  double aov_x_ = 0.0;
 
   // set to > 0.0 to be used
   double max_range_ = 0.0;

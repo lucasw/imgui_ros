@@ -121,7 +121,8 @@ struct Viz3D {
   void renderToTexture();
   void render2(const tf2::Transform& transform,
       const int fb_width, const int fb_height,
-      const float aov_y, const float sc_vert = 1.0);
+      const float aov_y, const float aov_x,
+      const bool vert_flip = false);
 
   bool enable_render_message_ = false;
   std::stringstream render_message_;
@@ -144,17 +145,17 @@ protected:
   ImVec2 drag_point_;
 
   double aov_y_ = 45.0f;
+  double aov_x_ = 0.0f;
   float near_ = 0.01f;
   float far_ = 100.0f;
-  double aspect_scale_ = 1.0f;
   // TODO(lucasw) should be setupProjection or setupModelViewProjection
   // though later will do the matrix multiplication inside shader?
   bool setupCamera(const tf2::Transform& view_transform, const std::string child_frame_id,
       const double aov_y,
-      // const double aov_x,
+      const double aov_x,
       const int fb_width, const int fb_height,
       glm::mat4& mvp,
-      const float aspect_scale = 1.0, const float sc_vert = 1.0);
+      const bool vert_flip = false);
 
   // this is done for every shape - probably can refactor to
   // get only the relevant parts that change per shape

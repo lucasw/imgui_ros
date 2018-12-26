@@ -69,6 +69,7 @@ struct Camera {
       const size_t width,
       const size_t height,
       const double aov_y,
+      const double aov_x,
       std::shared_ptr<rclcpp::Node> node);
   ~Camera();
   void draw();
@@ -81,6 +82,7 @@ struct Camera {
 
   // TODO(lucasw) later need to use this and resolution to make a CameraInfo
   double aov_y_;
+  double aov_x_ = 0.0;
 
   // TODO(lucasw) put in own class later
   bool enable_ = true;
