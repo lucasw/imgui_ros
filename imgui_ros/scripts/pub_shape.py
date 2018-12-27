@@ -150,6 +150,83 @@ class Demo(Node):
         self.future = self.texture_cli.call_async(req)
         self.wait_for_response()
 
+    # TODO(lucasw) later bring in icosphere code from bullet_server
+    def make_sphere(self, name='sphere',
+            radius_x=1.0, radius_y=1.0, radius_z=1.0,
+            segs_long=16, segs_lat=8,
+            off_x=0.0, off_y=0.0, off_z=0.0,
+            repeat=1.0,
+            flip_normals=False):
+        shape = TexturedShape()
+        shape.name = name
+        shape.header.frame_id = 'bar2'
+        shape.texture = 'diffract'
+
+        for j in range(segs_lat):
+            fr_y = float(j) / float(segs_lat - 1)
+            latitude = (fr_y - 0.5) * math.pi
+            for i in range(segs_long):
+                fr_x = float(i) / float(segs_long - 1)
+                longitude = fr_x * 2.0 * math.pi
+
+                # print("{} {}".format(i, theta))
+                clong = math.cos(longitude)
+                slong = math.sin(longitude)
+                clat = math.cos(latitude)
+                slat = math.sin(latitude)
+                x = radius_x * clong * clat
+                y = radius_y * slong * clat
+                z = radius_z * slat
+
+                ind0 = len(shape.vertices)
+                ind1 = ind0 + 1
+                ind2 = ind0 + segs_long
+                ind3 = ind0 + segs_long + 1
+                # connect to start, but can't reuse vertices because of uv
+                if i < segs_long - 1 and j < segs_lat - 1:
+                    if j != 0:
+                        triangle = MeshTriangle()
+                        triangle.vertex_indices[0] = ind0
+                        triangle.vertex_indices[1] = ind1
+                        triangle.vertex_indices[2] = ind3
+                        shape.triangles.append(triangle)
+
+                    if j != segs_lat - 2:
+                        triangle = MeshTriangle()
+                        triangle.vertex_indices[0] = ind0
+                        triangle.vertex_indices[1] = ind3
+                        triangle.vertex_indices[2] = ind2
+                        shape.triangles.append(triangle)
+
+                vertex = Vertex()
+                vertex.vertex.x = x + off_x
+                vertex.vertex.y = y + off_y
+                vertex.vertex.z = z + off_z
+
+                vertex.normal.x = x
+                vertex.normal.y = y
+                vertex.normal.z = z
+                nrm_len = vector3_len(vertex.normal)
+                vertex.normal.x /= nrm_len
+                vertex.normal.y /= nrm_len
+                vertex.normal.z /= nrm_len
+                if flip_normals:
+                    vertex.normal.x *= -1.0
+                    vertex.normal.y *= -1.0
+                    vertex.normal.z *= -1.0
+
+                vertex.uv.x = repeat * fr_x
+                vertex.uv.y = repeat * fr_y
+
+                val = 0.95
+                vertex.color.r = val
+                vertex.color.g = val
+                vertex.color.b = val
+                vertex.color.a = 1.0
+                shape.vertices.append(vertex)
+
+        return shape
+
     def make_cylinder(self, name='cylinder', radius=0.5, length=2.5, segs=16,
             off_x=0.0, off_y=0.0):
         shape = TexturedShape()
@@ -304,6 +381,16 @@ class Demo(Node):
         if False:
             shape = self.make_planes()
             shape.add = True
+            req.shapes.append(shape)
+        if True:
+            shape = self.make_sphere(name='big_sphere',
+                radius_x=10.0, radius_y=10.0, radius_z=10.0,
+                segs_long=16, segs_lat=8,
+                flip_normals=True,
+                )
+            shape.add = True
+            shape.texture = 'diffract'
+            shape.header.frame_id = 'map'
             req.shapes.append(shape)
         if True:
             shape = self.make_cylinder(name='cylinder2', radius=0.03, length=0.1,
