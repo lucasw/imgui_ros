@@ -54,6 +54,17 @@ using std::placeholders::_1;
     wrap_modes_.push_back(GL_MIRRORED_REPEAT);
     wrap_modes_.push_back(GL_REPEAT);
 
+    min_filter_modes_.push_back(GL_NEAREST);
+    min_filter_modes_.push_back(GL_LINEAR);
+    // TODO(lucasw) implement mipmaps
+    // filter_modes_.push_back(GL_NEAREST_MIPMAP_NEAREST);
+    // filter_modes_.push_back(GL_NEAREST_MIPMAP_LINEAR);
+    // filter_modes_.push_back(GL_LINEAR_MIPMAP_NEAREST);
+    // filter_modes_.push_back(GL_LINEAR_MIPMAP_LINEAR);
+
+    mag_filter_modes_.push_back(GL_NEAREST);
+    mag_filter_modes_.push_back(GL_LINEAR);
+
     if (topic != "") {
       if (sub_not_pub) {
         RCLCPP_DEBUG(node->get_logger(), "%s subscribing to topic '%s'",
@@ -237,6 +248,7 @@ using std::placeholders::_1;
 
       // Texture settings
       {
+        // TODO(lucasw) set this up once
         std::string items_null;
         items_null += std::string("clamp_to_edge") + '\0';
         items_null += std::string("mirrored_repeat") + '\0';
@@ -249,6 +261,21 @@ using std::placeholders::_1;
           glBindTexture(GL_TEXTURE_2D, texture_id_);
           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_modes_[wrap_s_ind_]);
           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_modes_[wrap_t_ind_]);
+          glBindTexture(GL_TEXTURE_2D, 0);
+        }
+
+        // TODO(lucasw) set this up once
+        items_null = "";
+        items_null += std::string("nearest") + '\0';
+        items_null += std::string("linear") + '\0';
+        const bool min_changed = ImGui::Combo(("min filter##" + name).c_str(), &min_filter_ind_,
+            items_null.c_str());
+        const bool mag_changed = ImGui::Combo(("mag filter##" + name).c_str(), &mag_filter_ind_,
+            items_null.c_str());
+        if (min_changed || mag_changed) {
+          glBindTexture(GL_TEXTURE_2D, texture_id_);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter_modes_[min_filter_ind_]);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter_modes_[mag_filter_ind_]);
           glBindTexture(GL_TEXTURE_2D, 0);
         }
       }

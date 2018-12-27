@@ -79,8 +79,10 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
 
-  int min_filter_;
-  int mag_filter_;
+  int min_filter_ind_ = 0;
+  std::vector<int> min_filter_modes_;
+  int mag_filter_ind_ = 0;
+  std::vector<int> mag_filter_modes_;
   std::vector<int> wrap_modes_;
   int wrap_s_ind_ = 0;
   int wrap_t_ind_ = 0;
