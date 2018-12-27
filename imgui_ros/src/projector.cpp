@@ -63,7 +63,7 @@ Projector::Projector(
     quadratic_attenuation_(quadratic_attenuation),
     node_(node)
 {
-  std::cout << "creating projector " << print() << "\n";
+  std::cout << "creating projector " << print() << std::endl;
 
   std::string msg;
   if (checkGLError2(msg)) {
@@ -93,7 +93,7 @@ void Projector::draw(const std::vector<std::string>& texture_names,
   std::string name = name_ + " projector";
   // ImGui::Begin(name.c_str());
   // TODO(lucasw) later re-use code in RosImage
-  ImGui::Checkbox(("projector##" + name).c_str(), &enable_);
+  ImGui::Checkbox((name_ + "##" + name).c_str(), &enable_);
 
   // select texture
   {

@@ -241,7 +241,7 @@ class Demo(Node):
         widget.min = -2.0
         widget.max = 2.0
         widget.items.append("map")
-        widget.items.append("projected_texture")
+        widget.items.append("projector1")
         req.widgets.append(widget)
 
         widget = Widget()
@@ -261,8 +261,10 @@ class Demo(Node):
         widget.topic = 'marker'
         widget.max = 100.0
         widget.items.append("map")
-        widget.items.append("projected_texture")
+        widget.items.append("projector1")
         widget.items.append("bar2")
+        widget.items.append("camera1")
+        widget.items.append("camera1")
         req.widgets.append(widget)
 
         self.future = self.cli.call_async(req)

@@ -126,8 +126,9 @@ protected:
 
   // this is done for every shape - probably can refactor to
   // get only the relevant parts that change per shape
-  bool setupWithShape(std::shared_ptr<Projector> projector,
-      const std::string& main_frame_id, const std::string& shape_frame_id);
+  bool setupProjectorsWithShape(
+      const std::string& main_frame_id, const std::string& shape_frame_id,
+      std::vector<std::shared_ptr<Projector> >& projectors);
 
   std::string glsl_version_string_ = "";
 #if 0
@@ -157,6 +158,10 @@ protected:
                   std::shared_ptr<imgui_ros::srv::AddCamera::Response> res);
   std::map<std::string, std::shared_ptr<Camera> > cameras_;
 
+  // Can exceed this number of projectors but this is the number
+  // than can simultaneously be projectored on any surface.
+  // This constant has to be matched in shaders
+  static const int MAX_PROJECTORS = 4;
   rclcpp::Service<imgui_ros::srv::AddProjector>::SharedPtr add_projector_;
   void addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Request> req,
                   std::shared_ptr<imgui_ros::srv::AddProjector::Response> res);

@@ -130,71 +130,104 @@ void makeTestShape(std::shared_ptr<Shape> shape)
 
 /////////////////////////////////////////////////////////////////
 // TODO(lucasw) make this work outside of Viz3D
-bool Viz3D::setupWithShape(std::shared_ptr<Projector> projector,
+bool Viz3D::setupProjectorsWithShape(
     const std::string& main_frame_id,
-    const std::string& shape_frame_id)
+    const std::string& shape_frame_id,
+    std::vector<std::shared_ptr<Projector> >& projectors)
 {
-  std::shared_ptr<RosImage> texture;
-
-  if (textures_.count(projector->texture_name_) < 1) {
-    render_message_ << "no texture " << projector->texture_name_ << ", ";
-    return false;
-  }
-  texture = textures_[projector->texture_name_];
-  if (!texture) {
-    render_message_ << "no texture, ";
-    return false;
-  }
-  if (!texture->image_) {
-    render_message_ << "no texture image, ";
-    return false;
+  glm::mat4 view[MAX_PROJECTORS], projection[MAX_PROJECTORS];
+  float projected_texture_scale[MAX_PROJECTORS];
+  for (size_t i = 0; i < MAX_PROJECTORS; ++i) {
+    projected_texture_scale[i] = 0.0;
   }
 
-  // this is the view of the projector
-  tf2::Stamped<tf2::Transform> stamped_transform;
-  try {
-    geometry_msgs::msg::TransformStamped tf;
-    tf = tf_buffer_->lookupTransform(main_frame_id,
-        projector->frame_id_, tf2::TimePointZero);
-    tf2::fromMsg(tf, stamped_transform);
-    render_message_ << "\nprojected texture transform "
-        << main_frame_id << " " << projector->frame_id_ << " "
-        << printTransform(stamped_transform);
-  } catch (tf2::TransformException& ex) {
-    // TODO(lucasw) display exception on gui, but this isn't currently the correct
-    // time.
-    render_message_ << "\n" << ex.what();
-    return false;
-  }
+  size_t ind = 0;
+  for (auto projector_pair : projectors_) {
+    if (ind >= MAX_PROJECTORS)
+      break;
+    auto projector = projector_pair.second;
+    // TODO(lucasw) select from all projectors the ones
+    // closest to the current shape and exclude the rest.
 
-  const int width = texture->image_->width;
-  const int height = texture->image_->height;
-  glm::mat4 model, view, projection;
-  if (!setupCamera(stamped_transform, shape_frame_id,
-      projector->aov_y_,
-      projector->aov_x_,
-      width, height,
-      model,
-      view,
-      projection,
-      false
-      ))
-    return false;
+    std::shared_ptr<RosImage> texture;
+
+    if (textures_.count(projector->texture_name_) < 1) {
+      render_message_ << projector->name_ << " no texture in textures "
+          << projector->texture_name_ << ", ";
+      continue;
+    }
+    texture = textures_[projector->texture_name_];
+    if (!texture) {
+      render_message_ << projector->name_ << " no texture "
+          << projector->texture_name_ << ", ";
+      continue;
+    }
+    if (!texture->image_) {
+      render_message_ << projector->name_ << " no texture image "
+          << projector->texture_name_ << ", ";
+      continue;
+    }
+
+    // this is the view of the projector
+    tf2::Stamped<tf2::Transform> stamped_transform;
+    try {
+      geometry_msgs::msg::TransformStamped tf;
+      tf = tf_buffer_->lookupTransform(main_frame_id,
+          projector->frame_id_, tf2::TimePointZero);
+      tf2::fromMsg(tf, stamped_transform);
+      render_message_ << "\nprojected texture transform "
+          << main_frame_id << " " << projector->frame_id_ << " "
+          << printTransform(stamped_transform);
+    } catch (tf2::TransformException& ex) {
+      // TODO(lucasw) display exception on gui, but this isn't currently the correct
+      // time.
+      render_message_ << projector->name_ << "\n" << ex.what();
+      continue;
+    }
+
+    const int width = texture->image_->width;
+    const int height = texture->image_->height;
+    // TODO(lucasw) it is redundant to setup model repeatedly,
+    // refactor to do that just once
+    glm::mat4 model;
+    if (!setupCamera(stamped_transform, shape_frame_id,
+        projector->aov_y_,
+        projector->aov_x_,
+        width, height,
+        model,
+        view[ind],
+        projection[ind],
+        false
+        )) {
+      continue;
+    }
+
+    // enable the projector
+    projected_texture_scale[ind] = 1.0;
+    projectors.push_back(projector);
+    ind += 1;
+  }
 
   // this will change with a variable number of projectors
   // corresponds to glActiveTexture(GL_TEXTURE1) if is 1
-  const int texture_unit = 1;
-  for (auto shaders : shader_sets_) {
+  const int texture_unit[4] = {1, 2, 3, 4};
+  for (auto shaders_pair : shader_sets_) {
+    auto shaders = shaders_pair.second;
+    auto transpose = GL_FALSE;
     // glUniformMatrix4fv(shaders.second->uniform_locations_["projector_model_matrix"],
     //     1, GL_FALSE, &model[0][0]);
-    glUniformMatrix4fv(shaders.second->uniform_locations_["projector_view_matrix"],
-        1, GL_FALSE, &view[0][0]);
-    glUniformMatrix4fv(shaders.second->uniform_locations_["projector_projection_matrix"],
-        1, GL_FALSE, &projection[0][0]);
-    // assign this texture to the TEXTURE1 slot
-    glUniform1i(shaders.second->uniform_locations_["ProjectedTexture"], texture_unit);
+    glUniformMatrix4fv(shaders->uniform_locations_["projector_view_matrix"],
+        MAX_PROJECTORS, transpose, &view[0][0][0]);
+    glUniformMatrix4fv(shaders->uniform_locations_["projector_projection_matrix"],
+        MAX_PROJECTORS, transpose, &projection[0][0][0]);
+    // assign these textures to the TEXTURE1..5 slots
+    glUniform1iv(shaders->uniform_locations_["ProjectedTexture"],
+        MAX_PROJECTORS, &texture_unit[0]);
+    glUniform1fv(shaders->uniform_locations_["projected_texture_scale"],
+        MAX_PROJECTORS, &projected_texture_scale[0]);
     checkGLError(__FILE__, __LINE__);
   }
+
   return true;
 }
 
@@ -279,22 +312,32 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
 void Viz3D::addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Request> req,
                          std::shared_ptr<imgui_ros::srv::AddProjector::Response> res)
 {
+  const std::string name = req->projector.camera.name;
+  // const std::string texture_name = texture_name; -> std::bad_alloc - why compile at all?
+  const std::string texture_name = req->projector.camera.texture_name;
   auto node = node_.lock();
   if (!node) {
-    res->message = "couldn't get node for projector '" + req->projector.camera.name + "' '" +
-        req->projector.camera.texture_name + "'";
+    res->message = "couldn't get node for projector '" + name + "' '" +
+        texture_name + "'";
     res->success = false;
     return;
   }
-  if (req->projector.camera.name != "default") {
-    res->message = "only 1 projector currently supported in 'default' slot";
+
+  if ((projectors_.count(name) < 1) &&
+      (projectors_.size() >= MAX_PROJECTORS)) {
+    res->message = "only supporting " + std::to_string(MAX_PROJECTORS)
+        + " currently, need to remove any existing: ";
+    for (auto projector_pair : projectors_) {
+      res->message += projector_pair.second->name_ + ", ";
+    }
     res->success = false;
     return;
   }
+
   try {
     auto projector = std::make_shared<Projector>(
-        req->projector.camera.name,
-        req->projector.camera.texture_name,
+        name,
+        texture_name,
         req->projector.camera.header.frame_id,
         req->projector.camera.aov_y,
         req->projector.camera.aov_x,
@@ -303,14 +346,13 @@ void Viz3D::addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Req
         req->projector.linear_attenuation,
         req->projector.quadratic_attenuation,
         node);
-    projectors_[req->projector.camera.name] = projector;
+    projectors_[name] = projector;
   } catch (std::runtime_error& ex) {
     res->message = ex.what();
     res->success = false;
     return;
   }
-  res->message = "added projector '" + req->projector.camera.name +
-      "' '" + req->projector.camera.texture_name + "'";
+  res->message = "added projector '" + name + "', texture '" + texture_name + "'";
   res->success = true;
 }
 
@@ -940,9 +982,9 @@ void Viz3D::render2(const tf2::Transform& transform,
     }
 
     // TODO(lucasw) add imgui use texture projection checkbox
-    bool use_texture_projection = (projectors_.count("default") > 0) &&
-        projectors_["default"]->enable_ &&
-        setupWithShape(projectors_["default"], frame_id_, shape->frame_id_);
+    // make a vector of projectors to use here, no more than MAX_PROJECTORS
+    std::vector<std::shared_ptr<Projector> > projectors;
+    setupProjectorsWithShape(frame_id_, shape->frame_id_, projectors);
 
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
@@ -981,29 +1023,25 @@ void Viz3D::render2(const tf2::Transform& transform,
         return;
     }
 
-    if (use_texture_projection) {
+    for (size_t i = 0; (i < MAX_PROJECTORS) && (i < projectors.size()); ++i) {
       // TODO(lucasw) later the scale could be a brightness setting
       GLuint tex_id = 0;
       // TODO(lucasw) currently hardcoded, later make more flexible
-      const std::string name = projectors_["default"]->texture_name_;
+      const std::string name = projectors[i]->texture_name_;
       if (textures_.count(name) > 0) {
         tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
-        render_message_ << "\nprojected texture " << name << " " << tex_id;
+        render_message_ << "\nprojector " << projectors[i]->name_
+            << " texture " << name << " " << tex_id;
       } else if (textures_.count("default") > 0) {
         tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
         render_message_ << "\ndefault projected texture " << tex_id;
       } else {
         render_message_ << ", no texture to use";
       }
-      glUniform1f(shaders->uniform_locations_["projected_texture_scale"], 1.0);
-      glActiveTexture(GL_TEXTURE1);
+      glActiveTexture(GL_TEXTURE1 + i);
       glBindTexture(GL_TEXTURE_2D, tex_id);
       if (checkGLError(__FILE__, __LINE__))
         return;
-    } else {
-      // turn off projection in fragment shader, otherwise last updated
-      // uniform values will be used
-      glUniform1f(shaders->uniform_locations_["projected_texture_scale"], 0.0);
     }
 
     {

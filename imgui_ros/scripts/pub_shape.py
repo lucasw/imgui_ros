@@ -77,7 +77,7 @@ class Demo(Node):
         if not self.args.no_textures:
             self.add_texture('diffract', 'image_manip', 'diffract1.png')
             self.add_texture('chess', 'image_manip', 'chess.png')
-            self.add_texture('projected_texture', 'image_manip', 'gradient_radial.png')
+            self.add_texture('gradient_radial', 'image_manip', 'gradient_radial.png')
             # self.add_texture('projected_texture', 'image_manip', 'plasma.png')
         if not self.args.no_shapes:
             # TODO(lucasw) there is something wrong with storing new shapes
@@ -93,13 +93,23 @@ class Demo(Node):
             self.get_logger().info('projector service not available, waiting again...')
 
         req = AddProjector.Request()
-        req.projector.camera.header.frame_id = 'projected_texture'
-        req.projector.camera.name = 'default'
-        req.projector.camera.texture_name = 'projected_texture'
+        req.projector.camera.header.frame_id = 'projector1'
+        req.projector.camera.name = 'projector1'
+        req.projector.camera.texture_name = 'gradient_radial'
         req.projector.camera.aov_y = 10.0
         req.projector.camera.aov_x = 50.0
         self.future = self.projector_cli.call_async(req)
         self.wait_for_response()
+
+        if True:
+            req = AddProjector.Request()
+            req.projector.camera.header.frame_id = 'bar2'
+            req.projector.camera.name = 'projector2'
+            req.projector.camera.texture_name = 'chess'
+            req.projector.camera.aov_y = 30.0
+            req.projector.camera.aov_x = 30.0
+            self.future = self.projector_cli.call_async(req)
+            self.wait_for_response()
 
     def add_cameras(self):
         self.camera_cli = self.create_client(AddCamera, 'add_camera')
@@ -397,8 +407,8 @@ class Demo(Node):
                 segs=20,
                 off_y=0.0)
             shape.add = True
-            shape.texture = 'projected_texture'
-            shape.header.frame_id = 'projected_texture'
+            shape.texture = 'gradient_radial'
+            shape.header.frame_id = 'projector1'
             req.shapes.append(shape)
         if True:
             shape = self.make_cylinder(name='cylinder3', segs=25)

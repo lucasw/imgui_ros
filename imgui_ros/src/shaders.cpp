@@ -129,8 +129,6 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
       "projection_matrix",
       "projected_texture_scale",
       "ProjectedTexture",
-      // TODO(lucasw projector1..N?
-      // "projector_model_matrix",
       "projector_view_matrix",
       "projector_projection_matrix",
   };
