@@ -51,12 +51,18 @@ def generate_launch_description():
             arguments=['__params:=' + param_file],
             remappings=[])
 
+    imgui_ros_dir = get_package_share_directory('imgui_ros')
+    vertex_filename = imgui_ros_dir + '/../../lib/imgui_ros/vertex.glsl'
+    fragment_filename = imgui_ros_dir + '/../../lib/imgui_ros/fragment.glsl'
     add_shaders = launch_ros.actions.Node(
-            package='imgui_ros', node_executable='add_shaders.py', output='screen')
+            package='imgui_ros', node_executable='add_shaders.py', output='screen',
+            arguments=['-v', vertex_filename, '-f', fragment_filename],
+            )
     configure_windows = launch_ros.actions.Node(
             package='imgui_ros', node_executable='demo.py', output='screen')
     add_shapes = launch_ros.actions.Node(
-            package='imgui_ros', node_executable='pub_shape.py', output='screen')
+            package='imgui_ros', node_executable='pub_shape.py', output='screen',
+            )
 
     return launch.LaunchDescription([
         # thse are both taking 100% cpu

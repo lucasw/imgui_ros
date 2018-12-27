@@ -13,12 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import cv2
 import cv_bridge
 import math
 # TODO(lucasW) this doesn't exist in python yet?
 # import tf2_ros
 import rclpy
+import sys
 
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Point, TransformStamped, Vector3
@@ -53,116 +55,51 @@ class AddShadersNode(Node):
                     response = self.future.result()
                     self.get_logger().info(
                         'Result: %s success: %s' % (response.message, str(response.success)))
+                    return response
                 else:
                     self.get_logger().info(
                         'Service call failed %r' % (self.future.exception(),))
+                    return None
                 break
 
     def run(self):
-        self.add_shaders()
+        parser = argparse.ArgumentParser(description='add_shaders')
+        parser.add_argument('-v', '--vertex', dest='vertex', type=str,
+                help='vertex shader file', default='')
+        parser.add_argument('-f', '--fragment', dest='fragment', type=str,
+                help='vertex shader file', default='')
+        self.args, unknown = parser.parse_known_args(sys.argv)
+        self.get_logger().info("unknown args: {}".format(unknown))
+        self.get_logger().info("args: {}".format(self.args))
+        self.add_shaders(self.args.vertex, self.args.fragment)
 
-    def add_shaders(self):
+    def add_shaders(self, vertex_filename, fragment_filename):
         req = AddShaders.Request()
         req.name = 'default'
-        # TODO(lucasw) load from disk later
-        req.vertex = '''
-uniform mat4 model_matrix;
-uniform mat4 view_matrix;
-uniform mat4 projection_matrix;
-// TODO(lucasw) need multiples of these for each projector
-// this is the model matrix of the object being drawn
-// uniform mat4 projector_model_matrix;
-uniform mat4 projector_view_matrix;
-uniform mat4 projector_projection_matrix;
-
-in vec3 Position;
-in vec3 Normal;
-in vec2 UV;
-in vec4 Color;
-
-out vec2 FraUV;
-smooth out vec3 FraNormal;
-out vec4 FraColor;
-out vec4 ProjectedTexturePosition;
-// The coordinate frame of this direction needs to be the same as the output normal
-out vec3 projector_dir;
-
-void main()
-{
-  FraUV = UV;
-  FraColor = Color;
-  // put normal into world frame
-  FraNormal = (model_matrix * vec4(Normal, 1.0)).xyz -
-        (model_matrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-  // FraProjectorPosition =
-
-  mat4 mvp = projection_matrix * view_matrix * model_matrix;
-  gl_Position = mvp * vec4(Position.xyz, 1.0);
-
-  mat4 projector_mvp = projector_projection_matrix * projector_view_matrix * model_matrix;
-  ProjectedTexturePosition = projector_mvp * vec4(Position.xyz, 1.0);
-
-  // put projector into world frame
-  projector_dir = (transpose(projector_view_matrix) * vec4(0.0, 0.0, 1.0, 1.0) -
-      transpose(projector_view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-  // TODO(lucasw) in order to get the proper direction of the projector
-  // this needs to be done in the fragment shader, where a per fragment
-  // position is needed to get the direction from the projector origin.
-  //projector_dir = -normalize((model_matrix * vec4(Position.xyz, 1.0) -
-  //    transpose(projector_view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)
-  //    ).xyz);
-}
-
-'''
-
-        req.fragment = '''
-// OpenGL makes the first vec4 `out` the fragment color by default
-// but should be explicit.
-// 130
-uniform sampler2D Texture;
-uniform sampler2D ProjectedTexture;
-uniform float projected_texture_scale;
-in vec2 FraUV;
-in vec4 FraColor;
-smooth in vec3 FraNormal;
-in vec3 projector_dir;
-in vec4 ProjectedTexturePosition;
-out vec4 Out_Color;
-void main()
-{
-    vec4 projected_texture_position = ProjectedTexturePosition;
-    // transform to clip space
-    projected_texture_position.xyz /= projected_texture_position.w;
-    projected_texture_position.xy += 0.5;
-    projected_texture_position.z -= 1.0;
-    float enable_proj = step(0.0, projected_texture_position.z);
-    // TODO(lucasw) this is a manual clamp, can specify this elsewhere and
-    // later make it changeable live.
-    enable_proj = enable_proj * step(0.0, projected_texture_position.z); /* *
-        (1.0 - step(1.0, projected_texture_position.x)) *
-        step(0.0, projected_texture_position.x) *
-        (1.0 - step(1.0, projected_texture_position.y)) *
-        step(0.0, projected_texture_position.y);
-    */
-
-    // if normal is facing away from projector disable projection
-
-    // TODO
-    float projector_intensity = -dot(FraNormal, projector_dir);
-    enable_proj = enable_proj * projector_intensity * step(0.0, projector_intensity);
-
-    // vec3 in_proj_vec = step(0.0, ProjectedTexturePosition.xyz) * (1.0 - step(1.0, ProjectedTexturePosition.xyz));
-    // TODO(lwalter) can skip this if always border textures with alpha 0.0
-    // float in_proj_bounds = normalize(dot(in_proj_vec, in_proj_vec));
-    // Out_Color = FraColor * texture(Texture, FraUV.st) + in_proj_bounds * texture(ProjectedTexture, ProjectedTexturePosition.xy);
-    vec2 uv = projected_texture_position.xy;
-    // uv.t = 1.0 - uv.t;
-    Out_Color = FraColor * texture(Texture, FraUV.st) + enable_proj * projected_texture_scale * texture(ProjectedTexture, uv.st);
-}
-
-'''
+        req.vertex = ''
+        if vertex_filename != '':
+            with open(vertex_filename) as vertex_file:
+                req.vertex = vertex_file.read()
+        if req.vertex == '':
+            self.get_logger().error("couldn't load vertex shader from: '{}'".format(
+                    vertex_filename))
+            return False
+        print(req.vertex)
+        print('####################################################')
+        req.fragment = ''
+        if fragment_filename != '':
+            with open(fragment_filename) as fragment_file:
+                req.fragment = fragment_file.read()
+        if req.vertex == '':
+            self.get_logger().error("couldn't load fragment shader from '{}'".format(
+                    fragment_filename))
+            return False
+        print(req.fragment)
         self.future = self.shaders_cli.call_async(req)
-        self.wait_for_response()
+        rv = self.wait_for_response()
+        if rv is not None:
+            return rv.success
+        return False
 
 def main(args=None):
     rclpy.init(args=args)

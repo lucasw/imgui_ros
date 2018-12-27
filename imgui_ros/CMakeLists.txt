@@ -120,9 +120,12 @@ ament_target_dependencies(param_to_topic
 install(TARGETS param_to_topic DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
-# TODO(lucasw) glob
-file(GLOB SCRIPT_FILES scripts/*py)
-install(PROGRAMS ${SCRIPT_FILES}
+install(PROGRAMS
+  scripts/add_shaders.py
+  scripts/demo.py
+  scripts/fragment.glsl
+  scripts/pub_shape.py
+  scripts/vertex.glsl
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
