@@ -101,7 +101,7 @@ class Demo(Node):
         self.future = self.projector_cli.call_async(req)
         self.wait_for_response()
 
-        if True:
+        if False:
             req = AddProjector.Request()
             req.projector.camera.header.frame_id = 'bar2'
             req.projector.camera.name = 'projector2'

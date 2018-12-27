@@ -69,6 +69,16 @@ std::string printMat(glm::dmat4& mat)
   return printMat(mat2);
 }
 
+std::string printVec(glm::vec4& vec)
+{
+  std::stringstream ss;
+  for (size_t i = 0; i < 4; ++i) {
+    ss << std::setw(3) << std::fixed << vec[i] << " ";
+  }
+  ss << "\n";
+  return ss.str();
+}
+
 std::string printTransform(tf2::Transform& tf)
 {
   std::stringstream ss;
@@ -135,7 +145,7 @@ bool Viz3D::setupProjectorsWithShape(
     const std::string& shape_frame_id,
     std::vector<std::shared_ptr<Projector> >& projectors)
 {
-  glm::mat4 view[MAX_PROJECTORS], projection[MAX_PROJECTORS];
+  glm::mat4 view[MAX_PROJECTORS], view_inverse[MAX_PROJECTORS], projection[MAX_PROJECTORS];
   float projected_texture_scale[MAX_PROJECTORS];
   for (size_t i = 0; i < MAX_PROJECTORS; ++i) {
     projected_texture_scale[i] = 0.0;
@@ -196,6 +206,7 @@ bool Viz3D::setupProjectorsWithShape(
         width, height,
         model,
         view[ind],
+        view_inverse[ind],
         projection[ind],
         false
         )) {
@@ -208,6 +219,10 @@ bool Viz3D::setupProjectorsWithShape(
     ind += 1;
   }
 
+  render_message_ << "\n############\n" << printMat(view_inverse[0]) << "##########\n";
+  glm::vec4 projector_pos = view_inverse[0] * glm::vec4(0.0, 0.0, 0.0, 1.0);
+  render_message_ << printVec(projector_pos) << "##########\n";
+
   // this will change with a variable number of projectors
   // corresponds to glActiveTexture(GL_TEXTURE1) if is 1
   const int texture_unit[4] = {1, 2, 3, 4};
@@ -218,6 +233,8 @@ bool Viz3D::setupProjectorsWithShape(
     //     1, GL_FALSE, &model[0][0]);
     glUniformMatrix4fv(shaders->uniform_locations_["projector_view_matrix"],
         MAX_PROJECTORS, transpose, &view[0][0][0]);
+    glUniformMatrix4fv(shaders->uniform_locations_["projector_view_matrix_inverse"],
+        MAX_PROJECTORS, transpose, &view_inverse[0][0][0]);
     glUniformMatrix4fv(shaders->uniform_locations_["projector_projection_matrix"],
         MAX_PROJECTORS, transpose, &projection[0][0][0]);
     // assign these textures to the TEXTURE1..5 slots
@@ -737,6 +754,7 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
     const int fb_width, const int fb_height,
     glm::mat4& model_matrix,
     glm::mat4& view_matrix,
+    glm::mat4& view_matrix_inverse,
     glm::mat4& projection_matrix,
     const bool vert_flip)
 {
@@ -776,8 +794,14 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
 
   glm::dmat4 view_matrix_double;
   view_transform.inverse().getOpenGLMatrix(&view_matrix_double[0][0]);
-  // printMat(view_matrix_double, "view_matrix double");
   dmat4Todmat(view_matrix_double, view_matrix);
+
+  view_transform.getOpenGLMatrix(&view_matrix_double[0][0]);
+  dmat4Todmat(view_matrix_double, view_matrix_inverse);
+  if (false) {  // child_frame_id == "projector1") {
+    // TEMP Debug
+    render_message_ << "\n======" << printMat(view_matrix_double) << "=====\n";
+  }
 
   // mv = view_matrix * model_matrix;
   // mvp = projection_matrix * view_matrix * model_matrix;
@@ -959,12 +983,12 @@ void Viz3D::render2(const tf2::Transform& transform,
     // TODO(lucasw) later a shape can use certain shaders or just default
     glUseProgram(shaders->shader_handle_);
     {
-      glm::mat4 model, view, projection;
+      glm::mat4 model, view, view_inverse, projection;
       if (!setupCamera(transform, shape->frame_id_,
           aov_y,
           aov_x,
           fb_width, fb_height,
-          model, view, projection,
+          model, view, view_inverse, projection,
           vert_flip))
         continue;
       // TODO(lucasw) use double in the future?

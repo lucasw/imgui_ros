@@ -121,6 +121,7 @@ protected:
       const int fb_width, const int fb_height,
       glm::mat4& model_matrix,
       glm::mat4& view_matrix,
+      glm::mat4& view_matrix_inverse,
       glm::mat4& projection_matrix,
       const bool vert_flip = false);
 

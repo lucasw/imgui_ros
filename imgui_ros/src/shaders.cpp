@@ -130,6 +130,7 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
       "projected_texture_scale",
       "ProjectedTexture",
       "projector_view_matrix",
+      "projector_view_matrix_inverse",
       "projector_projection_matrix",
   };
   for (std::string name : uniforms) {

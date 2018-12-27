@@ -1,10 +1,13 @@
+const int MAX_PROJECTORS = 4;
+
 uniform mat4 model_matrix;
 uniform mat4 view_matrix;
 uniform mat4 projection_matrix;
 // the transpose of the projector view matrix times an xyz position relative
 // to the projector should yield world coordinates
-uniform mat4 projector_view_matrix[4];
-uniform mat4 projector_projection_matrix[4];
+uniform mat4 projector_view_matrix[MAX_PROJECTORS];
+uniform mat4 projector_view_matrix_inverse[MAX_PROJECTORS];
+uniform mat4 projector_projection_matrix[MAX_PROJECTORS];
 
 in vec3 Position;
 in vec3 Normal;
@@ -13,10 +16,12 @@ in vec4 Color;
 
 out vec2 FraUV;
 smooth out vec3 FraNormal;
+smooth out vec3 fragment_pos;
 out vec4 FraColor;
-out vec4 ProjectedTexturePosition[4];
+out vec4 ProjectedTexturePosition[MAX_PROJECTORS];
 // The coordinate frame of this direction needs to be the same as the output normal
-out vec3 projector_dir[4];
+out vec3 projector_pos[MAX_PROJECTORS];
+out vec3 projector_dir[MAX_PROJECTORS];
 
 void main()
 {
@@ -25,23 +30,27 @@ void main()
   // put normal into world frame
   FraNormal = (model_matrix * vec4(Normal, 1.0)).xyz -
         (model_matrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-  // FraProjectorPosition =
+  fragment_pos = (model_matrix * vec4(Position.xyz, 1.0)).xyz;
 
   mat4 mvp = projection_matrix * view_matrix * model_matrix;
   gl_Position = mvp * vec4(Position.xyz, 1.0);
 
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 0; i < MAX_PROJECTORS; ++i) {
+  // for (int i = 0; i < 1; ++i) {
+    // TODO(lucasw) this is per-model so perhaps would be better in cpu
     mat4 projector_mvp = projector_projection_matrix[i] * projector_view_matrix[i] * model_matrix;
+    // the vertex does get used here, so this needs to be in this shader
     ProjectedTexturePosition[i] = projector_mvp * vec4(Position.xyz, 1.0);
 
+    // TODO(lucasw) this could be done outside of the vertex shader entirely,
+    // it is redundant to calculate it over and over per vertex.
     // put projector into world frame
-    projector_dir[i] = (transpose(projector_view_matrix[i]) * vec4(0.0, 0.0, 1.0, 1.0) -
-        transpose(projector_view_matrix[i]) * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-    // TODO(lucasw) in order to get the proper direction of the projector
-    // this needs to be done in the fragment shader, where a per fragment
-    // position is needed to get the direction from the projector origin.
-    //projector_dir = -normalize((model_matrix * vec4(Position.xyz, 1.0) -
-    //    transpose(projector_view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)
-    //    ).xyz);
+    vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 z_axis = vec4(0.0, 0.0, 1.0, 1.0);
+    // TODO(lucasw use projector_view_matrix_inverse
+    projector_pos[i] = (transpose(projector_view_matrix[i]) * origin).xyz;
+    projector_dir[i] = (transpose(projector_view_matrix[i]) * z_axis).xyz - projector_pos[i];
+
+    projector_pos[i] = (projector_view_matrix_inverse[i] * origin).xyz;
   }
 }
