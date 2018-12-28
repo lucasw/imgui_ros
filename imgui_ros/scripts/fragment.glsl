@@ -12,6 +12,9 @@ uniform float projector_constant_attenuation[MAX_PROJECTORS];
 uniform float projector_linear_attenuation[MAX_PROJECTORS];
 uniform float projector_quadratic_attenuation[MAX_PROJECTORS];
 
+// TODO(lucasw) or go volumetric
+uniform vec3 ambient;
+
 // disable the projector entirely by setting this to zero
 uniform float projected_texture_scale[MAX_PROJECTORS];
 in vec2 FraUV;
@@ -81,11 +84,14 @@ void main()
    }
    // TODO(lucasw) the projector light needs to interact with the base color and texture
    // of the object, not just add to it.
-   Out_Color +=
-      luminosity[0] * texture(ProjectedTexture[0], uv[0].st) +
-      luminosity[1] * texture(ProjectedTexture[1], uv[1].st) +
-      luminosity[2] * texture(ProjectedTexture[2], uv[2].st) +
-      luminosity[3] * texture(ProjectedTexture[3], uv[3].st);
+   vec3 total_luminosity =
+      luminosity[0] * texture(ProjectedTexture[0], uv[0].st).rgb +
+      luminosity[1] * texture(ProjectedTexture[1], uv[1].st).rgb +
+      luminosity[2] * texture(ProjectedTexture[2], uv[2].st).rgb +
+      luminosity[3] * texture(ProjectedTexture[3], uv[3].st).rgb;
+   // add a little luminosity regardless of surface color, a bright enough light
+   // ought to turn white on any surface.
+   Out_Color.xyz = Out_Color.xyz * (ambient + total_luminosity) + total_luminosity * 0.02;
   // debug
   // Out_Color.rgb += fragment_pos * 10.0;
 }

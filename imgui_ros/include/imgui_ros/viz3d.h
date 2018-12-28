@@ -101,6 +101,9 @@ protected:
   tf2::Transform transform_;
   tf2::Vector3 velocity_ = tf2::Vector3(0.0, 0.0, 0.0);
 
+  // TODO(lucasw) should this go somewhere else?
+  glm::vec3 ambient_;
+
   double move_scale_ = 0.005;
   double rotate_scale_ = 300.0;
   double pitch_ = 0.0;

@@ -266,6 +266,9 @@ Viz3D::Viz3D(const std::string name,
 
   glsl_version_string_ = renderer->GlslVersionString;
 
+  // TODO(lucasw) set via service all
+  ambient_ = glm::vec3(0.3, 0.3, 0.3);
+
   const bool sub_not_pub = true;
   textures_["default"] = std::make_shared<RosImage>("default", "/image_out", sub_not_pub, node);
 
@@ -1079,6 +1082,8 @@ void Viz3D::render2(const tf2::Transform& transform,
       }
 
       // TODO(lucasw) later only change uniforms if they change
+      glUniform3fv(shaders->uniform_locations_["ambient"],
+         1, &ambient_[0]);
       glUniform1fv(shaders->uniform_locations_["projector_max_range"],
          MAX_PROJECTORS, &max_range[0]);
       glUniform1fv(shaders->uniform_locations_["projector_constant_attenuation"],
