@@ -96,8 +96,9 @@ class Demo(Node):
         req.projector.camera.header.frame_id = 'projector1'
         req.projector.camera.name = 'projector1'
         req.projector.camera.texture_name = 'gradient_radial'
-        req.projector.camera.aov_y = 10.0
-        req.projector.camera.aov_x = 50.0
+        req.projector.camera.aov_y = 100.0
+        req.projector.camera.aov_x = 140.0
+        req.projector.constant_attenuation = 0.2
         self.future = self.projector_cli.call_async(req)
         self.wait_for_response()
 

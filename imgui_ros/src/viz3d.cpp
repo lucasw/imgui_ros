@@ -69,6 +69,16 @@ std::string printMat(glm::dmat4& mat)
   return printMat(mat2);
 }
 
+std::string printVec(glm::vec3& vec)
+{
+  std::stringstream ss;
+  for (size_t i = 0; i < 3; ++i) {
+    ss << std::setw(3) << std::fixed << vec[i] << " ";
+  }
+  ss << "\n";
+  return ss.str();
+}
+
 std::string printVec(glm::vec4& vec)
 {
   std::stringstream ss;
@@ -412,7 +422,7 @@ void Viz3D::addShaders(const std::shared_ptr<imgui_ros::srv::AddShaders::Request
     }
   }
 
-  res->message = "succesfully added shaders `" + shaders->name_ + "'";
+  res->message = "successfully added shaders `" + shaders->name_ + "'";
 
   shader_sets_[req->name] = shaders;
 }
@@ -665,6 +675,10 @@ void Viz3D::draw()
 
   // ImGuiIO& io = ImGui::GetIO();
   if (ImGui::CollapsingHeader("Viewer")) {
+    ImGui::Text("position %0.2lf %0.2lf %0.2lf",
+        transform_.getOrigin().x(),
+        transform_.getOrigin().y(),
+        transform_.getOrigin().z());
     ImGui::Text("velocity in view %0.2lf %0.2lf %0.2lf",
         velocity_.x(), velocity_.y(), velocity_.z());
     ImGui::Text("velocity in world %0.2lf %0.2lf %0.2lf",
@@ -996,12 +1010,21 @@ void Viz3D::render2(const tf2::Transform& transform,
         continue;
       // TODO(lucasw) use double in the future?
       // glUniformMatrix4dv(shape->attrib_location.proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
+
+      {
+        tf2::Vector3 translation = transform.getOrigin();
+        glm::vec3 eye_pos = glm::vec3(translation.x(), translation.y(), translation.z());
+        render_message_ << "\neye pos: " << printVec(eye_pos) << "\n";
+        glUniform3fv(shaders->uniform_locations_["eye_pos"],
+            1, &eye_pos[0]);
+      }
+      const auto transpose = GL_FALSE;
       glUniformMatrix4fv(shaders->uniform_locations_["model_matrix"],
-          1, GL_FALSE, &model[0][0]);
+          1, transpose, &model[0][0]);
       glUniformMatrix4fv(shaders->uniform_locations_["view_matrix"],
-          1, GL_FALSE, &view[0][0]);
+          1, transpose, &view[0][0]);
       glUniformMatrix4fv(shaders->uniform_locations_["projection_matrix"],
-          1, GL_FALSE, &projection[0][0]);
+          1, transpose, &projection[0][0]);
       const int texture_unit = 0;
       glUniform1i(shaders->uniform_locations_["Texture"], texture_unit);
       if (checkGLError(__FILE__, __LINE__))
