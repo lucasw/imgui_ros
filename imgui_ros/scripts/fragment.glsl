@@ -45,8 +45,8 @@ void main()
       float dist_proj_to_frag = length(proj_to_frag);
       proj_to_frag /= dist_proj_to_frag;
       // TODO(lucasw) pass in max range and attenuation parameters
-      float max_range = 0.5;
-      // enable_proj[i] *= step(dist_proj_to_frag, max_range);
+      float max_range = 2.5;
+      enable_proj[i] *= step(dist_proj_to_frag, max_range);
 
       // TEMP debug
       // Out_Color.rgb += fragment_pos * 10.0;
@@ -57,8 +57,8 @@ void main()
 
       // if normal is facing away from projector disable projection,
       // also dim the projection with diffuse reflection model.
-      float projector_intensity = -dot(FraNormal, projector_dir[i]);
-      // float projector_intensity = -dot(FraNormal, proj_to_frag);
+      // float projector_intensity = -dot(FraNormal, projector_dir[i]);
+      float projector_intensity = -dot(FraNormal, proj_to_frag);
       enable_proj[i] = enable_proj[i] * projector_intensity * step(0.0, projector_intensity);
 
       // TODO(lwalter) can skip this if always border textures with alpha 0.0
@@ -68,6 +68,8 @@ void main()
 
       // OutColor += enable_proj[i] * projected_texture_scale[i] * texture(ProjectedTexture[i], uv[i].st);
    }
+   // TODO(lucasw) the projector light needs to interact with the base color and texture
+   // of the object, not just add to it.
    Out_Color +=
       enable_proj[0] * projected_texture_scale[0] * texture(ProjectedTexture[0], uv[0].st) +
       enable_proj[1] * projected_texture_scale[1] * texture(ProjectedTexture[1], uv[1].st) +

@@ -47,10 +47,10 @@ void main()
     // put projector into world frame
     vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
     vec4 z_axis = vec4(0.0, 0.0, 1.0, 1.0);
-    // TODO(lucasw use projector_view_matrix_inverse
-    projector_pos[i] = (transpose(projector_view_matrix[i]) * origin).xyz;
-    projector_dir[i] = (transpose(projector_view_matrix[i]) * z_axis).xyz - projector_pos[i];
 
+    // TODO(lucasw) instead pass in position and direction as calculated on cpu?
+    // The inverse isn't used for anything else
     projector_pos[i] = (projector_view_matrix_inverse[i] * origin).xyz;
+    projector_dir[i] = (projector_view_matrix_inverse[i] * z_axis).xyz - projector_pos[i];
   }
 }
