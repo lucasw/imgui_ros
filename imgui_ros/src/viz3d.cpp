@@ -1047,25 +1047,46 @@ void Viz3D::render2(const tf2::Transform& transform,
         return;
     }
 
-    for (size_t i = 0; (i < MAX_PROJECTORS) && (i < projectors.size()); ++i) {
-      // TODO(lucasw) later the scale could be a brightness setting
-      GLuint tex_id = 0;
-      // TODO(lucasw) currently hardcoded, later make more flexible
-      const std::string name = projectors[i]->texture_name_;
-      if (textures_.count(name) > 0) {
-        tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
-        render_message_ << "\nprojector " << projectors[i]->name_
-            << " texture " << name << " " << tex_id;
-      } else if (textures_.count("default") > 0) {
-        tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
-        render_message_ << "\ndefault projected texture " << tex_id;
-      } else {
-        render_message_ << ", no texture to use";
+    {
+      float max_range[MAX_PROJECTORS];
+      float constant_attenuation[MAX_PROJECTORS];
+      float linear_attenuation[MAX_PROJECTORS];
+      float quadratic_attenuation[MAX_PROJECTORS];
+      for (size_t i = 0; (i < MAX_PROJECTORS) && (i < projectors.size()); ++i) {
+        max_range[i] = projectors[i]->max_range_;
+        constant_attenuation[i] = projectors[i]->constant_attenuation_;
+        linear_attenuation[i] = projectors[i]->linear_attenuation_;
+        quadratic_attenuation[i] = projectors[i]->quadratic_attenuation_;
+
+        // TODO(lucasw) later the scale could be a brightness setting
+        GLuint tex_id = 0;
+        // TODO(lucasw) currently hardcoded, later make more flexible
+        const std::string name = projectors[i]->texture_name_;
+        if (textures_.count(name) > 0) {
+          tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
+          render_message_ << "\nprojector " << projectors[i]->name_
+              << " texture " << name << " " << tex_id;
+        } else if (textures_.count("default") > 0) {
+          tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
+          render_message_ << "\ndefault projected texture " << tex_id;
+        } else {
+          render_message_ << ", no texture to use";
+        }
+        glActiveTexture(GL_TEXTURE1 + i);
+        glBindTexture(GL_TEXTURE_2D, tex_id);
+        if (checkGLError(__FILE__, __LINE__))
+          return;
       }
-      glActiveTexture(GL_TEXTURE1 + i);
-      glBindTexture(GL_TEXTURE_2D, tex_id);
-      if (checkGLError(__FILE__, __LINE__))
-        return;
+
+      // TODO(lucasw) later only change uniforms if they change
+      glUniform1fv(shaders->uniform_locations_["projector_max_range"],
+         MAX_PROJECTORS, &max_range[0]);
+      glUniform1fv(shaders->uniform_locations_["projector_constant_attenuation"],
+         MAX_PROJECTORS, &constant_attenuation[0]);
+      glUniform1fv(shaders->uniform_locations_["projector_linear_attenuation"],
+         MAX_PROJECTORS, &linear_attenuation[0]);
+      glUniform1fv(shaders->uniform_locations_["projector_quadratic_attenuation"],
+         MAX_PROJECTORS, &quadratic_attenuation[0]);
     }
 
     {

@@ -3,13 +3,22 @@
 // 130
 const int MAX_PROJECTORS = 4;
 uniform sampler2D Texture;
+
 uniform sampler2D ProjectedTexture[MAX_PROJECTORS];
+// TODO(lucasw) use a struct?
+uniform float projector_max_range[MAX_PROJECTORS];
+uniform float projector_constant_attenuation[MAX_PROJECTORS];
+// TODO(lucasw) linear attenuation seems the least physical
+uniform float projector_linear_attenuation[MAX_PROJECTORS];
+uniform float projector_quadratic_attenuation[MAX_PROJECTORS];
+
 // disable the projector entirely by setting this to zero
 uniform float projected_texture_scale[MAX_PROJECTORS];
 in vec2 FraUV;
 in vec4 FraColor;
 smooth in vec3 FraNormal;
 smooth in vec3 fragment_pos;
+// TODO(lucasw) use a struct?
 in vec3 projector_pos[MAX_PROJECTORS];
 in vec3 projector_dir[MAX_PROJECTORS];
 in vec4 ProjectedTexturePosition[MAX_PROJECTORS];
@@ -20,6 +29,8 @@ void main()
 
     float enable_proj[MAX_PROJECTORS];
     vec2 uv[MAX_PROJECTORS];
+
+    float luminosity[MAX_PROJECTORS];
 
     for (int i = 0; i < MAX_PROJECTORS; ++i) {
     // for (int i = 0; i < 1; ++i) {
@@ -42,24 +53,16 @@ void main()
 
       // modify projected image based on distance to projector
       vec3 proj_to_frag = fragment_pos - projector_pos[i];
-      float dist_proj_to_frag = length(proj_to_frag);
-      proj_to_frag /= dist_proj_to_frag;
+      float dist = length(proj_to_frag);
+      proj_to_frag /= dist;
       // TODO(lucasw) pass in max range and attenuation parameters
-      float max_range = 2.5;
-      enable_proj[i] *= step(dist_proj_to_frag, max_range);
-
-      // TEMP debug
-      // Out_Color.rgb += fragment_pos * 10.0;
-      // Out_Color.r += (proj_to_frag.x) * 1.0;
-      // Out_Color.g += (projector_pos[i].y) * 1.0;
-      // Out_Color.b += (projector_pos[i].z) * 1.0;
-      // Out_Color.rgb += proj_to_frag.xyz * 1.0;
+      enable_proj[i] *= (projector_max_range[i] == 0.0) ? 1.0 : step(dist, projector_max_range[i]);
 
       // if normal is facing away from projector disable projection,
       // also dim the projection with diffuse reflection model.
       // float projector_intensity = -dot(FraNormal, projector_dir[i]);
       float projector_intensity = -dot(FraNormal, proj_to_frag);
-      enable_proj[i] = enable_proj[i] * projector_intensity * step(0.0, projector_intensity);
+      enable_proj[i] *= projector_intensity * step(0.0, projector_intensity);
 
       // TODO(lwalter) can skip this if always border textures with alpha 0.0
       uv[i] = projected_texture_position.xy;
@@ -67,15 +70,22 @@ void main()
       // error: sampler arrays indexed with non-constant expressions are forbidden in GLSL 1.30 and later
 
       // OutColor += enable_proj[i] * projected_texture_scale[i] * texture(ProjectedTexture[i], uv[i].st);
+      // the base color
+      // then attenuate
+      float attenuation = projector_constant_attenuation[i] +
+          projector_linear_attenuation[i] * dist +
+          projector_quadratic_attenuation[i] * dist * dist;
+      // set luminosity to 1.0 if attenuation is 0.0
+      attenuation = attenuation == 0.0 ? 1.0 : attenuation;
+      luminosity[i] = enable_proj[i] * projected_texture_scale[i] * 1.0 / attenuation;
    }
    // TODO(lucasw) the projector light needs to interact with the base color and texture
    // of the object, not just add to it.
    Out_Color +=
-      enable_proj[0] * projected_texture_scale[0] * texture(ProjectedTexture[0], uv[0].st) +
-      enable_proj[1] * projected_texture_scale[1] * texture(ProjectedTexture[1], uv[1].st) +
-      enable_proj[2] * projected_texture_scale[2] * texture(ProjectedTexture[2], uv[2].st) +
-      enable_proj[3] * projected_texture_scale[3] * texture(ProjectedTexture[3], uv[3].st);
-
+      luminosity[0] * texture(ProjectedTexture[0], uv[0].st) +
+      luminosity[1] * texture(ProjectedTexture[1], uv[1].st) +
+      luminosity[2] * texture(ProjectedTexture[2], uv[2].st) +
+      luminosity[3] * texture(ProjectedTexture[3], uv[3].st);
   // debug
   // Out_Color.rgb += fragment_pos * 10.0;
 }
