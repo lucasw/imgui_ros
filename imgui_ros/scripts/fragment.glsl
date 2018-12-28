@@ -4,6 +4,7 @@
 const int MAX_PROJECTORS = 4;
 uniform vec3 eye_pos;
 uniform sampler2D Texture;
+uniform int num_projectors;
 uniform sampler2D ProjectedTexture[MAX_PROJECTORS];
 // TODO(lucasw) use a struct?
 uniform float projector_max_range[MAX_PROJECTORS];
@@ -95,7 +96,7 @@ void main()
       float shininess = 25.5;
       specular_intensity = pow(specular_intensity, shininess);
       specular[i] = specular_intensity * scaled_attenuated * step(0.0, normal_light_alignment);
-
+      // specular[i] *= step(0.0, specular[i]);
       // TEMP debug
       // Out_Color.rgb = view_ray;
       // Out_Color.rgb += specular[i] * enable_proj[i] * step(0.0, alignment);
@@ -107,23 +108,32 @@ void main()
    // error: sampler arrays indexed with non-constant expressions are forbidden in GLSL 1.30 and later
    vec3 proj_light[4];
    proj_light[0] = texture(ProjectedTexture[0], uv[0].st).rgb;
-   proj_light[1] = texture(ProjectedTexture[0], uv[1].st).rgb;
-   proj_light[2] = texture(ProjectedTexture[0], uv[2].st).rgb;
-   proj_light[3] = texture(ProjectedTexture[0], uv[3].st).rgb;
+   proj_light[1] = texture(ProjectedTexture[1], uv[1].st).rgb;
+   proj_light[2] = texture(ProjectedTexture[2], uv[2].st).rgb;
+   proj_light[3] = texture(ProjectedTexture[3], uv[3].st).rgb;
 
    // pure white for now
    vec3 specular_color = vec3(1.0, 1.0, 1.0);
 
    vec3 total_luminosity = vec3(0.0, 0.0, 0.0);
    vec3 total_specular = vec3(0.0, 0.0, 0.0);
-   for (int i = 0; i < MAX_PROJECTORS; ++i) {
-      total_luminosity += luminosity[i] * proj_light[i];
-      total_specular += specular[i] * specular_color[i] * proj_light[i];
+   // TODO(lucasw) having problems with adding invalid projector light,
+   // everything turns black
+   for (int i = 0; i < MAX_PROJECTORS && i < num_projectors; ++i) {
+   // for (int i = 0; i < MAX_PROJECTORS; ++i) {
+      vec3 diffuse_light = luminosity[i] * proj_light[i];
+      // diffuse_light *= step(0.0, diffuse_light);
+      total_luminosity += diffuse_light;
+
+      vec3 specular_light = specular[i] * specular_color[i] * proj_light[i];
+      // specular_light *= step(0.0, specular_light);
+      total_specular += specular_light;
    }
    // add a little luminosity regardless of surface color, a bright enough light
    // ought to turn white on any surface.
-   Out_Color.xyz = Out_Color.xyz * (ambient + total_luminosity) +
+   Out_Color.rgb = Out_Color.rgb * (ambient + total_luminosity) +
       total_specular + total_luminosity * 0.01;
+
   // debug
-  // Out_Color.rgb += eye_pos * 1.0;
+  // Out_Color.rgb = abs(eye_pos) * 1.0;
 }

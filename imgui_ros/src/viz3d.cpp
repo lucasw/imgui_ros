@@ -166,6 +166,9 @@ bool Viz3D::setupProjectorsWithShape(
     if (ind >= MAX_PROJECTORS)
       break;
     auto projector = projector_pair.second;
+    if (!projector->enable_) {
+      continue;
+    }
     // TODO(lucasw) select from all projectors the ones
     // closest to the current shape and exclude the rest.
 
@@ -233,7 +236,6 @@ bool Viz3D::setupProjectorsWithShape(
   glm::vec4 projector_pos = view_inverse[0] * glm::vec4(0.0, 0.0, 0.0, 1.0);
   render_message_ << printVec(projector_pos) << "##########\n";
 
-  // this will change with a variable number of projectors
   // corresponds to glActiveTexture(GL_TEXTURE1) if is 1
   const int texture_unit[4] = {1, 2, 3, 4};
   for (auto shaders_pair : shader_sets_) {
@@ -1103,6 +1105,9 @@ void Viz3D::render2(const tf2::Transform& transform,
         if (checkGLError(__FILE__, __LINE__))
           return;
       }
+
+      int num_projectors = projectors.size();
+      glUniform1iv(shaders->uniform_locations_["num_projectors"], 1, &num_projectors);
 
       // TODO(lucasw) later only change uniforms if they change
       glUniform3fv(shaders->uniform_locations_["ambient"],
