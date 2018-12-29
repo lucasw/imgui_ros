@@ -132,6 +132,7 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
       "ProjectedTexture",
       "ambient",
       "num_projectors",
+      "projector_shadow_map",
       "projector_max_range",
       "projector_constant_attenuation",
       "projector_linear_attenuation",

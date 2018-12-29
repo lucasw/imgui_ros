@@ -125,6 +125,8 @@ install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(PROGRAMS
   scripts/add_shaders.py
   scripts/demo.py
+  scripts/depth_fragment.glsl
+  scripts/depth_vertex.glsl
   scripts/fragment.glsl
   scripts/pub_shape.py
   scripts/vertex.glsl

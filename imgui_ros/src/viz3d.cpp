@@ -232,12 +232,32 @@ bool Viz3D::setupProjectorsWithShape(
     ind += 1;
   }
 
-  render_message_ << "\n############\n" << printMat(view_inverse[0]) << "##########\n";
+  render_message_ << "\nview inverse\n" << printMat(view_inverse[0]) << "\n";
   glm::vec4 projector_pos = view_inverse[0] * glm::vec4(0.0, 0.0, 0.0, 1.0);
-  render_message_ << printVec(projector_pos) << "##########\n";
+  render_message_ << printVec(projector_pos) << "\n";
+
+  const int num_projectors = projectors.size();
 
   // corresponds to glActiveTexture(GL_TEXTURE1) if is 1
-  const int texture_unit[4] = {1, 2, 3, 4};
+
+  // TODO(lucasw) store these where they can be used outside this method
+  int tex_ind = 1;
+  int texture_unit[4] = {tex_ind, tex_ind + 1, tex_ind + 2, tex_ind + 3};
+  tex_ind += 4;
+  int shadow_texture_unit[4] = {tex_ind, tex_ind + 1, tex_ind + 2, tex_ind + 3};
+  #if 0
+  std::vector<int> texture_unit;  // [num_projectors];
+  for (int i = 0; i < num_projectors; ++i) {
+    texture_unit.push_back(tex_ind);
+    tex_ind += 1;
+  }
+  std::vector<int> shadow_texture_unit;
+  for (int i = 0; i < num_projectors; ++i) {
+    shadow_texture_unit.push_back(tex_ind);
+    tex_ind += 1;
+  }
+  #endif
+
   for (auto shaders_pair : shader_sets_) {
     auto shaders = shaders_pair.second;
     auto transpose = GL_FALSE;
@@ -249,9 +269,14 @@ bool Viz3D::setupProjectorsWithShape(
         MAX_PROJECTORS, transpose, &view_inverse[0][0][0]);
     glUniformMatrix4fv(shaders->uniform_locations_["projector_projection_matrix"],
         MAX_PROJECTORS, transpose, &projection[0][0][0]);
+
     // assign these textures to the TEXTURE1..5 slots
     glUniform1iv(shaders->uniform_locations_["ProjectedTexture"],
+        // num_projectors, &texture_unit[0]);
         MAX_PROJECTORS, &texture_unit[0]);
+    glUniform1iv(shaders->uniform_locations_["projector_shadow_map"],
+        MAX_PROJECTORS, &shadow_texture_unit[0]);
+
     glUniform1fv(shaders->uniform_locations_["projected_texture_scale"],
         MAX_PROJECTORS, &projected_texture_scale[0]);
     checkGLError(__FILE__, __LINE__);
@@ -397,12 +422,6 @@ void Viz3D::addShaders(const std::shared_ptr<imgui_ros::srv::AddShaders::Request
       shader_sets_.erase(req->name);
       return;
     }
-    return;
-  }
-
-  if (req->name != "default") {
-    res->message = "only 1 set of shaders currently supported in 'default' slot";
-    res->success = false;
     return;
   }
 
@@ -845,8 +864,6 @@ void Viz3D::render(const int fb_width, const int fb_height,
   (void)display_size_x;
   (void)display_size_y;
 
-  render_message_.str("");
-
   if (shapes_.size() == 0) {
     render_message_ << "no shapes to render";
     return;
@@ -880,10 +897,68 @@ void Viz3D::render(const int fb_width, const int fb_height,
     // and then draw the texture to the screen with a textured quad fragment
     // shader, this allows rendering at a different resolution that the screen
     // which might be desirable if performance is suffering.
-    render2(transform_, fb_width, fb_height, aov_y_, aov_x_);
+    const bool vert_flip = false;
+    render2("default", transform_, fb_width, fb_height, aov_y_, aov_x_, vert_flip);
 
     gl_state.backup();
     checkGLError(__FILE__, __LINE__);
+}
+
+void Viz3D::renderShadows()
+{
+  render_message_ << "\n############# rendering " << projectors_.size() << " shadows\n";
+  if (projectors_.size() == 0) {
+    // no need for shadows without directional light
+    return;
+  }
+
+  GLState gl_state;
+  gl_state.backup();
+  for (auto projector_pair : projectors_) {
+    auto projector = projector_pair.second;
+    if (!projector->enable_) {
+      continue;
+    }
+    render_message_ << "\nrender depth shadows " << projector->name_ << "\n";
+
+    glBindFramebuffer(GL_FRAMEBUFFER, projector->shadow_framebuffer_);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    // TODO(lucasw) if render width/height change need to update rendered_texture
+
+    try {
+      geometry_msgs::msg::TransformStamped tf;
+      tf = tf_buffer_->lookupTransform(frame_id_,
+          projector->frame_id_, tf2::TimePointZero);
+      tf2::fromMsg(tf, projector->stamped_transform_);
+      #if 0
+      tf2::TimePoint time_out;
+      // this is private, so doesn't work
+      tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
+          tf2::TimePointZero, transform, time_out);
+      #endif
+      render_message_ << ", frames: " << frame_id_ << " -> "
+          << projector->frame_id_ << "\n";
+    } catch (tf2::TransformException& ex) {
+      render_message_ << "\n" << ex.what();
+      continue;
+    }
+
+    const bool vert_flip = true;
+    const bool use_projectors = false;
+    render2("depth", projector->stamped_transform_,
+        projector->shadow_width_,
+        projector->shadow_height_,
+        projector->aov_y_,
+        projector->aov_x_,
+        vert_flip,
+        use_projectors);
+
+    // TODO(lucasw) copy the date from the texture out to a cv::Mat?
+    checkGLError(__FILE__, __LINE__);
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  gl_state.backup();
+  render_message_ << "\n########\n";
 }
 
 // don't interleave this with regular 3d rendering imgui rendering
@@ -897,7 +972,7 @@ void Viz3D::renderToTexture()
   for (auto camera_pair : cameras_) {
     auto camera = camera_pair.second;
     if (!camera->enable_) {
-      return;
+      continue;
     }
     render_message_ << "\nrender to texture " << camera->name_ << "\n";
 
@@ -924,12 +999,14 @@ void Viz3D::renderToTexture()
       continue;
     }
 
-    render2(camera->stamped_transform_,
+    const bool vert_flip = true;
+    render2("default",
+        camera->stamped_transform_,
         camera->image_->width_,
         camera->image_->height_,
         camera->aov_y_,
         camera->aov_x_,
-        -1.0);
+        vert_flip);
 
     // TODO(lucasw) copy the date from the texture out to a cv::Mat?
     checkGLError(__FILE__, __LINE__);
@@ -938,12 +1015,27 @@ void Viz3D::renderToTexture()
   gl_state.backup();
 }
 
-void Viz3D::render2(const tf2::Transform& transform,
+void Viz3D::render2(
+    const std::string& shaders_name,
+    const tf2::Transform& transform,
     const int fb_width, const int fb_height,
     const float aov_y,
     const float aov_x,
-    const bool vert_flip)
+    const bool vert_flip,
+    const bool use_projectors)
 {
+
+  if (shader_sets_.size() == 0) {
+    render_message_ << "no shaders\n";
+    return;
+  }
+  if (shader_sets_.count(shaders_name) < 1) {
+    render_message_ << "no shader '" << shaders_name << "'\n";
+    return;
+  }
+  // TODO(lucasw) for now just use the last shader set
+  auto shaders = shader_sets_[shaders_name];
+
   // TODO(lucasw) should give up if can't lock, just don't render now
   std::lock_guard<std::mutex> lock(mutex_);
 
@@ -971,15 +1063,6 @@ void Viz3D::render2(const tf2::Transform& transform,
     if (checkGLError(__FILE__, __LINE__))
       return;
 
-  std::shared_ptr<ShaderSet> shaders;
-  if (shader_sets_.size() == 0) {
-    return;
-  }
-  if (shader_sets_.count("default") < 1) {
-    return;
-  }
-  // TODO(lucasw) for now just use the last shader set
-  shaders = shader_sets_["default"];
   render_message_ << ", shader " << shaders->name_ << " " << shaders->shader_handle_;
   // for (auto shaders_pair : shader_sets_) {
   //  shaders = shaders_pair.second;
@@ -1036,7 +1119,9 @@ void Viz3D::render2(const tf2::Transform& transform,
     // TODO(lucasw) add imgui use texture projection checkbox
     // make a vector of projectors to use here, no more than MAX_PROJECTORS
     std::vector<std::shared_ptr<Projector> > projectors;
-    setupProjectorsWithShape(frame_id_, shape->frame_id_, projectors);
+    if (use_projectors) {
+      setupProjectorsWithShape(frame_id_, shape->frame_id_, projectors);
+    }
 
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
@@ -1076,37 +1161,48 @@ void Viz3D::render2(const tf2::Transform& transform,
     }
 
     {
+      const int num_projectors = projectors.size();
+
       float max_range[MAX_PROJECTORS];
       float constant_attenuation[MAX_PROJECTORS];
       float linear_attenuation[MAX_PROJECTORS];
       float quadratic_attenuation[MAX_PROJECTORS];
-      for (size_t i = 0; (i < MAX_PROJECTORS) && (i < projectors.size()); ++i) {
+      for (size_t i = 0; i < projectors.size(); ++i) {
         max_range[i] = projectors[i]->max_range_;
         constant_attenuation[i] = projectors[i]->constant_attenuation_;
         linear_attenuation[i] = projectors[i]->linear_attenuation_;
         quadratic_attenuation[i] = projectors[i]->quadratic_attenuation_;
 
         // TODO(lucasw) later the scale could be a brightness setting
-        GLuint tex_id = 0;
         // TODO(lucasw) currently hardcoded, later make more flexible
+        {
         const std::string name = projectors[i]->texture_name_;
+        GLuint texture_id = 0;
         if (textures_.count(name) > 0) {
-          tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
+          texture_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
           render_message_ << "\nprojector " << projectors[i]->name_
-              << " texture " << name << " " << tex_id;
+              << " texture " << name << " " << texture_id;
         } else if (textures_.count("default") > 0) {
-          tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
-          render_message_ << "\ndefault projected texture " << tex_id;
+          texture_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
+          render_message_ << "\ndefault projected texture " << texture_id;
         } else {
           render_message_ << ", no texture to use";
         }
         glActiveTexture(GL_TEXTURE1 + i);
-        glBindTexture(GL_TEXTURE_2D, tex_id);
+        glBindTexture(GL_TEXTURE_2D, texture_id);
+        }
+
+        // shadows
+        {
+          // glActiveTexture(GL_TEXTURE1 + num_projectors + i);
+          glActiveTexture(GL_TEXTURE1 + MAX_PROJECTORS + i);
+          glBindTexture(GL_TEXTURE_2D, projectors[i]->shadow_depth_texture_);
+        }
+
         if (checkGLError(__FILE__, __LINE__))
           return;
       }
 
-      int num_projectors = projectors.size();
       glUniform1iv(shaders->uniform_locations_["num_projectors"], 1, &num_projectors);
 
       // TODO(lucasw) later only change uniforms if they change

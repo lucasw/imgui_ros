@@ -604,6 +604,12 @@ namespace imgui_ros {
     ImGui::Render();
     // TODO(lucasw) or wait until after GetDrawData() to unlock?
     }
+
+    viz3d->render_message_.str("");
+    // Need to render these before using them in the regular viz3d render below
+    viz3d->renderShadows();
+
+    {
     SDL_GL_MakeCurrent(window, gl_context);
     checkGLError(__FILE__, __LINE__);
     glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
@@ -628,6 +634,7 @@ namespace imgui_ros {
     checkGLError(__FILE__, __LINE__);
 
     SDL_GL_SwapWindow(window);
+    }
     ////////////////////////////////////////////////////////////////////
 
     {

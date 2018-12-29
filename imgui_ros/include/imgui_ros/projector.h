@@ -83,7 +83,7 @@ struct Projector {
   std::string name_;
   std::string texture_name_;
   std::string frame_id_;
-  // tf2::Stamped<tf2::Transform> stamped_transform_;
+  tf2::Stamped<tf2::Transform> stamped_transform_;
 
   // TODO(lucasw) later need to use this and resolution to make a CameraInfo
   double aov_y_;
@@ -97,6 +97,11 @@ struct Projector {
 
   // TODO(lucasw) put in own class later
   bool enable_ = true;
+
+  int shadow_width_ = 512;
+  int shadow_height_ = 512;
+  GLuint shadow_framebuffer_ = 0;
+  GLuint shadow_depth_texture_ = 0;
 
   std::weak_ptr<rclcpp::Node> node_;
 };

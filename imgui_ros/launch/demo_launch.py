@@ -51,13 +51,20 @@ def generate_launch_description():
             arguments=['__params:=' + param_file],
             remappings=[])
 
-    imgui_ros_dir = get_package_share_directory('imgui_ros')
-    vertex_filename = imgui_ros_dir + '/../../lib/imgui_ros/vertex.glsl'
-    fragment_filename = imgui_ros_dir + '/../../lib/imgui_ros/fragment.glsl'
+    shader_dir = get_package_share_directory('imgui_ros') + '/../../lib/imgui_ros/'
+    vertex_filename = shader_dir + 'vertex.glsl'
+    fragment_filename = shader_dir + 'fragment.glsl'
     add_shaders = launch_ros.actions.Node(
             package='imgui_ros', node_executable='add_shaders.py', output='screen',
-            arguments=['-v', vertex_filename, '-f', fragment_filename],
+            arguments=['-n', 'default', '-v', vertex_filename, '-f', fragment_filename],
             )
+    vertex_filename = shader_dir + 'depth_vertex.glsl'
+    fragment_filename = shader_dir + 'depth_fragment.glsl'
+    add_depth_shaders = launch_ros.actions.Node(
+            package='imgui_ros', node_executable='add_shaders.py', output='screen',
+            arguments=['-n', 'depth', '-v', vertex_filename, '-f', fragment_filename],
+            )
+
     configure_windows = launch_ros.actions.Node(
             package='imgui_ros', node_executable='demo.py', output='screen')
     add_shapes = launch_ros.actions.Node(
@@ -72,5 +79,6 @@ def generate_launch_description():
         imgui_ros,
         configure_windows,
         add_shaders,
+        add_depth_shaders,
         add_shapes,
     ])

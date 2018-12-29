@@ -65,6 +65,47 @@ Projector::Projector(
 {
   std::cout << "creating projector " << print() << std::endl;
 
+  glGenFramebuffers(1, &shadow_framebuffer_);
+  glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffer_);
+
+  {
+    glGenTextures(1, &shadow_depth_texture_);
+    glBindTexture(GL_TEXTURE_2D, shadow_depth_texture_);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 512, 512, 0,
+    GLint level = 0;
+    // This will produce a 0,1 clamped float
+    GLint internal_format = GL_DEPTH_COMPONENT;
+    GLint border = 0;
+    GLint format = GL_DEPTH_COMPONENT;
+    GLvoid* data = nullptr;
+    glTexImage2D(GL_TEXTURE_2D, level,
+        internal_format,
+        shadow_width_, shadow_height_, border,
+        format, GL_FLOAT, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  }
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+      GL_TEXTURE_2D, shadow_depth_texture_, 0);
+  glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
+
+  const auto fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  if (fb_status != GL_FRAMEBUFFER_COMPLETE) {
+    std::stringstream ss;
+    ss << name_ << " framebuffer is not complete " << shadow_framebuffer_
+        << " " << shadow_depth_texture_ << ", fb status: " << fb_status  << " " << glGetError();
+    throw std::runtime_error(ss.str());
+  } else {
+    RCLCPP_INFO(node->get_logger(),
+        "projector '%s' depth framebuffer setup complete, fb %d, tex id %d",
+        name_.c_str(), shadow_framebuffer_, shadow_depth_texture_);
+  }
+
   std::string msg;
   if (checkGLError2(msg)) {
     std::cerr << msg << std::endl;
@@ -139,6 +180,11 @@ void Projector::draw(const std::vector<std::string>& texture_names,
       &linear_attenuation_, &min, &max, "%lf", 3);
   ImGui::SliderScalar(("quadratic attenuation##" + name).c_str(), ImGuiDataType_Double,
       &quadratic_attenuation_, &min, &max, "%lf", 3);
+
+  ImVec2 image_size;
+  image_size.x = shadow_width_;
+  image_size.y = shadow_height_;
+  ImGui::Image((void*)(intptr_t)shadow_depth_texture_, image_size);
 
   // ImGui::End();
 }

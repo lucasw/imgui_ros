@@ -96,15 +96,16 @@ class Demo(Node):
         req.projector.camera.header.frame_id = 'projector1'
         req.projector.camera.name = 'projector1'
         req.projector.camera.texture_name = 'gradient_radial'
-        req.projector.camera.aov_y = 170.0
-        req.projector.camera.aov_x = 170.0
+        req.projector.camera.aov_y = 130.0
+        req.projector.camera.aov_x = 130.0
         req.projector.constant_attenuation = 0.2
         req.projector.quadratic_attenuation = 0.004
         self.future = self.projector_cli.call_async(req)
         self.wait_for_response()
 
-        if True:
+        if False:
             req = AddProjector.Request()
+            req.add = True
             req.projector.camera.header.frame_id = 'bar2'
             req.projector.camera.name = 'projector2'
             req.projector.camera.texture_name = 'chess'
@@ -400,12 +401,12 @@ class Demo(Node):
                 segs_long=16, segs_lat=8,
                 flip_normals=True,
                 )
-            shape.add = True
+            shape.add = False
             shape.texture = 'diffract'
             shape.header.frame_id = 'map'
             req.shapes.append(shape)
         if True:
-            shape = self.make_cylinder(name='cylinder2', radius=0.03, length=0.1,
+            shape = self.make_cylinder(name='cylinder2', radius=0.1, length=0.1,
                 segs=20,
                 off_y=0.0)
             shape.add = True
@@ -413,7 +414,7 @@ class Demo(Node):
             shape.header.frame_id = 'projector1'
             req.shapes.append(shape)
         if True:
-            shape = self.make_cylinder(name='cylinder3', segs=25)
+            shape = self.make_cylinder(name='cylinder3', length=2.0, segs=25)
             shape.add = True
             shape.texture = 'diffract'  # 'camera1'
             shape.header.frame_id = 'bar2'

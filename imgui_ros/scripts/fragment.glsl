@@ -6,6 +6,7 @@ uniform vec3 eye_pos;
 uniform sampler2D Texture;
 uniform int num_projectors;
 uniform sampler2D ProjectedTexture[MAX_PROJECTORS];
+uniform sampler2D projector_shadow_map[MAX_PROJECTORS];
 // TODO(lucasw) use a struct?
 uniform float projector_max_range[MAX_PROJECTORS];
 uniform float projector_constant_attenuation[MAX_PROJECTORS];
@@ -39,15 +40,25 @@ void main()
     float luminosity[MAX_PROJECTORS];
     float specular[MAX_PROJECTORS];
 
-    for (int i = 0; i < MAX_PROJECTORS; ++i) {
+    float scaled_dist[MAX_PROJECTORS];
+
+    // TODO(lucasw) is it easier to always loop MAX_PROJECTORS times?
+    for (int i = 0; i < MAX_PROJECTORS && i < num_projectors; ++i) {
     // for (int i = 0; i < 1; ++i) {
       vec4 projected_texture_position = ProjectedTexturePosition[i];
-      // transform to clip space
+
+      // TODO(lucasw) is this scaled properly?
+      // -1.0 is 1.0 units away
+      scaled_dist[i] = -projected_texture_position.z;
+
+      // transform to clip space / normalized device coordinates
       projected_texture_position.xyz /= projected_texture_position.w;
       projected_texture_position.xy += 0.5;
+      // should the z be -1,1 already, why the subtraction?
       projected_texture_position.z -= 1.0;
+      // is the fragment in front of the light?  Otherwise disable
       enable_proj[i] = step(0.0, projected_texture_position.z);
-      enable_proj[i] = enable_proj[i] * step(0.0, projected_texture_position.z);
+      // enable_proj[i] = enable_proj[i] * step(0.0, projected_texture_position.z);
       // this is a manual clamp to prevent any projection outside
       // of the view of the projector
       // TODO(lucasw) specify this elsewhere and
@@ -58,9 +69,13 @@ void main()
           (step(projected_texture_position.y, 1.0)) *
           step(0.0, projected_texture_position.y);
 
+      // TODO(lucasw) proj_ray.z is not the same as the distance in the shadow map
       // modify projected image based on distance to projector
       vec3 proj_ray = fragment_pos - projector_pos[i];
       float dist = length(proj_ray);
+      // TEMP debug
+      // scaled_dist[i] = dist;
+
       proj_ray /= dist;
       // TODO(lucasw) pass in max range and attenuation parameters
       enable_proj[i] *= (projector_max_range[i] == 0.0) ? 1.0 : step(dist, projector_max_range[i]);
@@ -113,6 +128,12 @@ void main()
    proj_light[2] = texture(ProjectedTexture[2], uv[2].st).rgb;
    proj_light[3] = texture(ProjectedTexture[3], uv[3].st).rgb;
 
+   float shadow_dist[4];
+   shadow_dist[0] = texture(projector_shadow_map[0], uv[0].st).r;
+   shadow_dist[1] = texture(projector_shadow_map[1], uv[1].st).r;
+   shadow_dist[2] = texture(projector_shadow_map[2], uv[2].st).r;
+   shadow_dist[3] = texture(projector_shadow_map[3], uv[3].st).r;
+
    // pure white for now
    vec3 specular_color = vec3(1.0, 1.0, 1.0);
 
@@ -121,19 +142,25 @@ void main()
    // TODO(lucasw) having problems with adding invalid projector light,
    // everything turns black
    for (int i = 0; i < MAX_PROJECTORS && i < num_projectors; ++i) {
-   // for (int i = 0; i < MAX_PROJECTORS; ++i) {
-      vec3 diffuse_light = luminosity[i] * proj_light[i];
-      // diffuse_light *= step(0.0, diffuse_light);
-      total_luminosity += diffuse_light;
+      float not_shadowed = 1.0;  // step(scaled_dist[i], shadow_dist[i]);
 
-      vec3 specular_light = specular[i] * specular_color[i] * proj_light[i];
+      vec3 diffuse_light = luminosity[i] * proj_light[i] * not_shadowed;
+      // // diffuse_light *= step(0.0, diffuse_light);
+      // total_luminosity += diffuse_light;
+      // debug, just show depth values
+      // total_luminosity += scaled_dist[i] * enable_proj[i] * vec3(1.0, 1.0, 1.0);
+      total_luminosity += shadow_dist[i] * enable_proj[i] * vec3(1.0, 1.0, 1.0);
+
+      vec3 specular_light = specular[i] * specular_color[i] * proj_light[i] * not_shadowed;
       // specular_light *= step(0.0, specular_light);
-      total_specular += specular_light;
+      // total_specular += specular_light;
    }
    // add a little luminosity regardless of surface color, a bright enough light
    // ought to turn white on any surface.
-   Out_Color.rgb = Out_Color.rgb * (ambient + total_luminosity) +
-      total_specular + total_luminosity * 0.01;
+   // TEMP debug
+   Out_Color.rgb = vec3(1.0, 1.0, 1.0) * total_luminosity;
+   // Out_Color.rgb = Out_Color.rgb * (ambient + total_luminosity) +
+   //    total_specular + total_luminosity * 0.01;
 
   // debug
   // Out_Color.rgb = abs(eye_pos) * 1.0;
