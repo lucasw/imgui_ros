@@ -285,6 +285,8 @@ class Demo(Node):
         ts.header.frame_id = "map"
         ts.child_frame_id = "projector1"
         ts.transform.translation.x = 3.45
+        ts.transform.translation.y = 3.0
+        ts.transform.translation.z = 3.0
         roll = -3.08
         pitch = 0.55
         yaw = 0

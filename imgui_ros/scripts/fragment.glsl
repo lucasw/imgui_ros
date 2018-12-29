@@ -69,6 +69,7 @@ void main()
       // also dim the projection with diffuse reflection model.
       // float projector_intensity = -dot(FraNormal, projector_dir[i]);
       float normal_light_alignment = -dot(FraNormal, proj_ray);
+      float clip_light = step(0.0, normal_light_alignment);
       // float clipped_alignment *= step(0.0, alignment);
 
       // TODO(lwalter) can skip this if always border textures with alpha 0.0
@@ -82,7 +83,7 @@ void main()
       // set luminosity to 1.0 if attenuation is 0.0
       attenuation = attenuation == 0.0 ? 1.0 : attenuation;
       float scaled_attenuated = enable_proj[i] * projected_texture_scale[i] * 1.0 / attenuation;
-      luminosity[i] = normal_light_alignment * scaled_attenuated;
+      luminosity[i] = normal_light_alignment * scaled_attenuated * clip_light;
 
       //////////////////////////////
       // specular
@@ -95,7 +96,7 @@ void main()
       // also try uniform connected to gui slider
       float shininess = 25.5;
       specular_intensity = pow(specular_intensity, shininess);
-      specular[i] = specular_intensity * scaled_attenuated * step(0.0, normal_light_alignment);
+      specular[i] = specular_intensity * scaled_attenuated * clip_light;
       // specular[i] *= step(0.0, specular[i]);
       // TEMP debug
       // Out_Color.rgb = view_ray;

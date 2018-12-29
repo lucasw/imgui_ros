@@ -96,8 +96,8 @@ class Demo(Node):
         req.projector.camera.header.frame_id = 'projector1'
         req.projector.camera.name = 'projector1'
         req.projector.camera.texture_name = 'gradient_radial'
-        req.projector.camera.aov_y = 100.0
-        req.projector.camera.aov_x = 140.0
+        req.projector.camera.aov_y = 170.0
+        req.projector.camera.aov_x = 170.0
         req.projector.constant_attenuation = 0.2
         req.projector.quadratic_attenuation = 0.004
         self.future = self.projector_cli.call_async(req)
@@ -108,8 +108,8 @@ class Demo(Node):
             req.projector.camera.header.frame_id = 'bar2'
             req.projector.camera.name = 'projector2'
             req.projector.camera.texture_name = 'chess'
-            req.projector.camera.aov_y = 30.0
-            req.projector.camera.aov_x = 30.0
+            req.projector.camera.aov_y = 130.0
+            req.projector.camera.aov_x = 100.0
             self.future = self.projector_cli.call_async(req)
             self.wait_for_response()
 
