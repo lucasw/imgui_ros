@@ -207,7 +207,6 @@ namespace imgui_ros {
     init_ = true;  // viz3d->initialized_;
   }
 
-#if 0
   void ImguiRos::addTf(const std::shared_ptr<imgui_ros::srv::AddTf::Request> req,
              std::shared_ptr<imgui_ros::srv::AddTf::Response> res)
   {
@@ -228,7 +227,6 @@ namespace imgui_ros {
     res->success = true;
     res->message += "added tf pub " + req->tf.name + " to " + req->tf.window;
   }
-#endif
 
   void ImguiRos::addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
       std::shared_ptr<imgui_ros::srv::AddWindow::Response> res) {

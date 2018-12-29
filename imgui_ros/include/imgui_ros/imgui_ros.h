@@ -31,7 +31,7 @@
 #include "imgui.h"
 #include <imgui_ros/viz3d.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
-// #include <imgui_ros/srv/add_tf.hpp>
+#include <imgui_ros/srv/add_tf.hpp>
 #include <imgui_ros/srv/add_window.hpp>
 #include <map>
 #include <mutex>
@@ -50,8 +50,8 @@ public:
 
 private:
   // rclcpp::Service<srv::AddTf>::SharedPtr add_tf_;
-  // void addTf(const std::shared_ptr<imgui_ros::srv::AddTf::Request> req,
-  //           std::shared_ptr<imgui_ros::srv::AddTf::Response> res);
+  void addTf(const std::shared_ptr<imgui_ros::srv::AddTf::Request> req,
+             std::shared_ptr<imgui_ros::srv::AddTf::Response> res);
 
   void addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
                  std::shared_ptr<imgui_ros::srv::AddWindow::Response> res);
