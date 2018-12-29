@@ -63,6 +63,7 @@ struct Window {
   ~Window() {}
   virtual void draw();
   void add(std::shared_ptr<Widget> widget);
+  void remove(const std::string& name);
   virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now) {
     for (auto& name : widget_order_) {
       if (widgets_[name]) {

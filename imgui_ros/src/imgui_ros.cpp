@@ -82,9 +82,9 @@ namespace imgui_ros {
     get_parameter_or("blue", clear_color_.z, clear_color_.z);
     get_parameter_or("alpha", clear_color_.w, clear_color_.w);
 
-    // building this causes the node to crash
-    // add_tf_ = create_service<srv::AddTf>("add_tf",
-    //     std::bind(&ImguiRos::addTf, this, _1, _2));
+    // building this causes the node to crash only in release mode
+    add_tf_ = create_service<srv::AddTf>("add_tf",
+        std::bind(&ImguiRos::addTf, this, _1, _2));
 
     add_window_ = create_service<srv::AddWindow>("add_window",
         std::bind(&ImguiRos::addWindow, this, _1, _2));
@@ -241,12 +241,15 @@ namespace imgui_ros {
     }
     auto window = std::make_shared<Window>(req->name);
     for (size_t i = 0; i < req->widgets.size(); ++i) {
+      if (req->widgets[i].remove) {
+        window->remove(req->widgets[i].name);
+        continue;
+      }
       std::string message;
       std::shared_ptr<Widget> widget;
       const bool rv = addWidget(req->widgets[i], message, widget);
       res->success = res->success && rv && widget;
       res->message += ", " + message;
-      // TODO(lucasw) remove widget if requested
       if (rv && widget) {
         window->add(widget);
       }

@@ -41,7 +41,9 @@ void Window::draw() {
   // for (auto& widget : widgets_) {
   for (auto& name : widget_order_) {
     if (widgets_[name]) {
-      widgets_[name]->draw();
+      if (ImGui::CollapsingHeader((name + "##header").c_str())) {
+        widgets_[name]->draw();
+      }
     }
   }
   ImGui::End();
@@ -51,11 +53,16 @@ void Window::draw() {
 // then keep current position, currently only adds to end
 void Window::add(std::shared_ptr<Widget> widget) {
   const std::string name = widget->name_;
+  remove(name);
+  widgets_[name] = widget;
+  widget_order_.push_back(name);
+}
+
+void Window::remove(const std::string& name) {
   if (widgets_.count(name) > 0) {
     widget_order_.erase(std::remove(widget_order_.begin(),
         widget_order_.end(), name),
         widget_order_.end());
   }
-  widgets_[name] = widget;
-  widget_order_.push_back(name);
+  widgets_.erase(name);
 }

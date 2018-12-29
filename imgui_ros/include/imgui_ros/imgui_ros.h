@@ -49,7 +49,7 @@ public:
   ~ImguiRos();
 
 private:
-  // rclcpp::Service<srv::AddTf>::SharedPtr add_tf_;
+  rclcpp::Service<srv::AddTf>::SharedPtr add_tf_;
   void addTf(const std::shared_ptr<imgui_ros::srv::AddTf::Request> req,
              std::shared_ptr<imgui_ros::srv::AddTf::Response> res);
 

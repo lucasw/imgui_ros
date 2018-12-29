@@ -99,6 +99,7 @@ class Demo(Node):
         req.projector.camera.aov_y = 100.0
         req.projector.camera.aov_x = 140.0
         req.projector.constant_attenuation = 0.2
+        req.projector.quadratic_attenuation = 0.004
         self.future = self.projector_cli.call_async(req)
         self.wait_for_response()
 
