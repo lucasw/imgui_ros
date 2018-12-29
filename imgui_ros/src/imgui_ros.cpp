@@ -82,6 +82,10 @@ namespace imgui_ros {
     get_parameter_or("blue", clear_color_.z, clear_color_.z);
     get_parameter_or("alpha", clear_color_.w, clear_color_.w);
 
+    // building this causes the node to crash
+    // add_tf_ = create_service<srv::AddTf>("add_tf",
+    //     std::bind(&ImguiRos::addTf, this, _1, _2));
+
     add_window_ = create_service<srv::AddWindow>("add_window",
         std::bind(&ImguiRos::addWindow, this, _1, _2));
 
@@ -202,6 +206,29 @@ namespace imgui_ros {
 
     init_ = true;  // viz3d->initialized_;
   }
+
+#if 0
+  void ImguiRos::addTf(const std::shared_ptr<imgui_ros::srv::AddTf::Request> req,
+             std::shared_ptr<imgui_ros::srv::AddTf::Response> res)
+  {
+    RCLCPP_DEBUG(get_logger(), "new tf pub %s", req->tf.name);
+    std::shared_ptr<Pub> pub = std::make_shared<TfBroadcaster>(
+        req->tf,
+        tf_buffer_,
+        shared_from_this());
+
+    std::shared_ptr<Window> window;
+    if (windows_.count(req->tf.window) > 0) {
+      window = windows_[req->tf.window];
+    } else {
+      window = std::make_shared<Window>(req->tf.window);
+      windows_[req->tf.window] = window;
+    }
+    window->add(pub);
+    res->success = true;
+    res->message += "added tf pub " + req->tf.name + " to " + req->tf.window;
+  }
+#endif
 
   void ImguiRos::addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
       std::shared_ptr<imgui_ros::srv::AddWindow::Response> res) {

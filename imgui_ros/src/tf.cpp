@@ -127,6 +127,7 @@ void TfEcho::draw()
   ImGui::PopID();
 }
 
+///////////////////////////////////////////////////////////////////////////////
 TfBroadcaster::TfBroadcaster(const std::string name,
     const std::string parent, const std::string child,
     const double min, const double max,
@@ -141,7 +142,9 @@ TfBroadcaster::TfBroadcaster(const std::string name,
 
   ts_.header.frame_id = parent;
   ts_.child_frame_id = child;
+
   ts_.transform.rotation.w = 1.0;
+  default_ts_.transform.rotation.w = 1.0;
 
   double update_rate = 30.0;
   int period = 1000 / update_rate;
@@ -149,6 +152,27 @@ TfBroadcaster::TfBroadcaster(const std::string name,
       std::bind(&TfBroadcaster::update, this));
   // tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node_);
   // tf_pub_ = node->create_publisher<tf2_msgs::msg::TFMessage>("/tf");
+}
+
+TfBroadcaster::TfBroadcaster(
+    const imgui_ros::msg::TfWidget& tf,
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer,
+    std::shared_ptr<rclcpp::Node> node) :
+    Pub(tf.name, tf.transform_stamped.header.frame_id, node),
+    min_(tf.min),
+    max_(tf.max),
+    ts_(tf.transform_stamped),
+    default_ts_(tf.transform_stamped),
+    tf_buffer_(tf_buffer)
+{
+  RCLCPP_INFO(node->get_logger(), "new tf echo %s to %s, %f",
+      ts_.header.frame_id.c_str(),
+      ts_.child_frame_id.c_str(),
+      default_ts_.transform.translation.x);
+  double update_rate = 30.0;
+  int period = 1000 / update_rate;
+  timer_ = node->create_wall_timer(std::chrono::milliseconds(period),
+      std::bind(&TfBroadcaster::update, this));
 }
 
 void TfBroadcaster::update()
@@ -194,17 +218,29 @@ void TfBroadcaster::draw()
   // TODO(lucasw) lock guard around ts usage?
   inputText("parent", ts_.header.frame_id);
   inputText("child", ts_.child_frame_id);
-  ImGui::SliderScalar("x", ImGuiDataType_Double,
-      &ts_.transform.translation.x, &min_, &max_, "%lf");
-  ImGui::SliderScalar("y", ImGuiDataType_Double,
-      &ts_.transform.translation.y, &min_, &max_, "%lf");
-  ImGui::SliderScalar("z", ImGuiDataType_Double,
-      &ts_.transform.translation.z, &min_, &max_, "%lf");
 
-  double min = -3.2;
-  double max = 3.2;
+  double min, max;
+
+  min = default_ts_.transform.translation.x + min_;
+  max = default_ts_.transform.translation.x + max_;
+  ImGui::SliderScalar("x", ImGuiDataType_Double,
+      &ts_.transform.translation.x, &min, &max, "%lf");
+
+  min = default_ts_.transform.translation.y + min_;
+  max = default_ts_.transform.translation.y + max_;
+  ImGui::SliderScalar("y", ImGuiDataType_Double,
+      &ts_.transform.translation.y, &min, &max, "%lf");
+
+  min = default_ts_.transform.translation.z + min_;
+  max = default_ts_.transform.translation.z + max_;
+  ImGui::SliderScalar("z", ImGuiDataType_Double,
+      &ts_.transform.translation.z, &min, &max, "%lf");
+
   double roll, pitch, yaw;
   rot2RPY(ts_.transform.rotation, roll, pitch, yaw);
+
+  min = -3.2;
+  max = 3.2;
   ImGui::SliderScalar("roll", ImGuiDataType_Double,
       &roll, &min, &max, "%lf");
 
@@ -213,8 +249,10 @@ void TfBroadcaster::draw()
   double pitch_max = 1.57;
   ImGui::SliderScalar("pitch", ImGuiDataType_Double,
       &pitch, &pitch_min, &pitch_max, "%lf");
+
   ImGui::SliderScalar("yaw", ImGuiDataType_Double,
       &yaw, &min, &max, "%lf");
+
   tf2::Quaternion quat;
   quat.setRPY(roll, pitch, yaw);
   ts_.transform.rotation.x = quat.x();

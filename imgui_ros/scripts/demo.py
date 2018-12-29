@@ -18,8 +18,8 @@
 import rclpy
 
 from geometry_msgs.msg import Point, TransformStamped
-from imgui_ros.msg import TexturedShape, Widget
-from imgui_ros.srv import AddWindow
+from imgui_ros.msg import TexturedShape, TfWidget, Widget
+from imgui_ros.srv import AddTf, AddWindow
 from rclpy.node import Node
 from shape_msgs.msg import MeshTriangle, Mesh
 from visualization_msgs.msg import Marker
@@ -34,6 +34,9 @@ class Demo(Node):
         self.cli = self.create_client(AddWindow, 'add_window')
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
+        # self.tf_cli = self.create_client(AddTf, 'add_tf')
+        # while not self.tf_cli.wait_for_service(timeout_sec=1.0):
+        #     self.get_logger().info('service not available, waiting again...')
 
     # TODO(lucasw) can't this be a callback instead?
     def wait_for_response(self):
@@ -245,16 +248,6 @@ class Demo(Node):
         req.widgets.append(widget)
 
         widget = Widget()
-        widget.name = "map pub tf 2"
-        widget.type = Widget.PUB
-        widget.sub_type = Widget.TF
-        widget.min = -2.0
-        widget.max = 2.0
-        widget.items.append("map")
-        widget.items.append("bar2")
-        req.widgets.append(widget)
-
-        widget = Widget()
         widget.name = "viz2d"
         widget.type = Widget.SUB
         widget.sub_type = Widget.VIZ2D
@@ -264,11 +257,29 @@ class Demo(Node):
         widget.items.append("projector1")
         widget.items.append("bar2")
         widget.items.append("camera1")
-        widget.items.append("camera1")
+        widget.items.append("camera2")
         req.widgets.append(widget)
 
         self.future = self.cli.call_async(req)
         self.wait_for_response()
+
+        # dedicated tf add service with more configurability
+        tf_widget = TfWidget()
+        tf_widget.name = "map pub tf 2"
+        tf_widget.window = req.name
+        tf_widget.min = -3.0
+        tf_widget.max = 3.0
+        ts = TransformStamped()
+        ts.header.frame_id = "map"
+        ts.child_frame_id = "bar2"
+        ts.transform.translation.x = 1.5
+        ts.transform.rotation.w = 1.0
+        tf_widget.transform_stamped = ts
+        tf_req = AddTf.Request()
+        tf_req.tf = tf_widget
+        if False:
+            self.future = self.tf_cli.call_async(tf_req)
+            self.wait_for_response()
 
         # TODO(lucasw) move the tf broadcasting into standalone node
         if False:
