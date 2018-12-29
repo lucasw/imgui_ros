@@ -118,8 +118,8 @@ protected:
 
   double aov_y_ = 45.0f;
   double aov_x_ = 0.0f;
-  float near_ = 0.01f;
-  float far_ = 100.0f;
+  double near_ = 0.01f;
+  double far_ = 100.0f;
   // TODO(lucasw) should be setupProjection or setupModelViewProjection
   // though later will do the matrix multiplication inside shader?
   bool setupCamera(const tf2::Transform& view_transform, const std::string child_frame_id,

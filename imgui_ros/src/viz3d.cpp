@@ -236,8 +236,6 @@ bool Viz3D::setupProjectorsWithShape(
   glm::vec4 projector_pos = view_inverse[0] * glm::vec4(0.0, 0.0, 0.0, 1.0);
   render_message_ << printVec(projector_pos) << "\n";
 
-  const int num_projectors = projectors.size();
-
   // corresponds to glActiveTexture(GL_TEXTURE1) if is 1
 
   // TODO(lucasw) store these where they can be used outside this method
@@ -246,6 +244,7 @@ bool Viz3D::setupProjectorsWithShape(
   tex_ind += 4;
   int shadow_texture_unit[4] = {tex_ind, tex_ind + 1, tex_ind + 2, tex_ind + 3};
   #if 0
+  const int num_projectors = projectors.size();
   std::vector<int> texture_unit;  // [num_projectors];
   for (int i = 0; i < num_projectors; ++i) {
     texture_unit.push_back(tex_ind);
@@ -707,6 +706,17 @@ void Viz3D::draw()
 
     {
       double min = 0.0001;
+      double max = far_;
+      ImGui::SliderScalar("near clip", ImGuiDataType_Double,
+            &near_, &min, &max, "%lf", 3);
+      min = near_;
+      max = 100.0;
+      ImGui::SliderScalar("far clip", ImGuiDataType_Double,
+            &far_, &min, &max, "%lf", 3);
+    }
+
+    {
+      double min = 0.0001;
       double max = 0.1;
       ImGui::SliderScalar("move scale", ImGuiDataType_Double,
             &move_scale_, &min, &max, "%lf");
@@ -807,7 +817,9 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
 
   projection_matrix = glm::perspective(
       static_cast<float>(sc_vert * glm::radians(aov_y)),
-      sc_vert * aspect, near_, far_);
+      sc_vert * aspect,
+      static_cast<float>(near_),
+      static_cast<float>(far_));
 
   model_matrix = glm::mat4(1.0f);
   try {
@@ -1160,7 +1172,7 @@ void Viz3D::render2(
         return;
     }
 
-    {
+    if (use_projectors) {
       const int num_projectors = projectors.size();
 
       float max_range[MAX_PROJECTORS];
@@ -1216,7 +1228,7 @@ void Viz3D::render2(
          MAX_PROJECTORS, &linear_attenuation[0]);
       glUniform1fv(shaders->uniform_locations_["projector_quadratic_attenuation"],
          MAX_PROJECTORS, &quadratic_attenuation[0]);
-    }
+    }  // use_projectors
 
     {
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape->elements_handle_);
@@ -1232,7 +1244,7 @@ void Viz3D::render2(
     }
     render_message_ << "\n\n";
     // glBindVertexArray(0);
-  }
+  }  // loop through shapes to draw
 
   return;
 }

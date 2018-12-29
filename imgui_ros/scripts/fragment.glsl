@@ -149,7 +149,7 @@ void main()
       // total_luminosity += diffuse_light;
       // debug, just show depth values
       // total_luminosity += scaled_dist[i] * enable_proj[i] * vec3(1.0, 1.0, 1.0);
-      total_luminosity += shadow_dist[i] * enable_proj[i] * vec3(1.0, 1.0, 1.0);
+      total_luminosity += pow(shadow_dist[i], 4.0) * enable_proj[i] * vec3(1.0, 1.0, 1.0);
 
       vec3 specular_light = specular[i] * specular_color[i] * proj_light[i] * not_shadowed;
       // specular_light *= step(0.0, specular_light);
