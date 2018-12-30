@@ -118,7 +118,9 @@ protected:
 
   double aov_y_ = 45.0f;
   double aov_x_ = 0.0f;
-  double near_ = 0.01f;
+  // too low and get glitches with shadows, but that can be solved with better shadow
+  // techniques- like only rendering back faces
+  double near_ = 0.1f;
   double far_ = 100.0f;
   // TODO(lucasw) should be setupProjection or setupModelViewProjection
   // though later will do the matrix multiplication inside shader?

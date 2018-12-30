@@ -57,7 +57,7 @@ void main()
       // or convert this distance here to the compressed depth range,
       // so they can be compared.
       // z = -1.0 is 1.0 units away, it is linear
-      scaled_dist[i] = -(pos_in_projector_space.z);  // / pos_in_projector_space.w;
+      scaled_dist[i] = (pos_in_projector_space.z);  // / pos_in_projector_space.w;
       // z and w seem to be equal, meaning the division by w has already occurred for z?
       // scaled_dist[i] = 0.1 * (pos_in_projector_space.z / pos_in_projector_space.w);
       scaled_dist[i] *= step(0.0, scaled_dist[i]);
@@ -163,25 +163,24 @@ void main()
       float z = (2.0 * shadow_dist[i] - near - far) / (far - near);
       float linear_dist = (2.0 * near_clip * far_clip) / (far_clip + near_clip - z * (far_clip - near_clip));
 
-      float not_shadowed = 1.0;  // step(scaled_dist[i], shadow_dist[i]);
+      float not_shadowed = step(scaled_dist[i], linear_dist + 0.01);
 
       vec3 diffuse_light = luminosity[i] * proj_light[i] * not_shadowed;
       // // diffuse_light *= step(0.0, diffuse_light);
-      // total_luminosity += diffuse_light;
-      // debug, just show depth values
-      // total_luminosity += pow(scaled_dist[i], 1.0) * enable_proj[i] * vec3(1.0, 1.0, 1.0);
-      total_luminosity += pow(linear_dist, 1.0) * enable_proj[i] * vec3(1.0, 1.0, 1.0);
+      total_luminosity += diffuse_light;
+      // debug
+      // total_luminosity += linear_dist * enable_proj[i] * vec3(1.0, 1.0, 1.0);
 
       vec3 specular_light = specular[i] * specular_color[i] * proj_light[i] * not_shadowed;
       // specular_light *= step(0.0, specular_light);
-      // total_specular += specular_light;
+      total_specular += specular_light;
    }
    // add a little luminosity regardless of surface color, a bright enough light
    // ought to turn white on any surface.
    // TEMP debug
-   Out_Color.rgb = vec3(1.0, 1.0, 1.0) * total_luminosity;
-   // Out_Color.rgb = Out_Color.rgb * (ambient + total_luminosity) +
-   //    total_specular + total_luminosity * 0.01;
+   // Out_Color.rgb = vec3(1.0, 1.0, 1.0) * total_luminosity;
+   Out_Color.rgb = Out_Color.rgb * (ambient + total_luminosity) +
+       total_specular + total_luminosity * 0.01;
 
   // debug
   // Out_Color.rgb = abs(eye_pos) * 1.0;
