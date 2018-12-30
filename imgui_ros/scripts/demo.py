@@ -246,7 +246,7 @@ class Demo(Node):
         widget.sub_type = Widget.TF
         widget.min = -4.0
         widget.max = 4.0
-        widget.items.append("map")
+        widget.items.append("projector1")
         widget.items.append("camera1")
         req.widgets.append(widget)
 
@@ -284,11 +284,11 @@ class Demo(Node):
         ts = TransformStamped()
         ts.header.frame_id = "map"
         ts.child_frame_id = "projector1"
-        ts.transform.translation.x = 0.0
-        ts.transform.translation.y = -0.496
-        ts.transform.translation.z = -0.496
+        ts.transform.translation.x = 0.15
+        ts.transform.translation.y = -0.43
+        ts.transform.translation.z = -0.38
         roll = -3.08
-        pitch = 1.49
+        pitch = -0.02
         yaw = 0.0
         rot = tg.quaternion_from_euler(roll, pitch, yaw, 'sxyz')
         ts.transform.rotation.w = rot[0]

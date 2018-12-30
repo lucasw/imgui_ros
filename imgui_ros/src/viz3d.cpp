@@ -955,13 +955,15 @@ void Viz3D::renderShadows()
       continue;
     }
 
-    const bool vert_flip = true;
+    const bool vert_flip = false;
     const bool use_projectors = false;
     render2("depth", projector->stamped_transform_,
         projector->shadow_width_,
         projector->shadow_height_,
-        projector->aov_y_,
-        projector->aov_x_,
+        // TODO(lucasw) there is a factor of 2 error somewhere in here,
+        // this 0.5 fudges it back to working
+        projector->aov_y_ * 0.5,
+        projector->aov_x_ * 0.5,
         vert_flip,
         use_projectors);
 
@@ -1218,6 +1220,12 @@ void Viz3D::render2(
       glUniform1iv(shaders->uniform_locations_["num_projectors"], 1, &num_projectors);
 
       // TODO(lucasw) later only change uniforms if they change
+      float near = near_;
+      float far = far_;
+      glUniform1fv(shaders->uniform_locations_["near_clip"],
+         1, &near);
+      glUniform1fv(shaders->uniform_locations_["far_clip"],
+         1, &far);
       glUniform3fv(shaders->uniform_locations_["ambient"],
          1, &ambient_[0]);
       glUniform1fv(shaders->uniform_locations_["projector_max_range"],

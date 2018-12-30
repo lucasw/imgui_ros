@@ -1,6 +1,10 @@
 // OpenGL makes the first vec4 `out` the fragment color by default
 // but should be explicit.
 // 130
+
+uniform float near_clip;
+uniform float far_clip;
+
 const int MAX_PROJECTORS = 4;
 uniform vec3 eye_pos;
 uniform sampler2D Texture;
@@ -45,29 +49,39 @@ void main()
     // TODO(lucasw) is it easier to always loop MAX_PROJECTORS times?
     for (int i = 0; i < MAX_PROJECTORS && i < num_projectors; ++i) {
     // for (int i = 0; i < 1; ++i) {
-      vec4 projected_texture_position = ProjectedTexturePosition[i];
+      // the position of the fragment in the projector projection space
+      vec4 pos_in_projector_space = ProjectedTexturePosition[i];
 
-      // TODO(lucasw) is this scaled properly?
-      // -1.0 is 1.0 units away
-      scaled_dist[i] = -projected_texture_position.z;
+      // TODO(lucasw) want to convert either the depth texture value (which
+      // has the depth compressed into 0.0 - 1.0) to camera space range,
+      // or convert this distance here to the compressed depth range,
+      // so they can be compared.
+      // z = -1.0 is 1.0 units away, it is linear
+      scaled_dist[i] = -(pos_in_projector_space.z);  // / pos_in_projector_space.w;
+      // z and w seem to be equal, meaning the division by w has already occurred for z?
+      // scaled_dist[i] = 0.1 * (pos_in_projector_space.z / pos_in_projector_space.w);
+      scaled_dist[i] *= step(0.0, scaled_dist[i]);
 
       // transform to clip space / normalized device coordinates
-      projected_texture_position.xyz /= projected_texture_position.w;
-      projected_texture_position.xy += 0.5;
+      pos_in_projector_space.xyz /= pos_in_projector_space.w;
+      pos_in_projector_space.xy += 0.5;
+      // TODO(lucaw) this subtraction is likely wrong
       // should the z be -1,1 already, why the subtraction?
-      projected_texture_position.z -= 1.0;
+      pos_in_projector_space.z *= -1.0;
+      pos_in_projector_space.z += 1.0;
+
       // is the fragment in front of the light?  Otherwise disable
-      enable_proj[i] = step(0.0, projected_texture_position.z);
-      // enable_proj[i] = enable_proj[i] * step(0.0, projected_texture_position.z);
+      enable_proj[i] = step(0.0, pos_in_projector_space.z);
+      // enable_proj[i] = enable_proj[i] * step(0.0, pos_in_projector_space.z);
       // this is a manual clamp to prevent any projection outside
       // of the view of the projector
       // TODO(lucasw) specify this elsewhere and
       // later make it changeable live.  May want to be able to disable this.
       enable_proj[i] *=
-          (step(projected_texture_position.x, 1.0)) *
-          step(0.0, projected_texture_position.x) *
-          (step(projected_texture_position.y, 1.0)) *
-          step(0.0, projected_texture_position.y);
+          (step(pos_in_projector_space.x, 1.0)) *
+          step(0.0, pos_in_projector_space.x) *
+          (step(pos_in_projector_space.y, 1.0)) *
+          step(0.0, pos_in_projector_space.y);
 
       // TODO(lucasw) proj_ray.z is not the same as the distance in the shadow map
       // modify projected image based on distance to projector
@@ -88,7 +102,7 @@ void main()
       // float clipped_alignment *= step(0.0, alignment);
 
       // TODO(lwalter) can skip this if always border textures with alpha 0.0
-      uv[i] = projected_texture_position.xy;
+      uv[i] = pos_in_projector_space.xy;
 
       // the base color
       // then attenuate
@@ -142,14 +156,21 @@ void main()
    // TODO(lucasw) having problems with adding invalid projector light,
    // everything turns black
    for (int i = 0; i < MAX_PROJECTORS && i < num_projectors; ++i) {
+      // TODO(lucasw) These need to be gotten from glRange(), not the same as perspective near far
+      // (do they map to min and max in depth texture?)
+      float near = 0.0;
+      float far = 1.0;
+      float z = (2.0 * shadow_dist[i] - near - far) / (far - near);
+      float linear_dist = (2.0 * near_clip * far_clip) / (far_clip + near_clip - z * (far_clip - near_clip));
+
       float not_shadowed = 1.0;  // step(scaled_dist[i], shadow_dist[i]);
 
       vec3 diffuse_light = luminosity[i] * proj_light[i] * not_shadowed;
       // // diffuse_light *= step(0.0, diffuse_light);
       // total_luminosity += diffuse_light;
       // debug, just show depth values
-      // total_luminosity += scaled_dist[i] * enable_proj[i] * vec3(1.0, 1.0, 1.0);
-      total_luminosity += pow(shadow_dist[i], 4.0) * enable_proj[i] * vec3(1.0, 1.0, 1.0);
+      // total_luminosity += pow(scaled_dist[i], 1.0) * enable_proj[i] * vec3(1.0, 1.0, 1.0);
+      total_luminosity += pow(linear_dist, 1.0) * enable_proj[i] * vec3(1.0, 1.0, 1.0);
 
       vec3 specular_light = specular[i] * specular_color[i] * proj_light[i] * not_shadowed;
       // specular_light *= step(0.0, specular_light);
