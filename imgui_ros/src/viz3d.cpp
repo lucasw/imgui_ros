@@ -1177,14 +1177,24 @@ void Viz3D::render2(
           1, transpose, &view[0][0]);
       glUniformMatrix4fv(shaders->uniform_locations_["projection_matrix"],
           1, transpose, &projection[0][0]);
+    }
 
+    // if doing shadows then don't need to bind any textures,
+    // for now use use_projectors = false as meaning doing depth only render
+    if (use_projectors) {
       int texture_unit = 0;
       glUniform1i(shaders->uniform_locations_["Texture"], texture_unit);
       texture_unit += 1;
       glUniform1i(shaders->uniform_locations_["shininess_texture"], texture_unit);
 
       // TEMP debug
+      // The active texture and uniform need to be bound together in order for this to work,
+      // maybe the binds below also ought to be grouped above.
       texture_unit += MAX_PROJECTORS * 2;
+      render_message_ << "test_cube_map "
+          << shaders->uniform_locations_["test_cube_map"] << "\n";
+      glActiveTexture(GL_TEXTURE0 + texture_unit);
+      glBindTexture(GL_TEXTURE_CUBE_MAP, cube_camera_->cube_texture_id_);
       glUniform1i(shaders->uniform_locations_["test_cube_map"], texture_unit);
       if (checkGLError(__FILE__, __LINE__))
         return;
@@ -1213,6 +1223,7 @@ void Viz3D::render2(
 
     render_message_ << "\n";
 
+    // TODO(lucasw) why not group these with uniform setting of textures above?
     // if doing shadows then don't need to bind any textures,
     // for now use use_projectors = false as meaning doing depth only render
     if (use_projectors) {
@@ -1222,9 +1233,11 @@ void Viz3D::render2(
       bindTexture(shape->shininess_texture_, 1);
 
       // TEMP debug
+      #if 0
       glActiveTexture(GL_TEXTURE0 + 2 + MAX_PROJECTORS * 2);
       // Bind texture- if it is null then the color is black
       glBindTexture(GL_TEXTURE_CUBE_MAP, cube_camera_->cube_texture_id_);
+      #endif
     }
 
     if (use_projectors) {
@@ -1293,7 +1306,7 @@ void Viz3D::render2(
       // idx_buffer_offset += pcmd->ElemCount;
       // glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-    render_message_ << "------------------------\n";
+    render_message_ << "\n------------------------\n";
     // glBindVertexArray(0);
   }  // loop through shapes to draw
 

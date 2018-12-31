@@ -210,7 +210,8 @@ void main()
    // Out_Color.rgb = vec3(1.0, 1.0, 1.0) * shininess;
    // Out_Color.rgb = vec3(1.0, 1.0, 1.0) * total_luminosity;
   // Out_Color.rgb = abs(eye_pos) * 1.0;
-  // Out_Color.rgb = texture(test_cube_map, FraNormal).rgb;
+  // Out_Color.rgb = texture(Texture, FraNormal.xy).rgb;
+  Out_Color.rgb += texture(test_cube_map, FraNormal).rgb;
   // Out_Color.rgb = texture(test_cube_map, vec3(0.0, 0.0, 1.0)).rgb;
   // Out_Color.rgb += texture(test_cube_map, FraNormal).rgb;
 }
