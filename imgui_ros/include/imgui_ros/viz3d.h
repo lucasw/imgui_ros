@@ -97,6 +97,7 @@ struct Viz3D {
       const bool use_projectors = true);
 
   std::stringstream render_message_;
+  ImVec4 clear_color_ = ImVec4(0.4, 0.3, 0.5, 1.0);
 
   void draw();
   //    const int pos_x, const int pos_y,
@@ -204,6 +205,7 @@ protected:
 
   std::string name_;
   std::string frame_id_ = "map";
+
   // TODO(lucasw) don't need this now
   std::weak_ptr<ImGuiImplOpenGL3> renderer_;
 

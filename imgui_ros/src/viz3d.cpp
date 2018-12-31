@@ -620,6 +620,8 @@ void Viz3D::draw()
 
   ImGui::Begin("viz3d");
 
+  ImGui::ColorEdit4("clear color", (float*)&clear_color_);
+
   double x_move = 0.0;
   double y_move = 0.0;
   double z_move = 0.0;
@@ -1016,7 +1018,11 @@ void Viz3D::renderToTexture()
     render_message_ << "\nrender to texture " << camera->name_ << "\n";
 
     glBindFramebuffer(GL_FRAMEBUFFER, camera->frame_buffer_);
-    glClearColor(0.1, 0.1, 5.0, 1.0);
+    glClearColor(
+        camera->clear_color_.x,
+        camera->clear_color_.y,
+        camera->clear_color_.z,
+        camera->clear_color_.w);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // TODO(lucasw) if render width/height change need to update rendered_texture
 

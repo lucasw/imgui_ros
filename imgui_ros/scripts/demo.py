@@ -309,9 +309,9 @@ class Demo(Node):
         ts = TransformStamped()
         ts.header.frame_id = "map"
         ts.child_frame_id = "projector1"
-        ts.transform.translation.x = 0.15
+        ts.transform.translation.x = 0.5
         ts.transform.translation.y = -0.43
-        ts.transform.translation.z = -0.38
+        ts.transform.translation.z = -1.0
         roll = -3.08
         pitch = -0.02
         yaw = 0.0
@@ -334,7 +334,7 @@ class Demo(Node):
         ts = TransformStamped()
         ts.header.frame_id = "floor"
         ts.child_frame_id = "bar2"
-        ts.transform.translation.x = 0.0
+        ts.transform.translation.x = 1.0
         ts.transform.translation.y = -0.0
         ts.transform.translation.z = -1.0
         roll = 0.0

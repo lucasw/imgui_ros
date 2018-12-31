@@ -84,6 +84,8 @@ struct Camera {
   tf2::Stamped<tf2::Transform> stamped_transform_;
   std::shared_ptr<RosImage> image_;
 
+  ImVec4 clear_color_ = ImVec4(0.5, 0.5, 0.5, 1.0);
+
   // TODO(lucasw) later need to use this and resolution to make a CameraInfo
   double aov_y_ = 90.0;
   double aov_x_ = 0.0;

@@ -161,6 +161,7 @@ void Camera::draw()
   if (enable_) {
     image_->draw();
   }
+  ImGui::ColorEdit4(("clear color##" + name).c_str(), (float*)&clear_color_);
   ImGui::End();
 
   // this does nothing if the image doesn't have a publisher set up

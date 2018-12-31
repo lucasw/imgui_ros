@@ -67,7 +67,7 @@ private:
   // TODO(lucasw) std::shared_ptr
   SDL_Window *window;
   SDL_GLContext gl_context;
-  ImVec4 clear_color_ = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+  // ImVec4 clear_color_ = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
   std::map<std::string, std::shared_ptr<Window> > windows_;
 

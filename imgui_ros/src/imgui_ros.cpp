@@ -77,10 +77,6 @@ namespace imgui_ros {
     get_parameter_or("name", name_, name_);
     get_parameter_or("width", width_, width_);
     get_parameter_or("height", height_, height_);
-    get_parameter_or("red", clear_color_.x, clear_color_.x);
-    get_parameter_or("green", clear_color_.y, clear_color_.y);
-    get_parameter_or("blue", clear_color_.z, clear_color_.z);
-    get_parameter_or("alpha", clear_color_.w, clear_color_.w);
 
     // building this causes the node to crash only in release mode
     add_tf_ = create_service<srv::AddTf>("add_tf",
@@ -203,6 +199,11 @@ namespace imgui_ros {
         imgui_impl_opengl3_,
         tf_buffer_,
         shared_from_this());
+
+    get_parameter_or("red", viz3d->clear_color_.x, viz3d->clear_color_.x);
+    get_parameter_or("green", viz3d->clear_color_.y, viz3d->clear_color_.y);
+    get_parameter_or("blue", viz3d->clear_color_.z, viz3d->clear_color_.z);
+    get_parameter_or("alpha", viz3d->clear_color_.w, viz3d->clear_color_.w);
 
     init_ = true;  // viz3d->initialized_;
   }
@@ -614,7 +615,13 @@ namespace imgui_ros {
     checkGLError(__FILE__, __LINE__);
     glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
     checkGLError(__FILE__, __LINE__);
-    glClearColor(clear_color_.x, clear_color_.y, clear_color_.z, clear_color_.w);
+    // glClearColor(clear_color_.x, clear_color_.y, clear_color_.z, clear_color_.w);
+    glClearColor(
+        viz3d->clear_color_.x,
+        viz3d->clear_color_.y,
+        viz3d->clear_color_.z,
+        viz3d->clear_color_.w);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // TODO(lucasw) render anything else into the background here,
     // and the ui will appear over it?
