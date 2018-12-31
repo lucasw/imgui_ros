@@ -28,11 +28,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMGUI_ROS_CAMERA_H
-#define IMGUI_ROS_CAMERA_H
+#ifndef IMGUI_ROS_CUBE_CAMERA_H
+#define IMGUI_ROS_CUBE_CAMERA_H
 
 #include <glm/glm.hpp>
 #include <imgui.h>
+#include <imgui_ros/camera.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
 #include <imgui_ros/srv/add_camera.hpp>
@@ -61,39 +62,36 @@
 #endif
 #pragma GCC diagnostic pop
 
-struct Camera {
-  Camera(const std::string name,
-      const std::string texture_name,
-      const std::string frame_id,
-      const std::string topic,
-      const size_t width,
-      const size_t height,
-      const double aov_y,
-      const double aov_x,
-      std::shared_ptr<rclcpp::Node> node);
-  ~Camera();
+struct CubeFace
+{
+  ~CubeFace()
+  {
+    glDeleteRenderbuffers(1, &depth_buffer_);
+    glDeleteFramebuffers(1, &frame_buffer_);
+  }
 
+  GLenum dir_;
+  std::shared_ptr<RosImage> image_;
+  GLuint depth_buffer_;
+  GLuint frame_buffer_;
+};
+
+struct CubeCamera : public Camera {
+  CubeCamera(const std::string& name,
+      const std::string& texture_name,
+      const std::string& frame_id,
+      const std::string& topic,
+      const size_t width,
+      std::shared_ptr<rclcpp::Node> node);
+  ~CubeCamera();
   virtual void init(const size_t width, const size_t height,
       const std::string& texture_name, const std::string& topic,
       std::shared_ptr<rclcpp::Node> node);
   virtual void draw();
   // void render();
 
-  std::string name_;
-  std::string frame_id_;
-  tf2::Stamped<tf2::Transform> stamped_transform_;
-  std::shared_ptr<RosImage> image_;
-
-  // TODO(lucasw) later need to use this and resolution to make a CameraInfo
-  double aov_y_ = 90.0;
-  double aov_x_ = 0.0;
-
-  // TODO(lucasw) put in own class later
-  bool enable_ = true;
-  GLuint frame_buffer_;
-  GLuint depth_buffer_;
-  // TODO(lucasw) not sure about this
-  GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+  GLuint cube_texture_id_ = 0;
+  std::array<std::shared_ptr<CubeFace>, 6> faces_;
 };
 
-#endif  // IMGUI_ROS_CAMERA_H
+#endif  // IMGUI_ROS_CUBE_CAMERA_H

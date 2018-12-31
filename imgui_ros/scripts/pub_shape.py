@@ -167,19 +167,25 @@ class Demo(Node):
     def make_sphere(self, name='sphere',
             radius_x=1.0, radius_y=1.0, radius_z=1.0,
             segs_long=16, segs_lat=8,
+            segs_long_stop=0, segs_lat_stop=0,
             off_x=0.0, off_y=0.0, off_z=0.0,
             repeat=1.0,
             flip_normals=False):
+        if segs_long_stop <= 0:
+            segs_long_stop = segs_long
+        if segs_lat_stop <= 0:
+            segs_lat_stop = segs_lat
+
         shape = TexturedShape()
         shape.name = name
         shape.header.frame_id = 'bar2'
         shape.texture = 'diffract'
         shape.shininess_texture = 'diffract'
 
-        for j in range(segs_lat):
+        for j in range(segs_lat_stop):
             fr_y = float(j) / float(segs_lat - 1)
             latitude = (fr_y - 0.5) * math.pi
-            for i in range(segs_long):
+            for i in range(segs_long_stop):
                 fr_x = float(i) / float(segs_long - 1)
                 longitude = fr_x * 2.0 * math.pi
 
@@ -194,10 +200,10 @@ class Demo(Node):
 
                 ind0 = len(shape.vertices)
                 ind1 = ind0 + 1
-                ind2 = ind0 + segs_long
-                ind3 = ind0 + segs_long + 1
+                ind2 = ind0 + segs_long_stop
+                ind3 = ind0 + segs_long_stop + 1
                 # connect to start, but can't reuse vertices because of uv
-                if i < segs_long - 1 and j < segs_lat - 1:
+                if i < segs_long_stop - 1 and j < segs_lat_stop - 1:
                     if j != 0:
                         triangle = MeshTriangle()
                         triangle.vertex_indices[0] = ind0
@@ -401,13 +407,16 @@ class Demo(Node):
         if True:
             shape = self.make_sphere(name='big_sphere',
                 radius_x=10.0, radius_y=10.0, radius_z=10.0,
-                segs_long=16, segs_lat=8,
+                segs_long=24,
+                segs_long_stop=0,
+                segs_lat=16,
+                segs_lat_stop=8,
                 flip_normals=True,
                 )
             shape.add = True
             shape.texture = 'diffract'
             shape.shininess_texture = 'diffract'
-            shape.header.frame_id = 'map'
+            shape.header.frame_id = 'floor'
             req.shapes.append(shape)
         if True:
             shape = self.make_cylinder(name='cylinder2', radius=0.1, length=0.1,

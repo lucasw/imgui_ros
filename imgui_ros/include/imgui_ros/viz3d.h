@@ -34,6 +34,7 @@
 #include <glm/glm.hpp>
 #include <imgui.h>
 #include <imgui_ros/camera.h>
+#include <imgui_ros/cube_camera.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
 #include <imgui_ros/msg/textured_shape.hpp>

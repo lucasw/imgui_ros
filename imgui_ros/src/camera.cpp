@@ -58,6 +58,13 @@ Camera::Camera(const std::string name,
 {
   std::cout << "creating camera " << name << " " << width << " " << height
       << " " << aov_y << " " << aov_x << "\n";
+  init(width, height, texture_name, topic, node);
+}
+
+void Camera::init(const size_t width, const size_t height,
+    const std::string& texture_name, const std::string& topic,
+    std::shared_ptr<rclcpp::Node> node)
+{
   const bool sub_not_pub = false;
   image_ = std::make_shared<RosImage>(texture_name, topic, sub_not_pub, node);
   {
@@ -67,7 +74,7 @@ Camera::Camera(const std::string name,
     image_->height_ = height;
 
     image_->image_ = std::make_shared<sensor_msgs::msg::Image>();
-    image_->image_->header.frame_id = frame_id;
+    image_->image_->header.frame_id = frame_id_;
     image_->image_->width = width;
     image_->image_->height = height;
     image_->image_->encoding = "bgr8";
