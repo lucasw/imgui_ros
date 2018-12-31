@@ -174,6 +174,7 @@ class Demo(Node):
         shape.name = name
         shape.header.frame_id = 'bar2'
         shape.texture = 'diffract'
+        shape.shininess_texture = 'diffract'
 
         for j in range(segs_lat):
             fr_y = float(j) / float(segs_lat - 1)
@@ -246,6 +247,7 @@ class Demo(Node):
         shape.name = name
         shape.header.frame_id = 'bar2'
         shape.texture = 'diffract'
+        shape.shininess_texture = 'diffract'
 
         repeat = 4.0
         for i in range(segs):
@@ -326,6 +328,7 @@ class Demo(Node):
         shape.name = "foo"
         shape.header.frame_id = 'bar2'
         shape.texture = 'diffract'
+        shape.shininess_texture = 'diffract'
         # shape.header.stamp = self.now()
 
         sc = 0.2
@@ -403,6 +406,7 @@ class Demo(Node):
                 )
             shape.add = True
             shape.texture = 'diffract'
+            shape.shininess_texture = 'diffract'
             shape.header.frame_id = 'map'
             req.shapes.append(shape)
         if True:
@@ -411,12 +415,14 @@ class Demo(Node):
                 off_y=0.0)
             shape.add = True
             shape.texture = 'gradient_radial'
+            shape.shininess_texture = 'gradient_radial'
             shape.header.frame_id = 'projector1'
             req.shapes.append(shape)
         if True:
             shape = self.make_cylinder(name='cylinder3', length=2.0, segs=25)
             shape.add = True
             shape.texture = 'diffract'  # 'camera1'
+            shape.shininess_texture = 'gradient_radial'
             shape.header.frame_id = 'bar2'
             req.shapes.append(shape)
         self.future = self.cli.call_async(req)

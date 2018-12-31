@@ -43,12 +43,14 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-Shape::Shape(const std::string name, const std::string frame_id,
-    const std::string texture_name,
+Shape::Shape(const std::string& name, const std::string& frame_id,
+    const std::string& texture_name,
+    const std::string& shininess_texture_name,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer) :
     name_(name),
     frame_id_(frame_id),
     texture_(texture_name),
+    shininess_texture_(shininess_texture_name),
     tf_buffer_(tf_buffer)
 {
 }
@@ -100,17 +102,27 @@ void Shape::draw(const std::vector<std::string>& texture_names_,
 
   // TODO(lucasw) this is a pain
   int texture_ind = 0;
+  int shininess_texture_ind = 0;
   for (int i = 0; i < static_cast<int>(texture_names_.size()); ++i) {
     if (texture_names_[i] == texture_) {
       texture_ind = i;
-      break;
+    }
+    if (texture_names_[i] == shininess_texture_) {
+      shininess_texture_ind = i;
     }
   }
 
-  const bool changed = ImGui::Combo(("texture##" + name).c_str(), &texture_ind,
-    texture_items.c_str());
+  bool changed;
+  changed = ImGui::Combo(("texture##" + name).c_str(), &texture_ind,
+      texture_items.c_str());
   if (changed) {
     texture_ = texture_names_[texture_ind];
+  }
+
+  changed = ImGui::Combo(("shininess texture##" + name).c_str(),
+      &shininess_texture_ind, texture_items.c_str());
+  if (changed) {
+    shininess_texture_ = texture_names_[shininess_texture_ind];
   }
 
   // TODO(lucasw) put the frame in a combo box that allows it to be changed

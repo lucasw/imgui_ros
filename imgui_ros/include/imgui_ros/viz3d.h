@@ -81,6 +81,7 @@ struct Viz3D {
     std::shared_ptr<rclcpp::Node> node
     );
   ~Viz3D();
+
   void render(const int fb_width, const int fb_height,
       const int display_pos_x, const int display_pos_y,
       const int display_size_x, const int display_size_y);
@@ -100,6 +101,7 @@ struct Viz3D {
   //    const int pos_x, const int pos_y,
   //    const int size_x, const int size_y);
 protected:
+  bool bindTexture(const std::string& name, const int tex_ind);
   // TODO(lucasw) later this will be a matrix
   // glm::vec3 translation_ = glm::vec3(0, 0, 0);
   tf2::Transform transform_;

@@ -16,6 +16,9 @@ shape_msgs/MeshTriangle[] triangles
 # it is a topic or supplied below.
 # If blank use solid colors.
 string texture ""
+# this texture corresponds to the shininess of the specular reflection
+# at the same uv coordinates of the texture above.
+string shininess_texture ""
 # get the texture from an image topic specified in texture
 bool is_topic false
 # specify which set of already loaded shaders to use-

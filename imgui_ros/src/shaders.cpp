@@ -125,6 +125,7 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
   std::vector<std::string> uniforms = {
       "eye_pos",
       "Texture",
+      "shininess_texture",
       "model_matrix",
       "view_matrix",
       "projection_matrix",

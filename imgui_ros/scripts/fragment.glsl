@@ -2,12 +2,14 @@
 // but should be explicit.
 // 130
 
+// TODO(lucasw) ought to be able to eliminate these with the right vertex shader
 uniform float near_clip;
 uniform float far_clip;
 
 const int MAX_PROJECTORS = 4;
 uniform vec3 eye_pos;
 uniform sampler2D Texture;
+uniform sampler2D shininess_texture;
 uniform int num_projectors;
 uniform sampler2D ProjectedTexture[MAX_PROJECTORS];
 uniform sampler2D projector_shadow_map[MAX_PROJECTORS];
@@ -32,11 +34,33 @@ in vec3 projector_pos[MAX_PROJECTORS];
 in vec3 projector_dir[MAX_PROJECTORS];
 in vec4 ProjectedTexturePosition[MAX_PROJECTORS];
 out vec4 Out_Color;
+
+float color_to_gray(vec4 color)
+{
+  return dot(vec3(0.3, 0.59, 0.11), color.rgb);
+  // return dot(vec3(1.0/3.0, 1.0/3.0, 1.0/3.0), color.rgb);
+  // return max(color.r, max(color.g, color.b));
+}
+vec4 color_to_gray_color(vec4 color)
+{
+  float gray = color_to_gray(color);
+  return vec4(gray, gray, gray, color.a);
+}
+
 void main()
 {
     vec3 view_ray = normalize(fragment_pos - eye_pos);
 
     Out_Color = FraColor * texture(Texture, FraUV.st);
+
+    // the lookup will produce 0,1.0 value, but 0,100.0 ought to be good
+    // TODO(lucasw) later scale the shininess value (which probably
+    // originated from 8-bit texture 0 - 255, want to map those numbers
+    // nonlinearly to get more resolution at the lower end?
+    const float shiny_scale = 128.0;
+    // TODO(lucasw) use a GL_LUMINANCE texture
+    // the shininess_texture
+    float shininess = (1.0 - color_to_gray(texture(shininess_texture, FraUV.st)));
 
     float enable_proj[MAX_PROJECTORS];
     vec2 uv[MAX_PROJECTORS];
@@ -123,8 +147,7 @@ void main()
       specular_intensity *= step(0.0, specular_intensity);
       // TODO(lucasw) later per-vertex and specular maps,
       // also try uniform connected to gui slider
-      float shininess = 25.5;
-      specular_intensity = pow(specular_intensity, shininess);
+      specular_intensity = pow(specular_intensity, 1.0 + shininess * shiny_scale);
       specular[i] = specular_intensity * scaled_attenuated * clip_light;
       // specular[i] *= step(0.0, specular[i]);
       // TEMP debug
@@ -178,6 +201,7 @@ void main()
    // add a little luminosity regardless of surface color, a bright enough light
    // ought to turn white on any surface.
    // TEMP debug
+   // Out_Color.rgb = vec3(1.0, 1.0, 1.0) * shininess;
    // Out_Color.rgb = vec3(1.0, 1.0, 1.0) * total_luminosity;
    Out_Color.rgb = Out_Color.rgb * (ambient + total_luminosity) +
        total_specular + total_luminosity * 0.01;

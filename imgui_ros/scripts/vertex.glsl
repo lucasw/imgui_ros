@@ -13,10 +13,13 @@ in vec3 Position;
 in vec3 Normal;
 in vec2 UV;
 in vec4 Color;
+in float shininess;
 
 out vec2 FraUV;
+
 smooth out vec3 FraNormal;
 smooth out vec3 fragment_pos;
+
 out vec4 FraColor;
 out vec4 ProjectedTexturePosition[MAX_PROJECTORS];
 // The coordinate frame of this direction needs to be the same as the output normal

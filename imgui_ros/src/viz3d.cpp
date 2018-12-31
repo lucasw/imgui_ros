@@ -181,8 +181,8 @@ bool Viz3D::setupProjectorsWithShape(
     }
     texture = textures_[projector->texture_name_];
     if (!texture) {
-      render_message_ << projector->name_ << " no texture "
-          << projector->texture_name_ << ", ";
+      render_message_ << " '" << projector->name_ << "' has no texture '"
+          << projector->texture_name_ << "', ";
       continue;
     }
     if (!texture->image_) {
@@ -239,7 +239,7 @@ bool Viz3D::setupProjectorsWithShape(
   // corresponds to glActiveTexture(GL_TEXTURE1) if is 1
 
   // TODO(lucasw) store these where they can be used outside this method
-  int tex_ind = 1;
+  int tex_ind = 2;
   int texture_unit[4] = {tex_ind, tex_ind + 1, tex_ind + 2, tex_ind + 3};
   tex_ind += 4;
   int shadow_texture_unit[4] = {tex_ind, tex_ind + 1, tex_ind + 2, tex_ind + 3};
@@ -269,7 +269,7 @@ bool Viz3D::setupProjectorsWithShape(
     glUniformMatrix4fv(shaders->uniform_locations_["projector_projection_matrix"],
         MAX_PROJECTORS, transpose, &projection[0][0][0]);
 
-    // assign these textures to the TEXTURE1..5 slots
+    // assign these textures to the TEXTURE2..6 slots
     glUniform1iv(shaders->uniform_locations_["ProjectedTexture"],
         // num_projectors, &texture_unit[0]);
         MAX_PROJECTORS, &texture_unit[0]);
@@ -551,7 +551,7 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
   const glm::vec4 default_color = glm::vec4(1.0, 1.0, 1.0, 1.0);
 
   auto shape = std::make_shared<Shape>(msg->name,
-      msg->header.frame_id, msg->texture, tf_buffer_);
+      msg->header.frame_id, msg->texture, msg->shininess_texture, tf_buffer_);
 
   // TODO(lucasw) if is_topic then create RosImage subscriber
   // if msg->image isn't empty create a RosImage and initialize the image
@@ -867,10 +867,35 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
   return true;
 }
 
+bool Viz3D::bindTexture(const std::string& name, const int active_ind)
+{
+  GLuint tex_id = 0;
+  if ((name != "") && (textures_.count(name) > 0)) {
+    tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
+    render_message_ << "texture '" << name << "' " << tex_id;
+  } else if (textures_.count("default") > 0) {
+    tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
+    render_message_ << ", 'default' texture " << tex_id;
+  } else {
+    // TODO(lucasw) else stop rendering?
+    render_message_ << ", no texture to use";
+  }
+  render_message_ << ", active texture ind " << GL_TEXTURE0 + active_ind << "\n";
+  glActiveTexture(GL_TEXTURE0 + active_ind);
+  // Bind texture- if it is null then the color is black
+  glBindTexture(GL_TEXTURE_2D, tex_id);
+  if (checkGLError(__FILE__, __LINE__)) {
+    return false;
+  }
+
+  return true;
+}
+
 void Viz3D::render(const int fb_width, const int fb_height,
   const int display_pos_x, const int display_pos_y,
   const int display_size_x, const int display_size_y)
 {
+  render_message_ << "\n############# rendering main\n";
   (void)display_pos_x;
   (void)display_pos_y;
   (void)display_size_x;
@@ -931,7 +956,7 @@ void Viz3D::renderShadows()
     if (!projector->enable_) {
       continue;
     }
-    render_message_ << "\nrender depth shadows " << projector->name_ << "\n";
+    render_message_ << "\nrender depth shadows '" << projector->name_ << "'\n";
 
     glBindFramebuffer(GL_FRAMEBUFFER, projector->shadow_framebuffer_);
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -1077,7 +1102,7 @@ void Viz3D::render2(
     if (checkGLError(__FILE__, __LINE__))
       return;
 
-  render_message_ << ", shader " << shaders->name_ << " " << shaders->shader_handle_;
+  render_message_ << ", shader '" << shaders->name_ << "', handle: " << shaders->shader_handle_;
   // for (auto shaders_pair : shader_sets_) {
   //  shaders = shaders_pair.second;
   //}
@@ -1113,7 +1138,7 @@ void Viz3D::render2(
       {
         tf2::Vector3 translation = transform.getOrigin();
         glm::vec3 eye_pos = glm::vec3(translation.x(), translation.y(), translation.z());
-        render_message_ << "\neye pos: " << printVec(eye_pos) << "\n";
+        render_message_ << "eye pos: " << printVec(eye_pos) << "\n";
         glUniform3fv(shaders->uniform_locations_["eye_pos"],
             1, &eye_pos[0]);
       }
@@ -1124,8 +1149,11 @@ void Viz3D::render2(
           1, transpose, &view[0][0]);
       glUniformMatrix4fv(shaders->uniform_locations_["projection_matrix"],
           1, transpose, &projection[0][0]);
-      const int texture_unit = 0;
+
+      int texture_unit = 0;
       glUniform1i(shaders->uniform_locations_["Texture"], texture_unit);
+      texture_unit += 1;
+      glUniform1i(shaders->uniform_locations_["shininess_texture"], texture_unit);
       if (checkGLError(__FILE__, __LINE__))
         return;
     }
@@ -1153,25 +1181,13 @@ void Viz3D::render2(
 
     render_message_ << "\n";
 
-    // Bind texture- if it is null then the color is black
-    // if (texture_id_ != nullptr)
-    {
-      GLuint tex_id = 0;
-      if ((shape->texture_ != "") && (textures_.count(shape->texture_) > 0)) {
-        tex_id = (GLuint)(intptr_t)textures_[shape->texture_]->texture_id_;
-        render_message_ << "texture " << shape->texture_ << " " << tex_id;
-      } else if (textures_.count("default") > 0) {
-        tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
-        render_message_ << ", default texture " << tex_id;
-      } else {
-        // TODO(lucasw) else stop rendering?
-        render_message_ << ", no texture to use";
-      }
-      glActiveTexture(GL_TEXTURE0);
+    // if doing shadows then don't need to bind any textures,
+    // for now use use_projectors = false as meaning doing depth only render
+    if (use_projectors) {
       // Bind texture- if it is null then the color is black
-      glBindTexture(GL_TEXTURE_2D, tex_id);
-      if (checkGLError(__FILE__, __LINE__))
-        return;
+      bindTexture(shape->texture_, 0);
+      render_message_ << "shininess ";
+      bindTexture(shape->shininess_texture_, 1);
     }
 
     if (use_projectors) {
@@ -1188,28 +1204,18 @@ void Viz3D::render2(
         quadratic_attenuation[i] = projectors[i]->quadratic_attenuation_;
 
         // TODO(lucasw) later the scale could be a brightness setting
-        // TODO(lucasw) currently hardcoded, later make more flexible
-        {
-        const std::string name = projectors[i]->texture_name_;
-        GLuint texture_id = 0;
-        if (textures_.count(name) > 0) {
-          texture_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
-          render_message_ << "\nprojector " << projectors[i]->name_
-              << " texture " << name << " " << texture_id;
-        } else if (textures_.count("default") > 0) {
-          texture_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
-          render_message_ << "\ndefault projected texture " << texture_id;
-        } else {
-          render_message_ << ", no texture to use";
-        }
-        glActiveTexture(GL_TEXTURE1 + i);
-        glBindTexture(GL_TEXTURE_2D, texture_id);
-        }
+        // TODO(lucasw) index currently hardcoded, later make more flexible
+        render_message_ << "bind projector texture ";
+        bindTexture(projectors[i]->texture_name_, 2 + i);
 
         // shadows
         {
           // glActiveTexture(GL_TEXTURE1 + num_projectors + i);
-          glActiveTexture(GL_TEXTURE1 + MAX_PROJECTORS + i);
+          int active_texture_ind = GL_TEXTURE0 + 2 + MAX_PROJECTORS + i;
+          render_message_ << "bind projector shadow "
+              << projectors[i]->shadow_depth_texture_ << ", active texture ind "
+              << active_texture_ind << "\n";
+          glActiveTexture(active_texture_ind);
           glBindTexture(GL_TEXTURE_2D, projectors[i]->shadow_depth_texture_);
         }
 
@@ -1250,7 +1256,7 @@ void Viz3D::render2(
       // idx_buffer_offset += pcmd->ElemCount;
       // glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-    render_message_ << "\n\n";
+    render_message_ << "------------------------\n";
     // glBindVertexArray(0);
   }  // loop through shapes to draw
 

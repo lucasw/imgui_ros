@@ -69,8 +69,9 @@ struct DrawVert {
 };
 
 struct Shape {
-  Shape(const std::string name, const std::string frame_id,
-    const std::string texture_name,
+  Shape(const std::string& name, const std::string& frame_id,
+    const std::string& texture_name,
+    const std::string& shininess_texture_name_,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer);
   ~Shape();
 
@@ -105,7 +106,8 @@ struct Shape {
   std::string frame_id_ = "map";
   ImVector<DrawVert> vertices_;
   ImVector<ImDrawIdx> indices_;
-  std::string texture_ = 0;
+  std::string texture_ = "";
+  std::string shininess_texture_ = "";
 
   // ROS
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
