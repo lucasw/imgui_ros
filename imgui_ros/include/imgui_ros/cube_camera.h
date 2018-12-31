@@ -78,13 +78,10 @@ struct CubeFace
 
 struct CubeCamera : public Camera {
   CubeCamera(const std::string& name,
-      const std::string& texture_name,
       const std::string& frame_id,
-      const std::string& topic,
-      const size_t width,
       std::shared_ptr<rclcpp::Node> node);
   ~CubeCamera();
-  virtual void init(const size_t width, const size_t height,
+  void init(const size_t width,
       const std::string& texture_name, const std::string& topic,
       std::shared_ptr<rclcpp::Node> node);
   virtual void draw();

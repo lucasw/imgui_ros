@@ -63,17 +63,13 @@
 
 struct Camera {
   Camera(const std::string name,
-      const std::string texture_name,
       const std::string frame_id,
-      const std::string topic,
-      const size_t width,
-      const size_t height,
       const double aov_y,
       const double aov_x,
       std::shared_ptr<rclcpp::Node> node);
   ~Camera();
 
-  virtual void init(const size_t width, const size_t height,
+  void init(const size_t width, const size_t height,
       const std::string& texture_name, const std::string& topic,
       std::shared_ptr<rclcpp::Node> node);
   virtual void draw();

@@ -313,6 +313,17 @@ Viz3D::Viz3D(const std::string name,
   textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
 
+  // TEMP debug
+  {
+    cube_camera_ = std::make_shared<CubeCamera>(
+        "test_cube_camera",
+        "map",
+        node);
+    cube_camera_->init(512, "test_cube_camera", "", node);
+    // TODO(lucasw) see what happens if imgui tries to draw the cubemap
+    // textures_[cub_camera_->texture_name] = render_texture->image_;
+  }
+
   add_camera_ = node->create_service<imgui_ros::srv::AddCamera>("add_camera",
       std::bind(&Viz3D::addCamera, this, _1, _2));
   add_projector_ = node->create_service<imgui_ros::srv::AddProjector>("add_projector",
@@ -348,11 +359,14 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
   }
   try {
     auto render_texture = std::make_shared<Camera>(req->camera.name,
-        req->camera.texture_name,
-        req->camera.header.frame_id, req->camera.topic,
-        req->camera.width, req->camera.height,
+        req->camera.header.frame_id,
         req->camera.aov_y,
         req->camera.aov_x,
+        node);
+    render_texture->init(
+        req->camera.width, req->camera.height,
+        req->camera.texture_name,
+        req->camera.topic,
         node);
     textures_[req->camera.texture_name] = render_texture->image_;
     cameras_[req->camera.name] = render_texture;
@@ -621,6 +635,7 @@ void Viz3D::draw()
   ImGui::Begin("viz3d");
 
   ImGui::ColorEdit4("clear color", (float*)&clear_color_);
+  ImGui::ColorEdit3("ambient color", (float*)&ambient_[0]);
 
   double x_move = 0.0;
   double y_move = 0.0;
@@ -748,6 +763,12 @@ void Viz3D::draw()
           << pitch_;
       ImGui::Text("%s", ss.str().c_str());
     }
+  }
+
+  // TEMP debug
+  {
+    ImGui::Separator();
+    cube_camera_->draw();
   }
 
   std::vector<std::string> texture_names;
@@ -1148,6 +1169,7 @@ void Viz3D::render2(
         glUniform3fv(shaders->uniform_locations_["eye_pos"],
             1, &eye_pos[0]);
       }
+      // transfer data to shaders
       const auto transpose = GL_FALSE;
       glUniformMatrix4fv(shaders->uniform_locations_["model_matrix"],
           1, transpose, &model[0][0]);
@@ -1160,6 +1182,10 @@ void Viz3D::render2(
       glUniform1i(shaders->uniform_locations_["Texture"], texture_unit);
       texture_unit += 1;
       glUniform1i(shaders->uniform_locations_["shininess_texture"], texture_unit);
+
+      // TEMP debug
+      texture_unit += MAX_PROJECTORS * 2;
+      glUniform1i(shaders->uniform_locations_["test_cube_map"], texture_unit);
       if (checkGLError(__FILE__, __LINE__))
         return;
     }
@@ -1194,6 +1220,11 @@ void Viz3D::render2(
       bindTexture(shape->texture_, 0);
       render_message_ << "shininess ";
       bindTexture(shape->shininess_texture_, 1);
+
+      // TEMP debug
+      glActiveTexture(GL_TEXTURE0 + 2 + MAX_PROJECTORS * 2);
+      // Bind texture- if it is null then the color is black
+      glBindTexture(GL_TEXTURE_CUBE_MAP, cube_camera_->cube_texture_id_);
     }
 
     if (use_projectors) {

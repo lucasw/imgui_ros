@@ -171,6 +171,8 @@ protected:
   void addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> req,
                   std::shared_ptr<imgui_ros::srv::AddCamera::Response> res);
   std::map<std::string, std::shared_ptr<Camera> > cameras_;
+  // std::map<std::string, std::shared_ptr<CubeCamera> > cube_cameras_;
+  std::shared_ptr<CubeCamera> cube_camera_;
 
   // Can exceed this number of projectors but this is the number
   // than can simultaneously be projectored on any surface.

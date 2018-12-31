@@ -43,11 +43,7 @@ using std::placeholders::_2;
 
 // TODO(lucasw) 'Camera' -> 'TextureCamera'
 Camera::Camera(const std::string name,
-    const std::string texture_name,
     const std::string frame_id,
-    const std::string topic,
-    const size_t width,
-    const size_t height,
     const double aov_y,
     const double aov_x,
     std::shared_ptr<rclcpp::Node> node) :
@@ -56,15 +52,15 @@ Camera::Camera(const std::string name,
     aov_y_(aov_y),
     aov_x_(aov_x)
 {
-  std::cout << "creating camera " << name << " " << width << " " << height
+  std::cout << "creating camera " << name
       << " " << aov_y << " " << aov_x << "\n";
-  init(width, height, texture_name, topic, node);
 }
 
 void Camera::init(const size_t width, const size_t height,
     const std::string& texture_name, const std::string& topic,
     std::shared_ptr<rclcpp::Node> node)
 {
+  RCLCPP_INFO(node->get_logger(), "regular camera");
   const bool sub_not_pub = false;
   image_ = std::make_shared<RosImage>(texture_name, topic, sub_not_pub, node);
   {

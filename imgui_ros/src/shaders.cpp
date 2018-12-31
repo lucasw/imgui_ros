@@ -123,6 +123,7 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
   }
 
   std::vector<std::string> uniforms = {
+      "test_cube_map",
       "eye_pos",
       "Texture",
       "shininess_texture",
@@ -146,6 +147,8 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
   };
   for (std::string name : uniforms) {
     uniform_locations_[name] = glGetUniformLocation(shader_handle_, name.c_str());
+    // TODO(lucasw) ambient is -1, but still seems to work
+    std::cout << "shaders " << name << " location: " << uniform_locations_[name] << "\n";
   }
 
   std::string msg;
