@@ -42,5 +42,5 @@ def generate_launch_description():
     return launch.LaunchDescription([
         add_default_shaders,
         add_depth_shaders,
-        # add_cube_camera_shaders,
+        add_cube_camera_shaders,
     ])

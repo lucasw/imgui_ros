@@ -84,7 +84,7 @@ class Demo(Node):
             # on top of old ones, all the shapes disappear until
             # add_shaders is run again.
             self.add_shapes()
-        self.add_cameras()
+        # self.add_cameras()
         self.add_projectors()
 
     def add_projectors(self):

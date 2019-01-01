@@ -232,7 +232,7 @@ bool Viz3D::setupProjectorsWithShape(
     ind += 1;
   }
 
-  render_message_ << "\nview inverse\n" << printMat(view_inverse[0]) << "\n";
+  // render_message_ << "\nview inverse\n" << printMat(view_inverse[0]) << "\n";
   glm::vec4 projector_pos = view_inverse[0] * glm::vec4(0.0, 0.0, 0.0, 1.0);
   render_message_ << printVec(projector_pos) << "\n";
 
@@ -976,7 +976,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     const bool vert_flip = false;
     render2("default", transform_, fb_width, fb_height, aov_y_, aov_x_, vert_flip);
 
-    gl_state.backup();
+    gl_state.restore();
     checkGLError(__FILE__, __LINE__);
 }
 
@@ -1035,15 +1035,23 @@ void Viz3D::renderShadows()
     checkGLError(__FILE__, __LINE__);
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  gl_state.backup();
+  gl_state.restore();
   render_message_ << "\n########\n";
 }
 
 void Viz3D::renderCubeCameras()
 {
+  render_message_ << "\n------ render cube cameras -----\n";
   // TODO(lucasw) make GLState back up in the constructor and restore in the destructor
   GLState gl_state;
   gl_state.backup();
+  renderCubeCamerasInner();
+  gl_state.restore();
+  render_message_ << "\n---------- end render cube camera --------------\n";
+}
+
+void Viz3D::renderCubeCamerasInner()
+{
   // 1st pass - render the scene to the cube map
   {
     auto cube_camera = cube_camera_;
@@ -1054,7 +1062,6 @@ void Viz3D::renderCubeCameras()
       // continue;
       return;
     }
-    render_message_ << "\nrender cube camera " << cube_camera->name_ << "\n";
 
     try {
       geometry_msgs::msg::TransformStamped tf;
@@ -1098,7 +1105,6 @@ void Viz3D::renderCubeCameras()
     checkGLError(__FILE__, __LINE__);
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  gl_state.backup();
 
   // 2nd pass - render the cube map onto the camera 'lens' geometry
   // use an orthographic projection
@@ -1219,7 +1225,6 @@ void Viz3D::renderCubeCameras()
       // idx_buffer_offset += pcmd->ElemCount;
       // glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-    render_message_ << "\n------------------------\n";
     // glBindVertexArray(0);
   }
 }
@@ -1279,7 +1284,7 @@ void Viz3D::renderToTexture()
     checkGLError(__FILE__, __LINE__);
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  gl_state.backup();
+  gl_state.restore();
 }
 
 void Viz3D::render2(
