@@ -318,7 +318,7 @@ Viz3D::Viz3D(const std::string name,
     const std::string texture_name = "test_cube_camera";
     auto cube_camera = std::make_shared<CubeCamera>(
         "test_cube_camera",
-        "map",
+        "cube_camera",
         80.0, 60.0,
         node);
     cube_camera->init(800, 600, 512, texture_name, "", node);
@@ -1084,8 +1084,11 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
       return false;
     }
 
+    // TODO(lucasw) render all the faces
     // for (auto face : cube_camera->faces_) {
-    auto face = cube_camera->faces_[0];
+    // 5 NEGATIVE_Z is the forward face
+    // Could safely skip rendering 4 most of the time, unless lens is spherical
+    auto face = cube_camera->faces_[5];
     {
       render_message_ << "cube camera face " << face->dir_ << "\n";
       glBindFramebuffer(GL_FRAMEBUFFER, face->frame_buffer_);
@@ -1150,6 +1153,7 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   // TODO(lucasw) later enable
   glDisable(GL_CULL_FACE);
+  // TODO(lucasw) try disabling this
   glEnable(GL_DEPTH_TEST);
   // Want to draw to whole window
   glDisable(GL_SCISSOR_TEST);
@@ -1198,7 +1202,9 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
     glm::mat4 model, view, view_inverse, projection;
     // TODO(lucasw) use ortho projection later
     bool vert_flip = false;
-    if (!setupCamera(transform, shape->frame_id_,
+    if (!setupCamera(
+        cube_camera->stamped_transform_,
+        shape->frame_id_,
         cube_camera->aov_y_,
         cube_camera->aov_x_,
         fb_width, fb_height,
