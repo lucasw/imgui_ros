@@ -646,6 +646,7 @@ namespace imgui_ros {
 
     {
       // need to do this out of the main rendering above
+      viz3d->renderCubeCameras();
       viz3d->renderToTexture();
     }
 

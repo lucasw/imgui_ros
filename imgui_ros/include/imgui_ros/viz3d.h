@@ -87,6 +87,8 @@ struct Viz3D {
       const int display_pos_x, const int display_pos_y,
       const int display_size_x, const int display_size_y);
   void renderShadows();
+  void renderCubeCameras();
+  // TODO(lucasw) rename to renderCameras
   void renderToTexture();
   void render2(
       const std::string& shaders_name,

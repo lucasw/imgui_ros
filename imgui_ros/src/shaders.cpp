@@ -116,14 +116,13 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
       "Normal",
       "UV",
       "Color",
-      // "LightDirection",
   };
   for (std::string name : attribs) {
     attrib_locations_[name] = glGetAttribLocation(shader_handle_, name.c_str());
   }
 
   std::vector<std::string> uniforms = {
-      "test_cube_map",
+      "cube_map",
       "eye_pos",
       "Texture",
       "shininess_texture",

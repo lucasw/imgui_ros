@@ -1023,6 +1023,191 @@ void Viz3D::renderShadows()
   render_message_ << "\n########\n";
 }
 
+void Viz3D::renderCubeCameras()
+{
+  // TODO(lucasw) make GLState back up in the constructor and restore in the destructor
+  GLState gl_state;
+  gl_state.backup();
+  // 1st pass - render the scene to the cube map
+  {
+    auto cube_camera = cube_camera_;
+    if (!cube_camera) {
+      return;
+    }
+    if (!cube_camera->enable_) {
+      // continue;
+      return;
+    }
+    render_message_ << "\nrender cube camera " << cube_camera->name_ << "\n";
+
+    try {
+      geometry_msgs::msg::TransformStamped tf;
+      tf = tf_buffer_->lookupTransform(frame_id_,
+          cube_camera->frame_id_, tf2::TimePointZero);
+      tf2::fromMsg(tf, cube_camera->stamped_transform_);
+      #if 0
+      tf2::TimePoint time_out;
+      // this is private, so doesn't work
+      tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
+          tf2::TimePointZero, transform, time_out);
+      #endif
+      render_message_ << ", frames: " << frame_id_ << " -> "
+          << cube_camera->frame_id_ << "\n";
+    } catch (tf2::TransformException& ex) {
+      render_message_ << "\n" << ex.what();
+      return;
+    }
+
+    for (auto face : cube_camera_->faces_) {
+      glBindFramebuffer(GL_FRAMEBUFFER, face->frame_buffer_);
+      glClearColor(
+          cube_camera->clear_color_.x,
+          cube_camera->clear_color_.y,
+          cube_camera->clear_color_.z,
+          cube_camera->clear_color_.w);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+      // TODO(lucasw) need to generate 5 transforms beyond
+      // the one returned by lookup, to point in all six directions.
+      const bool vert_flip = true;
+      render2("default",
+          cube_camera->stamped_transform_,
+          face->image_->width_,
+          face->image_->height_,
+          cube_camera->aov_y_,
+          cube_camera->aov_x_,
+          vert_flip);
+    }
+    // TODO(lucasw) copy the date from the texture out to a cv::Mat?
+    checkGLError(__FILE__, __LINE__);
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  gl_state.backup();
+
+  // 2nd pass - render the cube map onto the camera 'lens' geometry
+  // use an orthographic projection
+
+  // The active texture and uniform need to be bound together in order for this to work,
+  // maybe the binds below also ought to be grouped above.
+  if (shader_sets_.count("cube_map") < 1) {
+    return;
+  }
+
+  auto shaders = shader_sets_["cube_map"];
+  int texture_unit = 0;
+  render_message_ << "cube_map "
+      << shaders->uniform_locations_["cube_map"] << "\n";
+  glActiveTexture(GL_TEXTURE0 + texture_unit);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, cube_camera_->cube_texture_id_);
+  glUniform1i(shaders->uniform_locations_["cube_map"], texture_unit);
+
+  // TODO(lucasw) should give up if can't lock, just don't render now
+  // std::lock_guard<std::mutex> lock(mutex_);
+
+  // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
+  glEnable(GL_BLEND);
+  glBlendEquation(GL_FUNC_ADD);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  // TODO(lucasw) later enable
+  glDisable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
+  // Want to draw to whole window
+  glDisable(GL_SCISSOR_TEST);
+#ifdef GL_POLYGON_MODE
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
+  // TODO(lucasw) instead of outputing to stdout put the error in a gui text widget
+  if (checkGLError(__FILE__, __LINE__))
+    return;
+
+  // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
+  // TODO(lucasw) need a cube_camera width and height for the full image
+  int fb_width = 800;
+  int fb_height = 800;
+  glViewport(0, 0,
+      (GLsizei)fb_width,
+      (GLsizei)fb_height);
+
+  if (checkGLError(__FILE__, __LINE__))
+    return;
+
+  render_message_ << ", shader '" << shaders->name_ << "', handle: " << shaders->shader_handle_;
+  // for (auto shaders_pair : shader_sets_) {
+  //  shaders = shaders_pair.second;
+  //}
+  render_message_ << "\n";
+
+  // TODO(lucasw) store this lens name in the cube_camera
+  const std::string shape_name = "cube_camera_lens";
+  auto shape = shapes_[shape_name];
+
+  if (!shape) {
+    render_message_ << " null shape\n";
+    return;
+  }
+
+  render_message_ << "shape: " << shape->name_;
+  if (!shape->enable_) {
+    render_message_ << " disabled";
+    return;
+  }
+
+  glUseProgram(shaders->shader_handle_);
+  {
+    glm::mat4 model, view, view_inverse, projection;
+    // TODO(lucasw) use ortho projection later
+    bool vert_flip = false;
+    tf2::Transform transform;
+    if (!setupCamera(transform, shape->frame_id_,
+        90.0,
+        90.0,
+        fb_width, fb_height,
+        model, view, view_inverse, projection,
+        vert_flip)) {
+      return;
+    }
+    // transfer data to shaders
+    const auto transpose = GL_FALSE;
+    glUniformMatrix4fv(shaders->uniform_locations_["model_matrix"],
+        1, transpose, &model[0][0]);
+    glUniformMatrix4fv(shaders->uniform_locations_["view_matrix"],
+        1, transpose, &view[0][0]);
+    glUniformMatrix4fv(shaders->uniform_locations_["projection_matrix"],
+        1, transpose, &projection[0][0]);
+
+#ifdef GL_SAMPLER_BINDING
+    glBindSampler(0, 0);
+    // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
+#endif
+
+    glBindVertexArray(shape->vao_handle_);
+    render_message_ << "vao handle " << shape->vao_handle_;
+
+    ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
+    glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
+        (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
+    if (checkGLError(__FILE__, __LINE__))
+      return;
+
+    render_message_ << "\n";
+
+    {
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape->elements_handle_);
+      const ImDrawIdx* idx_buffer_offset = 0;
+      glDrawElements(GL_TRIANGLES, (GLsizei)shape->indices_.Size,
+          sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
+      // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
+      if (checkGLError(__FILE__, __LINE__))
+        return;
+      render_message_ << ", shape " << shape->name_ << " indices " << shape->indices_.Size;
+      // idx_buffer_offset += pcmd->ElemCount;
+      // glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+    render_message_ << "\n------------------------\n";
+    // glBindVertexArray(0);
+  }
+}
+
 // don't interleave this with regular 3d rendering imgui rendering
 void Viz3D::renderToTexture()
 {
@@ -1187,15 +1372,6 @@ void Viz3D::render2(
       texture_unit += 1;
       glUniform1i(shaders->uniform_locations_["shininess_texture"], texture_unit);
 
-      // TEMP debug
-      // The active texture and uniform need to be bound together in order for this to work,
-      // maybe the binds below also ought to be grouped above.
-      texture_unit += MAX_PROJECTORS * 2;
-      render_message_ << "test_cube_map "
-          << shaders->uniform_locations_["test_cube_map"] << "\n";
-      glActiveTexture(GL_TEXTURE0 + texture_unit);
-      glBindTexture(GL_TEXTURE_CUBE_MAP, cube_camera_->cube_texture_id_);
-      glUniform1i(shaders->uniform_locations_["test_cube_map"], texture_unit);
       if (checkGLError(__FILE__, __LINE__))
         return;
     }
@@ -1231,13 +1407,6 @@ void Viz3D::render2(
       bindTexture(shape->texture_, 0);
       render_message_ << "shininess ";
       bindTexture(shape->shininess_texture_, 1);
-
-      // TEMP debug
-      #if 0
-      glActiveTexture(GL_TEXTURE0 + 2 + MAX_PROJECTORS * 2);
-      // Bind texture- if it is null then the color is black
-      glBindTexture(GL_TEXTURE_CUBE_MAP, cube_camera_->cube_texture_id_);
-      #endif
     }
 
     if (use_projectors) {

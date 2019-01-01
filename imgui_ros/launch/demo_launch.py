@@ -55,14 +55,26 @@ def generate_launch_description():
     vertex_filename = shader_dir + 'vertex.glsl'
     fragment_filename = shader_dir + 'fragment.glsl'
     add_shaders = launch_ros.actions.Node(
-            package='imgui_ros', node_executable='add_shaders.py', output='screen',
+            package='imgui_ros', node_executable='add_shaders.py',
+            node_name='add_shaders',
+            output='screen',
             arguments=['-n', 'default', '-v', vertex_filename, '-f', fragment_filename],
             )
     vertex_filename = shader_dir + 'depth_vertex.glsl'
     fragment_filename = shader_dir + 'depth_fragment.glsl'
     add_depth_shaders = launch_ros.actions.Node(
-            package='imgui_ros', node_executable='add_shaders.py', output='screen',
+            package='imgui_ros', node_executable='add_shaders.py',
+            node_name='add_depth_shaders',
+            output='screen',
             arguments=['-n', 'depth', '-v', vertex_filename, '-f', fragment_filename],
+            )
+    vertex_filename = shader_dir + 'cube_camera_vertex.glsl'
+    fragment_filename = shader_dir + 'cube_camera_fragment.glsl'
+    add_cube_camera_shaders = launch_ros.actions.Node(
+            package='imgui_ros', node_executable='add_shaders.py',
+            node_name='add_cube_camera_shaders',
+            output='screen',
+            arguments=['-n', 'cube_map', '-v', vertex_filename, '-f', fragment_filename],
             )
 
     configure_windows = launch_ros.actions.Node(
