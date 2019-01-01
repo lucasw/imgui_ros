@@ -88,7 +88,7 @@ struct Viz3D {
       const int display_size_x, const int display_size_y);
   void renderShadows();
   void renderCubeCameras();
-  void renderCubeCamerasInner();
+  bool renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera);
   // TODO(lucasw) rename to renderCameras
   void renderToTexture();
   void render2(
@@ -115,7 +115,7 @@ protected:
   // TODO(lucasw) should this go somewhere else?
   glm::vec3 ambient_;
 
-  double move_scale_ = 0.005;
+  double move_scale_ = 0.05;
   double rotate_scale_ = 300.0;
   double pitch_ = 0.0;
   double yaw_ = 0.0;
@@ -174,8 +174,7 @@ protected:
   void addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> req,
                   std::shared_ptr<imgui_ros::srv::AddCamera::Response> res);
   std::map<std::string, std::shared_ptr<Camera> > cameras_;
-  // std::map<std::string, std::shared_ptr<CubeCamera> > cube_cameras_;
-  std::shared_ptr<CubeCamera> cube_camera_;
+  std::map<std::string, std::shared_ptr<CubeCamera> > cube_cameras_;
 
   // Can exceed this number of projectors but this is the number
   // than can simultaneously be projectored on any surface.

@@ -79,14 +79,18 @@ struct CubeFace
 struct CubeCamera : public Camera {
   CubeCamera(const std::string& name,
       const std::string& frame_id,
+      const float aox_y, const float aov_x,
       std::shared_ptr<rclcpp::Node> node);
   ~CubeCamera();
-  void init(const size_t width,
+  void init(
+      const size_t width, const size_t height,
+      const size_t face_width,
       const std::string& texture_name, const std::string& topic,
       std::shared_ptr<rclcpp::Node> node);
   virtual void draw();
   // void render();
 
+  const std::string lens_name_ = "cube_camera_lens";
   GLuint cube_texture_id_ = 0;
   std::array<std::shared_ptr<CubeFace>, 6> faces_;
 };

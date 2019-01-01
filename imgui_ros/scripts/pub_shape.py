@@ -434,6 +434,23 @@ class Demo(Node):
             shape.shininess_texture = 'gradient_radial'
             shape.header.frame_id = 'bar2'
             req.shapes.append(shape)
+        if True:
+            # TODO(lucasw) make a custom rect shape but for now try out the cylinder
+            shape = self.make_sphere(name='cube_camera_lens',
+                radius_x=1.0,
+                radius_y=1.0,
+                radius_z=1.0,
+                segs_long=16,
+                segs_lat=16,
+                )
+            shape.add = True
+            # only used for lens, don't draw it otherwise
+            shape.enable = False
+            shape.texture = 'default'
+            shape.shininess_texture = 'default'
+            shape.header.frame_id = 'cube_camera_lens'
+            req.shapes.append(shape)
+
         self.future = self.cli.call_async(req)
         self.wait_for_response()
         sleep(1.0)

@@ -2,6 +2,8 @@ std_msgs/Header header
 # unique name, will replace any textured shape already received
 string name
 bool add True
+# whether to draw this shape
+bool enable True
 # where the shape is relative to the header frame_id
 # TODO(lucasw) or make this a TransformStamped, and have the position computed
 # relative to the header frame id at the time in the TransformStamped,

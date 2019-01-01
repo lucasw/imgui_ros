@@ -198,7 +198,7 @@ bool Viz3D::setupProjectorsWithShape(
       tf = tf_buffer_->lookupTransform(main_frame_id,
           projector->frame_id_, tf2::TimePointZero);
       tf2::fromMsg(tf, stamped_transform);
-      render_message_ << "\nprojected texture transform "
+      render_message_ << "projected texture transform "
           << main_frame_id << " " << projector->frame_id_ << " "
           << printTransform(stamped_transform);
     } catch (tf2::TransformException& ex) {
@@ -234,7 +234,7 @@ bool Viz3D::setupProjectorsWithShape(
 
   // render_message_ << "\nview inverse\n" << printMat(view_inverse[0]) << "\n";
   glm::vec4 projector_pos = view_inverse[0] * glm::vec4(0.0, 0.0, 0.0, 1.0);
-  render_message_ << printVec(projector_pos) << "\n";
+  render_message_ << "projector pos " << printVec(projector_pos) << "\n";
 
   // corresponds to glActiveTexture(GL_TEXTURE1) if is 1
 
@@ -314,14 +314,18 @@ Viz3D::Viz3D(const std::string name,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
 
   // TEMP debug
-  if (false) {
-    cube_camera_ = std::make_shared<CubeCamera>(
+  if (true) {
+    const std::string texture_name = "test_cube_camera";
+    auto cube_camera = std::make_shared<CubeCamera>(
         "test_cube_camera",
         "map",
+        80.0, 60.0,
         node);
-    cube_camera_->init(512, "test_cube_camera", "", node);
+    cube_camera->init(800, 600, 512, texture_name, "", node);
+    cube_cameras_["test"] = cube_camera;
     // TODO(lucasw) see what happens if imgui tries to draw the cubemap
-    // textures_[cub_camera_->texture_name] = render_texture->image_;
+    // cameras_[cube_camera->name_] = cube_camera;
+    textures_[texture_name] = cube_camera->image_;
   }
 
   add_camera_ = node->create_service<imgui_ros::srv::AddCamera>("add_camera",
@@ -577,6 +581,7 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
 
   auto shape = std::make_shared<Shape>(msg->name,
       msg->header.frame_id, msg->texture, msg->shininess_texture, tf_buffer_);
+  shape->enable_ = msg->enable;
 
   // TODO(lucasw) if is_topic then create RosImage subscriber
   // if msg->image isn't empty create a RosImage and initialize the image
@@ -783,8 +788,9 @@ void Viz3D::draw()
   // TEMP debug
   {
     ImGui::Separator();
-    if (cube_camera_)
-      cube_camera_->draw();
+    for (auto cube_camera_pair : cube_cameras_) {
+      cube_camera_pair.second->draw();
+    }
   }
 
   std::vector<std::string> texture_names;
@@ -1041,28 +1047,25 @@ void Viz3D::renderShadows()
 
 void Viz3D::renderCubeCameras()
 {
-  render_message_ << "\n------ render cube cameras -----\n";
+  render_message_ << "\n\n------ render cube cameras -----\n";
   // TODO(lucasw) make GLState back up in the constructor and restore in the destructor
   GLState gl_state;
   gl_state.backup();
-  renderCubeCamerasInner();
+  for (auto cube_camera_pair : cube_cameras_) {
+    renderCubeCameraInner(cube_camera_pair.second);
+  }
   gl_state.restore();
   render_message_ << "\n---------- end render cube camera --------------\n";
 }
 
-void Viz3D::renderCubeCamerasInner()
+bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
 {
+  if (!cube_camera->enable_) {
+    return false;
+  }
+
   // 1st pass - render the scene to the cube map
   {
-    auto cube_camera = cube_camera_;
-    if (!cube_camera) {
-      return;
-    }
-    if (!cube_camera->enable_) {
-      // continue;
-      return;
-    }
-
     try {
       geometry_msgs::msg::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(frame_id_,
@@ -1078,11 +1081,16 @@ void Viz3D::renderCubeCamerasInner()
           << cube_camera->frame_id_ << "\n";
     } catch (tf2::TransformException& ex) {
       render_message_ << "\n" << ex.what();
-      return;
+      return false;
     }
 
-    for (auto face : cube_camera_->faces_) {
+    // for (auto face : cube_camera->faces_) {
+    auto face = cube_camera->faces_[0];
+    {
+      render_message_ << "cube camera face " << face->dir_ << "\n";
       glBindFramebuffer(GL_FRAMEBUFFER, face->frame_buffer_);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+          face->dir_, cube_camera->cube_texture_id_, 0);
       glClearColor(
           cube_camera->clear_color_.x,
           cube_camera->clear_color_.y,
@@ -1097,14 +1105,13 @@ void Viz3D::renderCubeCamerasInner()
           cube_camera->stamped_transform_,
           face->image_->width_,
           face->image_->height_,
-          cube_camera->aov_y_,
-          cube_camera->aov_x_,
+          90.0,  // cube_camera->aov_y_,
+          90.0,  // cube_camera->aov_x_,
           vert_flip);
     }
     // TODO(lucasw) copy the date from the texture out to a cv::Mat?
     checkGLError(__FILE__, __LINE__);
   }
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   // 2nd pass - render the cube map onto the camera 'lens' geometry
   // use an orthographic projection
@@ -1112,15 +1119,26 @@ void Viz3D::renderCubeCamerasInner()
   // The active texture and uniform need to be bound together in order for this to work,
   // maybe the binds below also ought to be grouped above.
   if (shader_sets_.count("cube_map") < 1) {
-    return;
+    return false;
   }
+
+  // TODO(lucasw) could a regular camera render be used here
+  // instead of mostly redundant code?
+
+  glBindFramebuffer(GL_FRAMEBUFFER, cube_camera->frame_buffer_);
+  glClearColor(
+        cube_camera->clear_color_.x,
+        cube_camera->clear_color_.y,
+        cube_camera->clear_color_.z,
+        cube_camera->clear_color_.w);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   auto shaders = shader_sets_["cube_map"];
   int texture_unit = 0;
   render_message_ << "cube_map "
       << shaders->uniform_locations_["cube_map"] << "\n";
   glActiveTexture(GL_TEXTURE0 + texture_unit);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, cube_camera_->cube_texture_id_);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, cube_camera->cube_texture_id_);
   glUniform1i(shaders->uniform_locations_["cube_map"], texture_unit);
 
   // TODO(lucasw) should give up if can't lock, just don't render now
@@ -1140,18 +1158,18 @@ void Viz3D::renderCubeCamerasInner()
 #endif
   // TODO(lucasw) instead of outputing to stdout put the error in a gui text widget
   if (checkGLError(__FILE__, __LINE__))
-    return;
+    return false;
 
   // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
   // TODO(lucasw) need a cube_camera width and height for the full image
-  int fb_width = 800;
-  int fb_height = 800;
+  const int fb_width = cube_camera->image_->width_;
+  const int fb_height = cube_camera->image_->height_;
   glViewport(0, 0,
       (GLsizei)fb_width,
       (GLsizei)fb_height);
 
   if (checkGLError(__FILE__, __LINE__))
-    return;
+    return false;
 
   render_message_ << ", shader '" << shaders->name_ << "', handle: " << shaders->shader_handle_;
   // for (auto shaders_pair : shader_sets_) {
@@ -1160,33 +1178,33 @@ void Viz3D::renderCubeCamerasInner()
   render_message_ << "\n";
 
   // TODO(lucasw) store this lens name in the cube_camera
-  const std::string shape_name = "cube_camera_lens";
-  auto shape = shapes_[shape_name];
-
+  if (shapes_.count(cube_camera->lens_name_) < 1) {
+    render_message_ << " no lens shape for cube camera "
+        << cube_camera->lens_name_ << "\n";
+    return false;
+  }
+  auto shape = shapes_[cube_camera->lens_name_];
   if (!shape) {
     render_message_ << " null shape\n";
-    return;
+    return false;
   }
 
   render_message_ << "shape: " << shape->name_;
-  if (!shape->enable_) {
-    render_message_ << " disabled";
-    return;
-  }
 
   glUseProgram(shaders->shader_handle_);
   {
+    tf2::Transform transform;
+    transform.setIdentity();
     glm::mat4 model, view, view_inverse, projection;
     // TODO(lucasw) use ortho projection later
     bool vert_flip = false;
-    tf2::Transform transform;
     if (!setupCamera(transform, shape->frame_id_,
-        90.0,
-        90.0,
+        cube_camera->aov_y_,
+        cube_camera->aov_x_,
         fb_width, fb_height,
         model, view, view_inverse, projection,
         vert_flip)) {
-      return;
+      return false;
     }
     // transfer data to shaders
     const auto transpose = GL_FALSE;
@@ -1209,7 +1227,7 @@ void Viz3D::renderCubeCamerasInner()
     glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
         (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
     if (checkGLError(__FILE__, __LINE__))
-      return;
+      return false;
 
     render_message_ << "\n";
 
@@ -1218,15 +1236,12 @@ void Viz3D::renderCubeCamerasInner()
       const ImDrawIdx* idx_buffer_offset = 0;
       glDrawElements(GL_TRIANGLES, (GLsizei)shape->indices_.Size,
           sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
-      // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
       if (checkGLError(__FILE__, __LINE__))
-        return;
+        return false;
       render_message_ << ", shape " << shape->name_ << " indices " << shape->indices_.Size;
-      // idx_buffer_offset += pcmd->ElemCount;
-      // glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-    // glBindVertexArray(0);
   }
+  return true;
 }
 
 // don't interleave this with regular 3d rendering imgui rendering
@@ -1350,7 +1365,7 @@ void Viz3D::render2(
 
     render_message_ << "shape: " << shape->name_;
     if (!shape->enable_) {
-      render_message_ << " disabled";
+      render_message_ << " disabled\n";
       continue;
     }
 
