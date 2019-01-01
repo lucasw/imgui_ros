@@ -86,8 +86,8 @@ class AddShadersNode(Node):
             self.get_logger().error("couldn't load vertex shader from: '{}'".format(
                     vertex_filename))
             return False
-        print(req.vertex)
-        print('####################################################')
+        # print(req.vertex)
+        # print('####################################################')
         req.fragment = ''
         if fragment_filename != '':
             with open(fragment_filename) as fragment_file:
@@ -96,7 +96,7 @@ class AddShadersNode(Node):
             self.get_logger().error("couldn't load fragment shader from '{}'".format(
                     fragment_filename))
             return False
-        print(req.fragment)
+        # print(req.fragment)
         self.future = self.shaders_cli.call_async(req)
         rv = self.wait_for_response()
         if rv is not None:

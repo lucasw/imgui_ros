@@ -314,7 +314,7 @@ Viz3D::Viz3D(const std::string name,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
 
   // TEMP debug
-  {
+  if (false) {
     cube_camera_ = std::make_shared<CubeCamera>(
         "test_cube_camera",
         "map",
@@ -449,6 +449,11 @@ void Viz3D::addShaders(const std::shared_ptr<imgui_ros::srv::AddShaders::Request
 
   for (auto shape_pair : shapes_) {
     auto shape = shape_pair.second;
+    if (!shape) {
+      res->message = "bad shape " + shape_pair.first;
+      res->success = false;
+      continue;
+    }
     if (!updateShaderShapes(shaders, shape)) {
       res->message = "couldn't update shape " + shape->name_ + " vaos with new shaders ";
       res->success = false;
@@ -468,32 +473,38 @@ bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_p
   // std::shared_ptr<rclcpp::Node> node = node_.lock();
   // std::stringstream ss;
   std::cout << "updating shape shader connections '"
-      << shape->name_ << "' to '" << shaders->name_ << "'\n";
+      << shape->name_ << "' to '" << shaders->name_ << "'" << std::endl;  //"\n";
   std::cout << "vao handle: " << shape->vao_handle_ << ", ";
   std::cout << "vbo handle: " << shape->vbo_handle_ << ", ";
 
   glBindVertexArray(shape->vao_handle_);
-  glEnableVertexAttribArray(shaders->attrib_locations_["Position"]);
-  glEnableVertexAttribArray(shaders->attrib_locations_["Normal"]);
-  glEnableVertexAttribArray(shaders->attrib_locations_["UV"]);
-  glEnableVertexAttribArray(shaders->attrib_locations_["Color"]);
-  // TODO(lucasw) check GL
-
-  std::cout << "attribs: " << shaders->attrib_locations_["Position"] << " "
-      << shaders->attrib_locations_["Normal"] << " "
-      << shaders->attrib_locations_["UV"] << " "
-      << shaders->attrib_locations_["Color"] << "\n";
-
   glBindBuffer(GL_ARRAY_BUFFER, shape->vbo_handle_);
-  glVertexAttribPointer(shaders->attrib_locations_["Position"], 3, GL_FLOAT, GL_FALSE,
-      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
-  glVertexAttribPointer(shaders->attrib_locations_["Normal"], 3, GL_FLOAT, GL_FALSE,
-      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, nrm));
-  glVertexAttribPointer(shaders->attrib_locations_["UV"], 2, GL_FLOAT, GL_FALSE,
-      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, uv));
-  glVertexAttribPointer(shaders->attrib_locations_["Color"], 4, GL_FLOAT, GL_FALSE,
-      sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
 
+  if (shaders->attrib_locations_.count("Position") > 0) {
+    glEnableVertexAttribArray(shaders->attrib_locations_["Position"]);
+    glVertexAttribPointer(shaders->attrib_locations_["Position"], 3, GL_FLOAT, GL_FALSE,
+        sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, pos));
+  }
+
+  if (shaders->attrib_locations_.count("Normal") > 0) {
+    glEnableVertexAttribArray(shaders->attrib_locations_["Normal"]);
+    glVertexAttribPointer(shaders->attrib_locations_["Normal"], 3, GL_FLOAT, GL_FALSE,
+        sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, nrm));
+  }
+
+  if (shaders->attrib_locations_.count("UV") > 0) {
+    glEnableVertexAttribArray(shaders->attrib_locations_["UV"]);
+    glVertexAttribPointer(shaders->attrib_locations_["UV"], 2, GL_FLOAT, GL_FALSE,
+        sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, uv));
+  }
+
+  if (shaders->attrib_locations_.count("Color") > 0) {
+    glEnableVertexAttribArray(shaders->attrib_locations_["Color"]);
+    glVertexAttribPointer(shaders->attrib_locations_["Color"], 4, GL_FLOAT, GL_FALSE,
+        sizeof(DrawVert), (GLvoid*)offsetof(DrawVert, col));
+  }
+
+  // TODO(lucasw) check GL
 #if 0
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -610,15 +621,19 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
   shape->init();
   message += ", " + shape->print();
 
-  if (shader_sets_.count("default") < 1) {
+  // TODO(lucasw) doesn't 'depth' need this update also?
+  if (shader_sets_.size() < 1) {
     // this isn't a failure, just a race condition probably
     std::cout << "no shaders yet, will retry when one is set\n";
   } else {
     // TODO(lucasw) for now just use the last shader set
-    auto shaders = shader_sets_["default"];
-    if (!updateShaderShapes(shaders, shape)) {
-      message += "couldn't update shapes vao with new shaders";
-      return false;
+    for (auto shader_pair : shader_sets_) {
+      auto shaders = shader_pair.second;
+      if (!updateShaderShapes(shaders, shape)) {
+        message += "couldn't update shapes vao with new shadpers "
+            + shape->name_ + " " + shaders->name_;
+        continue;
+      }
     }
   }
 
@@ -768,7 +783,8 @@ void Viz3D::draw()
   // TEMP debug
   {
     ImGui::Separator();
-    cube_camera_->draw();
+    if (cube_camera_)
+      cube_camera_->draw();
   }
 
   std::vector<std::string> texture_names;

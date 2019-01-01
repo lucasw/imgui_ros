@@ -52,8 +52,8 @@ Camera::Camera(const std::string name,
     aov_y_(aov_y),
     aov_x_(aov_x)
 {
-  std::cout << "creating camera " << name
-      << " " << aov_y << " " << aov_x << "\n";
+  RCLCPP_INFO(node->get_logger(), "creating camera %s, aov y %0.1f, x %0.1f",
+      name.c_str(), aov_y, aov_x);
 }
 
 void Camera::init(const size_t width, const size_t height,

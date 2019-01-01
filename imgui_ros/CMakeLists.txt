@@ -126,6 +126,8 @@ install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(PROGRAMS
   scripts/add_shaders.py
   scripts/demo.py
+  scripts/cube_camera_fragment.glsl
+  scripts/cube_camera_vertex.glsl
   scripts/depth_fragment.glsl
   scripts/depth_vertex.glsl
   scripts/fragment.glsl

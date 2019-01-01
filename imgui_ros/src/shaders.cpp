@@ -49,7 +49,7 @@ ShaderSet::~ShaderSet()
 
 void ShaderSet::remove()
 {
-  std::cout << "Deleting shader set " << name_
+  std::cout << "Deleting shader set " << name_ << " "
       << vert_handle_ << " " << frag_handle_ << " " << shader_handle_ << "\n";
   glDeleteShader(vert_handle_);
   glDeleteShader(frag_handle_);
@@ -79,7 +79,7 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
     glShaderSource(vert_handle_, 2, vertex_shader_with_version, NULL);
     glCompileShader(vert_handle_);
     if (!CheckShader(vert_handle_, "vertex shader", message)) {
-      std::cout << vertex_code_ << std::endl;
+      // std::cout << vertex_code_ << std::endl;
       return false;
     }
   }
@@ -96,7 +96,7 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
     glShaderSource(frag_handle_, 2, fragment_shader_with_version, NULL);
     glCompileShader(frag_handle_);
     if (!CheckShader(frag_handle_, "fragment shader", message)) {
-      std::cout << fragment_code_ << std::endl;
+      // std::cout << fragment_code_ << std::endl;
       return false;
     }
   }
@@ -109,45 +109,45 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
     return false;
   }
 
-  // TODO(lucasw) make these generic - provide a list of uniforms
-  // in request
-  std::vector<std::string> attribs = {
-      "Position",
-      "Normal",
-      "UV",
-      "Color",
-  };
-  for (std::string name : attribs) {
+  GLint size;
+  GLenum type;
+  const GLsizei buf_size = 64;
+  GLchar name_char[buf_size];
+  GLsizei length;
+
+  GLint num_attribs = 0;
+  glGetProgramiv(shader_handle_, GL_ACTIVE_ATTRIBUTES, &num_attribs);
+  std::cout << "shader '" << name_ << "' has " << num_attribs << " attribs\n";
+
+  for (int i = 0; i < num_attribs; ++i) {
+    glGetActiveAttrib(shader_handle_, (GLuint)i, buf_size, &length, &size, &type, name_char);
+    std::string name(name_char);
     attrib_locations_[name] = glGetAttribLocation(shader_handle_, name.c_str());
+    std::cout << "  '" << name << "' attrib location: " << attrib_locations_[name]
+        << ", size " << size << ", type " << type << "\n";
   }
 
-  std::vector<std::string> uniforms = {
-      "cube_map",
-      "eye_pos",
-      "Texture",
-      "shininess_texture",
-      "model_matrix",
-      "view_matrix",
-      "projection_matrix",
-      "projected_texture_scale",
-      "ProjectedTexture",
-      "ambient",
-      "near_clip",
-      "far_clip",
-      "num_projectors",
-      "projector_shadow_map",
-      "projector_max_range",
-      "projector_constant_attenuation",
-      "projector_linear_attenuation",
-      "projector_quadratic_attenuation",
-      "projector_view_matrix",
-      "projector_view_matrix_inverse",
-      "projector_projection_matrix",
-  };
-  for (std::string name : uniforms) {
+  GLint num_uniforms = 0;
+  glGetProgramiv(shader_handle_, GL_ACTIVE_UNIFORMS, &num_uniforms);
+  std::cout << "shader '" << name_ << "' has " << num_uniforms << " uniforms\n";
+
+  for (int i = 0; i < num_uniforms; ++i) {
+    glGetActiveUniform(shader_handle_, (GLuint)i, buf_size, &length, &size, &type, name_char);
+    std::string name(name_char);
+
+    // removing [0] makes the uniforms work properly
+    std::string remove_str = "[0]";
+    size_t num = remove_str.size();
+    if (name.size() >= num) {
+      if (name.substr(name.size() - num) == "[0]") {
+        name = name.substr(0, name.size() - num);
+      }
+    }
+
     uniform_locations_[name] = glGetUniformLocation(shader_handle_, name.c_str());
     // TODO(lucasw) ambient is -1, but still seems to work
-    std::cout << "shaders " << name << " location: " << uniform_locations_[name] << "\n";
+    std::cout << "  '" << name << "' uniform location: " << uniform_locations_[name]
+        << ", size " << size << ", type " << type << "\n";
   }
 
   std::string msg;

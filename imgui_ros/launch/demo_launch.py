@@ -19,7 +19,7 @@ def generate_launch_description():
     # image_pub = launch_ros.actions.Node(
     #         package='image_manip2', node_executable='image_publisher', output='screen',
     #         arguments=[image_manip_dir + "/data/mosaic.jpg"])
-    # roto_zoom = launch.actions.Node(
+    # roto_zoom = launch.actions.IncludeLaunchDescription(
     #         launch.launch_description_sources.PythonLaunchDescriptionSource(
     #         image_manip_dir + '/launch/roto_zoom_launch.py'))
     static_tf = launch_ros.actions.Node(
@@ -51,31 +51,9 @@ def generate_launch_description():
             arguments=['__params:=' + param_file],
             remappings=[])
 
-    shader_dir = get_package_share_directory('imgui_ros') + '/../../lib/imgui_ros/'
-    vertex_filename = shader_dir + 'vertex.glsl'
-    fragment_filename = shader_dir + 'fragment.glsl'
-    add_shaders = launch_ros.actions.Node(
-            package='imgui_ros', node_executable='add_shaders.py',
-            node_name='add_shaders',
-            output='screen',
-            arguments=['-n', 'default', '-v', vertex_filename, '-f', fragment_filename],
-            )
-    vertex_filename = shader_dir + 'depth_vertex.glsl'
-    fragment_filename = shader_dir + 'depth_fragment.glsl'
-    add_depth_shaders = launch_ros.actions.Node(
-            package='imgui_ros', node_executable='add_shaders.py',
-            node_name='add_depth_shaders',
-            output='screen',
-            arguments=['-n', 'depth', '-v', vertex_filename, '-f', fragment_filename],
-            )
-    vertex_filename = shader_dir + 'cube_camera_vertex.glsl'
-    fragment_filename = shader_dir + 'cube_camera_fragment.glsl'
-    add_cube_camera_shaders = launch_ros.actions.Node(
-            package='imgui_ros', node_executable='add_shaders.py',
-            node_name='add_cube_camera_shaders',
-            output='screen',
-            arguments=['-n', 'cube_map', '-v', vertex_filename, '-f', fragment_filename],
-            )
+    add_shaders = launch.actions.IncludeLaunchDescription(
+            launch.launch_description_sources.PythonLaunchDescriptionSource(
+             get_package_share_directory('imgui_ros') + '/launch/shaders_launch.py'))
 
     configure_windows = launch_ros.actions.Node(
             package='imgui_ros', node_executable='demo.py', output='screen')
@@ -90,7 +68,6 @@ def generate_launch_description():
         # image_pub,
         imgui_ros,
         configure_windows,
-        add_shaders,
-        add_depth_shaders,
         add_shapes,
+        add_shaders,
     ])
