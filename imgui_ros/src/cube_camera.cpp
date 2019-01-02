@@ -118,6 +118,7 @@ void CubeCamera::init(
     // TODO(lucasw) is this useful?  No don't do it, it'll be freed 6 times
     // (though that isn't that bad)
     // image->texture_id_ = cube_texture_id_;
+    // TODO(lucasw) move into image class
     {
       // node from weak_ptr is bad?
       // RCLCPP_INFO(node->get_logger(), "creating camera %s %d %d", name, width, height);
@@ -132,6 +133,11 @@ void CubeCamera::init(
       image->image_->encoding = "bgr8";
       image->image_->step = face_width * 3;
       image->image_->data.resize(image->image_->height * image->image_->step);
+
+      // allocate the image for later copying out of the cubemap
+      glBindTexture(GL_TEXTURE_2D, image->texture_id_);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, face_width, face_width,
+          0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
       std::cout << "data size " << image->image_->data.size() << "\n";
     }
 
@@ -199,11 +205,6 @@ void CubeCamera::draw()
   // TODO(lucasw) later re-use code in RosImage
   // ImGui::Checkbox(("enable##" + name).c_str(), &enable_);
 
-  #if 0
-  if (enable_) {
-    images_->draw();
-  }
-  #endif
 
   glBindTexture(GL_TEXTURE_CUBE_MAP, cube_texture_id_);
   int width = faces_[0]->image_->width_;
@@ -225,6 +226,21 @@ void CubeCamera::draw()
     glGetTexLevelParameteriv(face->dir_, miplevel, GL_TEXTURE_WIDTH, &width);
     glGetTexLevelParameteriv(face->dir_, miplevel, GL_TEXTURE_HEIGHT, &height);
     ImGui::Text("face %d: %d x %d", face->dir_, width, height);
+
+    #if 0
+    // texture copy
+    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           face->dir_, cube_texture_id_, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
+                           GL_TEXTURE_2D, face->image_->texture_id_, 0);
+    glDrawBuffer(GL_COLOR_ATTACHMENT1);
+    glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
+                      GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    #endif
+    image_size.x = width;
+    image_size.y = height;
+    ImGui::Image((void*)(intptr_t)face->image_->texture_id_, image_size);
   }
   glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 

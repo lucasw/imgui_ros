@@ -1094,6 +1094,7 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
       glBindFramebuffer(GL_FRAMEBUFFER, face->frame_buffer_);
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
           face->dir_, cube_camera->cube_texture_id_, 0);
+      glDrawBuffer(GL_COLOR_ATTACHMENT0);
       glClearColor(
           cube_camera->clear_color_.x,
           cube_camera->clear_color_.y,
@@ -1104,13 +1105,27 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
       // TODO(lucasw) need to generate 5 transforms beyond
       // the one returned by lookup, to point in all six directions.
       const bool vert_flip = true;
+      const int width = face->image_->width_;
+      const int height = face->image_->height_;
       render2("default",
           cube_camera->stamped_transform_,
-          face->image_->width_,
-          face->image_->height_,
+          width,
+          height,
           90.0,  // cube_camera->aov_y_,
           90.0,  // cube_camera->aov_x_,
           vert_flip);
+
+      #if 1
+      // texture copy
+      // glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_);
+      // glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+      //                       face->dir_, cube_texture_id_, 0);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
+                             GL_TEXTURE_2D, face->image_->texture_id_, 0);
+      glDrawBuffer(GL_COLOR_ATTACHMENT1);
+      glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
+                        GL_COLOR_BUFFER_BIT, GL_NEAREST);
+      #endif
     }
     // TODO(lucasw) copy the date from the texture out to a cv::Mat?
     checkGLError(__FILE__, __LINE__);

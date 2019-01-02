@@ -64,6 +64,10 @@
 
 struct CubeFace
 {
+  CubeFace()
+  {
+  }
+
   ~CubeFace()
   {
     glDeleteRenderbuffers(1, &depth_buffer_);
