@@ -18,5 +18,5 @@ out vec4 fragment_color;
 void main()
 {
   // simple geometric normals to cube map lookup
-  fragment_color.rgb = texture(cube_map, fragment_normal).rgb;
+  fragment_color.rgb = texture(cube_map, -fragment_normal).rgb;
 }

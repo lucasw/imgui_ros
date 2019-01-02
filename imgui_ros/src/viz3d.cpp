@@ -1163,9 +1163,9 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
   // std::lock_guard<std::mutex> lock(mutex_);
 
   // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
-  glEnable(GL_BLEND);
-  glBlendEquation(GL_FUNC_ADD);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glDisable(GL_BLEND);
+  // glBlendEquation(GL_FUNC_ADD);
+  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   // TODO(lucasw) later enable
   glDisable(GL_CULL_FACE);
   // TODO(lucasw) try disabling this
