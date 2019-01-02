@@ -213,7 +213,8 @@ bool Viz3D::setupProjectorsWithShape(
     // TODO(lucasw) it is redundant to setup model repeatedly,
     // refactor to do that just once
     glm::mat4 model;
-    if (!setupCamera(stamped_transform, shape_frame_id,
+    if (!setupCamera(stamped_transform,
+        frame_id_, shape_frame_id,
         projector->aov_y_,
         projector->aov_x_,
         width, height,
@@ -840,8 +841,14 @@ void Viz3D::draw()
 
 // Currently calling setupcamera for every object- that seems efficient vs.
 // transforming all the data of every object.
+// frame id is the base frame of everything-
+// it doesn't matter where it is or if it is moving,
+// unless it is so far away from the camera and the viewed object
+// it is causing precision loss issues.
+// The view_transform has to be transformed relative to frame_id also-
 bool Viz3D::setupCamera(const tf2::Transform& view_transform,
-    const std::string child_frame_id,
+    const std::string& frame_id,
+    const std::string& child_frame_id,
     const double aov_y,
     const double aov_x,
     const int fb_width, const int fb_height,
@@ -868,19 +875,19 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
 
   model_matrix = glm::mat4(1.0f);
   try {
-    geometry_msgs::msg::TransformStamped tf;
-    tf = tf_buffer_->lookupTransform(frame_id_, child_frame_id, tf2::TimePointZero);
-    tf2::Stamped<tf2::Transform> stamped_transform;
-    tf2::fromMsg(tf, stamped_transform);
+    geometry_msgs::msg::TransformStamped model_tf;
+    model_tf = tf_buffer_->lookupTransform(frame_id, child_frame_id, tf2::TimePointZero);
+    tf2::Stamped<tf2::Transform> model_stamped_transform;
+    tf2::fromMsg(model_tf, model_stamped_transform);
     #if 0
     tf2::TimePoint time_out;
     // this is private, so doesn't work
-    tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
+    tf_buffer_->lookupTransformImpl(frame_id, child_frame_id,
         tf2::TimePointZero, transform, time_out);
     #endif
     render_message_ << ", frames: " << frame_id_ << " -> " << child_frame_id << "\n";
     glm::dmat4 model_matrix_double;
-    stamped_transform.getOpenGLMatrix(&model_matrix_double[0][0]);
+    model_stamped_transform.getOpenGLMatrix(&model_matrix_double[0][0]);
     dmat4Todmat(model_matrix_double, model_matrix);
   } catch (tf2::TransformException& ex) {
     render_message_ << "\n" << ex.what();
@@ -988,7 +995,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
 
 void Viz3D::renderShadows()
 {
-  render_message_ << "\n############# rendering " << projectors_.size() << " shadows\n";
+  // render_message_ << "\n############# rendering " << projectors_.size() << " shadows\n";
   if (projectors_.size() == 0) {
     // no need for shadows without directional light
     return;
@@ -1001,7 +1008,7 @@ void Viz3D::renderShadows()
     if (!projector->enable_) {
       continue;
     }
-    render_message_ << "\nrender depth shadows '" << projector->name_ << "'\n";
+    // render_message_ << "\nrender depth shadows '" << projector->name_ << "'\n";
 
     glBindFramebuffer(GL_FRAMEBUFFER, projector->shadow_framebuffer_);
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -1087,8 +1094,8 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
     // TODO(lucasw) render all the faces
     // for (auto face : cube_camera->faces_) {
     // 5 NEGATIVE_Z is the forward face
-    // Could safely skip rendering 4 most of the time, unless lens is spherical
-    auto face = cube_camera->faces_[5];
+    // Could safely skip rendering 5 most of the time, unless lens is spherical
+    auto face = cube_camera->faces_[4];
     {
       render_message_ << "cube camera face " << face->dir_ << "\n";
       glBindFramebuffer(GL_FRAMEBUFFER, face->frame_buffer_);
@@ -1115,7 +1122,7 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
           90.0,  // cube_camera->aov_x_,
           vert_flip);
 
-      #if 1
+      #if 0
       // texture copy
       // glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_);
       // glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -1151,21 +1158,20 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
         cube_camera->clear_color_.w);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  auto shaders = shader_sets_["cube_map"];
+  auto lens_shader = shader_sets_["cube_map"];
   int texture_unit = 0;
   render_message_ << "cube_map "
-      << shaders->uniform_locations_["cube_map"] << "\n";
+      << lens_shader->uniform_locations_["cube_map"] << "\n";
   glActiveTexture(GL_TEXTURE0 + texture_unit);
   glBindTexture(GL_TEXTURE_CUBE_MAP, cube_camera->cube_texture_id_);
-  glUniform1i(shaders->uniform_locations_["cube_map"], texture_unit);
+  glUniform1i(lens_shader->uniform_locations_["cube_map"], texture_unit);
 
   // TODO(lucasw) should give up if can't lock, just don't render now
   // std::lock_guard<std::mutex> lock(mutex_);
 
-  // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
+  // enabling blending really fouls up the graphics- maybe alpha
+  // is getting mishandled somewhere.
   glDisable(GL_BLEND);
-  // glBlendEquation(GL_FUNC_ADD);
-  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   // TODO(lucasw) later enable
   glDisable(GL_CULL_FACE);
   // TODO(lucasw) try disabling this
@@ -1190,10 +1196,7 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
   if (checkGLError(__FILE__, __LINE__))
     return false;
 
-  render_message_ << ", shader '" << shaders->name_ << "', handle: " << shaders->shader_handle_;
-  // for (auto shaders_pair : shader_sets_) {
-  //  shaders = shaders_pair.second;
-  //}
+  render_message_ << ", shader '" << lens_shader->name_ << "', handle: " << lens_shader->shader_handle_;
   render_message_ << "\n";
 
   // TODO(lucasw) store this lens name in the cube_camera
@@ -1202,47 +1205,54 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
         << cube_camera->lens_name_ << "\n";
     return false;
   }
-  auto shape = shapes_[cube_camera->lens_name_];
-  if (!shape) {
+  auto lens_shape = shapes_[cube_camera->lens_name_];
+  if (!lens_shape) {
     render_message_ << " null shape\n";
     return false;
   }
 
-  render_message_ << "shape: " << shape->name_;
+  render_message_ << "lens shape: " << lens_shape->name_;
 
-  glUseProgram(shaders->shader_handle_);
+  glUseProgram(lens_shader->shader_handle_);
   {
     tf2::Transform transform;
     transform.setIdentity();
-    glm::mat4 model, view, view_inverse, projection;
+    glm::mat4 lens_model, view, view_inverse, projection;
     // TODO(lucasw) use ortho projection later
     bool vert_flip = false;
     if (!setupCamera(
-        cube_camera->stamped_transform_,
-        shape->frame_id_,
+        transform,
+        // cube_camera->stamped_transform_,
+        cube_camera->frame_id_,
+        // frame_id_,
+        lens_shape->frame_id_,
         cube_camera->aov_y_,
         cube_camera->aov_x_,
         fb_width, fb_height,
-        model, view, view_inverse, projection,
+        lens_model, view, view_inverse, projection,
         vert_flip)) {
       return false;
     }
     // transfer data to shaders
     const auto transpose = GL_FALSE;
-    glUniformMatrix4fv(shaders->uniform_locations_["model_matrix"],
-        1, transpose, &model[0][0]);
-    glUniformMatrix4fv(shaders->uniform_locations_["view_matrix"],
+    glUniformMatrix4fv(lens_shader->uniform_locations_["model_matrix"],
+        1, transpose, &lens_model[0][0]);
+    glUniformMatrix4fv(lens_shader->uniform_locations_["view_matrix"],
         1, transpose, &view[0][0]);
-    glUniformMatrix4fv(shaders->uniform_locations_["projection_matrix"],
+    glUniformMatrix4fv(lens_shader->uniform_locations_["projection_matrix"],
         1, transpose, &projection[0][0]);
+
+    render_message_ << "lens:\n" << printMat(lens_model);
+    printMat(lens_model);
+    render_message_ << "view:\n" << printMat(view);
 
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
     // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
 #endif
 
-    glBindVertexArray(shape->vao_handle_);
-    render_message_ << "vao handle " << shape->vao_handle_;
+    glBindVertexArray(lens_shape->vao_handle_);
+    render_message_ << "vao handle " << lens_shape->vao_handle_;
 
     ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
     glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
@@ -1253,13 +1263,14 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
     render_message_ << "\n";
 
     {
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape->elements_handle_);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lens_shape->elements_handle_);
       const ImDrawIdx* idx_buffer_offset = 0;
-      glDrawElements(GL_TRIANGLES, (GLsizei)shape->indices_.Size,
+      glDrawElements(GL_TRIANGLES, (GLsizei)lens_shape->indices_.Size,
           sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
       if (checkGLError(__FILE__, __LINE__))
         return false;
-      render_message_ << ", shape " << shape->name_ << " indices " << shape->indices_.Size;
+      // render_message_ << ", lens shape " << lens_shape->name_
+      //    << " indices " << lens_shape->indices_.Size;
     }
   }
   return true;
@@ -1384,7 +1395,7 @@ void Viz3D::render2(
       continue;
     }
 
-    render_message_ << "shape: " << shape->name_;
+    // render_message_ << "shape: " << shape->name_;
     if (!shape->enable_) {
       render_message_ << " disabled\n";
       continue;
@@ -1394,7 +1405,9 @@ void Viz3D::render2(
     glUseProgram(shaders->shader_handle_);
     {
       glm::mat4 model, view, view_inverse, projection;
-      if (!setupCamera(transform, shape->frame_id_,
+      if (!setupCamera(transform,
+          frame_id_,
+          shape->frame_id_,
           aov_y,
           aov_x,
           fb_width, fb_height,
@@ -1407,7 +1420,7 @@ void Viz3D::render2(
       {
         tf2::Vector3 translation = transform.getOrigin();
         glm::vec3 eye_pos = glm::vec3(translation.x(), translation.y(), translation.z());
-        render_message_ << "eye pos: " << printVec(eye_pos) << "\n";
+        // render_message_ << "eye pos: " << printVec(eye_pos) << "\n";
         glUniform3fv(shaders->uniform_locations_["eye_pos"],
             1, &eye_pos[0]);
       }
@@ -1446,7 +1459,7 @@ void Viz3D::render2(
 #endif
 
     glBindVertexArray(shape->vao_handle_);
-    render_message_ << "vao handle " << shape->vao_handle_;
+    // render_message_ << "vao handle " << shape->vao_handle_;
 
     ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
     glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
@@ -1481,16 +1494,16 @@ void Viz3D::render2(
 
         // TODO(lucasw) later the scale could be a brightness setting
         // TODO(lucasw) index currently hardcoded, later make more flexible
-        render_message_ << "bind projector texture ";
+        // render_message_ << "bind projector texture ";
         bindTexture(projectors[i]->texture_name_, 2 + i);
 
         // shadows
         {
           // glActiveTexture(GL_TEXTURE1 + num_projectors + i);
           int active_texture_ind = GL_TEXTURE0 + 2 + MAX_PROJECTORS + i;
-          render_message_ << "bind projector shadow "
-              << projectors[i]->shadow_depth_texture_ << ", active texture ind "
-              << active_texture_ind << "\n";
+          // render_message_ << "bind projector shadow "
+          //     << projectors[i]->shadow_depth_texture_ << ", active texture ind "
+          //     << active_texture_ind << "\n";
           glActiveTexture(active_texture_ind);
           glBindTexture(GL_TEXTURE_2D, projectors[i]->shadow_depth_texture_);
         }

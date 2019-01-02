@@ -227,20 +227,9 @@ void CubeCamera::draw()
     glGetTexLevelParameteriv(face->dir_, miplevel, GL_TEXTURE_HEIGHT, &height);
     ImGui::Text("face %d: %d x %d", face->dir_, width, height);
 
-    #if 0
-    // texture copy
-    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_);
-    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                           face->dir_, cube_texture_id_, 0);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
-                           GL_TEXTURE_2D, face->image_->texture_id_, 0);
-    glDrawBuffer(GL_COLOR_ATTACHMENT1);
-    glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
-                      GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    #endif
     image_size.x = width;
     image_size.y = height;
-    ImGui::Image((void*)(intptr_t)face->image_->texture_id_, image_size);
+    // ImGui::Image((void*)(intptr_t)face->image_->texture_id_, image_size);
   }
   glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 

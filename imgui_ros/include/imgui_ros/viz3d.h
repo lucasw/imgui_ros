@@ -131,7 +131,9 @@ protected:
   double far_ = 100.0f;
   // TODO(lucasw) should be setupProjection or setupModelViewProjection
   // though later will do the matrix multiplication inside shader?
-  bool setupCamera(const tf2::Transform& view_transform, const std::string child_frame_id,
+  bool setupCamera(const tf2::Transform& view_transform,
+      const std::string& frame_id,
+      const std::string& child_frame_id,
       const double aov_y,
       const double aov_x,
       const int fb_width, const int fb_height,
