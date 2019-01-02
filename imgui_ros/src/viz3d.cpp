@@ -1091,12 +1091,14 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
       return false;
     }
 
-    // TODO(lucasw) render all the faces
-    // for (auto face : cube_camera->faces_) {
+    // TODO(lucasw) need a transform to rotate with for every face, face 5 ought
+    // to be identity
+
+    for (auto face : cube_camera->faces_) {
     // 5 NEGATIVE_Z is the forward face
     // Could safely skip rendering 5 most of the time, unless lens is spherical
-    auto face = cube_camera->faces_[4];
-    {
+    // auto face = cube_camera->faces_[4];
+    // {
       render_message_ << "cube camera face " << face->dir_ << "\n";
       glBindFramebuffer(GL_FRAMEBUFFER, face->frame_buffer_);
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -1114,8 +1116,9 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
       const bool vert_flip = true;
       const int width = face->image_->width_;
       const int height = face->image_->height_;
+      auto face_transform = cube_camera->stamped_transform_ * face->transform_;
       render2("default",
-          cube_camera->stamped_transform_,
+          face_transform,
           width,
           height,
           90.0,  // cube_camera->aov_y_,

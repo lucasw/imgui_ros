@@ -66,6 +66,7 @@ struct CubeFace
 {
   CubeFace()
   {
+    transform_.setIdentity();
   }
 
   ~CubeFace()
@@ -78,6 +79,8 @@ struct CubeFace
   std::shared_ptr<RosImage> image_;
   GLuint depth_buffer_;
   GLuint frame_buffer_;
+
+  tf2::Transform transform_;
 };
 
 struct CubeCamera : public Camera {

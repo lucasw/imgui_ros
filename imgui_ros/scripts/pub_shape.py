@@ -440,8 +440,9 @@ class Demo(Node):
                 radius_x=1.0,
                 radius_y=1.0,
                 radius_z=1.0,
-                segs_long=16,
-                segs_lat=16,
+                segs_long=32,
+                segs_lat=32,
+                segs_lat_stop=16,
                 )
             shape.add = True
             # only used for lens, don't draw it otherwise

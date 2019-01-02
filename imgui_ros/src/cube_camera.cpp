@@ -37,6 +37,7 @@
 #include <iomanip>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -98,13 +99,28 @@ void CubeCamera::init(
     faces_[i] = std::make_shared<CubeFace>();
   }
 
+  auto mat3x3 = tf2::Matrix3x3();
   faces_[0]->dir_ = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
-  faces_[1]->dir_ = GL_TEXTURE_CUBE_MAP_NEGATIVE_X;
-  faces_[2]->dir_ = GL_TEXTURE_CUBE_MAP_POSITIVE_Y;
-  faces_[3]->dir_ = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y;
-  faces_[4]->dir_ = GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
-  faces_[5]->dir_ = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
+  mat3x3.setRPY(0, -M_PI * 0.5, 0);
+  faces_[0]->transform_.setBasis(mat3x3);
 
+  faces_[1]->dir_ = GL_TEXTURE_CUBE_MAP_NEGATIVE_X;
+  mat3x3.setRPY(0, M_PI * 0.5, 0);
+  faces_[1]->transform_.setBasis(mat3x3);
+
+  faces_[2]->dir_ = GL_TEXTURE_CUBE_MAP_POSITIVE_Y;
+  mat3x3.setRPY(M_PI * 0.5, 0, 0);
+  faces_[2]->transform_.setBasis(mat3x3);
+
+  faces_[3]->dir_ = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y;
+  mat3x3.setRPY(-M_PI * 0.5, 0, 0);
+  faces_[3]->transform_.setBasis(mat3x3);
+
+  faces_[4]->dir_ = GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
+
+  faces_[5]->dir_ = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
+  mat3x3.setRPY(-M_PI, 0, 0);
+  faces_[5]->transform_.setBasis(mat3x3);
 
   int ind = 0;
   for (auto face : faces_) {
