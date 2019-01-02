@@ -89,6 +89,7 @@ private:
 
   bool enable_info_ = true;
   bool enable_draw_image_ = false;
+  bool enable_one_to_one_ = false;
 };  // RosImage
 
 struct CvImage : public GlImage {
