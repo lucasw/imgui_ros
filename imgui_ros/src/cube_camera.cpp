@@ -84,10 +84,13 @@ void CubeCamera::init(
 
   glGenTextures(1, &cube_texture_id_);
   glBindTexture(GL_TEXTURE_CUBE_MAP, cube_texture_id_);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 0);
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
   checkGLError(__FILE__, __LINE__);
 
@@ -125,6 +128,7 @@ void CubeCamera::init(
   int ind = 0;
   for (auto face : faces_) {
     std::cout << "face dir " << face->dir_ << "\n";
+
     ind += 1;
     // TODO(lucasw) texture_name + std::to_string(face->dir_);
     std::shared_ptr<RosImage> image = std::make_shared<RosImage>(
@@ -166,6 +170,7 @@ void CubeCamera::init(
       // std::cout << "copying data to portion of cube map "
       //     << tmp.cols << " " << tmp.rows << " " << image->width_ << " " << image->height_
       //     << " " << int(tmp.data[0]) << "\n";
+      glBindTexture(GL_TEXTURE_CUBE_MAP, cube_texture_id_);
       glTexImage2D(face->dir_, 0, GL_RGBA,
           image->width_, image->height_, 0, GL_RGBA,
           GL_UNSIGNED_BYTE, &tmp.data[0]);
@@ -181,6 +186,7 @@ void CubeCamera::init(
       glBindRenderbuffer(GL_RENDERBUFFER, 0);
       // std::cout << "depth buffer " << face->depth_buffer_ << "\n";
     }
+    checkGLError(__FILE__, __LINE__);
 
     {
       glGenFramebuffers(1, &face->frame_buffer_);
@@ -191,14 +197,22 @@ void CubeCamera::init(
       glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
           GL_RENDERBUFFER, face->depth_buffer_);
 
-      glDrawBuffers(1, DrawBuffers);
+      glDrawBuffer(GL_COLOR_ATTACHMENT0);
       // OpenGL 4?
       // glNamedFramebufferDrawBuffers(frame_buffer_, 1, DrawBuffers);
 
-      if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::stringstream ss;
-        ss << name_ << " framebuffer is not complete " << glGetError();
-        throw std::runtime_error(ss.str());
+      checkGLError(__FILE__, __LINE__);
+
+      auto fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+      if (fb_status != GL_FRAMEBUFFER_COMPLETE) {
+        RCLCPP_ERROR(node->get_logger(),
+            "framebuffer incomplete '%s', face dir %d, fb %d, db %d, cube tex id %d, fb status %d, gl error %X",
+            name_.c_str(),
+            face->dir_, face->frame_buffer_, face->depth_buffer_,
+            cube_texture_id_,
+            fb_status, glGetError());
+        // TODO(lucasw) put above text into throw message
+        throw std::runtime_error("incomplete frame buffer");
       } else {
         RCLCPP_INFO(node->get_logger(), "cube camera '%s' dir %d framebuffer setup complete, fb %d, depth %d, tex id %d",
             name_.c_str(), face->dir_,

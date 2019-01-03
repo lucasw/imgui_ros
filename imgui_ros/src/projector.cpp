@@ -154,8 +154,18 @@ void Projector::draw(const std::vector<std::string>& texture_names,
     }
   }
 
-  double min, max;
+  {
+    double min = 0.01;
+    double max = far_;
+    ImGui::SliderScalar(("near clip##" + name).c_str(), ImGuiDataType_Double,
+          &near_, &min, &max, "%lf", 3);
+    min = near_;
+    max = 100.0;
+    ImGui::SliderScalar(("far clip##" + name).c_str(), ImGuiDataType_Double,
+          &far_, &min, &max, "%lf", 3);
+  }
 
+  double min, max;
   // 0.0 means use texture width / height * aov_y
   min = 0.0;
   max = 170.0;

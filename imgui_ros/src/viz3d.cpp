@@ -217,6 +217,8 @@ bool Viz3D::setupProjectorsWithShape(
         frame_id_, shape_frame_id,
         projector->aov_y_,
         projector->aov_x_,
+        projector->near_,
+        projector->far_,
         width, height,
         model,
         view[ind],
@@ -239,25 +241,6 @@ bool Viz3D::setupProjectorsWithShape(
 
   // corresponds to glActiveTexture(GL_TEXTURE1) if is 1
 
-  // TODO(lucasw) store these where they can be used outside this method
-  int tex_ind = 2;
-  int texture_unit[4] = {tex_ind, tex_ind + 1, tex_ind + 2, tex_ind + 3};
-  tex_ind += 4;
-  int shadow_texture_unit[4] = {tex_ind, tex_ind + 1, tex_ind + 2, tex_ind + 3};
-  #if 0
-  const int num_projectors = projectors.size();
-  std::vector<int> texture_unit;  // [num_projectors];
-  for (int i = 0; i < num_projectors; ++i) {
-    texture_unit.push_back(tex_ind);
-    tex_ind += 1;
-  }
-  std::vector<int> shadow_texture_unit;
-  for (int i = 0; i < num_projectors; ++i) {
-    shadow_texture_unit.push_back(tex_ind);
-    tex_ind += 1;
-  }
-  #endif
-
   for (auto shaders_pair : shader_sets_) {
     auto shaders = shaders_pair.second;
     auto transpose = GL_FALSE;
@@ -272,10 +255,9 @@ bool Viz3D::setupProjectorsWithShape(
 
     // assign these textures to the TEXTURE2..6 slots
     glUniform1iv(shaders->uniform_locations_["ProjectedTexture"],
-        // num_projectors, &texture_unit[0]);
-        MAX_PROJECTORS, &texture_unit[0]);
+        MAX_PROJECTORS, &projector_texture_unit_[0]);
     glUniform1iv(shaders->uniform_locations_["projector_shadow_map"],
-        MAX_PROJECTORS, &shadow_texture_unit[0]);
+        MAX_PROJECTORS, &shadow_texture_unit_[0]);
 
     glUniform1fv(shaders->uniform_locations_["projected_texture_scale"],
         MAX_PROJECTORS, &projected_texture_scale[0]);
@@ -313,6 +295,14 @@ Viz3D::Viz3D(const std::string name,
 
   textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
+
+  int base_tex_ind = 2;
+  for (size_t i = 0; i < MAX_PROJECTORS; ++i) {
+    projector_texture_unit_[i] = base_tex_ind + i;
+    shadow_texture_unit_[i] = base_tex_ind + MAX_PROJECTORS + i;
+  }
+  texture_unit_["Texture"] = 0;
+  texture_unit_["shininess_texture"] = 1;
 
   // TEMP debug
   if (true) {
@@ -373,6 +363,8 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
         req->camera.texture_name,
         req->camera.topic,
         node);
+    render_texture->near_ = req->camera.near;
+    render_texture->far_ = req->camera.far;
     textures_[req->camera.texture_name] = render_texture->image_;
     cameras_[req->camera.name] = render_texture;
   } catch (std::runtime_error& ex) {
@@ -421,6 +413,8 @@ void Viz3D::addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Req
         req->projector.linear_attenuation,
         req->projector.quadratic_attenuation,
         node);
+    projector->near_ = req->projector.camera.near;
+    projector->far_ = req->projector.camera.far;
     projectors_[name] = projector;
   } catch (std::runtime_error& ex) {
     res->message = ex.what();
@@ -851,6 +845,8 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
     const std::string& child_frame_id,
     const double aov_y,
     const double aov_x,
+    const double near,
+    const double far,
     const int fb_width, const int fb_height,
     glm::mat4& model_matrix,
     glm::mat4& view_matrix,
@@ -870,8 +866,8 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
   projection_matrix = glm::perspective(
       static_cast<float>(sc_vert * glm::radians(aov_y)),
       sc_vert * aspect,
-      static_cast<float>(near_),
-      static_cast<float>(far_));
+      static_cast<float>(near),
+      static_cast<float>(far));
 
   model_matrix = glm::mat4(1.0f);
   try {
@@ -932,7 +928,8 @@ bool Viz3D::bindTexture(const std::string& name, const int active_ind)
     // TODO(lucasw) else stop rendering?
     render_message_ << ", no texture to use";
   }
-  render_message_ << ", active texture ind " << GL_TEXTURE0 + active_ind << "\n";
+  render_message_ << ", active texture ind " << active_ind << " -> "
+      << GL_TEXTURE0 + active_ind << "\n";
   glActiveTexture(GL_TEXTURE0 + active_ind);
   // Bind texture- if it is null then the color is black
   glBindTexture(GL_TEXTURE_2D, tex_id);
@@ -982,12 +979,22 @@ void Viz3D::render(const int fb_width, const int fb_height,
     GLState gl_state;
     gl_state.backup();
 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // TODO(lucasw) later enable, but it is nice to see geometry from back
+    // add a combo for this
+    glDisable(GL_CULL_FACE);
+
     // TODO(lucasw) later render to texture with a variable width and height
     // and then draw the texture to the screen with a textured quad fragment
     // shader, this allows rendering at a different resolution that the screen
     // which might be desirable if performance is suffering.
     const bool vert_flip = false;
-    render2("default", transform_, fb_width, fb_height, aov_y_, aov_x_, vert_flip);
+    render2("default", transform_,
+        fb_width, fb_height,
+        aov_y_, aov_x_,
+        near_, far_,
+        vert_flip);
 
     gl_state.restore();
     checkGLError(__FILE__, __LINE__);
@@ -1012,6 +1019,9 @@ void Viz3D::renderShadows()
 
     glBindFramebuffer(GL_FRAMEBUFFER, projector->shadow_framebuffer_);
     glClear(GL_DEPTH_BUFFER_BIT);
+    // only render backs of objects to shadows
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
     // TODO(lucasw) if render width/height change need to update rendered_texture
 
     try {
@@ -1039,8 +1049,10 @@ void Viz3D::renderShadows()
         projector->shadow_height_,
         // TODO(lucasw) there is a factor of 2 error somewhere in here,
         // this 0.5 fudges it back to working
-        projector->aov_y_ * 0.5,
-        projector->aov_x_ * 0.5,
+        projector->aov_y_,  // * 0.5,
+        projector->aov_x_,  // * 0.5,
+        projector->near_,
+        projector->far_,
         vert_flip,
         use_projectors);
 
@@ -1111,6 +1123,8 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
           cube_camera->clear_color_.w);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+      glDisable(GL_CULL_FACE);
+
       // TODO(lucasw) need to generate 5 transforms beyond
       // the one returned by lookup, to point in all six directions.
       const bool vert_flip = true;
@@ -1123,6 +1137,8 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
           height,
           90.0,  // cube_camera->aov_y_,
           90.0,  // cube_camera->aov_x_,
+          cube_camera->near_,
+          cube_camera->far_,
           vert_flip);
 
       #if 0
@@ -1231,6 +1247,8 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
         lens_shape->frame_id_,
         cube_camera->aov_y_,
         cube_camera->aov_x_,
+        cube_camera->near_,
+        cube_camera->far_,
         fb_width, fb_height,
         lens_model, view, view_inverse, projection,
         vert_flip)) {
@@ -1301,6 +1319,7 @@ void Viz3D::renderToTexture()
         camera->clear_color_.z,
         camera->clear_color_.w);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_CULL_FACE);
     // TODO(lucasw) if render width/height change need to update rendered_texture
 
     try {
@@ -1328,6 +1347,8 @@ void Viz3D::renderToTexture()
         camera->image_->height_,
         camera->aov_y_,
         camera->aov_x_,
+        camera->near_,
+        camera->far_,
         vert_flip);
 
     // TODO(lucasw) copy the date from the texture out to a cv::Mat?
@@ -1343,6 +1364,8 @@ void Viz3D::render2(
     const int fb_width, const int fb_height,
     const float aov_y,
     const float aov_x,
+    const float near,
+    const float far,
     const bool vert_flip,
     const bool use_projectors)
 {
@@ -1365,8 +1388,6 @@ void Viz3D::render2(
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // TODO(lucasw) later enable
-    glDisable(GL_CULL_FACE);
     // TODO(lucasw) later enable
     glEnable(GL_DEPTH_TEST);
     // Want to draw to whole window
@@ -1413,6 +1434,8 @@ void Viz3D::render2(
           shape->frame_id_,
           aov_y,
           aov_x,
+          near,
+          far,
           fb_width, fb_height,
           model, view, view_inverse, projection,
           vert_flip))
@@ -1440,10 +1463,10 @@ void Viz3D::render2(
     // if doing shadows then don't need to bind any textures,
     // for now use use_projectors = false as meaning doing depth only render
     if (use_projectors) {
-      int texture_unit = 0;
-      glUniform1i(shaders->uniform_locations_["Texture"], texture_unit);
-      texture_unit += 1;
-      glUniform1i(shaders->uniform_locations_["shininess_texture"], texture_unit);
+      glUniform1i(shaders->uniform_locations_["Texture"],
+          texture_unit_["Texture"]);
+      glUniform1i(shaders->uniform_locations_["shininess_texture"],
+          texture_unit_["shininess_texture"]);
 
       if (checkGLError(__FILE__, __LINE__))
         return;
@@ -1477,9 +1500,9 @@ void Viz3D::render2(
     // for now use use_projectors = false as meaning doing depth only render
     if (use_projectors) {
       // Bind texture- if it is null then the color is black
-      bindTexture(shape->texture_, 0);
+      bindTexture(shape->texture_, texture_unit_["Texture"]);
       render_message_ << "shininess ";
-      bindTexture(shape->shininess_texture_, 1);
+      bindTexture(shape->shininess_texture_, texture_unit_["shininess_texture"]);
     }
 
     if (use_projectors) {
@@ -1498,12 +1521,13 @@ void Viz3D::render2(
         // TODO(lucasw) later the scale could be a brightness setting
         // TODO(lucasw) index currently hardcoded, later make more flexible
         // render_message_ << "bind projector texture ";
-        bindTexture(projectors[i]->texture_name_, 2 + i);
+        // glUniform with ProjectedTexture needs to have been set already
+        bindTexture(projectors[i]->texture_name_, projector_texture_unit_[i]);
 
         // shadows
         {
           // glActiveTexture(GL_TEXTURE1 + num_projectors + i);
-          int active_texture_ind = GL_TEXTURE0 + 2 + MAX_PROJECTORS + i;
+          int active_texture_ind = GL_TEXTURE0 + shadow_texture_unit_[i];
           // render_message_ << "bind projector shadow "
           //     << projectors[i]->shadow_depth_texture_ << ", active texture ind "
           //     << active_texture_ind << "\n";

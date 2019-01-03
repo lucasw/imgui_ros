@@ -96,6 +96,7 @@ struct Viz3D {
       const tf2::Transform& transform,
       const int fb_width, const int fb_height,
       const float aov_y, const float aov_x,
+      const float near, const float far,
       const bool vert_flip = false,
       const bool use_projectors = true);
 
@@ -105,7 +106,18 @@ struct Viz3D {
   void draw();
   //    const int pos_x, const int pos_y,
   //    const int size_x, const int size_y);
+
+  // Can exceed this number of projectors but this is the number
+  // than can simultaneously be projectored on any surface.
+  // This constant has to be matched in shaders
+  static const int MAX_PROJECTORS = 4;
+
 protected:
+  // TODO(lucasw) maybe this should be a std::map of std::vectors
+  std::map<std::string, int > texture_unit_;
+  int projector_texture_unit_[MAX_PROJECTORS];
+  int shadow_texture_unit_[MAX_PROJECTORS];
+
   bool bindTexture(const std::string& name, const int tex_ind);
   // TODO(lucasw) later this will be a matrix
   // glm::vec3 translation_ = glm::vec3(0, 0, 0);
@@ -136,6 +148,8 @@ protected:
       const std::string& child_frame_id,
       const double aov_y,
       const double aov_x,
+      const double near,
+      const double far,
       const int fb_width, const int fb_height,
       glm::mat4& model_matrix,
       glm::mat4& view_matrix,
@@ -178,10 +192,6 @@ protected:
   std::map<std::string, std::shared_ptr<Camera> > cameras_;
   std::map<std::string, std::shared_ptr<CubeCamera> > cube_cameras_;
 
-  // Can exceed this number of projectors but this is the number
-  // than can simultaneously be projectored on any surface.
-  // This constant has to be matched in shaders
-  static const int MAX_PROJECTORS = 4;
   rclcpp::Service<imgui_ros::srv::AddProjector>::SharedPtr add_projector_;
   void addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Request> req,
                   std::shared_ptr<imgui_ros::srv::AddProjector::Response> res);

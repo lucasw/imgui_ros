@@ -84,7 +84,7 @@ class Demo(Node):
             # on top of old ones, all the shapes disappear until
             # add_shaders is run again.
             self.add_shapes()
-        # self.add_cameras()
+        self.add_cameras()
         self.add_projectors()
 
     def add_projectors(self):
@@ -207,15 +207,23 @@ class Demo(Node):
                     if j != 0:
                         triangle = MeshTriangle()
                         triangle.vertex_indices[0] = ind0
-                        triangle.vertex_indices[1] = ind1
-                        triangle.vertex_indices[2] = ind3
+                        if flip_normals:
+                            triangle.vertex_indices[1] = ind3
+                            triangle.vertex_indices[2] = ind1
+                        else:
+                            triangle.vertex_indices[1] = ind1
+                            triangle.vertex_indices[2] = ind3
                         shape.triangles.append(triangle)
 
                     if j != segs_lat - 2:
                         triangle = MeshTriangle()
                         triangle.vertex_indices[0] = ind0
-                        triangle.vertex_indices[1] = ind3
-                        triangle.vertex_indices[2] = ind2
+                        if flip_normals:
+                            triangle.vertex_indices[1] = ind2
+                            triangle.vertex_indices[2] = ind3
+                        else:
+                            triangle.vertex_indices[1] = ind3
+                            triangle.vertex_indices[2] = ind2
                         shape.triangles.append(triangle)
 
                 vertex = Vertex()
@@ -248,7 +256,7 @@ class Demo(Node):
         return shape
 
     def make_cylinder(self, name='cylinder', radius=0.5, length=2.5, segs=16,
-            off_x=0.0, off_y=0.0):
+            off_x=0.0, off_y=0.0, flip_normals=False):
         shape = TexturedShape()
         shape.name = name
         shape.header.frame_id = 'bar2'
@@ -271,15 +279,24 @@ class Demo(Node):
             if i < segs - 1:
                 triangle = MeshTriangle()
                 triangle.vertex_indices[0] = ind0
-                triangle.vertex_indices[1] = ind3
-                triangle.vertex_indices[2] = ind1
+                # the triangle index order is what opengl uses for face culling
+                if flip_normals:
+                    triangle.vertex_indices[1] = ind1
+                    triangle.vertex_indices[2] = ind3
+                else:
+                    triangle.vertex_indices[1] = ind3
+                    triangle.vertex_indices[2] = ind1
                 shape.triangles.append(triangle)
 
                 if True:
                     triangle = MeshTriangle()
                     triangle.vertex_indices[0] = ind0
-                    triangle.vertex_indices[1] = ind2
-                    triangle.vertex_indices[2] = ind3
+                    if flip_normals:
+                        triangle.vertex_indices[1] = ind3
+                        triangle.vertex_indices[2] = ind2
+                    else:
+                        triangle.vertex_indices[1] = ind2
+                        triangle.vertex_indices[2] = ind3
                     shape.triangles.append(triangle)
 
             vertex = Vertex()
@@ -287,9 +304,12 @@ class Demo(Node):
             vertex.vertex.y = y + off_y
             vertex.vertex.z = -length * 0.5
 
-            vertex.normal.x = x
-            vertex.normal.y = y
-            vertex.normal.z = 0.0
+            sc = 1.0
+            if flip_normals:
+                sc = -1.0
+            vertex.normal.x = sc * x
+            vertex.normal.y = sc * y
+            vertex.normal.z = sc * 0.0
             nrm_len = vector3_len(vertex.normal)
             vertex.normal.x /= nrm_len
             vertex.normal.y /= nrm_len
@@ -310,9 +330,9 @@ class Demo(Node):
             vertex.vertex.y = y + off_y
             vertex.vertex.z = length * 0.5
 
-            vertex.normal.x = x
-            vertex.normal.y = y
-            vertex.normal.z = 0.0
+            vertex.normal.x = sc * x
+            vertex.normal.y = sc * y
+            vertex.normal.z = sc * 0.0
             nrm_len = vector3_len(vertex.normal)
             vertex.normal.x /= nrm_len
             vertex.normal.y /= nrm_len
@@ -428,12 +448,24 @@ class Demo(Node):
             shape.header.frame_id = 'projector1'
             req.shapes.append(shape)
         if True:
-            shape = self.make_cylinder(name='cylinder3', length=2.0, segs=25)
+            radius = 0.5
+            shape = self.make_cylinder(name='cylinder3', length=2.0,
+                                       radius=radius, segs=24)
             shape.add = True
             shape.texture = 'diffract'  # 'camera1'
             shape.shininess_texture = 'gradient_radial'
             shape.header.frame_id = 'bar2'
             req.shapes.append(shape)
+            # inside of cylinder
+            shape = self.make_cylinder(name='cylinder3_inside', length=2.0,
+                                       radius=radius * 0.95, segs=12,
+                                       flip_normals=True)
+            shape.add = True
+            shape.texture = 'diffract'  # 'camera1'
+            shape.shininess_texture = 'gradient_radial'
+            shape.header.frame_id = 'bar2'
+            req.shapes.append(shape)
+
         if True:
             # TODO(lucasw) make a custom rect shape but for now try out the cylinder
             shape = self.make_sphere(name='cube_camera_lens',

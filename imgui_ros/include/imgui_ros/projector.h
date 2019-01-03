@@ -89,6 +89,9 @@ struct Projector {
   double aov_y_;
   double aov_x_ = 0.0;
 
+  double near_ = 1.0;
+  // TODO(lucasw) can far and max range be the same?
+  double far_ = 20.0;
   // set to > 0.0 to be used
   double max_range_ = 0.0;
   double constant_attenuation_ = 0.0;

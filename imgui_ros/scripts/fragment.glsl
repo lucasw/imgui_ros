@@ -75,7 +75,6 @@ void main()
 
     // TODO(lucasw) is it easier to always loop MAX_PROJECTORS times?
     for (int i = 0; i < MAX_PROJECTORS && i < num_projectors; ++i) {
-    // for (int i = 0; i < 1; ++i) {
       // the position of the fragment in the projector projection space
       vec4 pos_in_projector_space = ProjectedTexturePosition[i];
 
@@ -84,21 +83,26 @@ void main()
       // or convert this distance here to the compressed depth range,
       // so they can be compared.
       // z = -1.0 is 1.0 units away, it is linear
-      scaled_dist[i] = (pos_in_projector_space.z);  // / pos_in_projector_space.w;
+      // scaled_dist[i] = (pos_in_projector_space.z);  // / pos_in_projector_space.w;
       // z and w seem to be equal, meaning the division by w has already occurred for z?
       // scaled_dist[i] = 0.1 * (pos_in_projector_space.z / pos_in_projector_space.w);
-      scaled_dist[i] *= step(0.0, scaled_dist[i]);
+      // scaled_dist[i] *= step(0.0, scaled_dist[i]);
 
       // transform to clip space / normalized device coordinates
       pos_in_projector_space.xyz /= pos_in_projector_space.w;
-      pos_in_projector_space.xy += 0.5;
-      // TODO(lucaw) this subtraction is likely wrong
-      // should the z be -1,1 already, why the subtraction?
-      pos_in_projector_space.z *= -1.0;
-      pos_in_projector_space.z += 1.0;
+      // then transform from -1.0 to 1.0 to 0 to 1.0 to use in texture lookup
+      pos_in_projector_space.xyz += 1.0;
+      pos_in_projector_space.xyz *= 0.5;
+      // need to reverse z direction?
+      // pos_in_projector_space.z = 1.0 - pos_in_projector_space.z;
+
+      float enable_z = (step(pos_in_projector_space.z, 1.0)) *
+                        step(0.0, pos_in_projector_space.z);
+      float nonlinear_z = pos_in_projector_space.z;
+      scaled_dist[i] = nonlinear_z;
 
       // is the fragment in front of the light?  Otherwise disable
-      enable_proj[i] = step(0.0, pos_in_projector_space.z);
+      enable_proj[i] = 1.0;  // step(0.0, pos_in_projector_space.z);
       // enable_proj[i] = enable_proj[i] * step(0.0, pos_in_projector_space.z);
       // this is a manual clamp to prevent any projection outside
       // of the view of the projector
@@ -108,7 +112,8 @@ void main()
           (step(pos_in_projector_space.x, 1.0)) *
           step(0.0, pos_in_projector_space.x) *
           (step(pos_in_projector_space.y, 1.0)) *
-          step(0.0, pos_in_projector_space.y);
+          step(0.0, pos_in_projector_space.y) *
+          enable_z;
 
       // TODO(lucasw) proj_ray.z is not the same as the distance in the shadow map
       // modify projected image based on distance to projector
@@ -119,14 +124,12 @@ void main()
 
       proj_ray /= dist;
       // TODO(lucasw) pass in max range and attenuation parameters
-      enable_proj[i] *= (projector_max_range[i] == 0.0) ? 1.0 : step(dist, projector_max_range[i]);
+      // enable_proj[i] *= (projector_max_range[i] == 0.0) ? 1.0 : step(dist, projector_max_range[i]);
 
       // if normal is facing away from projector disable projection,
       // also dim the projection with diffuse reflection model.
-      // float projector_intensity = -dot(FraNormal, projector_dir[i]);
       float normal_light_alignment = -dot(FraNormal, proj_ray);
-      float clip_light = step(0.0, normal_light_alignment);
-      // float clipped_alignment *= step(0.0, alignment);
+      normal_light_alignment = step(0.0, normal_light_alignment) * normal_light_alignment;
 
       // TODO(lwalter) can skip this if always border textures with alpha 0.0
       uv[i] = pos_in_projector_space.xy;
@@ -139,7 +142,7 @@ void main()
       // set luminosity to 1.0 if attenuation is 0.0
       attenuation = attenuation == 0.0 ? 1.0 : attenuation;
       float scaled_attenuated = enable_proj[i] * projected_texture_scale[i] * 1.0 / attenuation;
-      luminosity[i] = normal_light_alignment * scaled_attenuated * clip_light;
+      luminosity[i] = normal_light_alignment * scaled_attenuated;  // * clip_light;
 
       //////////////////////////////
       // specular
@@ -151,7 +154,7 @@ void main()
       // TODO(lucasw) later per-vertex and specular maps,
       // also try uniform connected to gui slider
       specular_intensity = pow(specular_intensity, 1.0 + shininess * shiny_scale);
-      specular[i] = specular_intensity * scaled_attenuated * clip_light;
+      specular[i] = specular_intensity * scaled_attenuated;  // * clip_light;
       // specular[i] *= step(0.0, specular[i]);
       // TEMP debug
       // Out_Color.rgb = view_ray;
@@ -187,9 +190,11 @@ void main()
       float near = 0.0;
       float far = 1.0;
       float z = (2.0 * shadow_dist[i] - near - far) / (far - near);
-      float linear_dist = (2.0 * near_clip * far_clip) / (far_clip + near_clip - z * (far_clip - near_clip));
+      float linear_shadow_dist = (2.0 * near_clip * far_clip) /
+          (far_clip + near_clip - z * (far_clip - near_clip));
 
-      float not_shadowed = step(scaled_dist[i], linear_dist + 0.01);
+      // float not_shadowed = step(scaled_dist[i], linear_shadow_dist);  //  * 0.999);
+      float not_shadowed = step(scaled_dist[i], shadow_dist[i]);  //  * 0.999);
 
       vec3 diffuse_light = luminosity[i] * proj_light[i] * not_shadowed;
       // // diffuse_light *= step(0.0, diffuse_light);
@@ -197,7 +202,10 @@ void main()
       // debug
       // total_luminosity += linear_dist * enable_proj[i] * vec3(1.0, 1.0, 1.0);
 
-      vec3 specular_light = specular[i] * specular_color[i] * proj_light[i] * not_shadowed;
+      // specular[] has enable_proj applied to it above.
+      vec3 specular_light = specular[i] * proj_light[i] * not_shadowed;
+      // specular_light.r = shadow_dist[i] * 1.0 * enable_proj[i];  // 1.0 - not_shadowed;
+      // specular_light.g = 0.25 * enable_proj[i] * (1.0 - not_shadowed);
       // specular_light *= step(0.0, specular_light);
       total_specular += specular_light;
    }
@@ -207,6 +215,7 @@ void main()
        total_specular + total_luminosity * 0.01;
 
    // TEMP debug
+   // Out_Color.rgb = texture(ProjectedTexture[0], uv[0].st).rgb;
    // Out_Color.rgb = vec3(1.0, 1.0, 1.0) * shininess;
    // Out_Color.rgb = vec3(1.0, 1.0, 1.0) * total_luminosity;
   // Out_Color.rgb = abs(eye_pos) * 1.0;

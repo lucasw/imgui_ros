@@ -154,6 +154,17 @@ void Camera::draw()
   ImGui::SliderScalar(("aov x##" + name).c_str(), ImGuiDataType_Double,
       &aov_x_, &min, &max, "%lf", 2);
 
+  {
+    double min = 0.01;
+    double max = far_;
+    ImGui::SliderScalar(("near clip##" + name).c_str(), ImGuiDataType_Double,
+          &near_, &min, &max, "%lf", 3);
+    min = near_;
+    max = 100.0;
+    ImGui::SliderScalar(("far clip##" + name).c_str(), ImGuiDataType_Double,
+          &far_, &min, &max, "%lf", 3);
+  }
+
   if (enable_) {
     image_->draw();
   }

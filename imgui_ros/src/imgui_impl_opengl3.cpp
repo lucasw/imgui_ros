@@ -420,8 +420,9 @@ bool CheckProgram(GLuint handle, const char* desc, std::string& msg)
     glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &lolength);
     if ((GLboolean)status == GL_FALSE) {
       msg += "ERROR: ImGuiImplOpenGL3::CreateDeviceObjects: failed to link:\n";
-      msg += "handle " + std::to_string(handle) + "\n";
+      msg += "handle " + std::to_string(handle) + "\ndesc: '";
       msg += desc;
+      msg += "'\n";
     }
     if (lolength > 0)
     {

@@ -58,6 +58,7 @@ void ShaderSet::remove()
 
 bool ShaderSet::init(const std::string& glsl_version, std::string& message)
 {
+  message += "shader init: '" + name_ + "'\n";
   if ((vert_handle_ != 0) || (frag_handle_ != 0) || (shader_handle_ != 0)) {
     std::stringstream ss;
     ss << "already initialized, deleting old versions "

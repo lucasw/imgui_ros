@@ -86,6 +86,9 @@ struct Camera {
   double aov_y_ = 90.0;
   double aov_x_ = 0.0;
 
+  double near_ = 0.01;
+  double far_ = 100.0;
+
   // TODO(lucasw) put in own class later
   bool enable_ = true;
   GLuint frame_buffer_;
