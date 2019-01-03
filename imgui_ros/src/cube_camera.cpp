@@ -122,7 +122,7 @@ void CubeCamera::init(
   faces_[4]->dir_ = GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
 
   faces_[5]->dir_ = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
-  mat3x3.setRPY(-M_PI, 0, 0);
+  mat3x3.setRPY(M_PI, 0, M_PI);
   faces_[5]->transform_.setBasis(mat3x3);
 
   int ind = 0;

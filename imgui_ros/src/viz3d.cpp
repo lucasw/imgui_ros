@@ -310,9 +310,9 @@ Viz3D::Viz3D(const std::string name,
     auto cube_camera = std::make_shared<CubeCamera>(
         "test_cube_camera",
         "cube_camera",
-        80.0, 60.0,
+        90.0, 90.0,
         node);
-    cube_camera->init(800, 600, 512, texture_name, "", node);
+    cube_camera->init(800, 800, 512, texture_name, "", node);
     cube_cameras_["test"] = cube_camera;
     // TODO(lucasw) see what happens if imgui tries to draw the cubemap
     // cameras_[cube_camera->name_] = cube_camera;
