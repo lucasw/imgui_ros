@@ -276,7 +276,6 @@ Viz3D::Viz3D(const std::string name,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
     std::shared_ptr<rclcpp::Node> node) :
     name_(name),
-    renderer_(renderer),
     tf_buffer_(tf_buffer),
     node_(node)
 {
@@ -961,14 +960,6 @@ void Viz3D::render(const int fb_width, const int fb_height,
     // render_message_ << "bad width height " << fb_width << " " << fb_height << "\n";
     return;
   }
-
-#if 0
-  std::shared_ptr<ImGuiImplOpenGL3> renderer = renderer_.lock();
-  if (!renderer) {
-    std::cerr << "no renderer\n";
-    return;
-  }
-#endif
 
   checkGLError(__FILE__, __LINE__);
 

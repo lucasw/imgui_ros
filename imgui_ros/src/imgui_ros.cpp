@@ -613,7 +613,12 @@ namespace imgui_ros {
     {
     SDL_GL_MakeCurrent(window, gl_context);
     checkGLError(__FILE__, __LINE__);
-    glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
+    const int display_size_x = ImGui::GetIO().DisplaySize.x;
+    const int display_size_y = ImGui::GetIO().DisplaySize.y;
+    const int fb_width = display_size_x * ImGui::GetIO().DisplayFramebufferScale.x;
+    const int fb_height = display_size_y * ImGui::GetIO().DisplayFramebufferScale.y;
+
+    glViewport(0, 0, (int)display_size_x, (int)display_size_y);
     checkGLError(__FILE__, __LINE__);
     // glClearColor(clear_color_.x, clear_color_.y, clear_color_.z, clear_color_.w);
     glClearColor(
@@ -629,8 +634,6 @@ namespace imgui_ros {
 
     checkGLError(__FILE__, __LINE__);
     if (true) {
-      const int fb_width = ImGui::GetDrawData()->DisplaySize.x * ImGui::GetIO().DisplayFramebufferScale.x;
-      const int fb_height = ImGui::GetDrawData()->DisplaySize.y * ImGui::GetIO().DisplayFramebufferScale.y;
       viz3d->render(fb_width, fb_height,
           ImGui::GetDrawData()->DisplayPos.x, ImGui::GetDrawData()->DisplayPos.y,
           ImGui::GetDrawData()->DisplaySize.x, ImGui::GetDrawData()->DisplaySize.y

@@ -164,27 +164,6 @@ protected:
       std::vector<std::shared_ptr<Projector> >& projectors);
 
   std::string glsl_version_string_ = "";
-#if 0
-  // temp texture test
-  GLuint texture_id_ = 0;
-  cv::Mat test_;
-#endif
-#if 0
-  // TODO(lucasw) or NULL or -1?
-  GLuint texture_id_ = 0;
-  size_t width_ = 0;
-  size_t height_ = 0;
-
-  static const GLfloat* getVertexBuffer() {
-    static const GLfloat g_vertex_buffer_data_[] = {
-      -1.0f, -1.0f, 0.0f,
-      1.0f, -1.0f, 0.0f,
-      0.0f,  1.0f, 0.0f,
-    };
-    return &g_vertex_buffer_data_[0];
-  }
-  GLuint vertex_buffer_;
-#endif
 
   rclcpp::Service<imgui_ros::srv::AddCamera>::SharedPtr add_camera_;
   void addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> req,
@@ -221,9 +200,6 @@ protected:
 
   std::string name_;
   std::string frame_id_ = "map";
-
-  // TODO(lucasw) don't need this now
-  std::weak_ptr<ImGuiImplOpenGL3> renderer_;
 
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::weak_ptr<rclcpp::Node> node_;
