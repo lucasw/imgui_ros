@@ -158,6 +158,7 @@ void CubeCamera::init(
       glBindTexture(GL_TEXTURE_2D, image->texture_id_);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, face_width, face_width,
           0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+      glGenerateMipmap(GL_TEXTURE_2D);
       std::cout << "data size " << image->image_->data.size() << "\n";
     }
 
@@ -174,6 +175,7 @@ void CubeCamera::init(
       glTexImage2D(face->dir_, 0, GL_RGBA,
           image->width_, image->height_, 0, GL_RGBA,
           GL_UNSIGNED_BYTE, &tmp.data[0]);
+      glGenerateMipmap(GL_TEXTURE_2D);
       // std::cout << "copied data to portion of cube map " << face->dir_ << "\n";
     }
     checkGLError(__FILE__, __LINE__);

@@ -56,11 +56,10 @@ using std::placeholders::_1;
 
     min_filter_modes_.push_back(GL_NEAREST);
     min_filter_modes_.push_back(GL_LINEAR);
-    // TODO(lucasw) implement mipmaps
-    // filter_modes_.push_back(GL_NEAREST_MIPMAP_NEAREST);
-    // filter_modes_.push_back(GL_NEAREST_MIPMAP_LINEAR);
-    // filter_modes_.push_back(GL_LINEAR_MIPMAP_NEAREST);
-    // filter_modes_.push_back(GL_LINEAR_MIPMAP_LINEAR);
+    min_filter_modes_.push_back(GL_NEAREST_MIPMAP_NEAREST);
+    min_filter_modes_.push_back(GL_NEAREST_MIPMAP_LINEAR);
+    min_filter_modes_.push_back(GL_LINEAR_MIPMAP_NEAREST);
+    min_filter_modes_.push_back(GL_LINEAR_MIPMAP_LINEAR);
 
     mag_filter_modes_.push_back(GL_NEAREST);
     mag_filter_modes_.push_back(GL_LINEAR);
@@ -135,8 +134,8 @@ using std::placeholders::_1;
 
     // TODO(lucasw) only need to do these once (unless altering)
     // TODO(lucasw) make these configurable live
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter_modes_[min_filter_ind_]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter_modes_[mag_filter_ind_]);
 
     // Set texture clamping method - GL_CLAMP isn't defined
     if (wrap_s_ind_ >= static_cast<int>(wrap_modes_.size()))
@@ -180,7 +179,10 @@ using std::placeholders::_1;
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
           image->width, image->height,
           0, GL_RGBA, GL_UNSIGNED_BYTE, &image->data[0]);
+    } else {
+      // TODO(lucasw) throw
     }
+    glGenerateMipmap(GL_TEXTURE_2D);
 
     // one or both of these are causing a crash
     // use fast 4-byte alignment (default anyway) if possible
@@ -278,8 +280,15 @@ using std::placeholders::_1;
         items_null = "";
         items_null += std::string("nearest") + '\0';
         items_null += std::string("linear") + '\0';
+        items_null += std::string("nearest_mipmap_nearest") + '\0';
+        items_null += std::string("nearest_mipmap_linear") + '\0';
+        items_null += std::string("linear_mipmap_nearest") + '\0';
+        items_null += std::string("linear_mipmap_linear") + '\0';
         const bool min_changed = ImGui::Combo(("min filter##" + name).c_str(), &min_filter_ind_,
             items_null.c_str());
+        items_null = "";
+        items_null += std::string("nearest") + '\0';
+        items_null += std::string("linear") + '\0';
         const bool mag_changed = ImGui::Combo(("mag filter##" + name).c_str(), &mag_filter_ind_,
             items_null.c_str());
         if (min_changed || mag_changed) {
