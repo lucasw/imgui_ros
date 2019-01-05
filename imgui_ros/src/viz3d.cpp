@@ -735,11 +735,20 @@ void Viz3D::draw()
   // TODO(lucasw) show render time, update time, draw time
   // show current resolution
 
-  ImGui::ColorEdit4("clear color", (float*)&clear_color_);
-  ImGui::ColorEdit3("ambient color", (float*)&ambient_[0]);
-
   // ImGuiIO& io = ImGui::GetIO();
   if (ImGui::CollapsingHeader("Viewer")) {
+
+    const int display_size_x = ImGui::GetIO().DisplaySize.x;
+    const int display_size_y = ImGui::GetIO().DisplaySize.y;
+    const int fb_width = display_size_x * ImGui::GetIO().DisplayFramebufferScale.x;
+    const int fb_height = display_size_y * ImGui::GetIO().DisplayFramebufferScale.y;
+    ImGui::Text("size %d x %d, %d x %d",
+        display_size_x, display_size_y,
+        fb_width, fb_height);
+
+    ImGui::ColorEdit4("clear color", (float*)&clear_color_);
+    ImGui::ColorEdit3("ambient color", (float*)&ambient_[0]);
+
     ImGui::Text("position %0.2lf %0.2lf %0.2lf",
         transform_.getOrigin().x(),
         transform_.getOrigin().y(),
