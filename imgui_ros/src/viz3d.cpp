@@ -527,6 +527,8 @@ void Viz3D::addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request
 
   auto texture = std::make_shared<RosImage>(req->name);
   texture->imageCallback(std::make_shared<sensor_msgs::msg::Image>(req->image));
+  texture->wrap_s_ind_ = req->wrap_s;
+  texture->wrap_t_ind_ = req->wrap_t;
   texture->updateTexture();
   textures_[req->name] = texture;
 }

@@ -137,8 +137,18 @@ using std::placeholders::_1;
     // TODO(lucasw) make these configurable live
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
     // Set texture clamping method - GL_CLAMP isn't defined
+    if (wrap_s_ind_ >= static_cast<int>(wrap_modes_.size()))
+      wrap_s_ind_ = wrap_modes_.size() - 1;
+    else if (wrap_s_ind_ < 0)
+      wrap_s_ind_ = 0;
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_modes_[wrap_s_ind_]);
+
+    if (wrap_t_ind_ >= static_cast<int>(wrap_modes_.size()))
+      wrap_t_ind_ = wrap_modes_.size() - 1;
+    else if (wrap_t_ind_ < 0)
+      wrap_t_ind_ = 0;
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_modes_[wrap_t_ind_]);
 
     // Copy the data to the graphics memory.

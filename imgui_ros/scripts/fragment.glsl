@@ -60,7 +60,7 @@ void main()
     // TODO(lucasw) later scale the shininess value (which probably
     // originated from 8-bit texture 0 - 255, want to map those numbers
     // nonlinearly to get more resolution at the lower end?
-    const float shiny_scale = 128.0;
+    const float shiny_scale = 512.0;
     // TODO(lucasw) use a GL_LUMINANCE texture
     // the shininess_texture
     float shininess = (1.0 - color_to_gray(texture(shininess_texture, FraUV.st)));

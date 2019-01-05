@@ -73,6 +73,9 @@ struct RosImage : public GlImage {
   virtual void publish();
 
   sensor_msgs::msg::Image::SharedPtr image_;
+
+  int wrap_s_ind_ = 0;
+  int wrap_t_ind_ = 0;
 private:
   std::weak_ptr<rclcpp::Node> node_;
   // TODO(lucasw) split these into two separate subclasses?
@@ -84,8 +87,6 @@ private:
   int mag_filter_ind_ = 0;
   std::vector<int> mag_filter_modes_;
   std::vector<int> wrap_modes_;
-  int wrap_s_ind_ = 0;
-  int wrap_t_ind_ = 0;
 
   bool enable_info_ = true;
   bool enable_draw_image_ = false;

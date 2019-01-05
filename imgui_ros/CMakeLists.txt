@@ -122,6 +122,8 @@ ament_target_dependencies(param_to_topic
   "std_msgs")
 install(TARGETS param_to_topic DESTINATION lib/${PROJECT_NAME})
 
+install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
+
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(PROGRAMS
   scripts/add_shaders.py

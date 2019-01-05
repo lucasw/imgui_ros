@@ -75,6 +75,9 @@ class Demo(Node):
         # print(self.args.no_textures)
         # print(self.args.no_shapes)
         if not self.args.no_textures:
+            self.add_texture('default', 'imgui_ros', 'black.png')
+            self.add_texture('gradient', 'imgui_ros', 'gradient.png')
+            self.add_texture('square', 'imgui_ros', 'square.png')
             self.add_texture('diffract', 'image_manip', 'diffract1.png')
             self.add_texture('chess', 'image_manip', 'chess.png')
             self.add_texture('gradient_radial', 'image_manip', 'gradient_radial.png')
@@ -159,6 +162,8 @@ class Demo(Node):
         req = AddTexture.Request()
         req.name = name
         req.image = image
+        req.wrap_s = AddTexture.Request.REPEAT
+        req.wrap_t = AddTexture.Request.REPEAT
 
         self.future = self.texture_cli.call_async(req)
         self.wait_for_response()
@@ -169,7 +174,9 @@ class Demo(Node):
             segs_long=16, segs_lat=8,
             segs_long_stop=0, segs_lat_stop=0,
             off_x=0.0, off_y=0.0, off_z=0.0,
-            repeat=1.0,
+            color_r=1.0, color_g=1.0, color_b=1.0,
+            repeat_x=1.0,
+            repeat_y=1.0,
             flip_normals=False):
         if segs_long_stop <= 0:
             segs_long_stop = segs_long
@@ -179,8 +186,8 @@ class Demo(Node):
         shape = TexturedShape()
         shape.name = name
         shape.header.frame_id = 'bar2'
-        shape.texture = 'diffract'
-        shape.shininess_texture = 'diffract'
+        shape.texture = 'gradient'
+        shape.shininess_texture = 'default'
 
         for j in range(segs_lat_stop):
             fr_y = float(j) / float(segs_lat - 1)
@@ -243,13 +250,12 @@ class Demo(Node):
                     vertex.normal.y *= -1.0
                     vertex.normal.z *= -1.0
 
-                vertex.uv.x = repeat * fr_x
-                vertex.uv.y = repeat * fr_y
+                vertex.uv.x = repeat_x * fr_x
+                vertex.uv.y = repeat_y * fr_y
 
-                val = 0.95
-                vertex.color.r = val
-                vertex.color.g = val
-                vertex.color.b = val
+                vertex.color.r = color_r
+                vertex.color.g = color_g
+                vertex.color.b = color_b
                 vertex.color.a = 1.0
                 shape.vertices.append(vertex)
 
@@ -349,66 +355,56 @@ class Demo(Node):
 
         return shape
 
-    def make_planes(self):
+    def make_plane(self, off_x=0.0, off_y=0.0, off_z=0.0):
         shape = TexturedShape()
-        shape.name = "foo"
-        shape.header.frame_id = 'bar2'
-        shape.texture = 'diffract'
-        shape.shininess_texture = 'diffract'
+        shape.name = 'big_plane'
+        shape.header.frame_id = 'map'
+        shape.texture = 'square'
+        shape.shininess_texture = 'square'
         # shape.header.stamp = self.now()
 
-        sc = 0.2
-        num = 7
-        off_x = -sc * num / 2
-        num_rows = 4
-        off_y = -sc
-        off_z = -sc * num_rows
+        texture_sc = 64.0
+        sc = 30.0
+        num_rows = 8
+        num_cols = 8
         for j in range(num_rows):
-            for i in range(0, num * 2 - 3, 2):
-                ind = i + len(shape.vertices)
-                triangle = MeshTriangle()
-                triangle.vertex_indices[0] = ind
-                triangle.vertex_indices[1] = ind + 1
-                triangle.vertex_indices[2] = ind + 3
-                shape.triangles.append(triangle)
-
-                if True:
+            for i in range(num_cols):
+                ind = len(shape.vertices)
+                if (j < num_rows - 1) and (i < num_cols - 1):
                     triangle = MeshTriangle()
                     triangle.vertex_indices[0] = ind
-                    triangle.vertex_indices[1] = ind + 3
-                    triangle.vertex_indices[2] = ind + 2
+                    triangle.vertex_indices[1] = ind + num_cols + 1
+                    triangle.vertex_indices[2] = ind + 1
                     shape.triangles.append(triangle)
 
-            for i in range(num):
-                x = i * sc + off_x
-                z = j * sc * 2.0 + off_z
+                    if True:
+                        triangle = MeshTriangle()
+                        triangle.vertex_indices[0] = ind
+                        triangle.vertex_indices[1] = ind + num_cols
+                        triangle.vertex_indices[2] = ind + num_cols + 1
+                        shape.triangles.append(triangle)
+
+                x = i * sc + off_x - sc * num_cols * 0.5
+                y = off_y
+                z = j * sc + off_z - sc * num_rows * 0.5
 
                 vertex = Vertex()
                 vertex.vertex.x = x
-                vertex.vertex.y = off_y
+                vertex.vertex.y = y
                 vertex.vertex.z = z
 
-                fr = float(i) / float(num)
-                vertex.uv.x = fr
-                vertex.uv.y = 0.0
+                vertex.normal.x = 0.0
+                vertex.normal.y = 1.0
+                vertex.normal.z = 0.0
 
-                vertex.color.r = float(j) / float(num_rows)
+                fr_x = float(i) / float(num_cols - 1)
+                fr_y = float(j) / float(num_rows - 1)
+                vertex.uv.x = fr_x * texture_sc
+                vertex.uv.y = fr_y * texture_sc
+
+                vertex.color.r = 1.0
                 vertex.color.g = 1.0
-                vertex.color.b = float(i) / float(num)
-                vertex.color.a = 1.0
-                shape.vertices.append(vertex)
-
-                vertex = Vertex()
-                vertex.vertex.x = x
-                vertex.vertex.y = off_y + sc * 2.0
-                vertex.vertex.z = z
-
-                vertex.uv.x = fr
-                vertex.uv.y = 1.0
-
-                vertex.color.r = float(j) / float(num_rows)
-                vertex.color.g = 0.3
-                vertex.color.b = 1.0 - float(i) / float(num)
+                vertex.color.b = 1.0
                 vertex.color.a = 1.0
                 shape.vertices.append(vertex)
 
@@ -420,23 +416,27 @@ class Demo(Node):
 
     def add_shapes(self):
         req = AddShape.Request()
-        if False:
-            shape = self.make_planes()
+        if True:
+            shape = self.make_plane(off_y=-4.0)
             shape.add = True
             req.shapes.append(shape)
         if True:
             shape = self.make_sphere(name='big_sphere',
-                radius_x=10.0, radius_y=10.0, radius_z=10.0,
+                radius_x=60.0, radius_y=60.0, radius_z=60.0,
                 segs_long=24,
                 segs_long_stop=0,
                 segs_lat=16,
-                segs_lat_stop=8,
+                segs_lat_stop=9,
+                repeat_y=1.0,
+                color_r=0.6,
+                color_g=0.6,
+                color_b=1.0,
                 flip_normals=True,
                 )
             shape.add = True
-            shape.texture = 'diffract'
-            shape.shininess_texture = 'diffract'
-            shape.header.frame_id = 'floor'
+            shape.texture = 'gradient'
+            shape.shininess_texture = 'gradient'
+            shape.header.frame_id = 'sky'
             req.shapes.append(shape)
         if True:
             shape = self.make_cylinder(name='cylinder2', radius=0.1, length=0.1,

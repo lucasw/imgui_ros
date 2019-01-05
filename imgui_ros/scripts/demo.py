@@ -276,6 +276,7 @@ class Demo(Node):
         self.wait_for_response()
 
         # dedicated tf add service with more configurability
+
         tf_widget = TfWidget()
         tf_widget.name = "floor tf"
         tf_widget.window = req.name
@@ -288,6 +289,31 @@ class Demo(Node):
         ts.transform.translation.y = 0.0
         ts.transform.translation.z = 0.0
         roll = -math.pi * 0.5
+        pitch = 0
+        yaw = 0
+        rot = tg.quaternion_from_euler(roll, pitch, yaw, 'sxyz')
+        ts.transform.rotation.w = rot[0]
+        ts.transform.rotation.x = rot[1]
+        ts.transform.rotation.y = rot[2]
+        ts.transform.rotation.z = rot[3]
+        tf_widget.transform_stamped = ts
+        tf_req = AddTf.Request()
+        tf_req.tf = tf_widget
+        self.future = self.tf_cli.call_async(tf_req)
+        self.wait_for_response()
+
+        tf_widget = TfWidget()
+        tf_widget.name = "sky tf"
+        tf_widget.window = req.name
+        tf_widget.min = -3.0
+        tf_widget.max = 3.0
+        ts = TransformStamped()
+        ts.header.frame_id = "floor"
+        ts.child_frame_id = "sky"
+        ts.transform.translation.x = 0.0
+        ts.transform.translation.y = 0.0
+        ts.transform.translation.z = 0.0
+        roll = math.pi
         pitch = 0
         yaw = 0
         rot = tg.quaternion_from_euler(roll, pitch, yaw, 'sxyz')
