@@ -238,7 +238,7 @@ using std::placeholders::_1;
   // TODO(lucasw) factor out common code
   void RosImage::draw() {
     // only updates if dirty
-    updateTexture();
+    // updateTexture();
     {
       std::lock_guard<std::mutex> lock(mutex_);
 

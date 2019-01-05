@@ -642,17 +642,8 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
   return true;
 }
 
-void Viz3D::draw()
+void Viz3D::update()
 {
-  for (auto camera : cameras_) {
-    camera.second->draw();
-  }
-
-  ImGui::Begin("viz3d");
-
-  ImGui::ColorEdit4("clear color", (float*)&clear_color_);
-  ImGui::ColorEdit3("ambient color", (float*)&ambient_[0]);
-
   double x_move = 0.0;
   double y_move = 0.0;
   double z_move = 0.0;
@@ -726,6 +717,27 @@ void Viz3D::draw()
     #endif
   }
 
+  // update
+  for (auto camera : cameras_) {
+    // TODO(lucasw) are all these textures also in the texture list below?
+    camera.second->image_->updateTexture();
+    camera.second->image_->publish();
+  }
+  for (auto texture_pair : textures_) {
+    texture_pair.second->updateTexture();
+  }
+}
+
+void Viz3D::draw()
+{
+  ImGui::Begin("viz3d");
+
+  // TODO(lucasw) show render time, update time, draw time
+  // show current resolution
+
+  ImGui::ColorEdit4("clear color", (float*)&clear_color_);
+  ImGui::ColorEdit3("ambient color", (float*)&ambient_[0]);
+
   // ImGuiIO& io = ImGui::GetIO();
   if (ImGui::CollapsingHeader("Viewer")) {
     ImGui::Text("position %0.2lf %0.2lf %0.2lf",
@@ -734,8 +746,8 @@ void Viz3D::draw()
         transform_.getOrigin().z());
     ImGui::Text("velocity in view %0.2lf %0.2lf %0.2lf",
         velocity_.x(), velocity_.y(), velocity_.z());
-    ImGui::Text("velocity in world %0.2lf %0.2lf %0.2lf",
-        vel_in_world.x(), vel_in_world.y(), vel_in_world.z());
+    // ImGui::Text("velocity in world %0.2lf %0.2lf %0.2lf",
+    //     vel_in_world.x(), vel_in_world.y(), vel_in_world.z());
 
     {
       double min = 0.0001;
@@ -775,16 +787,25 @@ void Viz3D::draw()
 
     {
       std::stringstream ss;
+      auto translation = transform_.getOrigin();
       ss << translation.x()  << " " << translation.y() << " " << translation.z() << ", "
           << pitch_;
       ImGui::Text("%s", ss.str().c_str());
     }
   }
 
-  // TEMP debug
-  {
-    ImGui::Separator();
+  const bool draw_cameras = ImGui::CollapsingHeader("Cameras");
+  if (draw_cameras) {
+    for (auto camera : cameras_) {
+      ImGui::Separator();
+      camera.second->draw();
+    }
+  }
+
+  const bool draw_cube_cameras = ImGui::CollapsingHeader("Cube Cameras");
+  if (draw_cube_cameras) {
     for (auto cube_camera_pair : cube_cameras_) {
+      ImGui::Separator();
       cube_camera_pair.second->draw();
     }
   }

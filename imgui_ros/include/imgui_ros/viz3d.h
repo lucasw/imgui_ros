@@ -103,6 +103,7 @@ struct Viz3D {
   std::stringstream render_message_;
   ImVec4 clear_color_ = ImVec4(0.4, 0.3, 0.5, 1.0);
 
+  void update();
   void draw();
   //    const int pos_x, const int pos_y,
   //    const int size_x, const int size_y);

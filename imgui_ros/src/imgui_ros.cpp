@@ -582,6 +582,8 @@ namespace imgui_ros {
     ImGui::NewFrame();
 
     {
+      viz3d->update();
+
       // handle input from entire window
       viz3d->draw();
 

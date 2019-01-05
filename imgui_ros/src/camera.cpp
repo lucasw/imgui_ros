@@ -141,7 +141,7 @@ Camera::~Camera()
 void Camera::draw()
 {
   std::string name = name_ + " camera";
-  ImGui::Begin(name.c_str());
+  // ImGui::Begin(name.c_str());
   // TODO(lucasw) later re-use code in RosImage
   ImGui::Checkbox(("render to texture##" + name).c_str(), &enable_);
 
@@ -169,10 +169,9 @@ void Camera::draw()
     image_->draw();
   }
   ImGui::ColorEdit4(("clear color##" + name).c_str(), (float*)&clear_color_);
-  ImGui::End();
 
   // this does nothing if the image doesn't have a publisher set up
-  image_->publish();
+  // image_->publish();
 }
 
 // Camera::render()
