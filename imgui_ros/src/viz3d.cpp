@@ -175,19 +175,19 @@ bool Viz3D::setupProjectorsWithShape(
     std::shared_ptr<RosImage> texture;
 
     if (textures_.count(projector->texture_name_) < 1) {
-      render_message_ << projector->name_ << " no texture in textures "
-          << projector->texture_name_ << ", ";
+      // render_message_ << projector->name_ << " no texture in textures "
+      //    << projector->texture_name_ << ", ";
       continue;
     }
     texture = textures_[projector->texture_name_];
     if (!texture) {
-      render_message_ << " '" << projector->name_ << "' has no texture '"
-          << projector->texture_name_ << "', ";
+      // render_message_ << " '" << projector->name_ << "' has no texture '"
+      //    << projector->texture_name_ << "', ";
       continue;
     }
     if (!texture->image_) {
-      render_message_ << projector->name_ << " no texture image "
-          << projector->texture_name_ << ", ";
+      // render_message_ << projector->name_ << " no texture image "
+      //    << projector->texture_name_ << ", ";
       continue;
     }
 
@@ -198,13 +198,13 @@ bool Viz3D::setupProjectorsWithShape(
       tf = tf_buffer_->lookupTransform(main_frame_id,
           projector->frame_id_, tf2::TimePointZero);
       tf2::fromMsg(tf, stamped_transform);
-      render_message_ << "projected texture transform "
-          << main_frame_id << " " << projector->frame_id_ << " "
-          << printTransform(stamped_transform);
+      // render_message_ << "projected texture transform "
+      //     << main_frame_id << " " << projector->frame_id_ << " "
+      //     << printTransform(stamped_transform);
     } catch (tf2::TransformException& ex) {
       // TODO(lucasw) display exception on gui, but this isn't currently the correct
       // time.
-      render_message_ << projector->name_ << "\n" << ex.what();
+      // render_message_ << projector->name_ << "\n" << ex.what();
       continue;
     }
 
@@ -236,8 +236,8 @@ bool Viz3D::setupProjectorsWithShape(
   }
 
   // render_message_ << "\nview inverse\n" << printMat(view_inverse[0]) << "\n";
-  glm::vec4 projector_pos = view_inverse[0] * glm::vec4(0.0, 0.0, 0.0, 1.0);
-  render_message_ << "projector pos " << printVec(projector_pos) << "\n";
+  // glm::vec4 projector_pos = view_inverse[0] * glm::vec4(0.0, 0.0, 0.0, 1.0);
+  // render_message_ << "projector pos " << printVec(projector_pos) << "\n";
 
   // corresponds to glActiveTexture(GL_TEXTURE1) if is 1
 
@@ -280,8 +280,8 @@ Viz3D::Viz3D(const std::string name,
     tf_buffer_(tf_buffer),
     node_(node)
 {
-  render_message_.precision(2);
-  render_message_.fill('0');
+  // render_message_.precision(2);
+  // render_message_.fill('0');
 
   glsl_version_string_ = renderer->GlslVersionString;
 
@@ -814,7 +814,7 @@ void Viz3D::draw()
       try {
         shape->draw(texture_names, texture_items);
       } catch (std::logic_error& ex) {
-        render_message_ << ex.what() << "\n";
+        // render_message_ << ex.what() << "\n";
       }
     }
   }
@@ -881,12 +881,12 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
     tf_buffer_->lookupTransformImpl(frame_id, child_frame_id,
         tf2::TimePointZero, transform, time_out);
     #endif
-    render_message_ << ", frames: " << frame_id_ << " -> " << child_frame_id << "\n";
+    // render_message_ << ", frames: " << frame_id_ << " -> " << child_frame_id << "\n";
     glm::dmat4 model_matrix_double;
     model_stamped_transform.getOpenGLMatrix(&model_matrix_double[0][0]);
     dmat4Todmat(model_matrix_double, model_matrix);
   } catch (tf2::TransformException& ex) {
-    render_message_ << "\n" << ex.what();
+    // render_message_ << "\n" << ex.what();
     return false;
   }
 
@@ -898,17 +898,17 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
   dmat4Todmat(view_matrix_double, view_matrix_inverse);
   if (false) {  // child_frame_id == "projector1") {
     // TEMP Debug
-    render_message_ << "\n======" << printMat(view_matrix_double) << "=====\n";
+    // render_message_ << "\n======" << printMat(view_matrix_double) << "=====\n";
   }
 
   // mv = view_matrix * model_matrix;
   // mvp = projection_matrix * view_matrix * model_matrix;
 
   if (false) {
-    render_message_ << "\nmatrices:\n";
-    render_message_ << "model " << child_frame_id << ":\n" << printMat(model_matrix);
-    render_message_ << "view:\n" << printMat(view_matrix);
-    render_message_ << "projection:\n" << printMat(projection_matrix);
+    // render_message_ << "\nmatrices:\n";
+    // render_message_ << "model " << child_frame_id << ":\n" << printMat(model_matrix);
+    // render_message_ << "view:\n" << printMat(view_matrix);
+    // render_message_ << "projection:\n" << printMat(projection_matrix);
     // render_message_ << "mvp:\n" << printMat(mvp);
   }
 
@@ -920,16 +920,16 @@ bool Viz3D::bindTexture(const std::string& name, const int active_ind)
   GLuint tex_id = 0;
   if ((name != "") && (textures_.count(name) > 0)) {
     tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
-    render_message_ << "texture '" << name << "' " << tex_id;
+    // render_message_ << "texture '" << name << "' " << tex_id;
   } else if (textures_.count("default") > 0) {
     tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
-    render_message_ << ", 'default' texture " << tex_id;
+    // render_message_ << ", 'default' texture " << tex_id;
   } else {
     // TODO(lucasw) else stop rendering?
-    render_message_ << ", no texture to use";
+    // render_message_ << ", no texture to use";
   }
-  render_message_ << ", active texture ind " << active_ind << " -> "
-      << GL_TEXTURE0 + active_ind << "\n";
+  // render_message_ << ", active texture ind " << active_ind << " -> "
+  //    << GL_TEXTURE0 + active_ind << "\n";
   glActiveTexture(GL_TEXTURE0 + active_ind);
   // Bind texture- if it is null then the color is black
   glBindTexture(GL_TEXTURE_2D, tex_id);
@@ -944,19 +944,19 @@ void Viz3D::render(const int fb_width, const int fb_height,
   const int display_pos_x, const int display_pos_y,
   const int display_size_x, const int display_size_y)
 {
-  render_message_ << "\n############# rendering main\n";
+  // render_message_ << "\n############# rendering main\n";
   (void)display_pos_x;
   (void)display_pos_y;
   (void)display_size_x;
   (void)display_size_y;
 
   if (shapes_.size() == 0) {
-    render_message_ << "no shapes to render";
+    // render_message_ << "no shapes to render";
     return;
   }
 
   if (fb_width <= 0 || fb_height <= 0) {
-    render_message_ << "bad width height " << fb_width << " " << fb_height << "\n";
+    // render_message_ << "bad width height " << fb_width << " " << fb_height << "\n";
     return;
   }
 
@@ -970,7 +970,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
 
   checkGLError(__FILE__, __LINE__);
 
-  render_message_ << "textures " << textures_.size();
+  // render_message_ << "textures " << textures_.size();
 
   for (auto texture_pair : textures_) {
     texture_pair.second->updateTexture();
@@ -1035,10 +1035,10 @@ void Viz3D::renderShadows()
       tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
           tf2::TimePointZero, transform, time_out);
       #endif
-      render_message_ << ", frames: " << frame_id_ << " -> "
-          << projector->frame_id_ << "\n";
+      // render_message_ << ", frames: " << frame_id_ << " -> "
+      //     << projector->frame_id_ << "\n";
     } catch (tf2::TransformException& ex) {
-      render_message_ << "\n" << ex.what();
+      // render_message_ << "\n" << ex.what();
       continue;
     }
 
@@ -1061,12 +1061,12 @@ void Viz3D::renderShadows()
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   gl_state.restore();
-  render_message_ << "\n########\n";
+  // render_message_ << "\n########\n";
 }
 
 void Viz3D::renderCubeCameras()
 {
-  render_message_ << "\n\n------ render cube cameras -----\n";
+  // render_message_ << "\n\n------ render cube cameras -----\n";
   // TODO(lucasw) make GLState back up in the constructor and restore in the destructor
   GLState gl_state;
   gl_state.backup();
@@ -1074,7 +1074,7 @@ void Viz3D::renderCubeCameras()
     renderCubeCameraInner(cube_camera_pair.second);
   }
   gl_state.restore();
-  render_message_ << "\n---------- end render cube camera --------------\n";
+  // render_message_ << "\n---------- end render cube camera --------------\n";
 }
 
 bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
@@ -1096,10 +1096,10 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
       tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
           tf2::TimePointZero, transform, time_out);
       #endif
-      render_message_ << ", frames: " << frame_id_ << " -> "
-          << cube_camera->frame_id_ << "\n";
+      // render_message_ << ", frames: " << frame_id_ << " -> "
+      //     << cube_camera->frame_id_ << "\n";
     } catch (tf2::TransformException& ex) {
-      render_message_ << "\n" << ex.what();
+      // render_message_ << "\n" << ex.what();
       return false;
     }
 
@@ -1111,7 +1111,7 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
     // Could safely skip rendering 5 most of the time, unless lens is spherical
     // auto face = cube_camera->faces_[4];
     // {
-      render_message_ << "cube camera face " << face->dir_ << "\n";
+      // render_message_ << "cube camera face " << face->dir_ << "\n";
       glBindFramebuffer(GL_FRAMEBUFFER, face->frame_buffer_);
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
           face->dir_, cube_camera->cube_texture_id_, 0);
@@ -1179,8 +1179,8 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
 
   auto lens_shader = shader_sets_["cube_map"];
   int texture_unit = 0;
-  render_message_ << "cube_map "
-      << lens_shader->uniform_locations_["cube_map"] << "\n";
+  // render_message_ << "cube_map "
+  //     << lens_shader->uniform_locations_["cube_map"] << "\n";
   glActiveTexture(GL_TEXTURE0 + texture_unit);
   glBindTexture(GL_TEXTURE_CUBE_MAP, cube_camera->cube_texture_id_);
   glUniform1i(lens_shader->uniform_locations_["cube_map"], texture_unit);
@@ -1215,22 +1215,22 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
   if (checkGLError(__FILE__, __LINE__))
     return false;
 
-  render_message_ << ", shader '" << lens_shader->name_ << "', handle: " << lens_shader->shader_handle_;
-  render_message_ << "\n";
+  // render_message_ << ", shader '" << lens_shader->name_ << "', handle: " << lens_shader->shader_handle_;
+  // render_message_ << "\n";
 
   // TODO(lucasw) store this lens name in the cube_camera
   if (shapes_.count(cube_camera->lens_name_) < 1) {
-    render_message_ << " no lens shape for cube camera "
-        << cube_camera->lens_name_ << "\n";
+    // render_message_ << " no lens shape for cube camera "
+    //     << cube_camera->lens_name_ << "\n";
     return false;
   }
   auto lens_shape = shapes_[cube_camera->lens_name_];
   if (!lens_shape) {
-    render_message_ << " null shape\n";
+    // render_message_ << " null shape\n";
     return false;
   }
 
-  render_message_ << "lens shape: " << lens_shape->name_;
+  // render_message_ << "lens shape: " << lens_shape->name_;
 
   glUseProgram(lens_shader->shader_handle_);
   {
@@ -1263,9 +1263,9 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
     glUniformMatrix4fv(lens_shader->uniform_locations_["projection_matrix"],
         1, transpose, &projection[0][0]);
 
-    render_message_ << "lens:\n" << printMat(lens_model);
+    // render_message_ << "lens:\n" << printMat(lens_model);
     printMat(lens_model);
-    render_message_ << "view:\n" << printMat(view);
+    // render_message_ << "view:\n" << printMat(view);
 
 #ifdef GL_SAMPLER_BINDING
     glBindSampler(0, 0);
@@ -1273,7 +1273,7 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
 #endif
 
     glBindVertexArray(lens_shape->vao_handle_);
-    render_message_ << "vao handle " << lens_shape->vao_handle_;
+    // render_message_ << "vao handle " << lens_shape->vao_handle_;
 
     ImVec4 clip_rect = ImVec4(0, 0, fb_width, fb_height);
     glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w),
@@ -1281,7 +1281,7 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
     if (checkGLError(__FILE__, __LINE__))
       return false;
 
-    render_message_ << "\n";
+    // render_message_ << "\n";
 
     {
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lens_shape->elements_handle_);
@@ -1310,7 +1310,7 @@ void Viz3D::renderToTexture()
     if (!camera->enable_) {
       continue;
     }
-    render_message_ << "\nrender to texture " << camera->name_ << "\n";
+    // render_message_ << "\nrender to texture " << camera->name_ << "\n";
 
     glBindFramebuffer(GL_FRAMEBUFFER, camera->frame_buffer_);
     glClearColor(
@@ -1333,10 +1333,10 @@ void Viz3D::renderToTexture()
       tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
           tf2::TimePointZero, transform, time_out);
       #endif
-      render_message_ << ", frames: " << frame_id_ << " -> "
-          << camera->frame_id_ << "\n";
+      // render_message_ << ", frames: " << frame_id_ << " -> "
+      //    << camera->frame_id_ << "\n";
     } catch (tf2::TransformException& ex) {
-      render_message_ << "\n" << ex.what();
+      // render_message_ << "\n" << ex.what();
       continue;
     }
 
@@ -1371,11 +1371,11 @@ void Viz3D::render2(
 {
 
   if (shader_sets_.size() == 0) {
-    render_message_ << "no shaders\n";
+    // render_message_ << "no shaders\n";
     return;
   }
   if (shader_sets_.count(shaders_name) < 1) {
-    render_message_ << "no shader '" << shaders_name << "'\n";
+    // render_message_ << "no shader '" << shaders_name << "'\n";
     return;
   }
   // TODO(lucasw) for now just use the last shader set
@@ -1406,22 +1406,22 @@ void Viz3D::render2(
     if (checkGLError(__FILE__, __LINE__))
       return;
 
-  render_message_ << ", shader '" << shaders->name_ << "', handle: " << shaders->shader_handle_;
+  // render_message_ << ", shader '" << shaders->name_ << "', handle: " << shaders->shader_handle_;
   // for (auto shaders_pair : shader_sets_) {
   //  shaders = shaders_pair.second;
   //}
-  render_message_ << "\n";
+  // render_message_ << "\n";
 
   for (auto shape_pair : shapes_) {
     auto shape = shape_pair.second;
     if (!shape) {
-      render_message_ << " null shape\n";
+      // render_message_ << " null shape\n";
       continue;
     }
 
     // render_message_ << "shape: " << shape->name_;
     if (!shape->enable_) {
-      render_message_ << " disabled\n";
+      // render_message_ << " disabled\n";
       continue;
     }
 
@@ -1493,7 +1493,7 @@ void Viz3D::render2(
     if (checkGLError(__FILE__, __LINE__))
       return;
 
-    render_message_ << "\n";
+    // render_message_ << "\n";
 
     // TODO(lucasw) why not group these with uniform setting of textures above?
     // if doing shadows then don't need to bind any textures,
@@ -1501,7 +1501,7 @@ void Viz3D::render2(
     if (use_projectors) {
       // Bind texture- if it is null then the color is black
       bindTexture(shape->texture_, texture_unit_["Texture"]);
-      render_message_ << "shininess ";
+      // render_message_ << "shininess ";
       bindTexture(shape->shininess_texture_, texture_unit_["shininess_texture"]);
     }
 
@@ -1568,11 +1568,11 @@ void Viz3D::render2(
       // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
       if (checkGLError(__FILE__, __LINE__))
         return;
-      render_message_ << ", shape " << shape->name_ << " indices " << shape->indices_.Size;
+      // render_message_ << ", shape " << shape->name_ << " indices " << shape->indices_.Size;
       // idx_buffer_offset += pcmd->ElemCount;
       // glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-    render_message_ << "\n------------------------\n";
+    // render_message_ << "\n------------------------\n";
     // glBindVertexArray(0);
   }  // loop through shapes to draw
 
