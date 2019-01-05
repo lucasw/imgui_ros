@@ -303,23 +303,10 @@ Viz3D::Viz3D(const std::string name,
   texture_unit_["Texture"] = 0;
   texture_unit_["shininess_texture"] = 1;
 
-  // TEMP debug
-  if (true) {
-    const std::string texture_name = "test_cube_camera";
-    auto cube_camera = std::make_shared<CubeCamera>(
-        "test_cube_camera",
-        "cube_camera",
-        90.0, 90.0,
-        node);
-    cube_camera->init(800, 800, 512, texture_name, "", node);
-    cube_cameras_["test"] = cube_camera;
-    // TODO(lucasw) see what happens if imgui tries to draw the cubemap
-    // cameras_[cube_camera->name_] = cube_camera;
-    textures_[texture_name] = cube_camera->image_;
-  }
-
   add_camera_ = node->create_service<imgui_ros::srv::AddCamera>("add_camera",
       std::bind(&Viz3D::addCamera, this, _1, _2));
+  add_cube_camera_ = node->create_service<imgui_ros::srv::AddCubeCamera>("add_cube_camera",
+      std::bind(&Viz3D::addCubeCamera, this, _1, _2));
   add_projector_ = node->create_service<imgui_ros::srv::AddProjector>("add_projector",
       std::bind(&Viz3D::addProjector, this, _1, _2));
   add_shaders_ = node->create_service<imgui_ros::srv::AddShaders>("add_shaders",
@@ -374,6 +361,58 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
   res->message = "added camera '" + req->camera.name + "' '" + req->camera.texture_name + "'";
   res->success = true;
 }
+
+void Viz3D::addCubeCamera(const std::shared_ptr<imgui_ros::srv::AddCubeCamera::Request> req,
+                      std::shared_ptr<imgui_ros::srv::AddCubeCamera::Response> res)
+{
+  auto node = node_.lock();
+  if (!node) {
+    res->message = "couldn't get node for camera '" + req->camera.name + "' '" +
+        req->camera.texture_name + "'";
+    res->success = false;
+    return;
+  }
+  try {
+
+  #if 0
+    const std::string texture_name = "test_cube_camera";
+    auto cube_camera = std::make_shared<CubeCamera>(
+        "test_cube_camera",
+        "cube_camera",
+        90.0, 90.0,
+        node);
+    cube_camera->init(800, 800, 512, texture_name, "", node);
+    cube_cameras_["test"] = cube_camera;
+    // TODO(lucasw) see what happens if imgui tries to draw the cubemap
+    // cameras_[cube_camera->name_] = cube_camera;
+    textures_[texture_name] = cube_camera->image_;
+  #endif
+
+    auto cube_camera = std::make_shared<CubeCamera>(
+        req->camera.name,
+        req->camera.header.frame_id,
+        req->camera.aov_y,
+        req->camera.aov_x,
+        node);
+    cube_camera->init(
+        req->camera.width, req->camera.height,
+        req->face_width,
+        req->camera.texture_name,
+        req->camera.topic,
+        node);
+    cube_camera->near_ = req->camera.near;
+    cube_camera->far_ = req->camera.far;
+    textures_[req->camera.texture_name] = cube_camera->image_;
+    cube_cameras_[req->camera.name] = cube_camera;
+  } catch (std::runtime_error& ex) {
+    res->message = ex.what();
+    res->success = false;
+    return;
+  }
+  res->message = "added camera '" + req->camera.name + "' '" + req->camera.texture_name + "'";
+  res->success = true;
+}
+
 
 void Viz3D::addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Request> req,
                          std::shared_ptr<imgui_ros::srv::AddProjector::Response> res)
@@ -1158,8 +1197,8 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
           face_transform,
           width,
           height,
-          90.0,  // cube_camera->aov_y_,
-          90.0,  // cube_camera->aov_x_,
+          90.0,
+          90.0,
           cube_camera->near_,
           cube_camera->far_,
           vert_flip);

@@ -60,6 +60,9 @@ def generate_launch_description():
     add_shapes = launch_ros.actions.Node(
             package='imgui_ros', node_executable='pub_shape.py', output='screen',
             )
+    cameras = launch_ros.actions.Node(
+            package='imgui_ros', node_executable='cameras.py', output='screen',
+            )
 
     return launch.LaunchDescription([
         # thse are both taking 100% cpu
@@ -69,5 +72,6 @@ def generate_launch_description():
         imgui_ros,
         configure_windows,
         add_shapes,
+        cameras,
         add_shaders,
     ])

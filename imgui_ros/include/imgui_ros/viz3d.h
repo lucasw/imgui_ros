@@ -42,6 +42,7 @@
 #include <imgui_ros/shaders.h>
 #include <imgui_ros/surface.h>
 #include <imgui_ros/srv/add_camera.hpp>
+#include <imgui_ros/srv/add_cube_camera.hpp>
 #include <imgui_ros/srv/add_projector.hpp>
 #include <imgui_ros/srv/add_shaders.hpp>
 #include <imgui_ros/srv/add_shape.hpp>
@@ -170,6 +171,10 @@ protected:
   void addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> req,
                   std::shared_ptr<imgui_ros::srv::AddCamera::Response> res);
   std::map<std::string, std::shared_ptr<Camera> > cameras_;
+
+  rclcpp::Service<imgui_ros::srv::AddCubeCamera>::SharedPtr add_cube_camera_;
+  void addCubeCamera(const std::shared_ptr<imgui_ros::srv::AddCubeCamera::Request> req,
+                  std::shared_ptr<imgui_ros::srv::AddCubeCamera::Response> res);
   std::map<std::string, std::shared_ptr<CubeCamera> > cube_cameras_;
 
   rclcpp::Service<imgui_ros::srv::AddProjector>::SharedPtr add_projector_;

@@ -44,6 +44,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/TexturedShape.msg"
   "msg/TfWidget.msg"
   "srv/AddCamera.srv"
+  "srv/AddCubeCamera.srv"
   "srv/AddProjector.srv"
   "srv/AddTf.srv"
   "srv/AddTexture.srv"
@@ -127,6 +128,7 @@ install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(PROGRAMS
   scripts/add_shaders.py
+  scripts/cameras.py
   scripts/demo.py
   scripts/cube_camera_fragment.glsl
   scripts/cube_camera_vertex.glsl

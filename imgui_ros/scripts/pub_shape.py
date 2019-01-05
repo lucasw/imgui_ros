@@ -87,7 +87,6 @@ class Demo(Node):
             # on top of old ones, all the shapes disappear until
             # add_shaders is run again.
             self.add_shapes()
-        self.add_cameras()
         self.add_projectors()
 
     def add_projectors(self):
@@ -115,36 +114,6 @@ class Demo(Node):
             req.projector.camera.aov_y = 130.0
             req.projector.camera.aov_x = 100.0
             self.future = self.projector_cli.call_async(req)
-            self.wait_for_response()
-
-    def add_cameras(self):
-        self.camera_cli = self.create_client(AddCamera, 'add_camera')
-        while not self.camera_cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('camera service not available, waiting again...')
-
-        if True:
-            req = AddCamera.Request()
-            req.camera.header.frame_id = 'camera1'
-            req.camera.name = 'camera1'
-            req.camera.texture_name = 'camera1'
-            req.camera.topic = 'camera1'
-            req.camera.width = 256
-            req.camera.height = 256
-            req.camera.aov_y = 120.0
-            self.future = self.camera_cli.call_async(req)
-            self.wait_for_response()
-
-        # this is getting framebuffer not complete errors
-        if True:
-            req = AddCamera.Request()
-            req.camera.header.frame_id = 'camera2'
-            req.camera.name = 'camera2'
-            req.camera.texture_name = 'camera2'
-            # req.camera.topic = 'camera2'
-            req.camera.width = 256
-            req.camera.height = 256
-            req.camera.aov_y = 20.0
-            self.future = self.camera_cli.call_async(req)
             self.wait_for_response()
 
     def add_texture(self, name='diffract', pkg_name='image_manip', image_name='diffract1.png'):
@@ -466,108 +435,9 @@ class Demo(Node):
             shape.header.frame_id = 'bar2'
             req.shapes.append(shape)
 
-        if False:
-            # TODO(lucasw) make a custom rect shape but for now try out the cylinder
-            shape = self.make_sphere(name='cube_camera_lens',
-                radius_x=1.0,
-                radius_y=1.0,
-                radius_z=1.0,
-                segs_long=32,
-                segs_lat=32,
-                segs_lat_stop=16,
-                )
-            shape.add = True
-            # only used for lens, don't draw it otherwise
-            shape.enable = False
-            shape.texture = 'default'
-            shape.shininess_texture = 'default'
-            shape.header.frame_id = 'cube_camera_lens'
-            req.shapes.append(shape)
-        else:
-            shape = self.make_360_lens(name='cube_camera_lens',
-                                       cols=32, rows=32)
-            shape.texture = 'default'
-            shape.shininess_texture = 'default'
-            shape.header.frame_id = 'cube_camera_lens'
-            req.shapes.append(shape)
-
         self.future = self.cli.call_async(req)
         self.wait_for_response()
         sleep(1.0)
-
-    def make_360_lens(self, name, cols, rows, flip_normals=False):
-        shape = TexturedShape()
-        shape.name = name
-        shape.header.frame_id = 'cube_camera_lens'
-        shape.texture = 'default'
-        shape.shininess_texture = 'default'
-        shape.enable = False
-
-        for i in range(cols):
-            fr_x = float(i) / float(cols - 1)
-            for j in range(rows):
-                fr_y = float(j) / float(rows - 1)
-                vertex = Vertex()
-                vertex.vertex.x = -1.0 + fr_x * 2.0
-                vertex.vertex.y = -1.0 + fr_y * 2.0
-                vertex.vertex.z = -1.0
-
-                longitude = fr_x * 2.0 * math.pi
-                latitude = (fr_y - 0.5) * math.pi
-
-                clong = math.cos(longitude)
-                slong = math.sin(longitude)
-                clat = math.cos(latitude)
-                slat = math.sin(latitude)
-                z = clong * clat
-                x = slong * clat
-                y = slat
-
-                vertex.normal.x = x
-                vertex.normal.y = y
-                vertex.normal.z = z
-                nrm_len = vector3_len(vertex.normal)
-                vertex.normal.x /= nrm_len
-                vertex.normal.y /= nrm_len
-                vertex.normal.z /= nrm_len
-
-                vertex.uv.x = fr_x
-                vertex.uv.y = fr_y
-
-                val = 1.0
-                vertex.color.r = val
-                vertex.color.g = val
-                vertex.color.b = val
-                vertex.color.a = 1.0
-
-                shape.vertices.append(vertex)
-
-                ind0 = len(shape.vertices) - 1
-                ind1 = ind0 + 1
-                ind2 = ind0 + cols
-                ind3 = ind0 + cols + 1
-                if (i < cols - 1) and (j < rows - 1):
-                    print("inds {} {} {} {}".format(ind0, ind1, ind2, ind3))
-                    triangle = MeshTriangle()
-                    triangle.vertex_indices[0] = ind0
-                    if flip_normals:
-                        triangle.vertex_indices[1] = ind3
-                        triangle.vertex_indices[2] = ind1
-                    else:
-                        triangle.vertex_indices[1] = ind1
-                        triangle.vertex_indices[2] = ind3
-                    shape.triangles.append(triangle)
-
-                    triangle = MeshTriangle()
-                    triangle.vertex_indices[0] = ind0
-                    if flip_normals:
-                        triangle.vertex_indices[1] = ind2
-                        triangle.vertex_indices[2] = ind3
-                    else:
-                        triangle.vertex_indices[1] = ind3
-                        triangle.vertex_indices[2] = ind2
-                    shape.triangles.append(triangle)
-        return shape
 
 def main(args=None):
     rclpy.init(args=args)
