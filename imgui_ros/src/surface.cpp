@@ -43,6 +43,8 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
+constexpr std::array<GLuint, 3> Shape::draw_modes_;
+
 Shape::Shape(const std::string& name, const std::string& frame_id,
     const std::string& texture_name,
     const std::string& shininess_texture_name,
@@ -124,6 +126,10 @@ void Shape::draw(const std::vector<std::string>& texture_names_,
   if (changed) {
     shininess_texture_ = texture_names_[shininess_texture_ind];
   }
+
+  const std::string items = std::string("triangles") + '\0' +
+      std::string("lines") + '\0' + std::string("points") + '\0';
+  ImGui::Combo(("draw mode##" + name).c_str(), &draw_mode_, items.c_str());
 
   // TODO(lucasw) put the frame in a combo box that allows it to be changed
   // to any other existing frame (or typed in?)

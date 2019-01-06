@@ -1638,10 +1638,11 @@ void Viz3D::render2(
          MAX_PROJECTORS, &quadratic_attenuation[0]);
     }  // use_projectors
 
-    {
+    if ((shape->draw_mode_ >= 0) && (shape->draw_mode_ < Shape::draw_modes_.size())) {
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape->elements_handle_);
       const ImDrawIdx* idx_buffer_offset = 0;
-      glDrawElements(GL_TRIANGLES, (GLsizei)shape->indices_.Size,
+      glDrawElements(Shape::draw_modes_[shape->draw_mode_],
+          (GLsizei)shape->indices_.Size,
           sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
       // std::cout << cmd_i << " " << tex_id << " " << idx_buffer_offset << "\n";
       if (checkGLError(__FILE__, __LINE__))
