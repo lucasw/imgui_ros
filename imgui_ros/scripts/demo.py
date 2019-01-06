@@ -377,56 +377,6 @@ class Demo(Node):
         self.future = self.tf_cli.call_async(tf_req)
         self.wait_for_response()
 
-        tf_widget = TfWidget()
-        tf_widget.name = "cube camera tf"
-        tf_widget.window = req.name
-        tf_widget.min = -2.0
-        tf_widget.max = 2.0
-        ts = TransformStamped()
-        ts.header.frame_id = "map"
-        ts.child_frame_id = "cube_camera"
-        ts.transform.translation.x = 0.0
-        ts.transform.translation.y = 0.0
-        ts.transform.translation.z = 0.0
-        roll = 0.0
-        pitch = 0.0
-        yaw = 0.0
-        rot = tg.quaternion_from_euler(roll, pitch, yaw, 'sxyz')
-        ts.transform.rotation.w = rot[0]
-        ts.transform.rotation.x = rot[1]
-        ts.transform.rotation.y = rot[2]
-        ts.transform.rotation.z = rot[3]
-        tf_widget.transform_stamped = ts
-        tf_req = AddTf.Request()
-        tf_req.tf = tf_widget
-        self.future = self.tf_cli.call_async(tf_req)
-        self.wait_for_response()
-
-        tf_widget = TfWidget()
-        tf_widget.name = "cube camera lens pub"
-        tf_widget.window = req.name
-        tf_widget.min = -2.0
-        tf_widget.max = 2.0
-        ts = TransformStamped()
-        ts.header.frame_id = "cube_camera"
-        ts.child_frame_id = "cube_camera_lens"
-        ts.transform.translation.x = 0.0
-        ts.transform.translation.y = 0.0
-        ts.transform.translation.z = 0.0
-        roll = 0.0
-        pitch = 0.0
-        yaw = 0.0
-        rot = tg.quaternion_from_euler(roll, pitch, yaw, 'sxyz')
-        ts.transform.rotation.w = rot[0]
-        ts.transform.rotation.x = rot[1]
-        ts.transform.rotation.y = rot[2]
-        ts.transform.rotation.z = rot[3]
-        tf_widget.transform_stamped = ts
-        tf_req = AddTf.Request()
-        tf_req.tf = tf_widget
-        self.future = self.tf_cli.call_async(tf_req)
-        self.wait_for_response()
-
         # TODO(lucasw) move the tf broadcasting into standalone node
         if False:
             self.elapsed = 0.0

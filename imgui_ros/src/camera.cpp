@@ -164,7 +164,7 @@ void Camera::draw()
     ImGui::SliderScalar(("near clip##" + name).c_str(), ImGuiDataType_Double,
           &near_, &min, &max, "%lf", 3);
     min = near_;
-    max = 100.0;
+    max = 1000.0;
     ImGui::SliderScalar(("far clip##" + name).c_str(), ImGuiDataType_Double,
           &far_, &min, &max, "%lf", 3);
   }

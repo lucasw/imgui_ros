@@ -275,7 +275,7 @@ Viz3D::Viz3D(const std::string name,
     std::shared_ptr<ImGuiImplOpenGL3> renderer,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
     std::shared_ptr<rclcpp::Node> node) :
-    name_(name),
+    Window(name),
     tf_buffer_(tf_buffer),
     node_(node)
 {
@@ -288,7 +288,7 @@ Viz3D::Viz3D(const std::string name,
   ambient_ = glm::vec3(0.3, 0.3, 0.3);
 
   const bool sub_not_pub = true;
-  textures_["default"] = std::make_shared<RosImage>("default", "/image_out", sub_not_pub, node);
+  textures_["default"] = std::make_shared<RosImage>("default", "default_texture", sub_not_pub, node);
 
   transform_.setIdentity();
 
@@ -905,6 +905,18 @@ void Viz3D::draw()
     ImGui::Text("%s", render_message_.str().c_str());
   }
   ImGui::End();
+}
+
+void Viz3D::addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now)
+{
+  // convert tf2::Transform to geometry_msgs TransformStamped
+  geometry_msgs::msg::TransformStamped ts;
+  ts.transform = tf2::toMsg(transform_);
+  ts.header.stamp = now;
+  ts.header.frame_id = frame_id_;
+  // TODO(lucasw) make this name configurable
+  ts.child_frame_id = main_window_frame_id_;
+  tfm.transforms.push_back(ts);
 }
 
 // Currently calling setupcamera for every object- that seems efficient vs.

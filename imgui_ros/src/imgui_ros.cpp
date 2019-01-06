@@ -197,10 +197,13 @@ namespace imgui_ros {
     // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f,
     // NULL, io.Fonts->GetGlyphRangesJapanese()); IM_ASSERT(font != NULL);
 
-    viz3d = std::make_shared<Viz3D>("main render window", "shapes",
+    const std::string viz3d_name = "main render window";
+    viz3d = std::make_shared<Viz3D>(viz3d_name, "shapes",
         imgui_impl_opengl3_,
         tf_buffer_,
         shared_from_this());
+
+    windows_[viz3d_name] = viz3d;
 
     get_parameter_or("red", viz3d->clear_color_.x, viz3d->clear_color_.x);
     get_parameter_or("green", viz3d->clear_color_.y, viz3d->clear_color_.y);
@@ -586,9 +589,6 @@ namespace imgui_ros {
     {
       viz3d->update();
 
-      // handle input from entire window
-      viz3d->draw();
-
       ImGui::Begin("stats"); // Create a window called "stats"
                              // and append into it.
 
@@ -663,19 +663,6 @@ namespace imgui_ros {
       if (window.second) {
         window.second->addTF(tfs, cur);
       }
-    }
-    // use the transform from viz3d- maybe viz3d should be a Window
-    // and this special case code could be eliminated?
-    // TODO(lucasw) move this into viz3d
-    {
-      // convert tf::transform to TransformStamped
-      // geometry_msgs::msg::TransformStamped ts;
-      geometry_msgs::msg::TransformStamped ts;
-      ts.transform = tf2::toMsg(viz3d->transform_);
-      ts.header.stamp = cur;
-      ts.header.frame_id = "map";
-      ts.child_frame_id = "camera_viewer";
-      tfs.transforms.push_back(ts);
     }
     if (tfs.transforms.size() > 0) {
       tf_pub_->publish(tfs);

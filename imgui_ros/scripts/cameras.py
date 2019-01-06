@@ -24,13 +24,14 @@ import sys
 
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Point, TransformStamped, Vector3
-from imgui_ros.msg import TexturedShape, Vertex, Widget
+from imgui_ros.msg import TexturedShape, TfWidget, Vertex, Widget
 from imgui_ros.srv import AddCamera, AddCubeCamera, AddProjector, AddShaders
-from imgui_ros.srv import AddShape, AddTexture, AddWindow
+from imgui_ros.srv import AddShape, AddTexture, AddTf, AddWindow
 from rclpy.node import Node
 from shape_msgs.msg import MeshTriangle, Mesh
 from std_msgs.msg import ColorRGBA
 from time import sleep
+from transforms3d import _gohlketransforms as tg
 from visualization_msgs.msg import Marker
 
 
@@ -44,10 +45,6 @@ class Cameras(Node):
         # self.marker_pub = self.create_publisher(Marker, 'marker')
         # self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
         sleep(1.0)
-
-        self.cli = self.create_client(AddShape, 'add_shape')
-        while not self.cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('shape service not available, waiting again...')
 
         self.bridge = cv_bridge.CvBridge()
 
@@ -75,6 +72,66 @@ class Cameras(Node):
     def run(self):
         self.add_cameras()
         self.add_cube_cameras()
+        self.add_gui()
+
+    def add_gui(self):
+        self.tf_cli = self.create_client(AddTf, 'add_tf')
+        while not self.tf_cli.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+
+        # TODO(lucasw) what if this window doesn't exist yet?
+        req = AddWindow.Request()
+        req.name = "tf control"
+
+        tf_widget = TfWidget()
+        tf_widget.name = "cube camera tf"
+        tf_widget.window = req.name
+        tf_widget.min = -2.0
+        tf_widget.max = 2.0
+        ts = TransformStamped()
+        ts.header.frame_id = "viz3d_main_window_camera"
+        ts.child_frame_id = "cube_camera"
+        ts.transform.translation.x = 0.0
+        ts.transform.translation.y = 0.0
+        ts.transform.translation.z = 0.0
+        roll = 0.0
+        pitch = 0.0
+        yaw = 0.0
+        rot = tg.quaternion_from_euler(roll, pitch, yaw, 'sxyz')
+        ts.transform.rotation.w = rot[0]
+        ts.transform.rotation.x = rot[1]
+        ts.transform.rotation.y = rot[2]
+        ts.transform.rotation.z = rot[3]
+        tf_widget.transform_stamped = ts
+        tf_req = AddTf.Request()
+        tf_req.tf = tf_widget
+        self.future = self.tf_cli.call_async(tf_req)
+        self.wait_for_response()
+
+        tf_widget = TfWidget()
+        tf_widget.name = "cube camera lens pub"
+        tf_widget.window = req.name
+        tf_widget.min = -2.0
+        tf_widget.max = 2.0
+        ts = TransformStamped()
+        ts.header.frame_id = "cube_camera"
+        ts.child_frame_id = "cube_camera_lens"
+        ts.transform.translation.x = 0.0
+        ts.transform.translation.y = 0.0
+        ts.transform.translation.z = 0.0
+        roll = 0.0
+        pitch = 0.0
+        yaw = 0.0
+        rot = tg.quaternion_from_euler(roll, pitch, yaw, 'sxyz')
+        ts.transform.rotation.w = rot[0]
+        ts.transform.rotation.x = rot[1]
+        ts.transform.rotation.y = rot[2]
+        ts.transform.rotation.z = rot[3]
+        tf_widget.transform_stamped = ts
+        tf_req = AddTf.Request()
+        tf_req.tf = tf_widget
+        self.future = self.tf_cli.call_async(tf_req)
+        self.wait_for_response()
 
     def add_cameras(self):
         self.camera_cli = self.create_client(AddCamera, 'add_camera')

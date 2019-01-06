@@ -41,6 +41,7 @@
 #include <imgui_ros/projector.h>
 #include <imgui_ros/shaders.h>
 #include <imgui_ros/surface.h>
+#include <imgui_ros/window.h>
 #include <imgui_ros/srv/add_camera.hpp>
 #include <imgui_ros/srv/add_cube_camera.hpp>
 #include <imgui_ros/srv/add_projector.hpp>
@@ -75,7 +76,9 @@
 // TODO(lucasw) need to support covering the entire background,
 // and being within a widget, possibly with subclassing.
 // For now just do entire background.
-struct Viz3D {
+// TODO(lucasw) making this subclass Window add some things it doesn't need
+// maybe should make a root class of Window to avoid that.
+struct Viz3D : public Window {
   Viz3D(const std::string name,
     const std::string topic,
     std::shared_ptr<ImGuiImplOpenGL3> renderer,
@@ -105,30 +108,26 @@ struct Viz3D {
   ImVec4 clear_color_ = ImVec4(0.4, 0.3, 0.5, 1.0);
 
   void update();
-  void draw();
+  virtual void draw();
   //    const int pos_x, const int pos_y,
   //    const int size_x, const int size_y);
+
+  virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now);
 
   // Can exceed this number of projectors but this is the number
   // than can simultaneously be projectored on any surface.
   // This constant has to be matched in shaders
   static const int MAX_PROJECTORS = 4;
 
-  tf2::Transform transform_;
 protected:
   // TODO(lucasw) maybe this should be a std::map of std::vectors
   std::map<std::string, int > texture_unit_;
   int projector_texture_unit_[MAX_PROJECTORS];
   int shadow_texture_unit_[MAX_PROJECTORS];
-
   bool bindTexture(const std::string& name, const int tex_ind);
-  // TODO(lucasw) later this will be a matrix
-  // glm::vec3 translation_ = glm::vec3(0, 0, 0);
+
+  ///////// main window camera movement //////////////////////////
   tf2::Vector3 velocity_ = tf2::Vector3(0.0, 0.0, 0.0);
-
-  // TODO(lucasw) should this go somewhere else?
-  glm::vec3 ambient_;
-
   double move_scale_ = 0.05;
   double rotate_scale_ = 300.0;
   double pitch_ = 0.0;
@@ -136,6 +135,15 @@ protected:
 
   bool dragging_view_ = false;
   ImVec2 drag_point_;
+
+  tf2::Transform transform_;
+  // the parent and child frames of the above transform
+  std::string frame_id_ = "map";
+  std::string main_window_frame_id_ = "viz3d_main_window_camera";
+  ////////////////////////////////////////////////////////////////
+
+  // TODO(lucasw) should this go somewhere else?
+  glm::vec3 ambient_;
 
   double aov_y_ = 45.0f;
   double aov_x_ = 0.0f;
@@ -205,7 +213,6 @@ protected:
   std::map<std::string, std::shared_ptr<Shape> > shapes_;
 
   std::string name_;
-  std::string frame_id_ = "map";
 
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::weak_ptr<rclcpp::Node> node_;

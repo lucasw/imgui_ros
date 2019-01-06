@@ -386,7 +386,7 @@ class Demo(Node):
     def add_shapes(self):
         req = AddShape.Request()
         if True:
-            shape = self.make_plane(off_y=-4.0)
+            shape = self.make_plane(off_y=-3.0)
             shape.add = True
             req.shapes.append(shape)
         if True:
