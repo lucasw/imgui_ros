@@ -29,6 +29,7 @@
  */
 
 #include <chrono>
+// #include <geometry_msgs/msg/pose.hpp>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #include <imgui.h>
@@ -56,6 +57,7 @@
 #include <std_msgs/msg/u_int32.hpp>
 #include <std_msgs/msg/u_int64.hpp>
 #include <std_msgs/msg/u_int8.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -661,6 +663,19 @@ namespace imgui_ros {
       if (window.second) {
         window.second->addTF(tfs, cur);
       }
+    }
+    // use the transform from viz3d- maybe viz3d should be a Window
+    // and this special case code could be eliminated?
+    // TODO(lucasw) move this into viz3d
+    {
+      // convert tf::transform to TransformStamped
+      // geometry_msgs::msg::TransformStamped ts;
+      geometry_msgs::msg::TransformStamped ts;
+      ts.transform = tf2::toMsg(viz3d->transform_);
+      ts.header.stamp = cur;
+      ts.header.frame_id = "map";
+      ts.child_frame_id = "camera_viewer";
+      tfs.transforms.push_back(ts);
     }
     if (tfs.transforms.size() > 0) {
       tf_pub_->publish(tfs);

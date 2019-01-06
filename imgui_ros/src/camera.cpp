@@ -76,6 +76,9 @@ void Camera::init(const size_t width, const size_t height,
     image_->image_->encoding = "bgr8";
     image_->image_->step = width * 3;
     image_->image_->data.resize(width * height * 3);
+
+    image_->min_filter_ind_ = 0;
+    image_->mag_filter_ind_ = 0;
   }
 
   {

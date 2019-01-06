@@ -292,6 +292,10 @@ Viz3D::Viz3D(const std::string name,
 
   transform_.setIdentity();
 
+  // tf_broadcaster_ = TfBroadcaster("viewer_camera",
+  //     "map", "viewer_camera",
+  //     0.0, 0.0, tf_buffer_, node);
+
   textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
 

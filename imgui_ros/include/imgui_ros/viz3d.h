@@ -114,6 +114,7 @@ struct Viz3D {
   // This constant has to be matched in shaders
   static const int MAX_PROJECTORS = 4;
 
+  tf2::Transform transform_;
 protected:
   // TODO(lucasw) maybe this should be a std::map of std::vectors
   std::map<std::string, int > texture_unit_;
@@ -123,7 +124,6 @@ protected:
   bool bindTexture(const std::string& name, const int tex_ind);
   // TODO(lucasw) later this will be a matrix
   // glm::vec3 translation_ = glm::vec3(0, 0, 0);
-  tf2::Transform transform_;
   tf2::Vector3 velocity_ = tf2::Vector3(0.0, 0.0, 0.0);
 
   // TODO(lucasw) should this go somewhere else?
@@ -211,6 +211,8 @@ protected:
   std::weak_ptr<rclcpp::Node> node_;
 
   std::map<std::string, std::shared_ptr<RosImage> > textures_;
+
+  // std::shared_ptr<imgui_ros::TfBroadcaster> tf_broadcaster_;
 
   bool initialized_ = false;
 

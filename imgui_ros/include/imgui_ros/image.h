@@ -76,15 +76,15 @@ struct RosImage : public GlImage {
 
   int wrap_s_ind_ = 0;
   int wrap_t_ind_ = 0;
+  int min_filter_ind_ = 5;
+  int mag_filter_ind_ = 1;
 private:
   std::weak_ptr<rclcpp::Node> node_;
   // TODO(lucasw) split these into two separate subclasses?
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
 
-  int min_filter_ind_ = 5;
   std::vector<int> min_filter_modes_;
-  int mag_filter_ind_ = 1;
   std::vector<int> mag_filter_modes_;
   std::vector<int> wrap_modes_;
 

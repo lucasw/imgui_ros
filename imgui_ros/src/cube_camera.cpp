@@ -134,6 +134,8 @@ void CubeCamera::init(
     std::shared_ptr<RosImage> image = std::make_shared<RosImage>(
         texture_name + "_face" + std::to_string(ind),
         "", sub_not_pub, node);
+    image->min_filter_ind_ = 0;
+    image->mag_filter_ind_ = 0;
     face->image_ = image;
     // TODO(lucasw) is this useful?  No don't do it, it'll be freed 6 times
     // (though that isn't that bad)
