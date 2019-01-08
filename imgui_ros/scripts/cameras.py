@@ -155,8 +155,8 @@ class Cameras(Node):
         while not self.cube_camera_cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('cube camera service not available, waiting again...')
 
-        aspect = 4.0 / 2.0
-        height = 400
+        aspect = 1.0  # 4.0 / 2.0
+        height = 768
 
         if True:
             req = AddCubeCamera.Request()
@@ -177,14 +177,68 @@ class Cameras(Node):
         while not self.shape_cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('shape service not available, waiting again...')
 
-        shape = self.make_360_lens(name='cube_camera_lens',
-                                   cols=32, rows=32, aspect=aspect)
+        if False:
+            shape = self.make_360_lens(name='cube_camera_lens',
+                                       cols=32, rows=32, aspect=aspect)
+        else:
+            shape = self.make_polar_omnidirectional_lens(name='cube_camera_lens',
+                                       segs_lat=64, segs_long=64, aspect=aspect)
         shape.header.frame_id = 'cube_camera_lens'
         req.shapes.append(shape)
 
         self.future = self.shape_cli.call_async(req)
         self.wait_for_response()
         sleep(1.0)
+
+    def make_polar_omnidirectional_lens(self, name,
+            segs_lat=16, segs_long=16,
+            flip_normals=False, aspect=1.0):
+        shape = TexturedShape()
+        shape.name = name
+        # TODO(lucasw) laster support normal maps
+        shape.header.frame_id = 'cube_camera_lens'
+        shape.texture = 'default'
+        shape.shininess_texture = 'default'
+        shape.enable = False
+
+        max_j = int(segs_lat * 2.0)  # int(segs_lat * 3 / 2)
+        max_i = segs_long
+        for j in range(max_j):
+            fr_j = float(j) / float(segs_lat - 1)
+            latitude = (fr_j - 0.5) * math.pi
+            for i in range(max_i):
+                fr_i = float(i) / float(segs_long - 1)
+                longitude = fr_i * 2.0 * math.pi
+                vertex = Vertex()
+                clong = math.cos(longitude)
+                slong = math.sin(longitude)
+                vertex.vertex.x = aspect * fr_j * clong
+                vertex.vertex.y = fr_j * slong
+                vertex.vertex.z = -1.0
+
+                clat = math.cos(latitude)
+                slat = math.sin(latitude)
+                z = clong * clat
+                x = slong * clat
+                y = slat
+
+                vertex.normal.x = z
+                vertex.normal.y = x
+                vertex.normal.z = y
+
+                vertex.uv.x = fr_i
+                vertex.uv.y = fr_j
+
+                val = 1.0
+                vertex.color.r = val
+                vertex.color.g = val
+                vertex.color.b = val
+                vertex.color.a = 1.0
+
+                shape.vertices.append(vertex)
+                shape = self.add_triangles(shape, i, j, max_i, max_j)
+
+        return shape
 
     def make_360_lens(self, name, cols, rows, aspect=1.0, flip_normals=False):
         shape = TexturedShape()
@@ -223,8 +277,8 @@ class Cameras(Node):
                 vertex.normal.y /= nrm_len
                 vertex.normal.z /= nrm_len
 
-                vertex.uv.x = fr_x
-                vertex.uv.y = fr_y
+                vertex.uv.x = fr_x  # % 1.0
+                vertex.uv.y = fr_y  # % 1.0
 
                 val = 1.0
                 vertex.color.r = val
@@ -233,32 +287,42 @@ class Cameras(Node):
                 vertex.color.a = 1.0
 
                 shape.vertices.append(vertex)
+                shape = self.add_triangles(shape, i, j, cols, rows, flip_normals)
 
-                ind0 = len(shape.vertices) - 1
-                ind1 = ind0 + 1
-                ind2 = ind0 + cols
-                ind3 = ind0 + cols + 1
-                if (i < cols - 1) and (j < rows - 1):
-                    # print("inds {} {} {} {}".format(ind0, ind1, ind2, ind3))
-                    triangle = MeshTriangle()
-                    triangle.vertex_indices[0] = ind0
-                    if flip_normals:
-                        triangle.vertex_indices[1] = ind3
-                        triangle.vertex_indices[2] = ind1
-                    else:
-                        triangle.vertex_indices[1] = ind1
-                        triangle.vertex_indices[2] = ind3
-                    shape.triangles.append(triangle)
+        return shape
 
-                    triangle = MeshTriangle()
-                    triangle.vertex_indices[0] = ind0
-                    if flip_normals:
-                        triangle.vertex_indices[1] = ind2
-                        triangle.vertex_indices[2] = ind3
-                    else:
-                        triangle.vertex_indices[1] = ind3
-                        triangle.vertex_indices[2] = ind2
-                    shape.triangles.append(triangle)
+    def add_triangles(self, shape, i, j, cols, rows, flip_normals=False):
+        if i >= cols - 1:
+            return shape
+        if j >= rows - 1:
+            return shape
+        # if len(shape.vertices) == 0:
+        #     return shape
+        ind0 = len(shape.vertices) - 1
+        ind1 = ind0 + 1
+        ind2 = ind0 + cols
+        ind3 = ind0 + cols + 1
+
+        # print("inds {} {} {} {}".format(ind0, ind1, ind2, ind3))
+        triangle = MeshTriangle()
+        triangle.vertex_indices[0] = ind0
+        if flip_normals:
+            triangle.vertex_indices[1] = ind3
+            triangle.vertex_indices[2] = ind1
+        else:
+            triangle.vertex_indices[1] = ind1
+            triangle.vertex_indices[2] = ind3
+        shape.triangles.append(triangle)
+
+        triangle = MeshTriangle()
+        triangle.vertex_indices[0] = ind0
+        if flip_normals:
+            triangle.vertex_indices[1] = ind2
+            triangle.vertex_indices[2] = ind3
+        else:
+            triangle.vertex_indices[1] = ind3
+            triangle.vertex_indices[2] = ind2
+        shape.triangles.append(triangle)
         return shape
 
 def main(args=None):

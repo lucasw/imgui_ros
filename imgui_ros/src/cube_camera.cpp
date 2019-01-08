@@ -158,6 +158,8 @@ void CubeCamera::init(
 
       // allocate the image for later copying out of the cubemap
       glBindTexture(GL_TEXTURE_2D, image->texture_id_);
+      glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_REPEAT);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, face_width, face_width,
           0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
       glGenerateMipmap(GL_TEXTURE_2D);
