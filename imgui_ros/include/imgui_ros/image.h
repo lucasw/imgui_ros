@@ -78,6 +78,8 @@ struct RosImage : public GlImage {
   int wrap_t_ind_ = 0;
   int min_filter_ind_ = 5;
   int mag_filter_ind_ = 1;
+  bool draw_texture_controls_ = false;
+  bool enable_draw_image_ = false;
 private:
   std::weak_ptr<rclcpp::Node> node_;
   // TODO(lucasw) split these into two separate subclasses?
@@ -89,7 +91,6 @@ private:
   std::vector<int> wrap_modes_;
 
   bool enable_info_ = true;
-  bool enable_draw_image_ = false;
   bool enable_one_to_one_ = false;
 };  // RosImage
 

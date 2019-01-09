@@ -236,6 +236,7 @@ namespace imgui_ros {
 
   void ImguiRos::addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
       std::shared_ptr<imgui_ros::srv::AddWindow::Response> res) {
+    // std::cout << "adding window " << req->name << "\n";
     // TODO(lucasw) there could be a mutex only protecting the windows_
     std::lock_guard<std::mutex> lock(mutex_);
     res->success = true;
@@ -253,6 +254,7 @@ namespace imgui_ros {
       }
       std::string message;
       std::shared_ptr<Widget> widget;
+      // std::cout << "new widget " << req->widgets[i].name << "\n";
       const bool rv = addWidget(req->widgets[i], message, widget);
       res->success = res->success && rv && widget;
       res->message += ", " + message;
@@ -269,7 +271,9 @@ namespace imgui_ros {
     if (widget.type == imgui_ros::msg::Widget::IMAGE) {
       std::shared_ptr<RosImage> ros_image;
       const bool sub_not_pub = true;
+      // std::cout << "new ros image " << widget.name << "\n";
       ros_image.reset(new RosImage(widget.name, widget.topic, sub_not_pub, shared_from_this()));
+      ros_image->enable_draw_image_ = true;
       imgui_widget = ros_image;
       return true;
     // publisher types

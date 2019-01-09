@@ -40,10 +40,11 @@ using std::placeholders::_1;
   GlImage::GlImage(const std::string name, const std::string topic) :
       Widget(name, topic) {
     glGenTextures(1, &texture_id_);
+    std::cout << "generating texture " << texture_id_ << " '" << name_ << "'\n";
   }
 
   GlImage::~GlImage() {
-    std::cout << "freeing texture " << texture_id_ << " " << name_ << "\n";
+    std::cout << "freeing texture " << texture_id_ << " '" << name_ << "'\n";
     glDeleteTextures(1, &texture_id_);
   }
 
@@ -240,7 +241,7 @@ using std::placeholders::_1;
   // TODO(lucasw) factor out common code
   void RosImage::draw() {
     // only updates if dirty
-    // updateTexture();
+    updateTexture();
     {
       std::lock_guard<std::mutex> lock(mutex_);
 
@@ -259,7 +260,7 @@ using std::placeholders::_1;
       }
 
       // Texture settings
-      {
+      if (draw_texture_controls_) {
         // TODO(lucasw) set this up once
         std::string items_null;
         items_null += std::string("clamp_to_edge") + '\0';
