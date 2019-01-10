@@ -518,8 +518,13 @@ namespace imgui_ros {
       }
       // TODO(lucasw) have a better variable for this
       const std::string parameter_name = widget.items[0];
-      // TODO(lucasw) bool
-      if ((widget.sub_type == msg::Widget::FLOAT32) ||
+      if (widget.sub_type == msg::Widget::BOOL) {
+        param.reset(new Param(widget.name,
+            node_name, parameter_name,
+            rcl_interfaces::msg::ParameterType::PARAMETER_BOOL,
+            0, 1,
+            shared_from_this()));
+      } else if ((widget.sub_type == msg::Widget::FLOAT32) ||
           (widget.sub_type == msg::Widget::FLOAT64)) {
         param.reset(new Param(widget.name,
             node_name, parameter_name,
@@ -538,7 +543,8 @@ namespace imgui_ros {
       } else {
         std::stringstream ss;
         ss << widget.name << " " << node_name << " " <<  parameter_name
-            << " Need to specify parameter name in widget items[0]";
+            << " " << widget.sub_type
+            << " Unexpected param type";
         message = ss.str();
         return false;
       }
