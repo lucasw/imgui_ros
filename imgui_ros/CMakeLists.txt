@@ -71,7 +71,7 @@ add_executable(imgui_ros_node
   src/cube_camera.cpp
   src/imgui_ros.cpp
   src/image.cpp
-  # src/param.cpp
+  src/param.cpp
   src/pub.cpp
   src/projector.cpp
   src/shaders.cpp
