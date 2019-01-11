@@ -432,6 +432,18 @@ void Viz3D::addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Req
     return;
   }
 
+  if (req->projector.remove) {
+    if (projectors_.count(name) < 1) {
+      res->message = "projector doesn't exist to be removed: '" + name + "'";
+      res->success = true;
+      return;
+    }
+    projectors_.erase(name);
+    res->message = "projector removed: '" + name + "'";
+    res->success = true;
+    return;
+  }
+
   if ((projectors_.count(name) < 1) &&
       (projectors_.size() >= MAX_PROJECTORS)) {
     res->message = "only supporting " + std::to_string(MAX_PROJECTORS)
