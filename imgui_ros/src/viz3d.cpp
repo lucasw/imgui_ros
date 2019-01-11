@@ -792,6 +792,9 @@ void Viz3D::draw()
 
     ImGui::ColorEdit4("clear color", (float*)&clear_color_);
     ImGui::ColorEdit3("ambient color", (float*)&ambient_[0]);
+    ImGui::Checkbox("multisample", &multisample_);
+    ImGui::Combo("num_samples", &num_samples_,
+      "0 off\0 1 \0 2 \0 3 \0 4 \0 5 \0 6 \0 7 \0 8 \0");
 
     ImGui::Text("position %0.2lf %0.2lf %0.2lf",
         transform_.getOrigin().x(),
@@ -1059,6 +1062,18 @@ void Viz3D::render(const int fb_width, const int fb_height,
     gl_state.backup();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    if (multisample_) {
+      // TODO(lucasw) these may have no effect here
+      SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+      SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, num_samples_);
+      glEnable(GL_MULTISAMPLE);
+    } else {
+      SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+      SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+      // this does work
+      glDisable(GL_MULTISAMPLE);
+    }
 
     // TODO(lucasw) later enable, but it is nice to see geometry from back
     // add a combo for this

@@ -135,6 +135,16 @@ namespace imgui_ros {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+
+#if 1
+    // TODO(lucasw) optional with combobox
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+    // SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+    // glEnable(GL_MULTISAMPLE);
+    // SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+#endif
+
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
     // TODO(lucasw) window.reset()
@@ -631,6 +641,7 @@ namespace imgui_ros {
     const int display_size_y = ImGui::GetIO().DisplaySize.y;
     const int fb_width = display_size_x * ImGui::GetIO().DisplayFramebufferScale.x;
     const int fb_height = display_size_y * ImGui::GetIO().DisplayFramebufferScale.y;
+
 
     glViewport(0, 0, (int)display_size_x, (int)display_size_y);
     checkGLError(__FILE__, __LINE__);

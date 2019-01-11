@@ -221,6 +221,8 @@ protected:
 
   // std::shared_ptr<imgui_ros::TfBroadcaster> tf_broadcaster_;
 
+  bool multisample_ = false;
+  int num_samples_ = 2;
   bool initialized_ = false;
 
   std::mutex mutex_;
