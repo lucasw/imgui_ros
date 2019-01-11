@@ -80,6 +80,8 @@ namespace imgui_ros {
     get_parameter_or("width", width_, width_);
     get_parameter_or("height", height_, height_);
 
+    parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(this);
+
     // building this causes the node to crash only in release mode
     add_tf_ = create_service<srv::AddTf>("add_tf",
         std::bind(&ImguiRos::addTf, this, _1, _2));
@@ -572,6 +574,12 @@ namespace imgui_ros {
   void ImguiRos::update() {
     if (!init_) {
       glInit();
+#if 0
+    // can't do this in constructor because node hasn't finished yet?
+    // but then putting it here ruins ability of param clients to interact with other nodes parameters
+      param_sub_ = parameters_client_->on_parameter_event(
+          std::bind(&ImguiRos::onParameterEvent, this, std::placeholders::_1));
+#endif
     }
     // Poll and handle events (inputs, window resize, etc.)
     // You can read the gui_io.WantCaptureMouse, gui_io.WantCaptureKeyboard flags to
@@ -689,6 +697,41 @@ namespace imgui_ros {
       tf_pub_->publish(tfs);
     }
   }
+
+
+  // TODO(lucasw) need to push this up into containing viz3d class,
+  // it will have a list of namespaces that it has parameter events for and will
+  // receive the event and distribute the values to the proper param
+  void ImguiRos::onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
+  {
+    // RCLCPP_INFO(get_logger(), "%s", event->node);
+    std::cout << event->node << "\n";
+    for (auto & parameter : event->new_parameters) {
+      std::cout << parameter.name << " ";
+    }
+    std::cout << "\nchanged";
+    for (auto & parameter : event->changed_parameters) {
+      std::cout << parameter.name << " ";
+    }
+    std::cout << "\n";
+#if 0
+    if (event->node != node_name_) {
+      return;
+    }
+    for (auto & parameter : event->new_parameters) {
+      if (parameter.name == parameter_name_) {
+        updateValue(parameter.value);
+      }
+    }
+    for (auto & parameter : event->changed_parameters) {
+      if (parameter.name == parameter_name_) {
+        updateValue(parameter.value);
+      }
+    }
+    // TODO(lucasw) do something when the parameter is deleted?
+#endif
+  }
+
 }  // namespace imgui_ros
 
 int main(int argc, char * argv[])

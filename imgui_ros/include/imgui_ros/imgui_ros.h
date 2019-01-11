@@ -36,6 +36,7 @@
 #include <map>
 #include <mutex>
 #include <opencv2/core.hpp>
+#include <rcl_interfaces/msg/parameter_event.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
@@ -88,6 +89,12 @@ private:
 
   std::shared_ptr<ImGuiImplOpenGL3> imgui_impl_opengl3_;
   std::shared_ptr<Viz3D> viz3d;
+
+  // this will get parameter events for all nodes in same namespace (or just root namespace?
+  // namespacing seems broken in ros2 currently)
+  rclcpp::AsyncParametersClient::SharedPtr parameters_client_;
+  rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
+  void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event);
 };
 
 }  // namespace imgui_ros
