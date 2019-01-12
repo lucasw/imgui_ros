@@ -40,6 +40,7 @@
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/imgui_ros.h>
 #include <imgui_ros/param.h>
+#include <imgui_ros/point_cloud.h>
 #include <imgui_ros/pub.h>
 #include <imgui_ros/sub.h>
 #include <imgui_ros/tf.h>
@@ -288,6 +289,7 @@ namespace imgui_ros {
       ros_image->enable_draw_image_ = true;
       imgui_widget = ros_image;
       return true;
+    ///////////////////////////////////////////////////////////////////////////
     // publisher types
     } else if (widget.type == imgui_ros::msg::Widget::PUB) {
       std::shared_ptr<Pub> pub;
@@ -374,6 +376,7 @@ namespace imgui_ros {
       }
       imgui_widget = pub;
       return true;
+    ///////////////////////////////////////////////////////////////////////////
     // subscription types
     } else if (widget.type == imgui_ros::msg::Widget::SUB) {
       RCLCPP_DEBUG(get_logger(), "new sub %s %d", widget.name.c_str(), widget.sub_type);
@@ -457,6 +460,8 @@ namespace imgui_ros {
         bool value = widget.value;
         sub.reset(new BoolSub(widget.name, widget.topic,  // widget.sub_type,
             value, shared_from_this()));
+      } else if (widget.sub_type == msg::Widget::POINTCLOUD) {
+        sub.reset(new PointCloud(widget.name, widget.topic, shared_from_this()));
       } else {
         std::stringstream ss;
         ss << "unsupported window type " << std::dec << widget.sub_type;

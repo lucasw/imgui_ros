@@ -37,13 +37,25 @@
 // #include <opencv2/highgui.hpp>
 
 
-PointCloud::PointCloud(const std::string name, const std::string topic) :
-    Window(name, topic)
+PointCloud::PointCloud(const std::string name, const std::string topic,
+    std::shared_ptr<rclcpp::Node> node
+    ) :
+    Sub(name, topic, node)
 {
+  sub_ = node->create_subscription<sensor_msgs::msg::PointCloud2>(topic,
+      std::bind(&PointCloud::pointCloud2Callback, this, std::placeholders::_1));
+}
 
+void PointCloud::pointCloud2Callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+{
+  msg_ = msg;
+  std::cout << "new point cloud " << msg_->data.size() << "\n";
+}
+
+void PointCloud::draw()
+{
 }
 
 void PointCloud::render()
 {
-
 }

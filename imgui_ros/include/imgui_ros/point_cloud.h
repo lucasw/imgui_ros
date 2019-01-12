@@ -32,6 +32,8 @@
 #define IMGUI_ROS2_POINT_CLOUD_H
 
 #include <imgui.h>
+#include <imgui_ros/sub.h>
+#include <imgui_ros/window.h>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -41,15 +43,18 @@
 #include <vector>
 
 
-struct PointCloud : public Widget
+struct PointCloud : public Sub
 {
-  PointCloud(const std::string name, const std::string topic);
+  PointCloud(const std::string name, const std::string topic,
+      std::shared_ptr<rclcpp::Node> node);
   ~PointCloud() {}
 
   virtual void draw();
   void render();
 protected:
 
+  sensor_msgs::msg::PointCloud2::SharedPtr msg_;
+  void pointCloud2Callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_;
 };
 

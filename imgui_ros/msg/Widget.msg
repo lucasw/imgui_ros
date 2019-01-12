@@ -20,6 +20,7 @@ uint8 MENU=12
 uint8 TF=13
 uint8 VIZ2D=14
 uint8 VIZ3D=15
+uint8 POINTCLOUD=16
 # uint8 TODO(lucasw)
 string name ""
 string topic ""

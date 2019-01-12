@@ -21,6 +21,7 @@ find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(glm REQUIRED)
 # find_package(example_interfaces REQUIRED)
+find_package(pcl_conversions REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(rcutils)
@@ -35,6 +36,9 @@ find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(visualization_msgs REQUIRED)
+
+find_package(Boost COMPONENTS system REQUIRED)
+# find_package(PCL REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Camera.msg"
@@ -74,6 +78,7 @@ add_executable(imgui_ros_node
   src/param.cpp
   src/pub.cpp
   src/projector.cpp
+  src/point_cloud.cpp
   src/shaders.cpp
   src/sub.cpp
   src/surface.cpp
@@ -115,12 +120,30 @@ target_link_libraries(imgui_ros_node
 
 install(TARGETS imgui_ros_node DESTINATION lib/${PROJECT_NAME})
 
+add_executable(generate_pointcloud2 src/test/generate_pointcloud2.cpp)
+ament_target_dependencies(generate_pointcloud2
+  # "example_interfaces"
+  "geometry_msgs"
+  "pcl_conversions"
+  "rcl_interfaces"
+  "rclcpp"
+  "rcutils"
+  "sensor_msgs"
+  "std_msgs"
+  "tf2_geometry_msgs"
+)
+target_link_libraries(generate_pointcloud2
+  ${Boost_SYSTEM_LIBRARY}  # pcl_conversions requires this
+)
+install(TARGETS generate_pointcloud2 DESTINATION lib/${PROJECT_NAME})
+
 add_executable(param_to_topic src/param_to_topic.cpp)
 ament_target_dependencies(param_to_topic
   # "example_interfaces"
   "rclcpp"
   "rcutils"
-  "std_msgs")
+  "std_msgs"
+)
 install(TARGETS param_to_topic DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
