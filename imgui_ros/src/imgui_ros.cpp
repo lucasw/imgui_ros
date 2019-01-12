@@ -80,7 +80,7 @@ namespace imgui_ros {
     get_parameter_or("width", width_, width_);
     get_parameter_or("height", height_, height_);
 
-    parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(this);
+    // parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(this);
 
     // building this causes the node to crash only in release mode
     add_tf_ = create_service<srv::AddTf>("add_tf",
@@ -560,6 +560,12 @@ namespace imgui_ros {
         message = ss.str();
         return false;
       }
+      // TODO(lucasw) need to handle deletion
+      if (parameters_clients_.count(node_name) < 1) {
+        parameters_clients_[node_name] = std::make_shared<rclcpp::AsyncParametersClient>(this, node_name);
+      }
+      // TODO(lucasw) need to handle deletion
+      param_widgets_[node_name][widget.name] = param;
       imgui_widget = param;
     } else {
       std::stringstream ss;
@@ -686,6 +692,7 @@ namespace imgui_ros {
       viz3d->renderToTexture();
     }
 
+    // update all tfs
     tf2_msgs::msg::TFMessage tfs;
     rclcpp::Time cur = now();
     for (auto& window : windows_) {
@@ -696,8 +703,22 @@ namespace imgui_ros {
     if (tfs.transforms.size() > 0) {
       tf_pub_->publish(tfs);
     }
-  }
 
+    // update all parameters that need to be updated
+    for (auto& param_widgets_pair : param_widgets_) {
+      const std::string node_name = param_widgets_pair.first;
+      std::vector<rclcpp::Parameter> parameters;
+      for (auto& param_widget_pair : param_widgets_pair.second) {
+        auto param_widget = param_widget_pair.second;
+        if (param_widget->update_) {
+          parameters.push_back(rclcpp::Parameter(
+              param_widget->parameter_name_, param_widget->value_));
+          param_widget->update_ = false;
+        }
+      }
+      parameters_clients_[node_name]->set_parameters(parameters);
+    } // param update
+  }
 
   // TODO(lucasw) need to push this up into containing viz3d class,
   // it will have a list of namespaces that it has parameter events for and will

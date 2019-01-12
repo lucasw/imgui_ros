@@ -31,6 +31,7 @@
 #include "imgui.h"
 #include <imgui_ros/viz3d.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
+#include <imgui_ros/param.h>
 #include <imgui_ros/srv/add_tf.hpp>
 #include <imgui_ros/srv/add_window.hpp>
 #include <map>
@@ -90,9 +91,12 @@ private:
   std::shared_ptr<ImGuiImplOpenGL3> imgui_impl_opengl3_;
   std::shared_ptr<Viz3D> viz3d;
 
+  std::map<std::string, rclcpp::AsyncParametersClient::SharedPtr> parameters_clients_;
+  // node_name, widget_name
+  std::map<std::string, std::map<std::string, std::shared_ptr<Param> > > param_widgets_;
+
   // this will get parameter events for all nodes in same namespace (or just root namespace?
   // namespacing seems broken in ros2 currently)
-  rclcpp::AsyncParametersClient::SharedPtr parameters_client_;
   rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
   void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event);
 };

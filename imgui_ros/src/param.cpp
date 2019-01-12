@@ -54,7 +54,7 @@ Param::Param(const std::string name,
   // TODO(lucasw) can there be more than one of these per node, for a given node_name?
   // or even for distinct node names?  Probably because it is subscribing to the namespace
   // of node_name parameter_events, it has to be one callback per namespace.
-  parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(node, node_name_);
+  // parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(node, node_name_);
   // param_sub_ = parameters_client_->on_parameter_event(
   //     std::bind(&Param::onParameterEvent, this, std::placeholders::_1));
 }
@@ -76,7 +76,6 @@ void Param::draw()
   ss << name_ << ": ";
   auto fnc = std::bind(&Param::responseReceivedCallback, this, std::placeholders::_1);
 
-
   try {
     if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_BOOL) {
       bool value = value_.bool_value;
@@ -86,9 +85,10 @@ void Param::draw()
       const bool changed = ImGui::Checkbox(topic_.c_str(), &value);
       if (changed) {
         value_.bool_value = value;
-        parameters_client_->set_parameters({
-            rclcpp::Parameter(parameter_name_, value_.bool_value),
-            }, fnc);
+        update_ = true;
+        // parameters_client_->set_parameters({
+        //     rclcpp::Parameter(parameter_name_, value_.bool_value),
+        //     }, fnc);
       }
       ss << value_.bool_value;
     } else if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER) {
@@ -102,9 +102,10 @@ void Param::draw()
           ImGuiDataType_S32, &value, &min, &max, "%d");
       if (changed) {
         value_.integer_value = value;
-        parameters_client_->set_parameters({
-            rclcpp::Parameter(parameter_name_, value_.integer_value),
-            }, fnc);
+        update_ = true;
+        // parameters_client_->set_parameters({
+        //     rclcpp::Parameter(parameter_name_, value_.integer_value),
+        //     }, fnc);
       }
       ss << value_.integer_value;
     } else if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE) {
@@ -118,9 +119,10 @@ void Param::draw()
           ImGuiDataType_Double, &value, &min, &max, "%lf");
       if (changed) {
         value_.double_value = value;
-        parameters_client_->set_parameters({
-            rclcpp::Parameter(parameter_name_, value_.double_value),
-            }, fnc);
+        update_ = true;
+        // parameters_client_->set_parameters({
+        //     rclcpp::Parameter(parameter_name_, value_.double_value),
+        //     }, fnc);
       }
       ss << value_.double_value;
     } else if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_STRING) {
@@ -135,9 +137,10 @@ void Param::draw()
           ImGuiInputTextFlags_EnterReturnsTrue);
       if (changed) {
         value_.string_value = buf;
-        parameters_client_->set_parameters({
-            rclcpp::Parameter(parameter_name_, value_.string_value),
-            }, fnc);
+        update_ = true;
+        // parameters_client_->set_parameters({
+        //     rclcpp::Parameter(parameter_name_, value_.string_value),
+        //     }, fnc);
       }
       ss << value_.string_value;
     } else {
@@ -155,6 +158,7 @@ void Param::responseReceivedCallback(
 {
   std::shared_ptr<rclcpp::Node> node = node_.lock();
   if (!node) {
+    std::cerr << "couldn't get node lock\n";
     return;
   }
 
@@ -162,6 +166,9 @@ void Param::responseReceivedCallback(
     if (!result.successful) {
       RCLCPP_ERROR(node->get_logger(), "Failed to set parameter: %s", result.reason.c_str());
     }
+    // TODO(lucasw) this isn't getting reliably received when there is more than one parameter
+    // TEMP
+    RCLCPP_INFO(node->get_logger(), "Set parameter: %s", result.reason.c_str());
   }
 }
 

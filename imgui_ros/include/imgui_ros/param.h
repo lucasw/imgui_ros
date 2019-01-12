@@ -59,16 +59,18 @@ struct Param : public Widget {
 
   virtual void draw();
 
-protected:
+  bool update_ = false;
   std::string node_name_;
   std::string parameter_name_;
+  rcl_interfaces::msg::ParameterValue value_;
+  // rclcpp::ParameterValue value_;
+protected:
   // uint8_t type_;
   double min_ = 0.0;
   double max_ = 1.0;
 
   std::weak_ptr<rclcpp::Node> node_;
 
-  rcl_interfaces::msg::ParameterValue value_;
 
   void responseReceivedCallback(
       const std::shared_future<std::vector<rcl_interfaces::msg::SetParametersResult>> future);
