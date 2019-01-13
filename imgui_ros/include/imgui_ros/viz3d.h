@@ -225,6 +225,9 @@ protected:
   int num_samples_ = 2;
   bool initialized_ = false;
 
+  double line_width_ = 1.0;
+  double point_size_ = 1.0;
+
   std::mutex mutex_;
 };
 

@@ -829,6 +829,20 @@ void Viz3D::draw()
     }
 
     {
+      double min = 1.0;
+      double max = 20.0;
+      ImGui::SliderScalar("line width", ImGuiDataType_Double,
+            &line_width_, &min, &max, "%lf", 2);
+    }
+
+    {
+      double min = 1.0;
+      double max = 20.0;
+      ImGui::SliderScalar("point size", ImGuiDataType_Double,
+            &point_size_, &min, &max, "%lf", 2);
+    }
+
+    {
       double min = 0.0001;
       double max = 0.1;
       ImGui::SliderScalar("move scale", ImGuiDataType_Double,
@@ -1073,6 +1087,8 @@ void Viz3D::render(const int fb_width, const int fb_height,
     GLState gl_state;
     gl_state.backup();
 
+    glLineWidth(line_width_);
+    glPointSize(point_size_);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     if (multisample_) {
