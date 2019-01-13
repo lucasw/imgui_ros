@@ -62,7 +62,6 @@ public:
 private:
   void generatePointCloud2()
   {
-    pcl::PointCloud<pcl::PointXYZRGB> cloud_;
     // TODO(lucasw) generate a cube or sphere instead, more interesting than 2d
     for (int i = 0; i < num_points_; ++i) {
       const float fr = static_cast<float>(i) / static_cast<float>(num_points_);
@@ -74,12 +73,8 @@ private:
       cloud_.points.push_back(pt);
     }
 
-    // intermediate format - this incurs an extra copy?
-    pcl::PCLPointCloud2 pcl_pc2;
-    pcl::toPCLPointCloud2(cloud_, pcl_pc2);
-
     pc2_msg_ = std::make_shared<sensor_msgs::msg::PointCloud2>();
-    pcl_conversions::fromPCL(pcl_pc2, *pc2_msg_);
+    pcl::toROSMsg(cloud_, *pc2_msg_);
 
     pc2_msg_->header.frame_id = frame_id_;
   }
@@ -100,6 +95,7 @@ private:
   int num_points_ = 200;
   std::string frame_id_ = "map";
 
+  pcl::PointCloud<pcl::PointXYZRGB> cloud_;
   sensor_msgs::msg::PointCloud2::SharedPtr pc2_msg_;
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
