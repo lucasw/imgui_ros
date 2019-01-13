@@ -37,7 +37,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#if 0
+#if 1
 #include <pcl_conversions/pcl_conversions.h>
 #endif
 #include <rclcpp/rclcpp.hpp>
@@ -55,7 +55,7 @@ struct PointCloud : public Sub
   virtual void draw();
   void render();
 protected:
-#if 0
+#if 1
   pcl::PointCloud<pcl::PointXYZRGB> cloud_;
 #endif
   sensor_msgs::msg::PointCloud2::SharedPtr msg_;

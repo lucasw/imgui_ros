@@ -76,6 +76,15 @@ private:
     pc2_msg_ = std::make_shared<sensor_msgs::msg::PointCloud2>();
     pcl::toROSMsg(cloud_, *pc2_msg_);
 
+    // TEMP test
+#if 1
+    {
+      pcl::PointCloud<pcl::PointXYZRGB> cloud2;
+      pcl::fromROSMsg(*pc2_msg_, cloud2);
+      std::cout << cloud2.points.size() << "\n";
+    }
+#endif
+
     pc2_msg_->header.frame_id = frame_id_;
   }
 

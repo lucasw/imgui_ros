@@ -51,17 +51,14 @@ void PointCloud::pointCloud2Callback(const sensor_msgs::msg::PointCloud2::Shared
 {
   msg_ = msg;
   // std::cout << "new point cloud " << msg_->data.size() << "\n";
-  #if 0
-  pcl::PCLPointCloud2 pcl_pc2;
-  pcl_conversions::toPCL(*msg, pcl_pc2);
-  pcl::fromPCLPointCloud2(pcl_pc2, cloud_);
-  #endif
+  // this requires pcl::console::print to be linked in, the code is identical
+  // to below anyhow.
+  pcl::fromROSMsg(*msg,  cloud_);
 }
 
 void PointCloud::draw()
 {
-  // if (cloud_)
-  #if 0
+  #if 1
   {
     int num_points = cloud_.points.size();
     ImGui::Text("point cloud points %d", num_points);
