@@ -61,8 +61,8 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 using namespace std::chrono_literals;
-using std::placeholders::_1;
-using std::placeholders::_2;
+// using std::placeholders::_1;
+// using std::placeholders::_2;
 
 namespace imgui_ros {
   ImguiRos::ImguiRos() : Node("imgui_ros") {
@@ -85,10 +85,10 @@ namespace imgui_ros {
 
     // building this causes the node to crash only in release mode
     add_tf_ = create_service<srv::AddTf>("add_tf",
-        std::bind(&ImguiRos::addTf, this, _1, _2));
+        std::bind(&ImguiRos::addTf, this, std::placeholders::_1, std::placeholders::_2));
 
     add_window_ = create_service<srv::AddWindow>("add_window",
-        std::bind(&ImguiRos::addWindow, this, _1, _2));
+        std::bind(&ImguiRos::addWindow, this, std::placeholders::_1, std::placeholders::_2));
 
     update_timer_ = this->create_wall_timer(33ms,
         std::bind(&ImguiRos::update, this));

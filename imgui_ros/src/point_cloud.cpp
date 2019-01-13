@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <imgui_ros/point_cloud.h>
 // #include <opencv2/highgui.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 
 PointCloud::PointCloud(const std::string name, const std::string topic,
@@ -49,11 +50,27 @@ PointCloud::PointCloud(const std::string name, const std::string topic,
 void PointCloud::pointCloud2Callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
   msg_ = msg;
-  std::cout << "new point cloud " << msg_->data.size() << "\n";
+  // std::cout << "new point cloud " << msg_->data.size() << "\n";
+  #if 0
+  pcl::PCLPointCloud2 pcl_pc2;
+  pcl_conversions::toPCL(*msg, pcl_pc2);
+  pcl::fromPCLPointCloud2(pcl_pc2, cloud_);
+  #endif
 }
 
 void PointCloud::draw()
 {
+  // if (cloud_)
+  #if 0
+  {
+    int num_points = cloud_.points.size();
+    ImGui::Text("point cloud points %d", num_points);
+  }
+  #else
+  if (msg_) {
+    ImGui::Text("point cloud data size %d", static_cast<int>(msg_->data.size()));
+  }
+  #endif
 }
 
 void PointCloud::render()

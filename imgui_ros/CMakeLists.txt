@@ -99,6 +99,7 @@ set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPIL
 
 ament_target_dependencies(imgui_ros_node
   "geometry_msgs"
+  # "pcl_conversions"
   "rcl_interfaces"
   "rclcpp"
   "rcutils"
@@ -112,7 +113,9 @@ ament_target_dependencies(imgui_ros_node
 )
 rosidl_target_interfaces(imgui_ros_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(imgui_ros_node
+  # ${Boost_SYSTEM_LIBRARY}  # pcl_conversions requires this
   ${OpenCV_LIBRARIES}
+  # ${PCL_LIBRARIES}
   ${SDL2_LIBRARIES}
   GL
   dl

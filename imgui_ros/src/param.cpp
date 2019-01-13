@@ -74,7 +74,7 @@ void Param::draw()
   // or just use other number widget but disable interaction?
   // ImGui::Value()?
   ss << name_ << ": ";
-  auto fnc = std::bind(&Param::responseReceivedCallback, this, std::placeholders::_1);
+  // auto fnc = std::bind(&Param::responseReceivedCallback, this, std::placeholders::_1);
 
   try {
     if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_BOOL) {

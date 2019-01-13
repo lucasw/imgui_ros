@@ -37,6 +37,9 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#if 0
+#include <pcl_conversions/pcl_conversions.h>
+#endif
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
@@ -52,7 +55,9 @@ struct PointCloud : public Sub
   virtual void draw();
   void render();
 protected:
-
+#if 0
+  pcl::PointCloud<pcl::PointXYZRGB> cloud_;
+#endif
   sensor_msgs::msg::PointCloud2::SharedPtr msg_;
   void pointCloud2Callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_;

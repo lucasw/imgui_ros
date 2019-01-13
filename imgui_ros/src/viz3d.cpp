@@ -1666,7 +1666,8 @@ void Viz3D::render2(
          MAX_PROJECTORS, &quadratic_attenuation[0]);
     }  // use_projectors
 
-    if ((shape->draw_mode_ >= 0) && (shape->draw_mode_ < Shape::draw_modes_.size())) {
+    if ((shape->draw_mode_ >= 0) &&
+        (static_cast<size_t>(shape->draw_mode_) < Shape::draw_modes_.size())) {
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape->elements_handle_);
       const ImDrawIdx* idx_buffer_offset = 0;
       glDrawElements(Shape::draw_modes_[shape->draw_mode_],
