@@ -175,7 +175,16 @@ class Demo(Node):
 
     def add_misc(self):
         req = AddWindow.Request()
-        req.name = "string controls"
+        req.name = 'misc controls'
+
+        # point cloud2
+        widget = Widget()
+        widget.name = 'point cloud sub'
+        widget.topic = '/point_cloud'
+        widget.type = Widget.SUB
+        widget.sub_type = Widget.POINTCLOUD
+        # has to be float even though type above is int
+        req.widgets.append(widget)
 
         # string pub sub test
         string_topic = "string"

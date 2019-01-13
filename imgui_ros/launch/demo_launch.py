@@ -63,6 +63,9 @@ def generate_launch_description():
     cameras = launch_ros.actions.Node(
             package='imgui_ros', node_executable='cameras.py', output='screen',
             )
+    generate_pointcloud2 = launch_ros.actions.Node(
+            package='imgui_ros', node_executable='generate_pointcloud2', output='screen',
+            )
 
     return launch.LaunchDescription([
         # thse are both taking 100% cpu
@@ -74,4 +77,5 @@ def generate_launch_description():
         add_shapes,
         cameras,
         add_shaders,
+        generate_pointcloud2,
     ])
