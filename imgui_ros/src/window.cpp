@@ -42,7 +42,8 @@ void Window::draw() {
   for (auto& name : widget_order_) {
     if (widgets_[name]) {
       // TODO(lucasw) make collapsing header optional
-      if (ImGui::CollapsingHeader((name + "##header").c_str())) {
+      // if (ImGui::CollapsingHeader((name + "##header").c_str())) {
+      {
         widgets_[name]->draw();
       }
     }

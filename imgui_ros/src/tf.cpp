@@ -213,7 +213,8 @@ bool inputText(const std::string name, std::string& text)
 
 void TfBroadcaster::draw()
 {
-  ImGui::Separator();
+  if (ImGui::CollapsingHeader((name_ + "##header").c_str())) {
+  // ImGui::Separator();
   ImGui::PushID(name_.c_str());
   // TODO(lucasw) lock guard around ts usage?
   inputText("parent", ts_.header.frame_id);
@@ -260,4 +261,5 @@ void TfBroadcaster::draw()
   ts_.transform.rotation.z = quat.z();
   ts_.transform.rotation.w = quat.w();
   ImGui::PopID();
+  }
 }
