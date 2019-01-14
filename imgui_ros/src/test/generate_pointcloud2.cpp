@@ -43,8 +43,10 @@ class GeneratePointCloud2 : public rclcpp::Node
 public:
   GeneratePointCloud2() : Node("generate_point_cloud2")
   {
-    get_parameter_or("num_points", num_points_, num_points_);
-    set_parameter_if_not_set("num_points", num_points_);
+    get_parameter_or("num_lat", num_lat_, num_lat_);
+    set_parameter_if_not_set("num_lat", num_lat_);
+    get_parameter_or("num_long", num_long_, num_long_);
+    set_parameter_if_not_set("num_long", num_long_);
 
     get_parameter_or("frame_id", frame_id_, frame_id_);
     set_parameter_if_not_set("frame_id", frame_id_);
@@ -62,26 +64,34 @@ public:
 private:
   void generatePointCloud2()
   {
-    // TODO(lucasw) generate a cube or sphere instead, more interesting than 2d
-    for (int i = 0; i < num_points_; ++i) {
-      const float fr = static_cast<float>(i) / static_cast<float>(num_points_);
-      // TODO(lucasw) normals
-      pcl::PointXYZRGB pt;
-      pt = pcl::PointXYZRGB(fr * 255, 255 - fr * 255, 18 + fr * 20);
-      pt.x = cos(fr * M_PI * 2.0) * 1.0;
-      pt.y = sin(fr * M_PI * 2.0) * 1.0;
-      pt.z = 0.0;
+    // TODO(lucasw) generate a cube or sphere instead, more interesting than 2di
+    const float radius = 1.0;
+    for (int i = 0; i < num_lat_; ++i) {
+      const float fr_lat = static_cast<float>(i) / static_cast<float>(num_lat_);
+      const float phi = (fr_lat - 0.5) * M_PI;
+      for (int j = 0; j < num_long_; ++j) {
+        const float fr_long = static_cast<float>(j) / static_cast<float>(num_long_);
+        const float theta = fr_long * M_PI * 2.0;
 
-      const uint8_t& pixel_r = 255;
-      const uint8_t& pixel_g = 255;
-      const uint8_t& pixel_b = 255;
-      // Define point color
-      uint32_t rgb = (static_cast<uint32_t>(pixel_r) << 16
-          | static_cast<uint32_t>(pixel_g) << 8
-          | static_cast<uint32_t>(pixel_b));
-      pt.rgb = *reinterpret_cast<float*>(&rgb);
+        // TODO(lucasw) normals
+        pcl::PointXYZRGB pt;
+        pt = pcl::PointXYZRGB(50 + fr_lat * 205, 255 - fr_long * 100, 255);
+        pt.x = radius * cos(phi) * cos(theta);
+        pt.y = radius * cos(phi) * sin(theta);
+        pt.z = radius * sin(phi);
 
-      cloud_.points.push_back(pt);
+#if 1
+        const uint8_t& pixel_r = 255;
+        const uint8_t& pixel_g = 255;
+        const uint8_t& pixel_b = 255;
+        // Define point color
+        uint32_t rgb = (static_cast<uint32_t>(pixel_r) << 16
+            | static_cast<uint32_t>(pixel_g) << 8
+            | static_cast<uint32_t>(pixel_b));
+        pt.rgb = *reinterpret_cast<float*>(&rgb);
+#endif
+        cloud_.points.push_back(pt);
+      }
     }
 
     pc2_msg_ = std::make_shared<sensor_msgs::msg::PointCloud2>();
@@ -112,7 +122,8 @@ private:
     pub_->publish(pc2_msg_);
   }
 
-  int num_points_ = 200;
+  int num_lat_ = 36;
+  int num_long_ = 36;
   std::string frame_id_ = "map";
 
   pcl::PointCloud<pcl::PointXYZRGB> cloud_;
