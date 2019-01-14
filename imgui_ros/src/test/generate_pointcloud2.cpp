@@ -65,11 +65,22 @@ private:
     // TODO(lucasw) generate a cube or sphere instead, more interesting than 2d
     for (int i = 0; i < num_points_; ++i) {
       const float fr = static_cast<float>(i) / static_cast<float>(num_points_);
+      // TODO(lucasw) normals
       pcl::PointXYZRGB pt;
       pt = pcl::PointXYZRGB(fr * 255, 255 - fr * 255, 18 + fr * 20);
       pt.x = cos(fr * M_PI * 2.0) * 1.0;
       pt.y = sin(fr * M_PI * 2.0) * 1.0;
       pt.z = 0.0;
+
+      const uint8_t& pixel_r = 255;
+      const uint8_t& pixel_g = 255;
+      const uint8_t& pixel_b = 255;
+      // Define point color
+      uint32_t rgb = (static_cast<uint32_t>(pixel_r) << 16
+          | static_cast<uint32_t>(pixel_g) << 8
+          | static_cast<uint32_t>(pixel_b));
+      pt.rgb = *reinterpret_cast<float*>(&rgb);
+
       cloud_.points.push_back(pt);
     }
 
