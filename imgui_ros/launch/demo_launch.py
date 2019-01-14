@@ -7,6 +7,12 @@ import yaml
 
 from ament_index_python.packages import get_package_share_directory
 
+def make_param_file(param_file, node_name, params):
+    with open(param_file, 'w') as outfile:
+        print('opened ' + param_file + ' for yaml writing')
+        data = {}
+        data[node_name] = dict(ros__parameters = params)
+        yaml.dump(data, outfile, default_flow_style=False)
 
 def generate_launch_description():
     prefix = '/tmp/ros2/imgui_ros_demo/'
@@ -39,11 +45,7 @@ def generate_launch_description():
         height = 800,
         )
     param_file = prefix + node_name + '.yaml'
-    with open(param_file, 'w') as outfile:
-        print('opened ' + param_file + ' for yaml writing')
-        data = {}
-        data[node_name] = dict(ros__parameters = params)
-        yaml.dump(data, outfile, default_flow_style=False)
+    make_param_file(param_file, node_name, params)
     imgui_ros = launch_ros.actions.Node(
             package='imgui_ros', node_executable='imgui_ros_node', output='screen',
             node_name=node_name,
@@ -63,8 +65,17 @@ def generate_launch_description():
     cameras = launch_ros.actions.Node(
             package='imgui_ros', node_executable='cameras.py', output='screen',
             )
+
+    node_name = 'generate_pointcloud2'
+    params = dict(
+        frame_id = 'bar2',
+        )
+    param_file = prefix + node_name + '.yaml'
+    make_param_file(param_file, node_name, params)
     generate_pointcloud2 = launch_ros.actions.Node(
             package='imgui_ros', node_executable='generate_pointcloud2', output='screen',
+            node_name=node_name,
+            arguments=['__params:=' + param_file],
             )
 
     return launch.LaunchDescription([
@@ -74,7 +85,7 @@ def generate_launch_description():
         # image_pub,
         imgui_ros,
         configure_windows,
-        add_shapes,
+        # add_shapes,
         cameras,
         add_shaders,
         generate_pointcloud2,

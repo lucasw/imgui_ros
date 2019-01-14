@@ -119,6 +119,14 @@ struct Viz3D : public Window {
   // This constant has to be matched in shaders
   static const int MAX_PROJECTORS = 4;
 
+  void addOrReplaceShape(const std::string& name, const std::shared_ptr<Shape> shape);
+  // void removeShape(const std::shared_ptr<Shape> shape);
+  void removeShape(const std::string& name, std::string& message);
+  void removeShape(const std::string& name) {
+    std::string message;
+    removeShape(name, message);
+  }
+
 protected:
   // TODO(lucasw) maybe this should be a std::map of std::vectors
   std::map<std::string, int > texture_unit_;
@@ -225,8 +233,8 @@ protected:
   int num_samples_ = 2;
   bool initialized_ = false;
 
-  double line_width_ = 1.0;
-  double point_size_ = 1.0;
+  double line_width_ = 3.0;
+  double point_size_ = 3.0;
 
   std::mutex mutex_;
 };

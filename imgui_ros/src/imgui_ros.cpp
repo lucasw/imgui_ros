@@ -461,7 +461,15 @@ namespace imgui_ros {
         sub.reset(new BoolSub(widget.name, widget.topic,  // widget.sub_type,
             value, shared_from_this()));
       } else if (widget.sub_type == msg::Widget::POINTCLOUD) {
-        sub.reset(new PointCloud(widget.name, widget.topic, shared_from_this()));
+        // There won't be anything in the shape to draw yet
+        if (widget.remove) {
+          viz3d->removeShape(widget.name);
+        } else {
+          auto pc = std::make_shared<PointCloud>(widget.name,
+              widget.topic, tf_buffer_, shared_from_this());
+          sub = pc;
+          viz3d->addOrReplaceShape(pc->shape_->name_, pc->shape_);
+        }
       } else {
         std::stringstream ss;
         ss << "unsupported window type " << std::dec << widget.sub_type;

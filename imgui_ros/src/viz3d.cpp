@@ -620,12 +620,7 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
   }
 
   if (msg->add == false) {
-    if (shapes_.count(msg->name) > 0) {
-      shapes_.erase(msg->name);
-      message += msg->name + " erased";
-      return true;
-    }
-    message += msg->name + " doesn't exist, can't delete it";
+    removeShape(msg->name, message);
     return true;
   }
 
@@ -694,7 +689,7 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
     }
   }
 
-  shapes_[shape->name_] = shape;
+  addOrReplaceShape(shape->name_, shape);
   return true;
 }
 
@@ -947,6 +942,21 @@ void Viz3D::addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now)
   // TODO(lucasw) make this name configurable
   ts.child_frame_id = main_window_frame_id_;
   tfm.transforms.push_back(ts);
+}
+
+void Viz3D::addOrReplaceShape(const std::string& name, const std::shared_ptr<Shape> shape)
+{
+  shapes_[name] = shape;
+}
+
+void Viz3D::removeShape(const std::string& name, std::string& message)
+{
+  if (shapes_.count(name) > 0) {
+    shapes_.erase(name);
+    message += name + " erased";
+    return;
+  }
+  message += name + " doesn't exist, can't delete it";
 }
 
 // Currently calling setupcamera for every object- that seems efficient vs.
@@ -1534,6 +1544,7 @@ void Viz3D::render2(
   //}
   // render_message_ << "\n";
 
+  // TODO(lucasw) all the setup below for a single shape seems excessive
   for (auto shape_pair : shapes_) {
     auto shape = shape_pair.second;
     if (!shape) {
@@ -1544,6 +1555,10 @@ void Viz3D::render2(
     // render_message_ << "shape: " << shape->name_;
     if (!shape->enable_) {
       // render_message_ << " disabled\n";
+      continue;
+    }
+
+    if (shape->vertices_.Size < 1) {
       continue;
     }
 
@@ -1574,6 +1589,7 @@ void Viz3D::render2(
       }
       // transfer data to shaders
       const auto transpose = GL_FALSE;
+      // TODO(lucasw) model should be the only update happening per shape
       glUniformMatrix4fv(shaders->uniform_locations_["model_matrix"],
           1, transpose, &model[0][0]);
       glUniformMatrix4fv(shaders->uniform_locations_["view_matrix"],

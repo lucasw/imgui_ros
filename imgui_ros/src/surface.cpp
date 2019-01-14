@@ -55,6 +55,16 @@ Shape::Shape(const std::string& name, const std::string& frame_id,
     shininess_texture_(shininess_texture_name),
     tf_buffer_(tf_buffer)
 {
+  glGenVertexArrays(1, &vao_handle_);
+  glBindVertexArray(vao_handle_);
+
+  glGenBuffers(1, &vbo_handle_);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_handle_);
+  glGenBuffers(1, &elements_handle_);
+
+  // TBD
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
 }
 
 Shape::~Shape()
@@ -66,24 +76,21 @@ Shape::~Shape()
 
 void Shape::init()
 {
-  glGenVertexArrays(1, &vao_handle_);
-  glBindVertexArray(vao_handle_);
-
-  glGenBuffers(1, &vbo_handle_);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_handle_);
-  // copy data to gpu
+  // copy vertex data to gpu
   glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)vertices_.Size * sizeof(DrawVert),
       (const GLvoid*)vertices_.Data, GL_STREAM_DRAW);
 
-  glGenBuffers(1, &elements_handle_);
-
   checkGLError(__FILE__, __LINE__);
-  std::cout << name_ << " init vao " << vao_handle_ << ", "
+  if (false) {
+  std::cout << "'" << name_ << "' init vao " << vao_handle_ << ", "
       << "vbo " << vbo_handle_ << ", elements " << elements_handle_ << ", "
       << "vertices size " << vertices_.Size << ", "
       << "indices size " << indices_.Size << "\n";
+  }
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements_handle_);
+  // copy index data to the gpu
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)indices_.Size * sizeof(ImDrawIdx),
       (const GLvoid*)indices_.Data, GL_STREAM_DRAW);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);

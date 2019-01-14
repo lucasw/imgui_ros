@@ -39,10 +39,15 @@
 
 
 PointCloud::PointCloud(const std::string name, const std::string topic,
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer,
     std::shared_ptr<rclcpp::Node> node
     ) :
     Sub(name, topic, node)
 {
+  shape_ = std::make_shared<Shape>(name + "_shape",
+      "", "default", "default", tf_buffer);
+  shape_->draw_mode_ = 2;  // GL_POINTS;
+
   sub_ = node->create_subscription<sensor_msgs::msg::PointCloud2>(topic,
       std::bind(&PointCloud::pointCloud2Callback, this, std::placeholders::_1));
 }
@@ -54,15 +59,36 @@ void PointCloud::pointCloud2Callback(const sensor_msgs::msg::PointCloud2::Shared
   // this requires pcl::console::print to be linked in, the code is identical
   // to below anyhow.
   pcl::fromROSMsg(*msg,  cloud_);
+
+  shape_->frame_id_ = msg->header.frame_id;
+  shape_->vertices_.resize(cloud_.points.size());
+  shape_->indices_.resize(cloud_.points.size());
+  for (size_t i = 0; i < cloud_.points.size(); ++i) {
+    auto& cpt = cloud_.points[i];
+    DrawVert pt;
+    pt.pos.x = cpt.x;
+    pt.pos.y = cpt.y;
+    pt.pos.z = cpt.z;
+
+    uint32_t rgb = *reinterpret_cast<int*>(&cpt.rgb);
+    uint8_t r = (rgb >> 16) & 0x0000ff;
+    uint8_t g = (rgb >> 8)  & 0x0000ff;
+    uint8_t b = (rgb)       & 0x0000ff;
+    pt.col.x = static_cast<float>(r) / 255.0;
+    pt.col.y = static_cast<float>(g) / 255.0;
+    pt.col.z = static_cast<float>(b) / 255.0;
+    pt.col.w = 1.0;  // alpha
+    shape_->vertices_[i] = pt;
+    shape_->indices_[i] = i;
+  }
+  shape_->init();
 }
 
 void PointCloud::draw()
 {
   #if 1
-  {
-    int num_points = cloud_.points.size();
-    ImGui::Text("point cloud points %d", num_points);
-  }
+  int num_points = cloud_.points.size();
+  ImGui::Text("point cloud points %d", num_points);
   #else
   if (msg_) {
     ImGui::Text("point cloud data size %d", static_cast<int>(msg_->data.size()));

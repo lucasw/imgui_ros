@@ -33,15 +33,14 @@
 
 #include <imgui.h>
 #include <imgui_ros/sub.h>
-#include <imgui_ros/window.h>
+#include <imgui_ros/surface.h>
 #include <map>
 #include <memory>
 #include <mutex>
-#if 1
 #include <pcl_conversions/pcl_conversions.h>
-#endif
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <tf2_ros/buffer.h>
 #include <tf2_msgs/msg/tf_message.hpp>
 #include <vector>
 
@@ -49,15 +48,15 @@
 struct PointCloud : public Sub
 {
   PointCloud(const std::string name, const std::string topic,
+      std::shared_ptr<tf2_ros::Buffer> tf_buffer,
       std::shared_ptr<rclcpp::Node> node);
   ~PointCloud() {}
 
   virtual void draw();
   void render();
+  std::shared_ptr<Shape> shape_;
 protected:
-#if 1
   pcl::PointCloud<pcl::PointXYZRGB> cloud_;
-#endif
   sensor_msgs::msg::PointCloud2::SharedPtr msg_;
   void pointCloud2Callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_;
