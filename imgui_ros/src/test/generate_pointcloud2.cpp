@@ -81,8 +81,8 @@ private:
         pt.z = radius * sin(phi);
 
 #if 1
-        const uint8_t& pixel_r = 255;
-        const uint8_t& pixel_g = 255;
+        const uint8_t& pixel_r = 255 * fr_lat;
+        const uint8_t& pixel_g = 255 * (1.0 - fr_long);
         const uint8_t& pixel_b = 255;
         // Define point color
         uint32_t rgb = (static_cast<uint32_t>(pixel_r) << 16

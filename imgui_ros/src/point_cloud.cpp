@@ -47,6 +47,9 @@ PointCloud::PointCloud(const std::string name, const std::string topic,
   shape_ = std::make_shared<Shape>(name + "_shape",
       "", "default", "default", tf_buffer);
   shape_->draw_mode_ = 2;  // GL_POINTS;
+  // this may not exist as an available texture-
+  // need an AddPointCloud service that specifies this instead of using Widget
+  shape_->emission_texture_ = "white";
 
   sub_ = node->create_subscription<sensor_msgs::msg::PointCloud2>(topic,
       std::bind(&PointCloud::pointCloud2Callback, this, std::placeholders::_1));

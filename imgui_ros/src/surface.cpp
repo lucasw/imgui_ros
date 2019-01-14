@@ -112,12 +112,16 @@ void Shape::draw(const std::vector<std::string>& texture_names_,
   // TODO(lucasw) this is a pain
   int texture_ind = 0;
   int shininess_texture_ind = 0;
+  int emission_texture_ind = 0;
   for (int i = 0; i < static_cast<int>(texture_names_.size()); ++i) {
     if (texture_names_[i] == texture_) {
       texture_ind = i;
     }
     if (texture_names_[i] == shininess_texture_) {
       shininess_texture_ind = i;
+    }
+    if (texture_names_[i] == emission_texture_) {
+      emission_texture_ind = i;
     }
   }
 
@@ -132,6 +136,12 @@ void Shape::draw(const std::vector<std::string>& texture_names_,
       &shininess_texture_ind, texture_items.c_str());
   if (changed) {
     shininess_texture_ = texture_names_[shininess_texture_ind];
+  }
+
+  changed = ImGui::Combo(("emission texture##" + name).c_str(),
+      &emission_texture_ind, texture_items.c_str());
+  if (changed) {
+    emission_texture_ = texture_names_[emission_texture_ind];
   }
 
   const std::string items = std::string("triangles") + '\0' +

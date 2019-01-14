@@ -106,8 +106,9 @@ struct Shape {
   std::string frame_id_ = "map";
   ImVector<DrawVert> vertices_;
   ImVector<ImDrawIdx> indices_;
-  std::string texture_ = "";
-  std::string shininess_texture_ = "";
+  std::string texture_ = "default";
+  std::string shininess_texture_ = "default";
+  std::string emission_texture_ = "default";
 
   // ROS
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;

@@ -299,13 +299,14 @@ Viz3D::Viz3D(const std::string name,
   textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
 
-  int base_tex_ind = 2;
+  texture_unit_["Texture"] = 0;
+  texture_unit_["shininess_texture"] = 1;
+  texture_unit_["emission_texture"] = 2;
+  int base_tex_ind = texture_unit_.size();
   for (size_t i = 0; i < MAX_PROJECTORS; ++i) {
     projector_texture_unit_[i] = base_tex_ind + i;
     shadow_texture_unit_[i] = base_tex_ind + MAX_PROJECTORS + i;
   }
-  texture_unit_["Texture"] = 0;
-  texture_unit_["shininess_texture"] = 1;
 
   add_camera_ = node->create_service<imgui_ros::srv::AddCamera>("add_camera",
       std::bind(&Viz3D::addCamera, this, _1, _2));
@@ -1605,6 +1606,8 @@ void Viz3D::render2(
           texture_unit_["Texture"]);
       glUniform1i(shaders->uniform_locations_["shininess_texture"],
           texture_unit_["shininess_texture"]);
+      glUniform1i(shaders->uniform_locations_["emission_texture"],
+          texture_unit_["emission_texture"]);
 
       if (checkGLError(__FILE__, __LINE__))
         return;
@@ -1641,6 +1644,7 @@ void Viz3D::render2(
       bindTexture(shape->texture_, texture_unit_["Texture"]);
       // render_message_ << "shininess ";
       bindTexture(shape->shininess_texture_, texture_unit_["shininess_texture"]);
+      bindTexture(shape->emission_texture_, texture_unit_["emission_texture"]);
     }
 
     if (use_projectors) {

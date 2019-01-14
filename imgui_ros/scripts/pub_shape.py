@@ -76,6 +76,7 @@ class Demo(Node):
         # print(self.args.no_shapes)
         if not self.args.no_textures:
             self.add_texture('default', 'imgui_ros', 'black.png')
+            self.add_texture('white', 'imgui_ros', 'white.png')
             self.add_texture('gradient', 'imgui_ros', 'gradient.png')
             self.add_texture('square', 'imgui_ros', 'square.png')
             self.add_texture('diffract', 'image_manip', 'diffract1.png')
@@ -157,6 +158,7 @@ class Demo(Node):
         shape.header.frame_id = 'bar2'
         shape.texture = 'gradient'
         shape.shininess_texture = 'default'
+        shape.emission_texture = 'default'
 
         for j in range(segs_lat_stop):
             fr_y = float(j) / float(segs_lat - 1)
@@ -237,6 +239,7 @@ class Demo(Node):
         shape.header.frame_id = 'bar2'
         shape.texture = 'diffract'
         shape.shininess_texture = 'diffract'
+        shape.emission_texture = 'default'
 
         repeat = 4.0
         for i in range(segs):
@@ -330,6 +333,7 @@ class Demo(Node):
         shape.header.frame_id = 'map'
         shape.texture = 'square'
         shape.shininess_texture = 'square'
+        shape.emission_texture = 'default'
         # shape.header.stamp = self.now()
 
         texture_sc = 64.0
@@ -405,6 +409,7 @@ class Demo(Node):
             shape.add = True
             shape.texture = 'gradient'
             shape.shininess_texture = 'gradient'
+            shape.emission_texture = 'default'
             shape.header.frame_id = 'sky'
             req.shapes.append(shape)
         if True:
@@ -432,6 +437,7 @@ class Demo(Node):
             shape.add = True
             shape.texture = 'diffract'  # 'camera1'
             shape.shininess_texture = 'gradient_radial'
+            shape.emission_texture = 'square'
             shape.header.frame_id = 'bar2'
             req.shapes.append(shape)
 

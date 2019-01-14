@@ -13,6 +13,7 @@ const int MAX_PROJECTORS = 4;
 uniform vec3 eye_pos;
 uniform sampler2D Texture;
 uniform sampler2D shininess_texture;
+uniform sampler2D emission_texture;
 uniform int num_projectors;
 uniform sampler2D ProjectedTexture[MAX_PROJECTORS];
 uniform sampler2D projector_shadow_map[MAX_PROJECTORS];
@@ -214,6 +215,9 @@ void main()
    Out_Color.rgb = Out_Color.rgb * (ambient + total_luminosity) +
        total_specular + total_luminosity * 0.01;
 
+   Out_Color.rgb = clamp(Out_Color.rgb, 0.0, 1.0);
+
+   Out_Color.rgb += (FraColor * texture(emission_texture, FraUV.st)).rgb;
    // TEMP debug
    // Out_Color.rgb = texture(ProjectedTexture[0], uv[0].st).rgb;
    // Out_Color.rgb = vec3(1.0, 1.0, 1.0) * shininess;
