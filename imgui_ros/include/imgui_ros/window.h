@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMGUI_ROS2_WINDOW_H
-#define IMGUI_ROS2_WINDOW_H
+#ifndef IMGUI_ROS_WINDOW_H
+#define IMGUI_ROS_WINDOW_H
 
 #include <imgui.h>
 #include <map>
@@ -62,22 +62,42 @@ struct Window {
       name_(name) {}
   ~Window() {}
   virtual void draw();
-  void add(std::shared_ptr<Widget> widget);
-  void remove(const std::string& name);
+  void add(std::shared_ptr<Widget> widget, const std::string& tab_name);
+  void remove(const std::string& name, const std::string& tab_name);
   virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now) {
-    for (auto& name : widget_order_) {
-      if (widgets_[name]) {
-        widgets_[name]->addTF(tfm, now);
-      }
+    // for (auto& name : tab_order_) {
+    for (auto tab_pair : tab_groups_) {
+      tab_pair.second->addTF(tfm, now);
     }
   }
 protected:
   // TODO(lucasw) this sorts into alphabetical order, but want to preserve insertion order
-  std::map<std::string, std::shared_ptr<Widget> > widgets_;
-  std::vector<std::string> widget_order_;
+  struct TabGroup {
+    TabGroup(const std::string& name) : name_(name)
+    {
+    }
+    std::string name_ = "";
+    std::map<std::string, std::shared_ptr<Widget> > widgets_;
+    std::vector<std::string> widget_order_;
+
+    virtual void draw();
+    void add(std::shared_ptr<Widget> widget);
+    void remove(const std::string& name);
+
+    void addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now) {
+      for (auto& name : widget_order_) {
+        if (widgets_[name]) {
+          widgets_[name]->addTF(tfm, now);
+        }
+      }
+    }  // addTF
+  };  // TabGroup
+
+  std::map<std::string, std::shared_ptr<TabGroup> > tab_groups_;
+
   bool dirty_ = true;
   std::string name_ = "";
   std::mutex mutex_;
 };
 
-#endif  // IMGUI_ROS2_IMAGE_H
+#endif  // IMGUI_ROS_WINDOW_H

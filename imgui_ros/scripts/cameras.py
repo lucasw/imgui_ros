@@ -81,11 +81,13 @@ class Cameras(Node):
 
         # TODO(lucasw) what if this window doesn't exist yet?
         req = AddWindow.Request()
-        req.name = "tf control"
+        req.name = "misc controls"
+        tab_name = 'tf'
 
         tf_widget = TfWidget()
         tf_widget.name = "cube camera tf"
         tf_widget.window = req.name
+        tf_widget.tab_name = tab_name
         tf_widget.min = -2.0
         tf_widget.max = 2.0
         ts = TransformStamped()
@@ -110,6 +112,7 @@ class Cameras(Node):
 
         tf_widget = TfWidget()
         tf_widget.name = "cube camera lens pub"
+        tf_widget.tab_name = tab_name
         tf_widget.window = req.name
         tf_widget.min = -2.0
         tf_widget.max = 2.0

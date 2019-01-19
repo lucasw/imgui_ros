@@ -242,7 +242,7 @@ namespace imgui_ros {
       window = std::make_shared<Window>(req->tf.window);
       windows_[req->tf.window] = window;
     }
-    window->add(pub);
+    window->add(pub, req->tf.tab_name);
     res->success = true;
     res->message += "added tf pub " + req->tf.name + " to " + req->tf.window;
   }
@@ -261,8 +261,9 @@ namespace imgui_ros {
     }
     auto window = std::make_shared<Window>(req->name);
     for (size_t i = 0; i < req->widgets.size(); ++i) {
+      const auto tab_name = req->widgets[i].tab_name;
       if (req->widgets[i].remove) {
-        window->remove(req->widgets[i].name);
+        window->remove(req->widgets[i].name, tab_name);
         continue;
       }
       std::string message;
@@ -272,7 +273,7 @@ namespace imgui_ros {
       res->success = res->success && rv && widget;
       res->message += ", " + message;
       if (rv && widget) {
-        window->add(widget);
+        window->add(widget, tab_name);
       }
     }
     windows_[req->name] = window;

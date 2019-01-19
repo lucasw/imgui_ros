@@ -64,19 +64,18 @@ class Demo(Node):
 
     def add_images(self):
         req = AddWindow.Request()
-        req.name = "input image"
+        req.name = "misc controls"
+        tab_name = 'images'
         widget = Widget()
         widget.name = "roto image"
+        widget.tab_name = tab_name
         widget.topic = "/image_raw"
         widget.type = Widget.IMAGE
         req.widgets.append(widget)
-        self.future = self.cli.call_async(req)
-        self.wait_for_response()
 
-        req = AddWindow.Request()
-        req.name = "rotated image"
         widget = Widget()
         widget.name = "image_out viewer"
+        widget.tab_name = tab_name
         widget.topic = "/image_out"
         widget.type = Widget.IMAGE
         req.widgets.append(widget)
@@ -85,10 +84,12 @@ class Demo(Node):
 
     def add_roto_controls(self):
         req = AddWindow.Request()
-        req.name = "rotozoom controls"
+        req.name = "misc controls"
+        tab_name = 'roto'
 
         widget = Widget()
         widget.name = "frame rate"
+        widget.tab_name = tab_name
         widget.topic = "rotozoom"
         widget.items.append('frame_rate')
         widget.type = Widget.PARAM
@@ -101,6 +102,7 @@ class Demo(Node):
         for ctrl in ["psi", "theta", "phi"]:
             widget = Widget()
             widget.name = ctrl + " pub"
+            widget.tab_name = tab_name
             widget.topic = ctrl
             widget.type = Widget.PUB
             widget.sub_type = Widget.FLOAT32
@@ -111,6 +113,7 @@ class Demo(Node):
 
             widget = Widget()
             widget.name = ctrl + " sub"
+            widget.tab_name = tab_name
             widget.topic = ctrl
             widget.type = Widget.SUB
             widget.sub_type = Widget.FLOAT32
@@ -118,6 +121,7 @@ class Demo(Node):
 
             widget = Widget()
             widget.name = ctrl + " plot"
+            widget.tab_name = tab_name
             widget.topic = ctrl
             widget.type = Widget.PLOT
             widget.sub_type = Widget.FLOAT32
@@ -125,6 +129,7 @@ class Demo(Node):
 
         widget = Widget()
         widget.name = "z pub"
+        widget.tab_name = tab_name
         widget.topic = "z"
         widget.type = Widget.PUB
         widget.sub_type = Widget.FLOAT32
@@ -135,6 +140,7 @@ class Demo(Node):
 
         widget = Widget()
         widget.name = "z_scale pub"
+        widget.tab_name = tab_name
         widget.topic = "z_scale"
         widget.type = Widget.PUB
         widget.sub_type = Widget.FLOAT32
@@ -147,6 +153,7 @@ class Demo(Node):
             widget_type = Widget.INT32
             widget = Widget()
             widget.name = ctrl + " pub"
+            widget.tab_name = tab_name
             widget.topic = ctrl
             widget.type = Widget.PUB
             widget.sub_type = widget_type
@@ -158,6 +165,7 @@ class Demo(Node):
 
             widget = Widget()
             widget.name = ctrl + " sub"
+            widget.tab_name = tab_name
             widget.topic = ctrl
             widget.type = Widget.SUB
             widget.sub_type = widget_type
@@ -165,6 +173,7 @@ class Demo(Node):
 
             widget = Widget()
             widget.name = ctrl + " plot"
+            widget.tab_name = tab_name
             widget.topic = ctrl
             widget.type = Widget.PLOT
             widget.sub_type = widget_type
@@ -177,9 +186,11 @@ class Demo(Node):
         req = AddWindow.Request()
         req.name = 'misc controls'
 
+        tab_name = 'misc'
         # point cloud2
         widget = Widget()
         widget.name = 'point cloud sub'
+        widget.tab_name = tab_name
         widget.topic = '/point_cloud'
         widget.type = Widget.SUB
         widget.sub_type = Widget.POINTCLOUD
@@ -190,6 +201,7 @@ class Demo(Node):
         string_topic = "string"
         widget = Widget()
         widget.name = "string pub"
+        widget.tab_name = tab_name
         widget.topic = string_topic
         widget.type = Widget.PUB
         widget.sub_type = Widget.STRING
@@ -198,6 +210,7 @@ class Demo(Node):
 
         widget = Widget()
         widget.name = "string menu pub"
+        widget.tab_name = tab_name
         widget.topic = string_topic
         widget.type = Widget.PUB
         widget.sub_type = Widget.STRING
@@ -208,6 +221,8 @@ class Demo(Node):
 
         widget = Widget()
         widget.name = "string sub"
+        widget.tab_name = tab_name
+        widget.topic = string_topic
         widget.topic = string_topic
         widget.type = Widget.SUB
         widget.sub_type = Widget.STRING
@@ -221,8 +236,11 @@ class Demo(Node):
         req = AddWindow.Request()
         req.name = "tf viz"
 
+        tab_name = 'viz2d'
+
         widget = Widget()
         widget.name = "viz2d"
+        widget.tab_name = tab_name
         widget.type = Widget.SUB
         widget.sub_type = Widget.VIZ2D
         widget.topic = 'marker'
@@ -239,10 +257,12 @@ class Demo(Node):
 
         # TF control widgets
         req = AddWindow.Request()
-        req.name = "tf control"
+        req.name = "misc controls"
+        tab_name = 'tf'
 
         widget = Widget()
         widget.name = "map foo tf"
+        widget.tab_name = tab_name
         widget.type = Widget.SUB
         widget.sub_type = Widget.TF
         widget.items.append("map")
@@ -251,6 +271,7 @@ class Demo(Node):
 
         widget = Widget()
         widget.name = "camera1 pub tf"
+        widget.tab_name = tab_name
         widget.type = Widget.PUB
         widget.sub_type = Widget.TF
         widget.min = -4.0
@@ -261,6 +282,7 @@ class Demo(Node):
 
         widget = Widget()
         widget.name = "camera2 pub tf"
+        widget.tab_name = tab_name
         widget.type = Widget.PUB
         widget.sub_type = Widget.TF
         widget.min = -4.0
@@ -272,6 +294,7 @@ class Demo(Node):
         if True:  # False:
             widget = Widget()
             widget.name = "map pub tf"
+            widget.tab_name = tab_name
             widget.remove = True
             widget.type = Widget.PUB
             widget.sub_type = Widget.TF
@@ -288,6 +311,7 @@ class Demo(Node):
 
         tf_widget = TfWidget()
         tf_widget.name = "floor tf"
+        tf_widget.tab_name = tab_name
         tf_widget.window = req.name
         tf_widget.min = -3.0
         tf_widget.max = 3.0
@@ -313,6 +337,7 @@ class Demo(Node):
 
         tf_widget = TfWidget()
         tf_widget.name = "sky tf"
+        tf_widget.tab_name = tab_name
         tf_widget.window = req.name
         tf_widget.min = -3.0
         tf_widget.max = 3.0
@@ -338,6 +363,7 @@ class Demo(Node):
 
         tf_widget = TfWidget()
         tf_widget.name = "projector1 pub"
+        tf_widget.tab_name = tab_name
         tf_widget.window = req.name
         tf_widget.min = -3.0
         tf_widget.max = 3.0
@@ -363,6 +389,7 @@ class Demo(Node):
 
         tf_widget = TfWidget()
         tf_widget.name = "map pub tf 2"
+        tf_widget.tab_name = tab_name
         tf_widget.window = req.name
         tf_widget.min = -3.0
         tf_widget.max = 3.0

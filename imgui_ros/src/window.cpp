@@ -38,7 +38,26 @@
 
 void Window::draw() {
   ImGui::Begin(name_.c_str());
-  // for (auto& widget : widgets_) {
+
+  ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+  if (ImGui::BeginTabBar(name_.c_str(), tab_bar_flags)) {
+    for (auto tab_pair : tab_groups_) {
+      const auto tab_name = tab_pair.first;
+      const auto tab_group = tab_pair.second;
+      std::cout << "'" << name_ << "' " << tab_name << "\n";
+      if (tab_group) {
+        if (ImGui::BeginTabItem(tab_name.c_str())) {
+          tab_group->draw();
+          ImGui::EndTabItem();
+        }
+      }
+    }
+    ImGui::EndTabBar();
+  }
+  ImGui::End();
+}
+
+void Window::TabGroup::draw() {
   for (auto& name : widget_order_) {
     if (widgets_[name]) {
       // TODO(lucasw) make collapsing header optional
@@ -48,19 +67,36 @@ void Window::draw() {
       }
     }
   }
-  ImGui::End();
+}
+
+void Window::add(std::shared_ptr<Widget> widget, const std::string& tab_name) {
+  if (tab_groups_.count(tab_name) < 1) {
+    std::cout << name_ << " new tab group " << tab_name << " "
+        << tab_groups_.size() << "\n";
+    tab_groups_[tab_name] = std::make_shared<Window::TabGroup>(tab_name);
+  }
+  tab_groups_[tab_name]->add(widget);
+}
+
+void Window::remove(const std::string& name, const std::string& tab_name) {
+  if (tab_groups_.count(tab_name) > 0) {
+    std::cout << name_ << "' removing tab group '" << tab_name << "' widget '"
+        << name << "'\n";
+    tab_groups_[tab_name]->remove(name);
+  }
+  // TODO(lucasw) if no widgets in current tab name, remove it
 }
 
 // TODO(lucasw) add ability to insert earlier into list, or if already exists
 // then keep current position, currently only adds to end
-void Window::add(std::shared_ptr<Widget> widget) {
+void Window::TabGroup::add(std::shared_ptr<Widget> widget) {
   const std::string name = widget->name_;
   remove(name);
   widgets_[name] = widget;
   widget_order_.push_back(name);
 }
 
-void Window::remove(const std::string& name) {
+void Window::TabGroup::remove(const std::string& name) {
   if (widgets_.count(name) > 0) {
     widget_order_.erase(std::remove(widget_order_.begin(),
         widget_order_.end(), name),
