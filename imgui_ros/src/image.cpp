@@ -151,6 +151,8 @@ using std::placeholders::_1;
       wrap_t_ind_ = 0;
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_modes_[wrap_t_ind_]);
 
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);  // (image->step & 3) ? 1 : 4);
+
     // Copy the data to the graphics memory.
     // TODO(lucasw) actually look at the image encoding type and
     // have a big switch statement here
