@@ -60,7 +60,7 @@ protected:
 struct Window {
   Window(const std::string name) :
       name_(name) {}
-  ~Window() {}
+  ~Window();
   virtual void draw();
   void add(std::shared_ptr<Widget> widget, const std::string& tab_name);
   void remove(const std::string& name, const std::string& tab_name);

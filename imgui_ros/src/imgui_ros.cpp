@@ -259,7 +259,14 @@ namespace imgui_ros {
       }
       return;
     }
-    auto window = std::make_shared<Window>(req->name);
+
+    std::shared_ptr<Window> window;
+    if (windows_.count(req->name) > 0) {
+      window = windows_[req->name];
+    } else {
+      window = std::make_shared<Window>(req->name);
+    }
+
     for (size_t i = 0; i < req->widgets.size(); ++i) {
       const auto tab_name = req->widgets[i].tab_name;
       if (req->widgets[i].remove) {
