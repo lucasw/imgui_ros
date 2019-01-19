@@ -783,6 +783,90 @@ void Viz3D::update(const rclcpp::Time& stamp)
   }
 }
 
+void Viz3D::drawMain()
+{
+  const int display_size_x = ImGui::GetIO().DisplaySize.x;
+  const int display_size_y = ImGui::GetIO().DisplaySize.y;
+  const int fb_width = display_size_x * ImGui::GetIO().DisplayFramebufferScale.x;
+  const int fb_height = display_size_y * ImGui::GetIO().DisplayFramebufferScale.y;
+  ImGui::Text("size %d x %d, %d x %d",
+      display_size_x, display_size_y,
+      fb_width, fb_height);
+
+  ImGui::ColorEdit4("clear color", (float*)&clear_color_);
+  ImGui::ColorEdit3("ambient color", (float*)&ambient_[0]);
+  ImGui::Checkbox("multisample", &multisample_);
+  ImGui::Combo("num_samples", &num_samples_,
+    "0 off\0 1 \0 2 \0 3 \0 4 \0 5 \0 6 \0 7 \0 8 \0");
+
+  ImGui::Text("position %0.2lf %0.2lf %0.2lf",
+      transform_.getOrigin().x(),
+      transform_.getOrigin().y(),
+      transform_.getOrigin().z());
+  ImGui::Text("velocity in view %0.2lf %0.2lf %0.2lf",
+      velocity_.x(), velocity_.y(), velocity_.z());
+  // ImGui::Text("velocity in world %0.2lf %0.2lf %0.2lf",
+  //     vel_in_world.x(), vel_in_world.y(), vel_in_world.z());
+
+  {
+    double min = 0.0001;
+    double max = far_;
+    ImGui::SliderScalar("near clip", ImGuiDataType_Double,
+          &near_, &min, &max, "%lf", 3);
+    min = near_;
+    max = 100.0;
+    ImGui::SliderScalar("far clip", ImGuiDataType_Double,
+          &far_, &min, &max, "%lf", 3);
+  }
+
+  {
+    double min = 1.0;
+    double max = 20.0;
+    ImGui::SliderScalar("line width", ImGuiDataType_Double,
+          &line_width_, &min, &max, "%lf", 2);
+  }
+
+  {
+    double min = 1.0;
+    double max = 20.0;
+    ImGui::SliderScalar("point size", ImGuiDataType_Double,
+          &point_size_, &min, &max, "%lf", 2);
+  }
+
+  {
+    double min = 0.0001;
+    double max = 0.1;
+    ImGui::SliderScalar("move scale", ImGuiDataType_Double,
+          &move_scale_, &min, &max, "%lf");
+  }
+
+  {
+    double min = 5.0;
+    double max = 500.0;
+    ImGui::SliderScalar("rotate scale", ImGuiDataType_Double,
+          &rotate_scale_, &min, &max, "%lf");
+  }
+
+  // Maybe aovy should be a ros topic,
+  // and the slider a regular Pub widget.
+  double min = 1.0;
+  double max = 170.0;
+  ImGui::SliderScalar("aov y##viz3d", ImGuiDataType_Double,
+      &aov_y_, &min, &max, "%lf", 2);
+
+  min = 0.0;
+  ImGui::SliderScalar("aov x##viz3d", ImGuiDataType_Double,
+      &aov_x_, &min, &max, "%lf", 2);
+
+  {
+    std::stringstream ss;
+    auto translation = transform_.getOrigin();
+    ss << translation.x()  << " " << translation.y() << " " << translation.z() << ", "
+        << pitch_;
+    ImGui::Text("%s", ss.str().c_str());
+  }
+}
+
 void Viz3D::draw()
 {
   ImGui::Begin("viz3d");
@@ -790,148 +874,78 @@ void Viz3D::draw()
   // TODO(lucasw) show render time, update time, draw time
   // show current resolution
 
-  // ImGuiIO& io = ImGui::GetIO();
-  if (ImGui::CollapsingHeader("Viewer")) {
-
-    const int display_size_x = ImGui::GetIO().DisplaySize.x;
-    const int display_size_y = ImGui::GetIO().DisplaySize.y;
-    const int fb_width = display_size_x * ImGui::GetIO().DisplayFramebufferScale.x;
-    const int fb_height = display_size_y * ImGui::GetIO().DisplayFramebufferScale.y;
-    ImGui::Text("size %d x %d, %d x %d",
-        display_size_x, display_size_y,
-        fb_width, fb_height);
-
-    ImGui::ColorEdit4("clear color", (float*)&clear_color_);
-    ImGui::ColorEdit3("ambient color", (float*)&ambient_[0]);
-    ImGui::Checkbox("multisample", &multisample_);
-    ImGui::Combo("num_samples", &num_samples_,
-      "0 off\0 1 \0 2 \0 3 \0 4 \0 5 \0 6 \0 7 \0 8 \0");
-
-    ImGui::Text("position %0.2lf %0.2lf %0.2lf",
-        transform_.getOrigin().x(),
-        transform_.getOrigin().y(),
-        transform_.getOrigin().z());
-    ImGui::Text("velocity in view %0.2lf %0.2lf %0.2lf",
-        velocity_.x(), velocity_.y(), velocity_.z());
-    // ImGui::Text("velocity in world %0.2lf %0.2lf %0.2lf",
-    //     vel_in_world.x(), vel_in_world.y(), vel_in_world.z());
-
-    {
-      double min = 0.0001;
-      double max = far_;
-      ImGui::SliderScalar("near clip", ImGuiDataType_Double,
-            &near_, &min, &max, "%lf", 3);
-      min = near_;
-      max = 100.0;
-      ImGui::SliderScalar("far clip", ImGuiDataType_Double,
-            &far_, &min, &max, "%lf", 3);
+  ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+  if (ImGui::BeginTabBar("Viz3D", tab_bar_flags))
+  {
+    // ImGuiIO& io = ImGui::GetIO();
+    if (ImGui::BeginTabItem("Main")) {
+      drawMain();
+      ImGui::EndTabItem();
     }
 
-    {
-      double min = 1.0;
-      double max = 20.0;
-      ImGui::SliderScalar("line width", ImGuiDataType_Double,
-            &line_width_, &min, &max, "%lf", 2);
-    }
-
-    {
-      double min = 1.0;
-      double max = 20.0;
-      ImGui::SliderScalar("point size", ImGuiDataType_Double,
-            &point_size_, &min, &max, "%lf", 2);
-    }
-
-    {
-      double min = 0.0001;
-      double max = 0.1;
-      ImGui::SliderScalar("move scale", ImGuiDataType_Double,
-            &move_scale_, &min, &max, "%lf");
-    }
-
-    {
-      double min = 5.0;
-      double max = 500.0;
-      ImGui::SliderScalar("rotate scale", ImGuiDataType_Double,
-            &rotate_scale_, &min, &max, "%lf");
-    }
-
-    // Maybe aovy should be a ros topic,
-    // and the slider a regular Pub widget.
-    double min = 1.0;
-    double max = 170.0;
-    ImGui::SliderScalar("aov y##viz3d", ImGuiDataType_Double,
-        &aov_y_, &min, &max, "%lf", 2);
-
-    min = 0.0;
-    ImGui::SliderScalar("aov x##viz3d", ImGuiDataType_Double,
-        &aov_x_, &min, &max, "%lf", 2);
-
-    {
-      std::stringstream ss;
-      auto translation = transform_.getOrigin();
-      ss << translation.x()  << " " << translation.y() << " " << translation.z() << ", "
-          << pitch_;
-      ImGui::Text("%s", ss.str().c_str());
-    }
-  }
-
-  const bool draw_cameras = ImGui::CollapsingHeader("Cameras");
-  if (draw_cameras) {
-    for (auto camera : cameras_) {
-      ImGui::Separator();
-      camera.second->draw();
-    }
-  }
-
-  const bool draw_cube_cameras = ImGui::CollapsingHeader("Cube Cameras");
-  if (draw_cube_cameras) {
-    for (auto cube_camera_pair : cube_cameras_) {
-      ImGui::Separator();
-      cube_camera_pair.second->draw();
-    }
-  }
-
-  std::vector<std::string> texture_names;
-  std::string texture_items = "";
-  const bool draw_textures = ImGui::CollapsingHeader("Textures");
-  for (auto texture_pair : textures_) {
-    // text status, only optionally display the actual image with checkbox
-    if (draw_textures) {
-      ImGui::Separator();
-      texture_pair.second->draw();
-    }
-    texture_names.push_back(texture_pair.first);
-    texture_items += texture_pair.first + '\0';
-  }
-  if (ImGui::CollapsingHeader("Projectors")) {
-    ImGui::Text("projectors %lu", projectors_.size());
-    for (auto projector_pair : projectors_) {
-      ImGui::Separator();
-      projector_pair.second->draw(texture_names, texture_items);
-    }
-  }
-  if (ImGui::CollapsingHeader("Surfaces")) {
-    for (auto shape_pair : shapes_) {
-      ImGui::Separator();
-      const auto shape = shape_pair.second;
-      try {
-        shape->draw(texture_names, texture_items);
-      } catch (std::logic_error& ex) {
-        // render_message_ << ex.what() << "\n";
+    if (ImGui::BeginTabItem("Cameras")) {
+      for (auto camera : cameras_) {
+        ImGui::Separator();
+        camera.second->draw();
       }
-    }
-  }
-  if (ImGui::CollapsingHeader("Shaders")) {
-    std::stringstream ss;
-    ss << "shaders " << shader_sets_.size();
-    ImGui::Text("%s", ss.str().c_str());
-    for (auto shaders_pair : shader_sets_) {
       ImGui::Separator();
-      shaders_pair.second->draw();
+      for (auto cube_camera_pair : cube_cameras_) {
+        ImGui::Separator();
+        cube_camera_pair.second->draw();
+      }
+      ImGui::EndTabItem();
     }
-  }
-  if (ImGui::CollapsingHeader("Debug")) {
-    ImGui::Text("%s", render_message_.str().c_str());
+
+    std::vector<std::string> texture_names;
+    std::string texture_items = "";
+    for (auto texture_pair : textures_) {
+      texture_names.push_back(texture_pair.first);
+      texture_items += texture_pair.first + '\0';
+    }
+
+    if (ImGui::BeginTabItem("Textures")) {
+      for (auto texture_pair : textures_) {
+        ImGui::Separator();
+        texture_pair.second->draw();
+      }
+      ImGui::EndTabItem();
+    }
+
+    if (ImGui::BeginTabItem("Projectors")) {
+      ImGui::Text("projectors %lu", projectors_.size());
+      for (auto projector_pair : projectors_) {
+        ImGui::Separator();
+        projector_pair.second->draw(texture_names, texture_items);
+      }
+     ImGui::EndTabItem();
+    }
+    if (ImGui::BeginTabItem("Surfaces")) {
+      for (auto shape_pair : shapes_) {
+        ImGui::Separator();
+        const auto shape = shape_pair.second;
+        try {
+          shape->draw(texture_names, texture_items);
+        } catch (std::logic_error& ex) {
+          // render_message_ << ex.what() << "\n";
+        }
+      }
+      ImGui::EndTabItem();
+    }
+    if (ImGui::BeginTabItem("Shaders")) {
+      std::stringstream ss;
+      ss << "shaders " << shader_sets_.size();
+      ImGui::Text("%s", ss.str().c_str());
+      for (auto shaders_pair : shader_sets_) {
+        ImGui::Separator();
+        shaders_pair.second->draw();
+      }
+      ImGui::EndTabItem();
+    }
+    if (ImGui::BeginTabItem("Debug")) {
+      ImGui::Text("%s", render_message_.str().c_str());
+      ImGui::EndTabItem();
+    }
+    ImGui::EndTabBar();
   }
   ImGui::End();
 }

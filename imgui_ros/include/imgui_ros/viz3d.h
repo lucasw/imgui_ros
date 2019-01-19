@@ -128,6 +128,8 @@ struct Viz3D : public Window {
   }
 
 protected:
+  virtual void drawMain();
+
   // TODO(lucasw) maybe this should be a std::map of std::vectors
   std::map<std::string, int > texture_unit_;
   int projector_texture_unit_[MAX_PROJECTORS];
