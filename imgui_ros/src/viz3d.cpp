@@ -346,6 +346,7 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
   try {
     auto render_texture = std::make_shared<Camera>(req->camera.name,
         req->camera.header.frame_id,
+        req->camera.header_frame_id,
         req->camera.aov_y,
         req->camera.aov_x,
         node);
@@ -396,6 +397,7 @@ void Viz3D::addCubeCamera(const std::shared_ptr<imgui_ros::srv::AddCubeCamera::R
     auto cube_camera = std::make_shared<CubeCamera>(
         req->camera.name,
         req->camera.header.frame_id,
+        req->camera.header_frame_id,
         req->camera.aov_y,
         req->camera.aov_x,
         node);
@@ -694,7 +696,7 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
   return true;
 }
 
-void Viz3D::update()
+void Viz3D::update(const rclcpp::Time& stamp)
 {
   double x_move = 0.0;
   double y_move = 0.0;
@@ -773,7 +775,8 @@ void Viz3D::update()
   for (auto camera : cameras_) {
     // TODO(lucasw) are all these textures also in the texture list below?
     camera.second->image_->updateTexture();
-    camera.second->image_->publish();
+    camera.second->image_->publish(stamp);
+    camera.second->publishCameraInfo(stamp);
   }
   for (auto texture_pair : textures_) {
     texture_pair.second->updateTexture();

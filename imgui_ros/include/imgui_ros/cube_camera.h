@@ -86,6 +86,7 @@ struct CubeFace
 struct CubeCamera : public Camera {
   CubeCamera(const std::string& name,
       const std::string& frame_id,
+      const std::string& header_frame_id,
       const float aox_y, const float aov_x,
       std::shared_ptr<rclcpp::Node> node);
   ~CubeCamera();

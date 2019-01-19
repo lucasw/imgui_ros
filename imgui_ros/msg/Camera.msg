@@ -1,4 +1,7 @@
+# this frame id in header is in gl frame, used internally for tf lookups
 std_msgs/Header header
+# the optical frame reported on published messages
+string header_frame_id
 # unique name, will replace any Camera received
 string name
 # needs to be unique out of all textures for cameras or shapes

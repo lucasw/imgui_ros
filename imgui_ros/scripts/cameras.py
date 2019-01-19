@@ -141,6 +141,7 @@ class Cameras(Node):
         if True:
             req = AddCamera.Request()
             req.camera.header.frame_id = 'camera1'
+            # req.camera.header_frame_id = 'camera1'
             req.camera.name = 'camera1'
             req.camera.texture_name = 'camera1'
             req.camera.topic = 'camera1'

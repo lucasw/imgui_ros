@@ -44,16 +44,21 @@ using std::placeholders::_2;
 // TODO(lucasw) 'Camera' -> 'TextureCamera'
 Camera::Camera(const std::string name,
     const std::string frame_id,
+    const std::string header_frame_id,
     const double aov_y,
     const double aov_x,
     std::shared_ptr<rclcpp::Node> node) :
     name_(name),
     frame_id_(frame_id),
+    header_frame_id_(header_frame_id),
     aov_y_(aov_y),
     aov_x_(aov_x)
 {
-  RCLCPP_INFO(node->get_logger(), "creating camera %s, aov y %0.1f, x %0.1f",
-      name.c_str(), aov_y, aov_x);
+  if (header_frame_id_ == "") {
+    header_frame_id_ = frame_id_;
+  }
+  RCLCPP_INFO(node->get_logger(), "creating camera %s, frame %s, aov y %0.1f, x %0.1f",
+      name.c_str(), frame_id_.c_str(), aov_y, aov_x);
 }
 
 void Camera::init(const size_t width, const size_t height,
@@ -70,7 +75,9 @@ void Camera::init(const size_t width, const size_t height,
     image_->height_ = height;
 
     image_->image_ = std::make_shared<sensor_msgs::msg::Image>();
-    image_->image_->header.frame_id = frame_id_;
+    // Need ability to report a different frame than the sim is using internally-
+    // this allows for calibration error simulation
+    image_->image_->header.frame_id = header_frame_id_;
     image_->image_->width = width;
     image_->image_->height = height;
     image_->image_->encoding = "bgr8";
@@ -134,12 +141,47 @@ void Camera::init(const size_t width, const size_t height,
     std::cerr << msg << std::endl;
     throw std::runtime_error(msg);
   }
+
+  camera_info_pub_ = node->create_publisher<sensor_msgs::msg::CameraInfo>(topic + "/camera_info");
 }
 
 Camera::~Camera()
 {
   glDeleteRenderbuffers(1, &depth_buffer_);
   glDeleteFramebuffers(1, &frame_buffer_);
+}
+
+void Camera::publishCameraInfo(const rclcpp::Time& stamp)
+{
+  sensor_msgs::msg::CameraInfo camera_info_msg;
+  camera_info_msg.header.frame_id = header_frame_id_;
+  camera_info_msg.header.stamp = stamp;
+
+  const int width = image_->width_;
+  const int height = image_->height_;
+  camera_info_msg.width = width;
+  camera_info_msg.height = height;
+  camera_info_msg.distortion_model = "plumb_bob";
+
+  // TODO(lucasw) later provide parameters for this
+  float aov_x = aov_x_;
+  if (aov_x == 0.0)
+    aov_x = aov_y_;
+  const double fx = width * 0.5 / tan(aov_x * (M_PI / 180.0f) / 2.0);
+  const double fy = height * 0.5 / tan(aov_y_ * (M_PI / 180.0f) / 2.0);
+  camera_info_msg.k[0] = fx;
+  camera_info_msg.k[2] = width * 0.5;
+  camera_info_msg.k[4] = fy;
+  camera_info_msg.k[5] = height * 0.5;
+  camera_info_msg.k[8] = 1.0;
+  camera_info_msg.r = {1.0, 0.0, 0.0,
+                         0.0, 1.0, 0.0,
+                         0.0, 0.0, 1.0};
+  camera_info_msg.p = {fx, 0.0, width * 0.5, 0.0,
+                         0.0, fy, height * 0.5, 0.0,
+                         0.0, 0.0, 1.0, 0.0};
+
+  camera_info_pub_->publish(camera_info_msg);
 }
 
 void Camera::draw()

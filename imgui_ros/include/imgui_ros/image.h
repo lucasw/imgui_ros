@@ -70,7 +70,7 @@ struct RosImage : public GlImage {
   // TODO(lucasw) factor out common code
   virtual void draw();
 
-  virtual void publish();
+  virtual void publish(const rclcpp::Time& stamp);
 
   sensor_msgs::msg::Image::SharedPtr image_;
 

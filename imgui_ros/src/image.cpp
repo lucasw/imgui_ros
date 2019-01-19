@@ -197,7 +197,7 @@ using std::placeholders::_1;
     return true;
   }
 
-  void RosImage::publish() {
+  void RosImage::publish(const rclcpp::Time& stamp) {
     // std::cout << name_ << " " << pub_ << " " << image_ << " " <<  texture_id_ << "\n";
     if (!pub_) {
       return;
@@ -229,12 +229,7 @@ using std::placeholders::_1;
     }
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    {
-      auto node = node_.lock();
-      if (node) {
-        image_->header.stamp = node->now();
-      }
-    }
+    image_->header.stamp = stamp;
     pub_->publish(image_);
   }
 

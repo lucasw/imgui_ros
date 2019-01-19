@@ -565,6 +565,12 @@ namespace imgui_ros {
             rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER,
             widget.min, widget.max,
             shared_from_this()));
+      } else if ((widget.sub_type == msg::Widget::STRING)) {
+        param.reset(new Param(widget.name,
+            node_name, parameter_name,
+            rcl_interfaces::msg::ParameterType::PARAMETER_STRING,
+            widget.min, widget.max,
+            shared_from_this()));
       } else {
         std::stringstream ss;
         ss << widget.name << " " << node_name << " " <<  parameter_name
@@ -591,6 +597,9 @@ namespace imgui_ros {
   }
 
   void ImguiRos::update() {
+    // TODO(lucasw) this should be the stamp at which most of the tf frames were derived from?
+    const auto stamp = now();
+
     if (!init_) {
       glInit();
 #if 0
@@ -634,7 +643,7 @@ namespace imgui_ros {
     ImGui::NewFrame();
 
     {
-      viz3d->update();
+      viz3d->update(stamp);
 
       ImGui::Begin("stats"); // Create a window called "stats"
                              // and append into it.
@@ -707,10 +716,9 @@ namespace imgui_ros {
 
     // update all tfs
     tf2_msgs::msg::TFMessage tfs;
-    rclcpp::Time cur = now();
     for (auto& window : windows_) {
       if (window.second) {
-        window.second->addTF(tfs, cur);
+        window.second->addTF(tfs, stamp);
       }
     }
     if (tfs.transforms.size() > 0) {

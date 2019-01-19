@@ -56,9 +56,10 @@ void drawGrid(cv::Mat& image, const size_t spacing=32)
 // TODO(lucasw) 'CubeCamera' -> 'TextureCubeCamera'
 CubeCamera::CubeCamera(const std::string& name,
     const std::string& frame_id,
+    const std::string& header_frame_id,
     const float aov_y, const float aov_x,
     std::shared_ptr<rclcpp::Node> node) :
-    Camera(name, frame_id, aov_y, aov_x, node)
+    Camera(name, frame_id, header_frame_id, aov_y, aov_x, node)
 {
 }
 
