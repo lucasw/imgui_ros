@@ -74,6 +74,7 @@ include_directories(
 add_executable(imgui_ros_node
   src/camera.cpp
   src/cube_camera.cpp
+  src/graph.cpp
   src/imgui_ros.cpp
   src/image.cpp
   src/param.cpp
@@ -163,6 +164,7 @@ install(PROGRAMS
   scripts/depth_fragment.glsl
   scripts/depth_vertex.glsl
   scripts/fragment.glsl
+  scripts/graph.py
   scripts/pub_shape.py
   scripts/vertex.glsl
   DESTINATION lib/${PROJECT_NAME})

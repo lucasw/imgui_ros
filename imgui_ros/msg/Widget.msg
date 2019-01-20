@@ -3,6 +3,7 @@ uint8 PUB=1
 uint8 SUB=2
 uint8 PLOT=3
 uint8 PARAM=4
+uint8 GRAPH=5
 # pub sub types
 uint8 BOOL=0
 uint8 FLOAT32=1

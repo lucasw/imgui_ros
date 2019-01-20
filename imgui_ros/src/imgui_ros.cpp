@@ -39,6 +39,7 @@
 #include <imgui_ros/image.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/imgui_ros.h>
+#include <imgui_ros/graph.h>
 #include <imgui_ros/param.h>
 #include <imgui_ros/point_cloud.h>
 #include <imgui_ros/pub.h>
@@ -594,6 +595,10 @@ namespace imgui_ros {
       // TODO(lucasw) need to handle deletion
       param_widgets_[node_name][widget.name] = param;
       imgui_widget = param;
+    ///////////////////////////////////////////////////////////////////////////
+    } else if (widget.type == imgui_ros::msg::Widget::GRAPH) {
+      imgui_widget = std::make_shared<Graph>(widget.name, shared_from_this());
+      param_widgets_[node_name][widget.name] = imgui_widget;
     } else {
       std::stringstream ss;
       // TODO(lucasw) typeToString()
