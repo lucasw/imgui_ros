@@ -69,7 +69,7 @@ protected:
     ImVec4  color_;
     int     inputs_count_, outputs_count_;
 
-    const float NODE_SLOT_RADIUS = 4.0f;
+    const float NODE_SLOT_RADIUS = 8.0f;
     const ImVec2 NODE_WINDOW_PADDING = ImVec2(8.0f, 8.0f);
 
     Node(int id, const char* name, const ImVec2& pos, float value, const ImVec4& color, int inputs_count, int outputs_count)
@@ -95,9 +95,12 @@ protected:
           pos_.y + size_.y * ((float)slot_no + 1) / ((float)outputs_count_ + 1));
     }
 
+    virtual void update() {}
+
     virtual void draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
         int& node_hovered_in_list, int& node_hovered_in_scene,
         bool& open_context_menu);
+
   };
   struct NodeLink
   {
@@ -113,14 +116,22 @@ protected:
     }
   };
 
-  ImVector<Node> nodes_;
+  struct SignalGenerator : public Node
+  {
+    SignalGenerator(const int id, const char* name, const ImVec2& pos);
+    virtual void update();
+    virtual void draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
+        int& node_hovered_in_list, int& node_hovered_in_scene,
+        bool& open_context_menu);
+
+  };
+
+  std::vector<std::shared_ptr<Node> > nodes_;
   ImVector<NodeLink> links_;
   bool inited_ = false;
   ImVec2 scrolling_ = ImVec2(0.0f, 0.0f);
   bool show_grid_ = true;
   int node_selected_ = -1;
 };
-
-
 
 #endif  // IMGUI_ROS_GRAPH_H
