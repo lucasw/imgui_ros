@@ -610,7 +610,7 @@ namespace imgui_ros {
 
   void ImguiRos::update() {
     // TODO(lucasw) this should be the stamp at which most of the tf frames were derived from?
-    const auto stamp = now();
+    const rclcpp::Time stamp = now();
 
     if (!init_) {
       glInit();
@@ -655,7 +655,11 @@ namespace imgui_ros {
     ImGui::NewFrame();
 
     {
-      viz3d->update(stamp);
+      for (auto& window : windows_) {
+        if (window.second) {
+          window.second->update(stamp);
+        }
+      }
 
       ImGui::Begin("stats"); // Create a window called "stats"
                              // and append into it.

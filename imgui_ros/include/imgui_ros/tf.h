@@ -84,9 +84,11 @@ struct TfBroadcaster : public Pub {
       tfm.transforms.push_back(ts_);
     }
   }
+  #if 0
+  virtual void update(const rclcpp::Time& stamp);
+  #endif
   virtual void draw();
 protected:
-  void update();
   double min_;
   double max_;
   geometry_msgs::msg::TransformStamped ts_;
@@ -94,7 +96,6 @@ protected:
   // TODO(lucasw) may weak_ptr would work
   // std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   // rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr tf_pub_;
-  rclcpp::TimerBase::SharedPtr timer_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
 };
 

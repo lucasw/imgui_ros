@@ -43,6 +43,7 @@ struct Widget {
   Widget(const std::string name, const std::string topic) :
       name_(name), topic_(topic) {}
   ~Widget() {}
+  virtual void update(const rclcpp::Time& stamp) {(void)stamp;};
   virtual void draw() = 0;
   std::string name_ = "";
 
@@ -70,6 +71,15 @@ struct Window {
       tab_pair.second->addTF(tfm, now);
     }
   }
+
+  virtual void update(const rclcpp::Time& stamp)
+  {
+    stamp_ = stamp;
+
+    for (auto tab_pair : tab_groups_) {
+      tab_pair.second->update(stamp);
+    }
+  }
 protected:
   // TODO(lucasw) this sorts into alphabetical order, but want to preserve insertion order
   struct TabGroup {
@@ -80,6 +90,14 @@ protected:
     std::map<std::string, std::shared_ptr<Widget> > widgets_;
     std::vector<std::string> widget_order_;
 
+    virtual void update(const rclcpp::Time& stamp)
+    {
+      for (auto& name : widget_order_) {
+        if (widgets_[name]) {
+          widgets_[name]->update(stamp);
+        }
+      }
+    }
     virtual void draw();
     void add(std::shared_ptr<Widget> widget);
     void remove(const std::string& name);
@@ -95,6 +113,7 @@ protected:
 
   std::map<std::string, std::shared_ptr<TabGroup> > tab_groups_;
 
+  rclcpp::Time stamp_;
   bool dirty_ = true;
   std::string name_ = "";
   std::mutex mutex_;

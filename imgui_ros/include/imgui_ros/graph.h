@@ -53,6 +53,7 @@ struct Graph : public Widget {
       std::shared_ptr<rclcpp::Node> node);
   // ~Graph();
   virtual void draw();
+  virtual void update(const rclcpp::Time& stamp);
 protected:
   // unsigned type_ = imgui_ros::srv::AddWindow::Request::FLOAT32;
   std::weak_ptr<rclcpp::Node> node_;
@@ -95,12 +96,13 @@ protected:
           pos_.y + size_.y * ((float)slot_no + 1) / ((float)outputs_count_ + 1));
     }
 
-    virtual void update() {}
+    virtual void update(const double& seconds) { seconds_ = seconds;}
 
     virtual void draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
         int& node_hovered_in_list, int& node_hovered_in_scene,
         bool& open_context_menu);
 
+    double seconds_;
   };
   struct NodeLink
   {
@@ -119,14 +121,18 @@ protected:
   struct SignalGenerator : public Node
   {
     SignalGenerator(const int id, const char* name, const ImVec2& pos);
-    virtual void update();
+    virtual void update(const double& seconds);
     virtual void draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
         int& node_hovered_in_list, int& node_hovered_in_scene,
         bool& open_context_menu);
 
+    float amplitude_ = 1.0;
+    float frequency_ = 1.0;
   };
 
   std::vector<std::shared_ptr<Node> > nodes_;
+  rclcpp::Time start_, stamp_;
+
   ImVector<NodeLink> links_;
   bool inited_ = false;
   ImVec2 scrolling_ = ImVec2(0.0f, 0.0f);

@@ -145,13 +145,6 @@ TfBroadcaster::TfBroadcaster(const std::string name,
 
   ts_.transform.rotation.w = 1.0;
   default_ts_.transform.rotation.w = 1.0;
-
-  double update_rate = 30.0;
-  int period = 1000 / update_rate;
-  timer_ = node->create_wall_timer(std::chrono::milliseconds(period),
-      std::bind(&TfBroadcaster::update, this));
-  // tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node_);
-  // tf_pub_ = node->create_publisher<tf2_msgs::msg::TFMessage>("/tf");
 }
 
 TfBroadcaster::TfBroadcaster(
@@ -169,14 +162,12 @@ TfBroadcaster::TfBroadcaster(
       ts_.header.frame_id.c_str(),
       ts_.child_frame_id.c_str(),
       default_ts_.transform.translation.x);
-  double update_rate = 30.0;
-  int period = 1000 / update_rate;
-  timer_ = node->create_wall_timer(std::chrono::milliseconds(period),
-      std::bind(&TfBroadcaster::update, this));
 }
 
-void TfBroadcaster::update()
+#if 0
+void TfBroadcaster::update(const rclcpp::Time& stamp)
 {
+  (void)stamp;
   if (ts_.header.frame_id == "")
     return;
   if (ts_.child_frame_id == "")
@@ -193,6 +184,7 @@ void TfBroadcaster::update()
   // tfs.transforms.push_back(ts_);
   // tf_pub_->publish(tfs);
 }
+#endif
 
 bool inputText(const std::string name, std::string& text)
 {

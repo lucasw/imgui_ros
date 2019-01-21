@@ -38,6 +38,7 @@ Graph::Graph(const std::string name,
     Widget(name, topic),
     node_(node)
 {
+  start_ = node->now();
 }
 
 // Creating a node graph editor for ImGui
@@ -47,13 +48,26 @@ Graph::Graph(const std::string name,
 // v0.03: fixed grid offset issue, inverted sign of 'scrolling'
 // Animated gif: https://cloud.githubusercontent.com/assets/8225057/9472357/c0263c04-4b4c-11e5-9fdf-2cd4f33f6582.gif
 
+void Graph::update(const rclcpp::Time& stamp)
+{
+  // std::cout << "update " << stamp.nanoseconds() << "\n";
+  const double seconds = (stamp - start_).nanoseconds() / 1e9;
+  for (size_t node_idx = 0; node_idx < nodes_.size(); node_idx++)
+  {
+    nodes_[node_idx]->update(seconds);
+  }
+  stamp_ = stamp;
+}
 
 // Really dumb data structure provided for the example.
 // Note that we storing links are INDICES (not ID) to make example code shorter, obviously a bad idea for any general purpose code.
 void Graph::draw()
 {
+  // std::cout << "draw " << stamp_.nanoseconds() << "\n";
+  const double seconds = (stamp_ - start_).nanoseconds() / 1e9;
+
   ImGui::SetNextWindowSize(ImVec2(700, 600), ImGuiSetCond_FirstUseEver);
-  if (!ImGui::Begin("Example: Custom Node Graph", &opened_))
+  if (!ImGui::Begin("Node Graph", &opened_))
   {
     ImGui::End();
     return;
@@ -75,7 +89,7 @@ void Graph::draw()
   int node_hovered_in_list = -1;
   int node_hovered_in_scene = -1;
   ImGui::BeginChild("node_list", ImVec2(100, 0));
-  ImGui::Text("Nodes");
+  ImGui::Text("Nodes at time: %f", seconds);
   ImGui::Separator();
   for (int node_idx = 0; node_idx < static_cast<int>(nodes_.size()); node_idx++)
   {
@@ -214,11 +228,6 @@ void Graph::Node::draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected
   draw_list->ChannelsSetCurrent(1); // Foreground
   bool old_any_active = ImGui::IsAnyItemActive();
   ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
-  ImGui::BeginGroup(); // Lock horizontal position
-  ImGui::Text("%s", name_);
-  ImGui::SliderFloat("##value", &value_, 0.0f, 1.0f, "Alpha %.2f");
-  ImGui::ColorEdit3("##color", &color_.x);
-  ImGui::EndGroup();
 
   // Save the size of what we have emitted and whether any of the widgets are being used
   bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
@@ -263,15 +272,29 @@ Graph::SignalGenerator::SignalGenerator(const int id, const char* name,
 
 }
 
-void Graph::SignalGenerator::update()
+void Graph::SignalGenerator::update(const double& seconds)
 {
-  Node::update();
+  value_ = amplitude_ * sin(seconds * frequency_ * M_PI * 2.0);
+  Node::update(seconds);
 }
 
 void Graph::SignalGenerator::draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
         int& node_hovered_in_list, int& node_hovered_in_scene,
         bool& open_context_menu)
 {
+  ImVec2 node_rect_min = offset + pos_;
+
+  // Display node contents first
+  draw_list->ChannelsSetCurrent(1); // Foreground
+  ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
+  ImGui::BeginGroup(); // Lock horizontal position
+  ImGui::Text("%s", name_);
+  ImGui::Text("%06.2f", value_);
+  ImGui::SliderFloat("##frequency", &frequency_, 0.0f, 15.0f, "Freq %.2f", 3);
+  ImGui::SliderFloat("##amplitude", &amplitude_, 0.0f, 100.0f, "Amp %.2f", 3);
+  // ImGui::ColorEdit3("##color", &color_.x);
+  ImGui::EndGroup();
+
   Node::draw(draw_list, offset, node_selected, node_hovered_in_list,
       node_hovered_in_scene, open_context_menu);
 }
