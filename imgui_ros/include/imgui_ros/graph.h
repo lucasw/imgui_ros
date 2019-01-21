@@ -60,40 +60,64 @@ protected:
 
   bool opened_;
 
+  struct NodeLink;
+
   // Dummy
   struct Node
   {
     int     id_;
-    char    name_[32];
+    std::string name_;
     ImVec2  pos_, size_;
     float   value_ = 0.0;
     ImVec4  color_;
-    int     inputs_count_, outputs_count_;
 
     const float NODE_SLOT_RADIUS = 8.0f;
     const ImVec2 NODE_WINDOW_PADDING = ImVec2(8.0f, 8.0f);
 
-    Node(int id, const char* name, const ImVec2& pos, float value, const ImVec4& color, int inputs_count, int outputs_count)
+    Node(int id, const std::string& name, const ImVec2& pos, float value,
+        const ImVec4& color, int inputs_count, int outputs_count) :
+        name_(name)
     {
       id_ = id;
-      strncpy(name_, name, 31);
-      name_[31] = 0;
       pos_ = pos;
       value_ = value;
       color_ = color;
-      inputs_count_ = inputs_count;
-      outputs_count_ = outputs_count;
+      input_links_.resize(inputs_count);
+      output_links_.resize(outputs_count);
     }
 
-    ImVec2 GetInputSlotPos(int slot_no) const
+    ImVec2 getInputSlotPos(const std::string& link_name) const
+    {
+      int ind = -1;
+      for (size_t i = 0; i < input_links_.size(); ++i) {
+        if (link_name == input_links_[i]->name_) {
+          ind = i;
+          break;
+        }
+      }
+      return getInputSlotPos(ind);
+    }
+    ImVec2 getInputSlotPos(size_t ind) const
     {
       return ImVec2(pos_.x,
-          pos_.y + size_.y * ((float)slot_no + 1) / ((float)inputs_count_ + 1));
+          pos_.y + size_.y * ((float)ind + 1) / ((float)input_links_.size() + 1));
     }
-    ImVec2 GetOutputSlotPos(int slot_no) const
+
+    ImVec2 getOutputSlotPos(const std::string& link_name) const
+    {
+      int ind = -1;
+      for (size_t i = 0; i < input_links_.size(); ++i) {
+        if (link_name == input_links_[i]->name_) {
+          ind = i;
+          break;
+        }
+      }
+      return getOutputSlotPos(ind);
+    }
+    ImVec2 getOutputSlotPos(size_t ind) const
     {
       return ImVec2(pos_.x + size_.x,
-          pos_.y + size_.y * ((float)slot_no + 1) / ((float)outputs_count_ + 1));
+          pos_.y + size_.y * ((float)ind + 1) / ((float)output_links_.size() + 1));
     }
 
     virtual void update(const double& seconds) { seconds_ = seconds;}
@@ -103,26 +127,32 @@ protected:
         bool& open_context_menu);
 
     double seconds_;
+
+    std::vector<std::shared_ptr<NodeLink> > input_links_;
+    void setInput(size_t ind, std::shared_ptr<NodeLink> link);
+
+    std::vector<std::shared_ptr<NodeLink> > output_links_;
+    void setOutput(size_t ind, std::shared_ptr<NodeLink> link);
   };
+
   struct NodeLink
   {
-    int input_idx_, input_slot_, output_idx_, output_slot_;
-
-    NodeLink(const int input_idx, const int input_slot,
-        const int output_idx, const int output_slot)
+    NodeLink(const std::string& name) : name_(name)
     {
-      input_idx_ = input_idx;
-      input_slot_ = input_slot;
-      output_idx_ = output_idx;
-      output_slot_ = output_slot;
     }
+
+    virtual void draw(ImDrawList* draw_list, const ImVec2& offset);
+
+    std::string name_;
+    std::shared_ptr<Node> input_node_;
+    std::map<std::string, std::shared_ptr<Node> > output_nodes_;
   };
 
   struct SignalGenerator : public Node
   {
     SignalGenerator(const int id, const char* name, const ImVec2& pos);
     virtual void update(const double& seconds);
-    virtual void draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
+    virtual void draw(ImDrawList* draw_list, const ImVec2& offset, int& node_selected,
         int& node_hovered_in_list, int& node_hovered_in_scene,
         bool& open_context_menu);
 
@@ -130,10 +160,20 @@ protected:
     float frequency_ = 1.0;
   };
 
-  std::vector<std::shared_ptr<Node> > nodes_;
+  struct SignalCombine : public Node
+  {
+    SignalCombine(const int id, const char* name, const ImVec2& pos);
+    virtual void update(const double& seconds);
+    virtual void draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
+        int& node_hovered_in_list, int& node_hovered_in_scene,
+        bool& open_context_menu);
+
+  };
+
+  std::map<std::string, std::shared_ptr<Node> > nodes_;
+  std::map<std::string, std::shared_ptr<NodeLink> > links_;
   rclcpp::Time start_, stamp_;
 
-  ImVector<NodeLink> links_;
   bool inited_ = false;
   ImVec2 scrolling_ = ImVec2(0.0f, 0.0f);
   bool show_grid_ = true;
