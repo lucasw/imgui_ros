@@ -69,6 +69,9 @@ protected:
     ImVec4  Color;
     int     InputsCount, OutputsCount;
 
+    const float NODE_SLOT_RADIUS = 4.0f;
+    const ImVec2 NODE_WINDOW_PADDING = ImVec2(8.0f, 8.0f);
+
     Node(int id, const char* name, const ImVec2& pos, float value, const ImVec4& color, int inputs_count, int outputs_count)
     {
       ID = id;
@@ -91,6 +94,10 @@ protected:
       return ImVec2(Pos.x + Size.x,
           Pos.y + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1));
     }
+
+    virtual void draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
+        int& node_hovered_in_list, int& node_hovered_in_scene,
+        bool& open_context_menu);
   };
   struct NodeLink
   {
