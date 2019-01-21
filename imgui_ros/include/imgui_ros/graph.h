@@ -62,37 +62,37 @@ protected:
   // Dummy
   struct Node
   {
-    int     ID;
-    char    Name[32];
-    ImVec2  Pos, Size;
-    float   Value;
-    ImVec4  Color;
-    int     InputsCount, OutputsCount;
+    int     id_;
+    char    name_[32];
+    ImVec2  pos_, size_;
+    float   value_ = 0.0;
+    ImVec4  color_;
+    int     inputs_count_, outputs_count_;
 
     const float NODE_SLOT_RADIUS = 4.0f;
     const ImVec2 NODE_WINDOW_PADDING = ImVec2(8.0f, 8.0f);
 
     Node(int id, const char* name, const ImVec2& pos, float value, const ImVec4& color, int inputs_count, int outputs_count)
     {
-      ID = id;
-      strncpy(Name, name, 31);
-      Name[31] = 0;
-      Pos = pos;
-      Value = value;
-      Color = color;
-      InputsCount = inputs_count;
-      OutputsCount = outputs_count;
+      id_ = id;
+      strncpy(name_, name, 31);
+      name_[31] = 0;
+      pos_ = pos;
+      value_ = value;
+      color_ = color;
+      inputs_count_ = inputs_count;
+      outputs_count_ = outputs_count;
     }
 
     ImVec2 GetInputSlotPos(int slot_no) const
     {
-      return ImVec2(Pos.x,
-          Pos.y + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1));
+      return ImVec2(pos_.x,
+          pos_.y + size_.y * ((float)slot_no + 1) / ((float)inputs_count_ + 1));
     }
     ImVec2 GetOutputSlotPos(int slot_no) const
     {
-      return ImVec2(Pos.x + Size.x,
-          Pos.y + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1));
+      return ImVec2(pos_.x + size_.x,
+          pos_.y + size_.y * ((float)slot_no + 1) / ((float)outputs_count_ + 1));
     }
 
     virtual void draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
@@ -101,14 +101,15 @@ protected:
   };
   struct NodeLink
   {
-    int InputIdx, InputSlot, OutputIdx, OutputSlot;
+    int input_idx_, input_slot_, output_idx_, output_slot_;
 
-    NodeLink(int input_idx, int input_slot, int output_idx, int output_slot)
+    NodeLink(const int input_idx, const int input_slot,
+        const int output_idx, const int output_slot)
     {
-      InputIdx = input_idx;
-      InputSlot = input_slot;
-      OutputIdx = output_idx;
-      OutputSlot = output_slot;
+      input_idx_ = input_idx;
+      input_slot_ = input_slot;
+      output_idx_ = output_idx;
+      output_slot_ = output_slot;
     }
   };
 
