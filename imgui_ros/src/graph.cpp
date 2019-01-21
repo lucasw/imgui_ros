@@ -58,14 +58,14 @@ void Graph::draw()
     ImGui::End();
     return;
   }
-  if (!inited)
+  if (!inited_)
   {
-    nodes.push_back(Node(0, "MainTex", ImVec2(40, 50), 0.5f, ImColor(255, 100, 100), 1, 1));
-    nodes.push_back(Node(1, "BumpMap", ImVec2(40, 150), 0.42f, ImColor(200, 100, 200), 1, 1));
-    nodes.push_back(Node(2, "Combine", ImVec2(270, 80), 1.0f, ImColor(0, 200, 100), 2, 2));
-    links.push_back(NodeLink(0, 0, 2, 0));
-    links.push_back(NodeLink(1, 0, 2, 1));
-    inited = true;
+    nodes_.push_back(Node(0, "Sine1", ImVec2(40, 50), 0.5f, ImColor(255, 100, 100), 1, 1));
+    nodes_.push_back(Node(1, "Sine2", ImVec2(40, 150), 0.42f, ImColor(200, 100, 200), 1, 1));
+    nodes_.push_back(Node(2, "Combine", ImVec2(270, 80), 1.0f, ImColor(0, 200, 100), 2, 2));
+    links_.push_back(NodeLink(0, 0, 2, 0));
+    links_.push_back(NodeLink(1, 0, 2, 1));
+    inited_ = true;
   }
 
   // Draw a list of nodes on the left side
@@ -75,12 +75,13 @@ void Graph::draw()
   ImGui::BeginChild("node_list", ImVec2(100, 0));
   ImGui::Text("Nodes");
   ImGui::Separator();
-  for (int node_idx = 0; node_idx < nodes.Size; node_idx++)
+  for (int node_idx = 0; node_idx < nodes_.Size; node_idx++)
   {
-    Node* node = &nodes[node_idx];
+    Node* node = &nodes_[node_idx];
     ImGui::PushID(node->ID);
-    if (ImGui::Selectable(node->Name, node->ID == node_selected))
-      node_selected = node->ID;
+    if (ImGui::Selectable(node->Name, node->ID == node_selected_)) {
+      node_selected_ = node->ID;
+    }
     if (ImGui::IsItemHovered())
     {
       node_hovered_in_list = node->ID;
@@ -97,47 +98,48 @@ void Graph::draw()
   const ImVec2 NODE_WINDOW_PADDING(8.0f, 8.0f);
 
   // Create our child canvas
-  ImGui::Text("Hold middle mouse button to scroll (%.2f,%.2f)", scrolling.x, scrolling.y);
+  ImGui::Text("Hold middle mouse button to scroll (%.2f,%.2f)", scrolling_.x, scrolling_.y);
   ImGui::SameLine(ImGui::GetWindowWidth() - 100);
-  ImGui::Checkbox("Show grid", &show_grid);
+  ImGui::Checkbox("Show grid", &show_grid_);
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
   ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, IM_COL32(60, 60, 70, 200));
-  ImGui::BeginChild("scrolling_region", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+  ImGui::BeginChild("scrolling_region", ImVec2(0, 0), true,
+      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
   ImGui::PushItemWidth(120.0f);
 
-  ImVec2 offset = ImGui::GetCursorScreenPos() + scrolling;
+  ImVec2 offset = ImGui::GetCursorScreenPos() + scrolling_;
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
   // Display grid
-  if (show_grid)
+  if (show_grid_)
   {
     ImU32 GRID_COLOR = IM_COL32(200, 200, 200, 40);
     float GRID_SZ = 64.0f;
     ImVec2 win_pos = ImGui::GetCursorScreenPos();
     ImVec2 canvas_sz = ImGui::GetWindowSize();
-    for (float x = fmodf(scrolling.x, GRID_SZ); x < canvas_sz.x; x += GRID_SZ)
+    for (float x = fmodf(scrolling_.x, GRID_SZ); x < canvas_sz.x; x += GRID_SZ)
       draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, GRID_COLOR);
-    for (float y = fmodf(scrolling.y, GRID_SZ); y < canvas_sz.y; y += GRID_SZ)
+    for (float y = fmodf(scrolling_.y, GRID_SZ); y < canvas_sz.y; y += GRID_SZ)
       draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, GRID_COLOR);
   }
 
   // Display links
   draw_list->ChannelsSplit(2);
   draw_list->ChannelsSetCurrent(0); // Background
-  for (int link_idx = 0; link_idx < links.Size; link_idx++)
+  for (int link_idx = 0; link_idx < links_.Size; link_idx++)
   {
-    NodeLink* link = &links[link_idx];
-    Node* node_inp = &nodes[link->InputIdx];
-    Node* node_out = &nodes[link->OutputIdx];
+    NodeLink* link = &links_[link_idx];
+    Node* node_inp = &nodes_[link->InputIdx];
+    Node* node_out = &nodes_[link->OutputIdx];
     ImVec2 p1 = offset + node_inp->GetOutputSlotPos(link->InputSlot);
     ImVec2 p2 = offset + node_out->GetInputSlotPos(link->OutputSlot);
     draw_list->AddBezierCurve(p1, p1 + ImVec2(+50, 0), p2 + ImVec2(-50, 0), p2, IM_COL32(200, 200, 100, 255), 3.0f);
   }
 
   // Display nodes
-  for (int node_idx = 0; node_idx < nodes.Size; node_idx++)
+  for (int node_idx = 0; node_idx < nodes_.Size; node_idx++)
   {
-    Node* node = &nodes[node_idx];
+    Node* node = &nodes_[node_idx];
     ImGui::PushID(node->ID);
     ImVec2 node_rect_min = offset + node->Pos;
 
@@ -166,12 +168,16 @@ void Graph::draw()
       open_context_menu |= ImGui::IsMouseClicked(1);
     }
     bool node_moving_active = ImGui::IsItemActive();
-    if (node_widgets_active || node_moving_active)
-      node_selected = node->ID;
-    if (node_moving_active && ImGui::IsMouseDragging(0))
+    if (node_widgets_active || node_moving_active) {
+      node_selected_ = node->ID;
+    }
+    if (node_moving_active && ImGui::IsMouseDragging(0)) {
       node->Pos = node->Pos + ImGui::GetIO().MouseDelta;
+    }
 
-    ImU32 node_bg_color = (node_hovered_in_list == node->ID || node_hovered_in_scene == node->ID || (node_hovered_in_list == -1 && node_selected == node->ID)) ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255);
+    ImU32 node_bg_color = (node_hovered_in_list == node->ID ||
+        node_hovered_in_scene == node->ID ||
+        (node_hovered_in_list == -1 && node_selected_ == node->ID)) ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255);
     draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 4.0f);
     draw_list->AddRect(node_rect_min, node_rect_max, IM_COL32(100, 100, 100, 255), 4.0f);
     for (int slot_idx = 0; slot_idx < node->InputsCount; slot_idx++) {
@@ -189,23 +195,25 @@ void Graph::draw()
   // Open context menu
   if (!ImGui::IsAnyItemHovered() && ImGui::IsMouseHoveringWindow() && ImGui::IsMouseClicked(1))
   {
-    node_selected = node_hovered_in_list = node_hovered_in_scene = -1;
+    node_selected_ = node_hovered_in_list = node_hovered_in_scene = -1;
     open_context_menu = true;
   }
   if (open_context_menu)
   {
     ImGui::OpenPopup("context_menu");
-    if (node_hovered_in_list != -1)
-      node_selected = node_hovered_in_list;
-    if (node_hovered_in_scene != -1)
-      node_selected = node_hovered_in_scene;
+    if (node_hovered_in_list != -1) {
+      node_selected_ = node_hovered_in_list;
+    }
+    if (node_hovered_in_scene != -1) {
+      node_selected_ = node_hovered_in_scene;
+    }
   }
 
   // Draw context menu
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
   if (ImGui::BeginPopup("context_menu"))
   {
-    Node* node = node_selected != -1 ? &nodes[node_selected] : NULL;
+    Node* node = node_selected_ != -1 ? &nodes_[node_selected_] : NULL;
     ImVec2 scene_pos = ImGui::GetMousePosOnOpeningCurrentPopup() - offset;
     if (node)
     {
@@ -217,7 +225,10 @@ void Graph::draw()
     }
     else
     {
-      if (ImGui::MenuItem("Add")) { nodes.push_back(Node(nodes.Size, "New node", scene_pos, 0.5f, ImColor(100, 100, 200), 2, 2)); }
+      if (ImGui::MenuItem("Add")) {
+        nodes_.push_back(Node(nodes_.Size, "New node", scene_pos, 0.5f,
+            ImColor(100, 100, 200), 2, 2));
+      }
       if (ImGui::MenuItem("Paste", NULL, false, false)) {}
     }
     ImGui::EndPopup();
@@ -225,8 +236,9 @@ void Graph::draw()
   ImGui::PopStyleVar();
 
   // Scrolling
-  if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(2, 0.0f))
-    scrolling = scrolling + ImGui::GetIO().MouseDelta;
+  if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(2, 0.0f)) {
+    scrolling_ = scrolling_ + ImGui::GetIO().MouseDelta;
+  }
 
   ImGui::PopItemWidth();
   ImGui::EndChild();

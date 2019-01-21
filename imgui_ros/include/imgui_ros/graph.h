@@ -105,12 +105,12 @@ protected:
     }
   };
 
-  ImVector<Node> nodes;
-  ImVector<NodeLink> links;
-  bool inited = false;
-  ImVec2 scrolling = ImVec2(0.0f, 0.0f);
-  bool show_grid = true;
-  int node_selected = -1;
+  ImVector<Node> nodes_;
+  ImVector<NodeLink> links_;
+  bool inited_ = false;
+  ImVec2 scrolling_ = ImVec2(0.0f, 0.0f);
+  bool show_grid_ = true;
+  int node_selected_ = -1;
 };
 
 

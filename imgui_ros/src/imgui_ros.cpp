@@ -598,7 +598,6 @@ namespace imgui_ros {
     ///////////////////////////////////////////////////////////////////////////
     } else if (widget.type == imgui_ros::msg::Widget::GRAPH) {
       imgui_widget = std::make_shared<Graph>(widget.name, shared_from_this());
-      param_widgets_[node_name][widget.name] = imgui_widget;
     } else {
       std::stringstream ss;
       // TODO(lucasw) typeToString()
