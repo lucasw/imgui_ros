@@ -78,8 +78,8 @@ void Graph::draw()
   {
     nodes_["Sine1"] = std::make_shared<SignalGenerator>("Sine1", ImVec2(40, 50));
     nodes_["Sine2"] = std::make_shared<SignalGenerator>("Sine2", ImVec2(40, 150));
-    nodes_["Combine1"] = std::make_shared<Node>("Combine1", ImVec2(270, 80),
-        1.0f, ImColor(0, 200, 100), 2, 2);
+
+    nodes_["Combine1"] = std::make_shared<SignalCombine>("Combine1", ImVec2(270, 80));
 
     links_["link1"] = std::make_shared<NodeLink>("link1");
     nodes_["Sine1"]->setOutput(0, links_["link1"]);
@@ -286,6 +286,7 @@ void Graph::Node::setOutput(size_t ind, std::shared_ptr<NodeLink> link)
 
 void Graph::Node::drawHeader(ImDrawList* draw_list)
 {
+  (void)draw_list;
   // Display node contents first
   ImGui::Text("%s", name_.c_str());
   ImGui::Text("%06.2f", value_);
@@ -371,6 +372,7 @@ void Graph::SignalGenerator::draw(ImDrawList* draw_list, const ImVec2& offset,
   draw_list->ChannelsSetCurrent(1); // Foreground
 
   if (draw_header) {
+    // TODO(lucasw) move into SignalGenerator::drawHeader
     draw_list->ChannelsSetCurrent(1); // Foreground
     ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
     ImGui::BeginGroup(); // Lock horizontal position
@@ -386,6 +388,23 @@ void Graph::SignalGenerator::draw(ImDrawList* draw_list, const ImVec2& offset,
 }
 
 /////////////////////////////////////////////////////////////////////////////////
+Graph::SignalCombine::SignalCombine(const std::string& name, const ImVec2& pos) :
+    Graph::Node(name, pos, 0.0, ImColor(255, 100, 0, 255), 2, 1)
+{
+
+}
+
+void Graph::SignalCombine::update(const double& seconds)
+{
+  value_ = 0.0;
+  for (size_t i = 0; i < input_links_.size(); ++i) {
+    if (input_links_[i] && input_links_[i]->input_node_) {
+      value_ += input_links_[i]->input_node_->value_;  // * coefficient_[i];
+    }
+  }
+  Node::update(seconds);
+}
+
 void Graph::SignalCombine::draw(ImDrawList* draw_list, const ImVec2& offset,
     int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
     bool& open_context_menu, const bool draw_header)
@@ -400,11 +419,9 @@ void Graph::SignalCombine::draw(ImDrawList* draw_list, const ImVec2& offset,
     Node::drawHeader(draw_list);
     // ImGui::SliderFloat("##frequency", &frequency_, 0.0f, 15.0f, "Freq %.2f", 3);
     // ImGui::SliderFloat("##amplitude", &amplitude_, 0.0f, 100.0f, "Amp %.2f", 3);
+    // ImGui::ColorEdit3("##color", &color_.x);
     ImGui::EndGroup();
   }
-
-  // ImGui::ColorEdit3("##color", &color_.x);
-  ImGui::EndGroup();
 
   Node::draw(draw_list, offset, node_selected, node_hovered_in_list,
       node_hovered_in_scene, open_context_menu, false);
