@@ -103,9 +103,11 @@ void Graph::draw()
     // TODO(lucasw)
     node->id_ = node_idx;
     ImGui::PushID(node->id_);
+    #if 0
     if (ImGui::Selectable(node->name_.c_str(), node->id_ == node_selected_)) {
       node_selected_ = node->id_;
     }
+    #endif
     if (ImGui::IsItemHovered())
     {
       node_hovered_in_list = node->id_;
@@ -172,12 +174,14 @@ void Graph::draw()
   {
     auto node = node_pair.second;
     ImGui::PushID(node->id_);
-    node->draw(draw_list, offset, node_selected_, node_hovered_in_list,
-        node_hovered_in_scene, open_context_menu);
+    node->draw(draw_list, offset, node_hovered_in_list,
+        node_hovered_in_scene, open_context_menu,
+        node_for_slot_selected_);
     ImGui::PopID();
   }
   draw_list->ChannelsMerge();
 
+  #if 0
   // Open context menu
   if (!ImGui::IsAnyItemHovered() && ImGui::IsMouseHoveringWindow() && ImGui::IsMouseClicked(1))
   {
@@ -194,6 +198,7 @@ void Graph::draw()
       node_selected_ = node_hovered_in_scene;
     }
   }
+  #endif
 
   // Draw context menu
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
@@ -287,10 +292,9 @@ void Graph::Node::draw2(ImDrawList* draw_list)
 }
 
 void Graph::Node::draw(ImDrawList* draw_list, const ImVec2& offset,
-    int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
-    bool& open_context_menu
-    // int& slot_selected_
-    )
+    int& node_hovered_in_list, int& node_hovered_in_scene,
+    bool& open_context_menu,
+    std::shared_ptr<Node>& node_for_slot_selected)
 {
   ImVec2 node_rect_min = offset + pos_;
 
@@ -321,7 +325,7 @@ void Graph::Node::draw(ImDrawList* draw_list, const ImVec2& offset,
   }
   bool node_moving_active = ImGui::IsItemActive();
   if (node_widgets_active || node_moving_active) {
-    node_selected = id_;
+    node_selected_ = true;
   }
   if (node_moving_active && ImGui::IsMouseDragging(0)) {
     pos_ = pos_ + ImGui::GetIO().MouseDelta;
@@ -329,7 +333,7 @@ void Graph::Node::draw(ImDrawList* draw_list, const ImVec2& offset,
 
   ImU32 node_bg_color = (node_hovered_in_list == id_ ||
       node_hovered_in_scene == id_ ||
-      (node_hovered_in_list == -1 && node_selected == id_)) ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255);
+      (node_hovered_in_list == -1 && node_selected_)) ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255);
   draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 4.0f);
   draw_list->AddRect(node_rect_min, node_rect_max, IM_COL32(100, 100, 100, 255), 4.0f);
   for (int slot_idx = 0; slot_idx < static_cast<int>(input_links_.size()); slot_idx++) {
@@ -344,13 +348,41 @@ void Graph::Node::draw(ImDrawList* draw_list, const ImVec2& offset,
     ImGui::SetCursorScreenPos(pos - slot_half_size);
     ImGui::InvisibleButton("output", slot_size);
     ImColor col = IM_COL32(150, 150, 150, 150);
-    if (ImGui::IsItemHovered()) {
-      col = IM_COL32(200, 200, 200, 200);
+
+    // only allow new selections if not already dragging around a link for another node
+    // or another output on this node
+    if (((node_for_slot_selected == nullptr) || (node_for_slot_selected == shared_from_this())) &&
+        ((slot_selected_ == -1) || (slot_selected_ == slot_idx))) {
+
+      // TODO(lucasw) the hovering doesn't work if outside the box of this node
+      // half the circle is outside it, fix that or just move circle to inside.
+      if (ImGui::IsItemHovered()) {
+        col = IM_COL32(200, 200, 200, 200);
+        if (ImGui::IsMouseDragging(1)) {
+          col = IM_COL32(250, 250, 250, 250);
+          slot_selected_ = slot_idx;
+          node_for_slot_selected = shared_from_this();
+        }
+      }
+
       if (ImGui::IsMouseDragging(1)) {
-        col = IM_COL32(250, 250, 250, 250);
-        // slot_selected = slot_idx;
+        // while the mouse continues to drag draw the potential new link
+        if (slot_idx == slot_selected_) {
+          col = IM_COL32(250, 150, 250, 150);
+          ImVec2 mouse_pos = ImGui::GetMousePos();
+          draw_list->AddCircleFilled(mouse_pos, NODE_SLOT_RADIUS, col);
+          draw_list->AddBezierCurve(
+              pos, pos + ImVec2(+50, 0),
+              mouse_pos + ImVec2(-50, 0), mouse_pos,
+              IM_COL32(200, 200, 100, 255), 3.0f);
+        }
+      } else {
+        // if the mouse is no longer dragging the slot_selected is reset
+        slot_selected_ = -1;
+        node_for_slot_selected = nullptr;
       }
     }
+
     draw_list->AddCircleFilled(pos, NODE_SLOT_RADIUS, col);
   }
 }

@@ -67,6 +67,10 @@ struct Graph : public Widget {
     float   value_ = 0.0;
     ImVec4  color_;
 
+    // ui
+    bool node_selected_ = false;
+    int slot_selected_ = -1;
+
     const float NODE_SLOT_RADIUS = 8.0f;
     const ImVec2 NODE_WINDOW_PADDING = ImVec2(8.0f, 8.0f);
 
@@ -119,8 +123,9 @@ struct Graph : public Widget {
 
     virtual void draw2(ImDrawList* draw_list);
     virtual void draw(ImDrawList* draw_list, const ImVec2& offset,
-        int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
-        bool& open_context_menu);
+        int& node_hovered_in_list, int& node_hovered_in_scene,
+        bool& open_context_menu,
+        std::shared_ptr<Node>& node_for_slot_selected);
 
     double seconds_;
 
@@ -177,7 +182,10 @@ protected:
   bool inited_ = false;
   ImVec2 scrolling_ = ImVec2(0.0f, 0.0f);
   bool show_grid_ = true;
-  int node_selected_ = -1;
+  // int node_selected_ = -1;
+
+  // adding a new link
+  std::shared_ptr<Node> node_for_slot_selected_;
 };
 
 #endif  // IMGUI_ROS_GRAPH_H
