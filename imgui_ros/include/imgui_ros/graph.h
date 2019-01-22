@@ -140,6 +140,7 @@ struct Graph : public Widget {
     virtual void draw(ImDrawList* draw_list, const ImVec2& offset);
 
     std::string name_;
+    float value_;
     // TODO(lucasw) weak_ptr instead?
     std::shared_ptr<Node> input_node_;
     std::map<std::string, std::shared_ptr<Node> > output_nodes_;

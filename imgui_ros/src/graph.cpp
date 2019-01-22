@@ -344,8 +344,17 @@ void Graph::Node::draw(ImDrawList* draw_list, const ImVec2& offset,
         NODE_SLOT_RADIUS, IM_COL32(150, 150, 150, 150));
   }
   for (int slot_idx = 0; slot_idx < static_cast<int>(output_links_.size()); slot_idx++) {
-    draw_list->AddCircleFilled(offset + getOutputSlotPos(slot_idx),
-        NODE_SLOT_RADIUS, IM_COL32(150, 150, 150, 150));
+    const ImVec2 pos = offset + getOutputSlotPos(slot_idx);
+    const ImVec2 slot_half_size = ImVec2(NODE_SLOT_RADIUS, NODE_SLOT_RADIUS);
+    const ImVec2 slot_size = ImVec2(NODE_SLOT_RADIUS * 2.0, NODE_SLOT_RADIUS * 2.0);
+    // draw_list->ChannelsSetCurrent(0); // Background
+    ImGui::SetCursorScreenPos(pos - slot_half_size);
+    ImGui::InvisibleButton("output", slot_size);
+    ImColor col = IM_COL32(150, 150, 150, 150);
+    if (ImGui::IsItemHovered()) {
+      col = IM_COL32(250, 250, 250, 250);
+    }
+    draw_list->AddCircleFilled(pos, NODE_SLOT_RADIUS, col);
   }
 }
 
@@ -359,6 +368,11 @@ Graph::SignalGenerator::SignalGenerator(const std::string& name,
 void Graph::SignalGenerator::update(const double& seconds)
 {
   value_ = amplitude_ * sin(seconds * frequency_ * M_PI * 2.0);
+  for (auto link : output_links_) {
+    if (link) {
+      link->value_ = value_;
+    }
+  }
   Node::update(seconds);
 }
 
@@ -399,9 +413,16 @@ void Graph::SignalCombine::update(const double& seconds)
   value_ = 0.0;
   for (size_t i = 0; i < input_links_.size(); ++i) {
     if (input_links_[i] && input_links_[i]->input_node_) {
-      value_ += input_links_[i]->input_node_->value_;  // * coefficient_[i];
+      value_ += input_links_[i]->value_;  // input_node_->value_;  // * coefficient_[i];
     }
   }
+
+  for (auto link : output_links_) {
+    if (link) {
+      link->value_ = value_;
+    }
+  }
+
   Node::update(seconds);
 }
 
