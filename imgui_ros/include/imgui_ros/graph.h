@@ -63,6 +63,7 @@ struct Graph : public Widget {
     int id_ = -1;
     std::string name_;
     ImVec2  pos_, size_;
+    // TODO(lucasw) value probably doesn't belong in base node
     float   value_ = 0.0;
     ImVec4  color_;
 
@@ -116,9 +117,10 @@ struct Graph : public Widget {
 
     virtual void update(const double& seconds) { seconds_ = seconds;}
 
+    virtual void drawHeader(ImDrawList* draw_list);
     virtual void draw(ImDrawList* draw_list, const ImVec2& offset,
         int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
-        bool& open_context_menu);
+        bool& open_context_menu, const bool draw_header);
 
     double seconds_;
 
@@ -138,17 +140,19 @@ struct Graph : public Widget {
     virtual void draw(ImDrawList* draw_list, const ImVec2& offset);
 
     std::string name_;
+    // TODO(lucasw) weak_ptr instead?
     std::shared_ptr<Node> input_node_;
     std::map<std::string, std::shared_ptr<Node> > output_nodes_;
   };
 
+  ///////////////////////////////////////////////////////////////////////
   struct SignalGenerator : public Node
   {
     SignalGenerator(const std::string& name, const ImVec2& pos);
     virtual void update(const double& seconds);
     virtual void draw(ImDrawList* draw_list, const ImVec2& offset, int& node_selected,
         int& node_hovered_in_list, int& node_hovered_in_scene,
-        bool& open_context_menu);
+        bool& open_context_menu, const bool draw_header);
 
     float amplitude_ = 1.0;
     float frequency_ = 1.0;
@@ -160,7 +164,7 @@ struct Graph : public Widget {
     virtual void update(const double& seconds);
     virtual void draw(ImDrawList* draw_list, const ImVec2& offset, int& node_selected,
         int& node_hovered_in_list, int& node_hovered_in_scene,
-        bool& open_context_menu);
+        bool& open_context_menu, const bool draw_header);
 
   };
 

@@ -126,7 +126,7 @@ void Graph::draw()
   for (const auto link_pair : links_)
   {
     const auto link = link_pair.second;
-    ImGui::Text("%s : %s -> %d", link->name_.c_str(),
+    ImGui::Text("%s : %s -> %lu", link->name_.c_str(),
         link->input_node_->name_.c_str(), link->output_nodes_.size());
     for (const auto node_pair : link->output_nodes_) {
       ImGui::Text("  - %s", node_pair.second->name_.c_str());
@@ -178,7 +178,7 @@ void Graph::draw()
     auto node = node_pair.second;
     ImGui::PushID(node->id_);
     node->draw(draw_list, offset, node_selected_, node_hovered_in_list,
-        node_hovered_in_scene, open_context_menu);
+        node_hovered_in_scene, open_context_menu, true);
     ImGui::PopID();
   }
   draw_list->ChannelsMerge();
@@ -284,11 +284,27 @@ void Graph::Node::setOutput(size_t ind, std::shared_ptr<NodeLink> link)
   link->input_node_ = shared_from_this();
 }
 
+void Graph::Node::drawHeader(ImDrawList* draw_list)
+{
+  // Display node contents first
+  ImGui::Text("%s", name_.c_str());
+  ImGui::Text("%06.2f", value_);
+  // ImGui::ColorEdit3("##color", &color_.x);
+}
+
 void Graph::Node::draw(ImDrawList* draw_list, const ImVec2& offset,
     int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
-    bool& open_context_menu)
+    bool& open_context_menu, const bool draw_header)
 {
   ImVec2 node_rect_min = offset + pos_;
+
+  if (draw_header) {
+    draw_list->ChannelsSetCurrent(1); // Foreground
+    ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
+    ImGui::BeginGroup(); // Lock horizontal position
+    drawHeader(draw_list);
+    ImGui::EndGroup();
+  }
 
   // Display node contents first
   draw_list->ChannelsSetCurrent(1); // Foreground
@@ -347,21 +363,50 @@ void Graph::SignalGenerator::update(const double& seconds)
 
 void Graph::SignalGenerator::draw(ImDrawList* draw_list, const ImVec2& offset,
     int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
-    bool& open_context_menu)
+    bool& open_context_menu, const bool draw_header)
 {
   ImVec2 node_rect_min = offset + pos_;
 
   // Display node contents first
   draw_list->ChannelsSetCurrent(1); // Foreground
-  ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
-  ImGui::BeginGroup(); // Lock horizontal position
-  ImGui::Text("%s", name_.c_str());
-  ImGui::Text("%06.2f", value_);
-  ImGui::SliderFloat("##frequency", &frequency_, 0.0f, 15.0f, "Freq %.2f", 3);
-  ImGui::SliderFloat("##amplitude", &amplitude_, 0.0f, 100.0f, "Amp %.2f", 3);
+
+  if (draw_header) {
+    draw_list->ChannelsSetCurrent(1); // Foreground
+    ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
+    ImGui::BeginGroup(); // Lock horizontal position
+    Node::drawHeader(draw_list);
+    ImGui::SliderFloat("##frequency", &frequency_, 0.0f, 15.0f, "Freq %.2f", 3);
+    ImGui::SliderFloat("##amplitude", &amplitude_, 0.0f, 100.0f, "Amp %.2f", 3);
+    ImGui::EndGroup();
+  }
+  // ImGui::ColorEdit3("##color", &color_.x);
+
+  Node::draw(draw_list, offset, node_selected, node_hovered_in_list,
+      node_hovered_in_scene, open_context_menu, false);
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+void Graph::SignalCombine::draw(ImDrawList* draw_list, const ImVec2& offset,
+    int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
+    bool& open_context_menu, const bool draw_header)
+{
+  ImVec2 node_rect_min = offset + pos_;
+
+  // Display node contents first
+  if (draw_header) {
+    draw_list->ChannelsSetCurrent(1); // Foreground
+    ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
+    ImGui::BeginGroup(); // Lock horizontal position
+    Node::drawHeader(draw_list);
+    // ImGui::SliderFloat("##frequency", &frequency_, 0.0f, 15.0f, "Freq %.2f", 3);
+    // ImGui::SliderFloat("##amplitude", &amplitude_, 0.0f, 100.0f, "Amp %.2f", 3);
+    ImGui::EndGroup();
+  }
+
   // ImGui::ColorEdit3("##color", &color_.x);
   ImGui::EndGroup();
 
   Node::draw(draw_list, offset, node_selected, node_hovered_in_list,
-      node_hovered_in_scene, open_context_menu);
+      node_hovered_in_scene, open_context_menu, false);
 }
+
