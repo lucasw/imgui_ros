@@ -98,7 +98,7 @@ void Graph::draw()
   bool open_context_menu = false;
   int node_hovered_in_list = -1;
   int node_hovered_in_scene = -1;
-  ImGui::BeginChild("node_list", ImVec2(100, 0));
+  ImGui::BeginChild("node_list", ImVec2(200, 0));
   ImGui::Text("Nodes at time: %f", seconds);
   ImGui::Separator();
   int node_idx = 0;
@@ -118,6 +118,19 @@ void Graph::draw()
     }
     ImGui::PopID();
     ++node_idx;
+  }
+  // ImGui::EndChild();
+
+  // ImGui::BeginChild("link list", ImVec2(100, 0));
+  ImGui::Separator();
+  for (const auto link_pair : links_)
+  {
+    const auto link = link_pair.second;
+    ImGui::Text("%s : %s -> %d", link->name_.c_str(),
+        link->input_node_->name_.c_str(), link->output_nodes_.size());
+    for (const auto node_pair : link->output_nodes_) {
+      ImGui::Text("  - %s", node_pair.second->name_.c_str());
+    }
   }
   ImGui::EndChild();
 
@@ -234,39 +247,45 @@ void Graph::draw()
 //////////////////////////////////////////////////////////////////////////////
 void Graph::NodeLink::draw(ImDrawList* draw_list, const ImVec2& offset)
 {
+  const ImVec2 p1 = offset + input_node_->getOutputSlotPos(name_);  // shared_from_this());
+  // ImGui::Text("p1 %f %f", p1.x, p1.y);
   for (auto output_node_pair : output_nodes_) {
     auto output_node = output_node_pair.second;
-    const ImVec2 p1 = offset + input_node_->getOutputSlotPos(name_);  // shared_from_this());
     const ImVec2 p2 = offset + output_node->getInputSlotPos(name_);  // shared_from_this());
-    draw_list->AddBezierCurve(p1, p1 + ImVec2(+50, 0), p2 + ImVec2(-50, 0),
-        p2, IM_COL32(200, 200, 100, 255), 3.0f);
+    // ImGui::Text("p2 %f %f", p2.x, p2.y);
+    draw_list->AddBezierCurve(
+        p1, p1 + ImVec2(+50, 0),
+        p2 + ImVec2(-50, 0), p2,
+        IM_COL32(200, 200, 100, 255), 3.0f);
   }
 }
 
+////////////////////////////////////////////////////////////////////////////
 void Graph::Node::setInput(size_t ind, std::shared_ptr<NodeLink> link)
 {
   if (ind >= input_links_.size()) {
     // TODO(lucasw) throw
+    std::cerr << "bad input\n";
     return;
   }
   input_links_[ind] = link;
-  link->input_node_ = shared_from_this();
+  link->output_nodes_[link->name_] = shared_from_this();
 }
 
 void Graph::Node::setOutput(size_t ind, std::shared_ptr<NodeLink> link)
 {
   if (ind >= output_links_.size()) {
     // TODO(lucasw) throw
+    std::cerr << "bad output\n";
     return;
   }
   output_links_[ind] = link;
   // a link can have any number of outputs
-  link->output_nodes_[link->name_] = shared_from_this();
+  link->input_node_ = shared_from_this();
 }
 
-///////////////////////////////////////////////////////////////////////////
-void Graph::Node::draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
-    int& node_hovered_in_list, int& node_hovered_in_scene,
+void Graph::Node::draw(ImDrawList* draw_list, const ImVec2& offset,
+    int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
     bool& open_context_menu)
 {
   ImVec2 node_rect_min = offset + pos_;
@@ -303,19 +322,19 @@ void Graph::Node::draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected
       (node_hovered_in_list == -1 && node_selected == id_)) ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255);
   draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 4.0f);
   draw_list->AddRect(node_rect_min, node_rect_max, IM_COL32(100, 100, 100, 255), 4.0f);
-  for (int slot_idx = 0; slot_idx < input_links_.size(); slot_idx++) {
+  for (int slot_idx = 0; slot_idx < static_cast<int>(input_links_.size()); slot_idx++) {
     draw_list->AddCircleFilled(offset + getInputSlotPos(slot_idx),
         NODE_SLOT_RADIUS, IM_COL32(150, 150, 150, 150));
   }
-  for (int slot_idx = 0; slot_idx < output_links_.size(); slot_idx++) {
+  for (int slot_idx = 0; slot_idx < static_cast<int>(output_links_.size()); slot_idx++) {
     draw_list->AddCircleFilled(offset + getOutputSlotPos(slot_idx),
         NODE_SLOT_RADIUS, IM_COL32(150, 150, 150, 150));
   }
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-Graph::SignalGenerator::SignalGenerator(const int id, const char* name,
-    const ImVec2& pos) : Node(id, name, pos, 0.0, ImColor(255, 0, 0, 255), 0, 1)
+Graph::SignalGenerator::SignalGenerator(const std::string& name,
+    const ImVec2& pos) : Node(name, pos, 0.0, ImColor(255, 0, 0, 255), 0, 1)
 {
 
 }
@@ -326,9 +345,9 @@ void Graph::SignalGenerator::update(const double& seconds)
   Node::update(seconds);
 }
 
-void Graph::SignalGenerator::draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
-        int& node_hovered_in_list, int& node_hovered_in_scene,
-        bool& open_context_menu)
+void Graph::SignalGenerator::draw(ImDrawList* draw_list, const ImVec2& offset,
+    int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
+    bool& open_context_menu)
 {
   ImVec2 node_rect_min = offset + pos_;
 

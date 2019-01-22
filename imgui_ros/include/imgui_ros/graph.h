@@ -54,18 +54,13 @@ struct Graph : public Widget {
   // ~Graph();
   virtual void draw();
   virtual void update(const rclcpp::Time& stamp);
-protected:
-  // unsigned type_ = imgui_ros::srv::AddWindow::Request::FLOAT32;
-  std::weak_ptr<rclcpp::Node> node_;
-
-  bool opened_;
 
   struct NodeLink;
 
   // Dummy
-  struct Node
+  struct Node : std::enable_shared_from_this<Node>
   {
-    int     id_;
+    int id_ = -1;
     std::string name_;
     ImVec2  pos_, size_;
     float   value_ = 0.0;
@@ -74,11 +69,10 @@ protected:
     const float NODE_SLOT_RADIUS = 8.0f;
     const ImVec2 NODE_WINDOW_PADDING = ImVec2(8.0f, 8.0f);
 
-    Node(int id, const std::string& name, const ImVec2& pos, float value,
+    Node(const std::string& name, const ImVec2& pos, float value,
         const ImVec4& color, int inputs_count, int outputs_count) :
         name_(name)
     {
-      id_ = id;
       pos_ = pos;
       value_ = value;
       color_ = color;
@@ -88,7 +82,7 @@ protected:
 
     ImVec2 getInputSlotPos(const std::string& link_name) const
     {
-      int ind = -1;
+      int ind = -2;
       for (size_t i = 0; i < input_links_.size(); ++i) {
         if (link_name == input_links_[i]->name_) {
           ind = i;
@@ -97,7 +91,7 @@ protected:
       }
       return getInputSlotPos(ind);
     }
-    ImVec2 getInputSlotPos(size_t ind) const
+    ImVec2 getInputSlotPos(int ind) const
     {
       return ImVec2(pos_.x,
           pos_.y + size_.y * ((float)ind + 1) / ((float)input_links_.size() + 1));
@@ -105,16 +99,16 @@ protected:
 
     ImVec2 getOutputSlotPos(const std::string& link_name) const
     {
-      int ind = -1;
-      for (size_t i = 0; i < input_links_.size(); ++i) {
-        if (link_name == input_links_[i]->name_) {
+      int ind = -2;
+      for (size_t i = 0; i < output_links_.size(); ++i) {
+        if (link_name == output_links_[i]->name_) {
           ind = i;
           break;
         }
       }
       return getOutputSlotPos(ind);
     }
-    ImVec2 getOutputSlotPos(size_t ind) const
+    ImVec2 getOutputSlotPos(int ind) const
     {
       return ImVec2(pos_.x + size_.x,
           pos_.y + size_.y * ((float)ind + 1) / ((float)output_links_.size() + 1));
@@ -122,8 +116,8 @@ protected:
 
     virtual void update(const double& seconds) { seconds_ = seconds;}
 
-    virtual void draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
-        int& node_hovered_in_list, int& node_hovered_in_scene,
+    virtual void draw(ImDrawList* draw_list, const ImVec2& offset,
+        int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
         bool& open_context_menu);
 
     double seconds_;
@@ -150,7 +144,7 @@ protected:
 
   struct SignalGenerator : public Node
   {
-    SignalGenerator(const int id, const char* name, const ImVec2& pos);
+    SignalGenerator(const std::string& name, const ImVec2& pos);
     virtual void update(const double& seconds);
     virtual void draw(ImDrawList* draw_list, const ImVec2& offset, int& node_selected,
         int& node_hovered_in_list, int& node_hovered_in_scene,
@@ -162,13 +156,19 @@ protected:
 
   struct SignalCombine : public Node
   {
-    SignalCombine(const int id, const char* name, const ImVec2& pos);
+    SignalCombine(const std::string& name, const ImVec2& pos);
     virtual void update(const double& seconds);
-    virtual void draw(ImDrawList* draw_list, ImVec2& offset, int& node_selected,
+    virtual void draw(ImDrawList* draw_list, const ImVec2& offset, int& node_selected,
         int& node_hovered_in_list, int& node_hovered_in_scene,
         bool& open_context_menu);
 
   };
+
+protected:
+  // unsigned type_ = imgui_ros::srv::AddWindow::Request::FLOAT32;
+  std::weak_ptr<rclcpp::Node> node_;
+
+  bool opened_;
 
   std::map<std::string, std::shared_ptr<Node> > nodes_;
   std::map<std::string, std::shared_ptr<NodeLink> > links_;
