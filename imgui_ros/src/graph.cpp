@@ -64,15 +64,10 @@ void Graph::update(const rclcpp::Time& stamp)
 // Note that we storing links are INDICES (not ID) to make example code shorter, obviously a bad idea for any general purpose code.
 void Graph::draw()
 {
-  // std::cout << "draw " << stamp_.nanoseconds() << "\n";
   const double seconds = (stamp_ - start_).nanoseconds() / 1e9;
+  // std::cout << "draw " << seconds << "\n";
 
   ImGui::SetNextWindowSize(ImVec2(700, 600), ImGuiSetCond_FirstUseEver);
-  if (!ImGui::Begin("Node Graph", &opened_))
-  {
-    ImGui::End();
-    return;
-  }
 
   if (!inited_)
   {
@@ -240,8 +235,6 @@ void Graph::draw()
   ImGui::PopStyleColor();
   ImGui::PopStyleVar(2);
   ImGui::EndGroup();
-
-  ImGui::End();
 }
 
 //////////////////////////////////////////////////////////////////////////////
