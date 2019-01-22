@@ -117,10 +117,10 @@ struct Graph : public Widget {
 
     virtual void update(const double& seconds) { seconds_ = seconds;}
 
-    virtual void drawHeader(ImDrawList* draw_list);
+    virtual void draw2(ImDrawList* draw_list);
     virtual void draw(ImDrawList* draw_list, const ImVec2& offset,
         int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
-        bool& open_context_menu, const bool draw_header);
+        bool& open_context_menu);
 
     double seconds_;
 
@@ -151,9 +151,7 @@ struct Graph : public Widget {
   {
     SignalGenerator(const std::string& name, const ImVec2& pos);
     virtual void update(const double& seconds);
-    virtual void draw(ImDrawList* draw_list, const ImVec2& offset, int& node_selected,
-        int& node_hovered_in_list, int& node_hovered_in_scene,
-        bool& open_context_menu, const bool draw_header);
+    virtual void draw2(ImDrawList* draw_list);
 
     float amplitude_ = 1.0;
     float frequency_ = 1.0;
@@ -163,10 +161,7 @@ struct Graph : public Widget {
   {
     SignalCombine(const std::string& name, const ImVec2& pos);
     virtual void update(const double& seconds);
-    virtual void draw(ImDrawList* draw_list, const ImVec2& offset, int& node_selected,
-        int& node_hovered_in_list, int& node_hovered_in_scene,
-        bool& open_context_menu, const bool draw_header);
-
+    virtual void draw2(ImDrawList* draw_list);
   };
 
 protected:

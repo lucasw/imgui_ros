@@ -173,7 +173,7 @@ void Graph::draw()
     auto node = node_pair.second;
     ImGui::PushID(node->id_);
     node->draw(draw_list, offset, node_selected_, node_hovered_in_list,
-        node_hovered_in_scene, open_context_menu, true);
+        node_hovered_in_scene, open_context_menu);
     ImGui::PopID();
   }
   draw_list->ChannelsMerge();
@@ -277,7 +277,7 @@ void Graph::Node::setOutput(size_t ind, std::shared_ptr<NodeLink> link)
   link->input_node_ = shared_from_this();
 }
 
-void Graph::Node::drawHeader(ImDrawList* draw_list)
+void Graph::Node::draw2(ImDrawList* draw_list)
 {
   (void)draw_list;
   // Display node contents first
@@ -288,17 +288,17 @@ void Graph::Node::drawHeader(ImDrawList* draw_list)
 
 void Graph::Node::draw(ImDrawList* draw_list, const ImVec2& offset,
     int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
-    bool& open_context_menu, const bool draw_header)
+    bool& open_context_menu
+    // int& slot_selected_
+    )
 {
   ImVec2 node_rect_min = offset + pos_;
 
-  if (draw_header) {
-    draw_list->ChannelsSetCurrent(1); // Foreground
-    ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
-    ImGui::BeginGroup(); // Lock horizontal position
-    drawHeader(draw_list);
-    ImGui::EndGroup();
-  }
+  draw_list->ChannelsSetCurrent(1); // Foreground
+  ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
+  ImGui::BeginGroup(); // Lock horizontal position
+  draw2(draw_list);
+  ImGui::EndGroup();
 
   // Display node contents first
   draw_list->ChannelsSetCurrent(1); // Foreground
@@ -345,7 +345,11 @@ void Graph::Node::draw(ImDrawList* draw_list, const ImVec2& offset,
     ImGui::InvisibleButton("output", slot_size);
     ImColor col = IM_COL32(150, 150, 150, 150);
     if (ImGui::IsItemHovered()) {
-      col = IM_COL32(250, 250, 250, 250);
+      col = IM_COL32(200, 200, 200, 200);
+      if (ImGui::IsMouseDragging(1)) {
+        col = IM_COL32(250, 250, 250, 250);
+        // slot_selected = slot_idx;
+      }
     }
     draw_list->AddCircleFilled(pos, NODE_SLOT_RADIUS, col);
   }
@@ -369,29 +373,11 @@ void Graph::SignalGenerator::update(const double& seconds)
   Node::update(seconds);
 }
 
-void Graph::SignalGenerator::draw(ImDrawList* draw_list, const ImVec2& offset,
-    int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
-    bool& open_context_menu, const bool draw_header)
+void Graph::SignalGenerator::draw2(ImDrawList* draw_list)
 {
-  ImVec2 node_rect_min = offset + pos_;
-
-  // Display node contents first
-  draw_list->ChannelsSetCurrent(1); // Foreground
-
-  if (draw_header) {
-    // TODO(lucasw) move into SignalGenerator::drawHeader
-    draw_list->ChannelsSetCurrent(1); // Foreground
-    ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
-    ImGui::BeginGroup(); // Lock horizontal position
-    Node::drawHeader(draw_list);
-    ImGui::SliderFloat("##frequency", &frequency_, 0.0f, 15.0f, "Freq %.2f", 3);
-    ImGui::SliderFloat("##amplitude", &amplitude_, 0.0f, 100.0f, "Amp %.2f", 3);
-    ImGui::EndGroup();
-  }
-  // ImGui::ColorEdit3("##color", &color_.x);
-
-  Node::draw(draw_list, offset, node_selected, node_hovered_in_list,
-      node_hovered_in_scene, open_context_menu, false);
+  Node::draw2(draw_list);
+  ImGui::SliderFloat("##frequency", &frequency_, 0.0f, 15.0f, "Freq %.2f", 3);
+  ImGui::SliderFloat("##amplitude", &amplitude_, 0.0f, 100.0f, "Amp %.2f", 3);
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -419,25 +405,7 @@ void Graph::SignalCombine::update(const double& seconds)
   Node::update(seconds);
 }
 
-void Graph::SignalCombine::draw(ImDrawList* draw_list, const ImVec2& offset,
-    int& node_selected, int& node_hovered_in_list, int& node_hovered_in_scene,
-    bool& open_context_menu, const bool draw_header)
+void Graph::SignalCombine::draw2(ImDrawList* draw_list)
 {
-  ImVec2 node_rect_min = offset + pos_;
-
-  // Display node contents first
-  if (draw_header) {
-    draw_list->ChannelsSetCurrent(1); // Foreground
-    ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
-    ImGui::BeginGroup(); // Lock horizontal position
-    Node::drawHeader(draw_list);
-    // ImGui::SliderFloat("##frequency", &frequency_, 0.0f, 15.0f, "Freq %.2f", 3);
-    // ImGui::SliderFloat("##amplitude", &amplitude_, 0.0f, 100.0f, "Amp %.2f", 3);
-    // ImGui::ColorEdit3("##color", &color_.x);
-    ImGui::EndGroup();
-  }
-
-  Node::draw(draw_list, offset, node_selected, node_hovered_in_list,
-      node_hovered_in_scene, open_context_menu, false);
+  Node::draw2(draw_list);
 }
-
