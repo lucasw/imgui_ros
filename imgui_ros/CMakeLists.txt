@@ -77,6 +77,7 @@ add_executable(imgui_ros_node
   src/graph.cpp
   src/imgui_ros.cpp
   src/image.cpp
+  src/node.cpp
   src/param.cpp
   src/pub.cpp
   src/projector.cpp

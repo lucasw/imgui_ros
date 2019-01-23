@@ -76,14 +76,14 @@ void Graph::draw()
 
     nodes_["Combine1"] = std::make_shared<SignalCombine>("Combine1", ImVec2(270, 80));
 
-    links_["link1"] = std::make_shared<NodeLink>("link1");
-    nodes_["Sine1"]->setOutput(0, links_["link1"]);
+    links_["link1"] = std::make_shared<Link>("link1");
+    nodes_["Sine1"]->outputs_["signal"]->link_ = links_["link1"];
 
-    links_["link2"] = std::make_shared<NodeLink>("link2");
-    nodes_["Sine2"]->setOutput(0, links_["link2"]);
+    links_["link2"] = std::make_shared<Link>("link2");
+    nodes_["Sine2"]->outputs_["signal"]->link_ = links_["link2"];
 
-    nodes_["Combine1"]->setInput(0, links_["link1"]);
-    nodes_["Combine1"]->setInput(1, links_["link2"]);
+    nodes_["Combine1"]->inputs_["in1"]->link_ = links_["link1"];
+    nodes_["Combine1"]->inputs_["in2"]->link_ = links_["link2"];
 
     inited_ = true;
     std::cout << "initted graph\n";
@@ -102,7 +102,7 @@ void Graph::draw()
     auto node = node_pair.second;
     // TODO(lucasw)
     node->id_ = node_idx;
-    ImGui::PushID(node->id_);
+    ImGui::PushID(node_idx);
     #if 0
     if (ImGui::Selectable(node->name_.c_str(), node->id_ == node_selected_)) {
       node_selected_ = node->id_;
@@ -124,8 +124,8 @@ void Graph::draw()
   {
     const auto link = link_pair.second;
     ImGui::Text("%s : %s -> %lu", link->name_.c_str(),
-        link->input_node_->name_.c_str(), link->output_nodes_.size());
-    for (const auto node_pair : link->output_nodes_) {
+        link->input_->name_.c_str(), link->outputs_.size());
+    for (const auto node_pair : link->outputs_) {
       ImGui::Text("  - %s", node_pair.second->name_.c_str());
     }
   }
@@ -240,204 +240,4 @@ void Graph::draw()
   ImGui::PopStyleColor();
   ImGui::PopStyleVar(2);
   ImGui::EndGroup();
-}
-
-//////////////////////////////////////////////////////////////////////////////
-void Graph::NodeLink::draw(ImDrawList* draw_list, const ImVec2& offset)
-{
-  const ImVec2 p1 = offset + input_node_->getOutputSlotPos(name_);  // shared_from_this());
-  // ImGui::Text("p1 %f %f", p1.x, p1.y);
-  for (auto output_node_pair : output_nodes_) {
-    auto output_node = output_node_pair.second;
-    const ImVec2 p2 = offset + output_node->getInputSlotPos(name_);  // shared_from_this());
-    // ImGui::Text("p2 %f %f", p2.x, p2.y);
-    draw_list->AddBezierCurve(
-        p1, p1 + ImVec2(+50, 0),
-        p2 + ImVec2(-50, 0), p2,
-        IM_COL32(200, 200, 100, 255), 3.0f);
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////
-void Graph::Node::setInput(size_t ind, std::shared_ptr<NodeLink> link)
-{
-  if (ind >= input_links_.size()) {
-    // TODO(lucasw) throw
-    std::cerr << "bad input\n";
-    return;
-  }
-  input_links_[ind] = link;
-  link->output_nodes_[link->name_] = shared_from_this();
-}
-
-void Graph::Node::setOutput(size_t ind, std::shared_ptr<NodeLink> link)
-{
-  if (ind >= output_links_.size()) {
-    // TODO(lucasw) throw
-    std::cerr << "bad output\n";
-    return;
-  }
-  output_links_[ind] = link;
-  // a link can have any number of outputs
-  link->input_node_ = shared_from_this();
-}
-
-void Graph::Node::draw2(ImDrawList* draw_list)
-{
-  (void)draw_list;
-  // Display node contents first
-  ImGui::Text("%s", name_.c_str());
-  ImGui::Text("%06.2f", value_);
-  // ImGui::ColorEdit3("##color", &color_.x);
-}
-
-void Graph::Node::draw(ImDrawList* draw_list, const ImVec2& offset,
-    int& node_hovered_in_list, int& node_hovered_in_scene,
-    bool& open_context_menu,
-    std::shared_ptr<Node>& node_for_slot_selected)
-{
-  ImVec2 node_rect_min = offset + pos_;
-
-  draw_list->ChannelsSetCurrent(1); // Foreground
-  ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
-  ImGui::BeginGroup(); // Lock horizontal position
-  draw2(draw_list);
-  ImGui::EndGroup();
-
-  // Display node contents first
-  draw_list->ChannelsSetCurrent(1); // Foreground
-  bool old_any_active = ImGui::IsAnyItemActive();
-  ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
-
-  // Save the size of what we have emitted and whether any of the widgets are being used
-  bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
-  size_ = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
-  ImVec2 node_rect_max = node_rect_min + size_;
-
-  // Display node box
-  draw_list->ChannelsSetCurrent(0); // Background
-  ImGui::SetCursorScreenPos(node_rect_min);
-  ImGui::InvisibleButton("node", size_);
-  if (ImGui::IsItemHovered())
-  {
-    node_hovered_in_scene = id_;
-    open_context_menu |= ImGui::IsMouseClicked(1);
-  }
-  bool node_moving_active = ImGui::IsItemActive();
-  if (node_widgets_active || node_moving_active) {
-    node_selected_ = true;
-  }
-  if (node_moving_active && ImGui::IsMouseDragging(0)) {
-    pos_ = pos_ + ImGui::GetIO().MouseDelta;
-  }
-
-  ImU32 node_bg_color = (node_hovered_in_list == id_ ||
-      node_hovered_in_scene == id_ ||
-      (node_hovered_in_list == -1 && node_selected_)) ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255);
-  draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 4.0f);
-  draw_list->AddRect(node_rect_min, node_rect_max, IM_COL32(100, 100, 100, 255), 4.0f);
-  for (int slot_idx = 0; slot_idx < static_cast<int>(input_links_.size()); slot_idx++) {
-    draw_list->AddCircleFilled(offset + getInputSlotPos(slot_idx),
-        NODE_SLOT_RADIUS, IM_COL32(150, 150, 150, 150));
-  }
-  for (int slot_idx = 0; slot_idx < static_cast<int>(output_links_.size()); slot_idx++) {
-    const ImVec2 pos = offset + getOutputSlotPos(slot_idx);
-    const ImVec2 slot_half_size = ImVec2(NODE_SLOT_RADIUS, NODE_SLOT_RADIUS);
-    const ImVec2 slot_size = ImVec2(NODE_SLOT_RADIUS * 2.0, NODE_SLOT_RADIUS * 2.0);
-    // draw_list->ChannelsSetCurrent(0); // Background
-    ImGui::SetCursorScreenPos(pos - slot_half_size);
-    ImGui::InvisibleButton("output", slot_size);
-    ImColor col = IM_COL32(150, 150, 150, 150);
-
-    // only allow new selections if not already dragging around a link for another node
-    // or another output on this node
-    if (((node_for_slot_selected == nullptr) || (node_for_slot_selected == shared_from_this())) &&
-        ((slot_selected_ == -1) || (slot_selected_ == slot_idx))) {
-
-      // TODO(lucasw) the hovering doesn't work if outside the box of this node
-      // half the circle is outside it, fix that or just move circle to inside.
-      if (ImGui::IsItemHovered()) {
-        col = IM_COL32(200, 200, 200, 200);
-        if (ImGui::IsMouseDragging(1)) {
-          col = IM_COL32(250, 250, 250, 250);
-          slot_selected_ = slot_idx;
-          node_for_slot_selected = shared_from_this();
-        }
-      }
-
-      if (ImGui::IsMouseDragging(1)) {
-        // while the mouse continues to drag draw the potential new link
-        if (slot_idx == slot_selected_) {
-          col = IM_COL32(250, 150, 250, 150);
-          ImVec2 mouse_pos = ImGui::GetMousePos();
-          draw_list->AddCircleFilled(mouse_pos, NODE_SLOT_RADIUS, col);
-          draw_list->AddBezierCurve(
-              pos, pos + ImVec2(+50, 0),
-              mouse_pos + ImVec2(-50, 0), mouse_pos,
-              IM_COL32(200, 200, 100, 255), 3.0f);
-        }
-      } else {
-        // if the mouse is no longer dragging the slot_selected is reset
-        slot_selected_ = -1;
-        node_for_slot_selected = nullptr;
-      }
-    }
-
-    draw_list->AddCircleFilled(pos, NODE_SLOT_RADIUS, col);
-  }
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-Graph::SignalGenerator::SignalGenerator(const std::string& name,
-    const ImVec2& pos) : Node(name, pos, 0.0, ImColor(255, 0, 0, 255), 0, 1)
-{
-
-}
-
-void Graph::SignalGenerator::update(const double& seconds)
-{
-  value_ = amplitude_ * sin(seconds * frequency_ * M_PI * 2.0);
-  for (auto link : output_links_) {
-    if (link) {
-      link->value_ = value_;
-    }
-  }
-  Node::update(seconds);
-}
-
-void Graph::SignalGenerator::draw2(ImDrawList* draw_list)
-{
-  Node::draw2(draw_list);
-  ImGui::SliderFloat("##frequency", &frequency_, 0.0f, 15.0f, "Freq %.2f", 3);
-  ImGui::SliderFloat("##amplitude", &amplitude_, 0.0f, 100.0f, "Amp %.2f", 3);
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-Graph::SignalCombine::SignalCombine(const std::string& name, const ImVec2& pos) :
-    Graph::Node(name, pos, 0.0, ImColor(255, 100, 0, 255), 2, 1)
-{
-
-}
-
-void Graph::SignalCombine::update(const double& seconds)
-{
-  value_ = 0.0;
-  for (size_t i = 0; i < input_links_.size(); ++i) {
-    if (input_links_[i] && input_links_[i]->input_node_) {
-      value_ += input_links_[i]->value_;  // input_node_->value_;  // * coefficient_[i];
-    }
-  }
-
-  for (auto link : output_links_) {
-    if (link) {
-      link->value_ = value_;
-    }
-  }
-
-  Node::update(seconds);
-}
-
-void Graph::SignalCombine::draw2(ImDrawList* draw_list)
-{
-  Node::draw2(draw_list);
 }
