@@ -87,6 +87,8 @@ struct Connector
 
     ImVec2 getPos() { return pos_; }
 
+    void resetConnections();
+    virtual void init() { resetConnections();}
     virtual void update(const double& seconds) { seconds_ = seconds;}
 
     virtual void draw2(ImDrawList* draw_list);
@@ -122,6 +124,7 @@ struct Connector
   struct SignalGenerator : public Node
   {
     SignalGenerator(const std::string& name, const ImVec2& pos);
+    virtual void init();
     virtual void update(const double& seconds);
     virtual void draw2(ImDrawList* draw_list);
 
@@ -132,6 +135,7 @@ struct Connector
   struct SignalCombine : public Node
   {
     SignalCombine(const std::string& name, const ImVec2& pos);
+    virtual void init();
     virtual void update(const double& seconds);
     virtual void draw2(ImDrawList* draw_list);
   };

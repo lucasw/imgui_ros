@@ -73,17 +73,31 @@ void Graph::draw()
   {
     nodes_["Sine1"] = std::make_shared<SignalGenerator>("Sine1", ImVec2(40, 50));
     nodes_["Sine2"] = std::make_shared<SignalGenerator>("Sine2", ImVec2(40, 150));
-
     nodes_["Combine1"] = std::make_shared<SignalCombine>("Combine1", ImVec2(270, 80));
 
     links_["link1"] = std::make_shared<Link>("link1");
-    nodes_["Sine1"]->outputs_["signal"]->link_ = links_["link1"];
-
     links_["link2"] = std::make_shared<Link>("link2");
+
+    // create the connections
+    for (auto node_pair : nodes_) {
+      node_pair.second->init();
+    }
+
+    // now assign links to the connections
+    // TODO(lucasw) make function make these both ways to avoid error
+    nodes_["Sine1"]->outputs_["signal"]->link_ = links_["link1"];
+    links_["link1"]->input_ = nodes_["Sine1"]->outputs_["signal"];
+
     nodes_["Sine2"]->outputs_["signal"]->link_ = links_["link2"];
+    links_["link2"]->input_ = nodes_["Sine1"]->outputs_["signal"];
 
     nodes_["Combine1"]->inputs_["in1"]->link_ = links_["link1"];
+    // TODO(lucasw) what to use as key for outputs?  May be connecting
+    // to multiple inputs on the same
+    links_["link1"]->outputs_["a"] = nodes_["Combine1"]->inputs_["in1"];
+
     nodes_["Combine1"]->inputs_["in2"]->link_ = links_["link2"];
+    links_["link2"]->outputs_["a"] = nodes_["Combine1"]->inputs_["in2"];
 
     inited_ = true;
     std::cout << "initted graph\n";

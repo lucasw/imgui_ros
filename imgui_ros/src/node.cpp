@@ -53,6 +53,19 @@ ImVec2 Connector::getPos()
 
 ////////////////////////////////////////////////////////////////////////////
 
+void Node::resetConnections()
+{
+  // break circular shared_ptrs
+  for (auto con_pair : inputs_) {
+    con_pair.second->parent_ = nullptr;
+  }
+  inputs_.clear();
+  for (auto con_pair : outputs_) {
+    con_pair.second->parent_ = nullptr;
+  }
+  outputs_.clear();
+}
+
 void Node::draw2(ImDrawList* draw_list)
 {
   (void)draw_list;
@@ -199,6 +212,11 @@ void Link::draw(ImDrawList* draw_list, const ImVec2& offset)
 SignalGenerator::SignalGenerator(const std::string& name,
     const ImVec2& pos) : Node(name, pos, ImColor(255, 0, 0, 255))
 {
+}
+
+void SignalGenerator::init()
+{
+  resetConnections();
   auto con = std::make_shared<Connector>();
   con->parent_ = shared_from_this();
   con->pos_ = ImVec2(0, 10);
@@ -224,6 +242,11 @@ void SignalGenerator::draw2(ImDrawList* draw_list)
 SignalCombine::SignalCombine(const std::string& name, const ImVec2& pos) :
     Node(name, pos, ImColor(255, 100, 0, 255))
 {
+}
+
+void SignalCombine::init()
+{
+  resetConnections();
   {
     auto con = std::make_shared<Connector>();
     con->parent_ = shared_from_this();
