@@ -101,8 +101,6 @@ struct Connector
 
     std::map<std::string, std::shared_ptr<Connector> > inputs_;
     std::map<std::string, std::shared_ptr<Connector> > outputs_;
-    // void setInput(size_t ind, std::shared_ptr<Connector> link);
-    // void setOutput(size_t ind, std::shared_ptr<Link> link);
   };
 
   struct Link
@@ -128,6 +126,7 @@ struct Connector
     virtual void update(const double& seconds);
     virtual void draw2(ImDrawList* draw_list);
 
+    // TODO(lucasw) Turn these into inputs later
     float amplitude_ = 1.0;
     float frequency_ = 1.0;
   };

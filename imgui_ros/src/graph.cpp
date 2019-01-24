@@ -71,33 +71,19 @@ void Graph::draw()
 
   if (!inited_)
   {
+    // TODO(lucasw) if a node with the same name already exist it is not
+    // going to destruct properly because of circular shared_ptrs - need to fix that.
     nodes_["Sine1"] = std::make_shared<SignalGenerator>("Sine1", ImVec2(40, 50));
     nodes_["Sine2"] = std::make_shared<SignalGenerator>("Sine2", ImVec2(40, 150));
     nodes_["Combine1"] = std::make_shared<SignalCombine>("Combine1", ImVec2(270, 80));
-
-    links_["link1"] = std::make_shared<Link>("link1");
-    links_["link2"] = std::make_shared<Link>("link2");
 
     // create the connections
     for (auto node_pair : nodes_) {
       node_pair.second->init();
     }
 
-    // now assign links to the connections
-    // TODO(lucasw) make function make these both ways to avoid error
-    nodes_["Sine1"]->outputs_["signal"]->link_ = links_["link1"];
-    links_["link1"]->input_ = nodes_["Sine1"]->outputs_["signal"];
-
-    nodes_["Sine2"]->outputs_["signal"]->link_ = links_["link2"];
-    links_["link2"]->input_ = nodes_["Sine1"]->outputs_["signal"];
-
-    nodes_["Combine1"]->inputs_["in1"]->link_ = links_["link1"];
-    // TODO(lucasw) what to use as key for outputs?  May be connecting
-    // to multiple inputs on the same
-    links_["link1"]->outputs_["a"] = nodes_["Combine1"]->inputs_["in1"];
-
-    nodes_["Combine1"]->inputs_["in2"]->link_ = links_["link2"];
-    links_["link2"]->outputs_["a"] = nodes_["Combine1"]->inputs_["in2"];
+    linkNodes("Sine1", "signal", "Combine1", "in1");
+    linkNodes("Sine2", "signal", "Combine1", "in2");
 
     inited_ = true;
     std::cout << "initted graph\n";
@@ -254,4 +240,56 @@ void Graph::draw()
   ImGui::PopStyleColor();
   ImGui::PopStyleVar(2);
   ImGui::EndGroup();
+}
+
+
+void Graph::linkNodes(
+    const std::string& output_node_name, const std::string& output_node_con_name,
+    const std::string& input_node_name, const std::string& input_node_con_name)
+{
+  if (nodes_.count(output_node_name) < 1) {
+    std::cerr << output_node_name << " doesn't exist\n";
+    return;
+  }
+  auto output_node = nodes_[output_node_name];
+  if (nodes_.count(input_node_name) < 1) {
+    std::cerr << output_node_name << " doesn't exist\n";
+    return;
+  }
+  auto input_node = nodes_[input_node_name];
+  if (output_node->outputs_.count(output_node_con_name) < 1) {
+    // TODO(lucasw) throw
+    std::cerr << output_node_name << " input " << output_node_con_name << " doesn't exit\n";
+    return;
+  }
+  auto output_con = output_node->outputs_[output_node_con_name];
+  if (input_node->inputs_.count(input_node_con_name) < 1) {
+    // TODO(lucasw) throw
+    std::cerr << input_node_name << " input " << input_node_con_name << " doesn't exit\n";
+    return;
+  }
+  auto input_con = input_node->inputs_[input_node_con_name];
+
+  // next connect the ouput connector to the input connector
+
+  const std::string link_output_con_name = input_node_name + "#" + input_node_con_name;
+  if (input_con->link_ != nullptr) {
+    if (input_con->link_->input_ == output_con) {
+      // already linked, don't need to do anything
+      return;
+    }
+    // break incoming link if any
+    input_con->link_->outputs_.erase(link_output_con_name);
+  }
+
+  if (output_con->link_ == nullptr) {
+    // need a new link here (TODO(lucasw) though every output may as well already have one)
+    const std::string new_link_name = output_node_name + "#" + output_node_con_name;
+    output_con->link_ = std::make_shared<Link>(new_link_name);
+    links_[new_link_name] = output_con->link_;
+    output_con->link_->input_ = output_con;
+  }
+
+  output_con->link_->outputs_[link_output_con_name] = input_con;
+  input_con->link_ = output_con->link_;
 }
