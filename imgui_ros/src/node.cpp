@@ -40,9 +40,22 @@ void Connector::update()
 
 void Connector::draw(ImDrawList* draw_list, const ImVec2& offset)
 {
-  auto col = IM_COL32(250, 150, 250, 150);
-  draw_list->AddCircleFilled(getPos() + offset, RADIUS, col);
+  const auto col = IM_COL32(250, 150, 250, 150);
+  const auto pos = getPos() + offset;
+  // draw_list->AddCircleFilled(pos, RADIUS, col);
+
+  draw_list->ChannelsSetCurrent(1); // Foreground
+  ImGui::SetCursorScreenPos(pos);  //  + NODE_WINDOW_PADDING);
+  ImGui::BeginGroup(); // Lock horizontal position
   ImGui::Text("%06.2f", value_);
+  ImGui::EndGroup();
+
+  size_ = ImGui::GetItemRectSize();  // + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
+  ImVec2 node_rect_max = pos + size_;
+
+  draw_list->ChannelsSetCurrent(0); // Background
+  auto con_bg_color = IM_COL32(85, 75, 75, 255);
+  draw_list->AddRectFilled(pos, node_rect_max, con_bg_color, 4.0f);
 }
 
 ImVec2 Connector::getPos()
@@ -127,7 +140,7 @@ void Node::draw(ImDrawList* draw_list, const ImVec2& offset,
   }
 
   for (auto output_pair : outputs_) {
-    output_pair.second->draw(draw_list, offset);
+    output_pair.second->draw(draw_list, offset + ImVec2(size_.x, 0));
   }
 
   #if 0
@@ -192,14 +205,16 @@ void Link::draw(ImDrawList* draw_list, const ImVec2& offset)
     return;
   }
 
-  const ImVec2 p1 = offset + input_->getPos();
+  const ImVec2 p1 = offset + input_->getPos() +
+      ImVec2(input_->parent_->size_.x + input_->size_.x, input_->size_.y * 0.5);
   // ImGui::Text("p1 %f %f", p1.x, p1.y);
   for (auto output_pair : outputs_) {
     const auto output = output_pair.second;
     if (!output) {
       continue;
     }
-    const ImVec2 p2 = offset + output->getPos();
+    const ImVec2 p2 = offset + output->getPos() +
+        ImVec2(0.0 /*-output->size_.x*/, output->size_.y * 0.5);
     // ImGui::Text("p2 %f %f", p2.x, p2.y);
     draw_list->AddBezierCurve(
         p1, p1 + ImVec2(+80, 0),
@@ -250,19 +265,19 @@ void SignalCombine::init()
   {
     auto con = std::make_shared<Connector>();
     con->parent_ = shared_from_this();
-    con->pos_ = ImVec2(0, 10);
+    con->pos_ = ImVec2(-40, 10);
     inputs_["in1"] = con;
   }
   {
     auto con = std::make_shared<Connector>();
     con->parent_ = shared_from_this();
-    con->pos_ = ImVec2(0, 50);
+    con->pos_ = ImVec2(-40, 50);
     inputs_["in2"] = con;
   }
   {
     auto con = std::make_shared<Connector>();
     con->parent_ = shared_from_this();
-    con->pos_ = ImVec2(100, 10);
+    con->pos_ = ImVec2(0, 10);
     outputs_["signal"] = con;
   }
 }

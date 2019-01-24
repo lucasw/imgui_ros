@@ -59,6 +59,7 @@ struct Connector
   const float RADIUS = 8.0f;
   ImVec4 color_;
   ImVec2 pos_;
+  ImVec2 size_;
 
   void update();
   void draw(ImDrawList* draw_list, const ImVec2& offset);
