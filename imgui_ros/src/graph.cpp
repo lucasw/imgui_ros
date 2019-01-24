@@ -53,6 +53,11 @@ void Graph::update(const rclcpp::Time& stamp)
 {
   // std::cout << "update " << stamp.nanoseconds() << "\n";
   const double seconds = (stamp - start_).nanoseconds() / 1e9;
+  for (auto links_pair : links_)
+  {
+    links_pair.second->update();
+  }
+
   for (auto node_pair : nodes_)
   {
     node_pair.second->update(seconds);
