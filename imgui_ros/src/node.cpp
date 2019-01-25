@@ -121,7 +121,6 @@ void Node::draw(ImDrawList* draw_list, const ImVec2& offset,
     std::shared_ptr<Node>& node_hovered_in_list,
     std::shared_ptr<Node>& node_hovered_in_scene,
     bool& open_context_menu,
-    std::shared_ptr<Node>& node_for_slot_selected,
     std::shared_ptr<Connector>& con_src, std::shared_ptr<Connector>& con_dst)
 {
   ImVec2 node_rect_min = offset + pos_;
@@ -186,53 +185,6 @@ void Node::draw(ImDrawList* draw_list, const ImVec2& offset,
     output_pair.second->draw(draw_list, offset + ImVec2(size_.x, 0),
         con_src, con_dst);
   }
-
-  #if 0
-  for (int slot_idx = 0; slot_idx < static_cast<int>(output_links_.size()); slot_idx++) {
-    const ImVec2 pos = offset + getOutputSlotPos(slot_idx);
-    const ImVec2 slot_half_size = ImVec2(NODE_SLOT_RADIUS, NODE_SLOT_RADIUS);
-    const ImVec2 slot_size = ImVec2(NODE_SLOT_RADIUS * 2.0, NODE_SLOT_RADIUS * 2.0);
-    // draw_list->ChannelsSetCurrent(0); // Background
-    ImGui::SetCursorScreenPos(pos - slot_half_size);
-    ImGui::InvisibleButton("output", slot_size);
-    ImColor col = IM_COL32(150, 150, 150, 150);
-
-    // only allow new selections if not already dragging around a link for another node
-    // or another output on this node
-    if (((node_for_slot_selected == nullptr) || (node_for_slot_selected == shared_from_this())) &&
-        ((slot_selected_ == -1) || (slot_selected_ == slot_idx))) {
-
-      // TODO(lucasw) the hovering doesn't work if outside the box of this node
-      // half the circle is outside it, fix that or just move circle to inside.
-      if (ImGui::IsItemHovered()) {
-        col = IM_COL32(200, 200, 200, 200);
-        if (ImGui::IsMouseDragging(1)) {
-          col = IM_COL32(250, 250, 250, 250);
-          slot_selected_ = slot_idx;
-          node_for_slot_selected = shared_from_this();
-        }
-      }
-
-      if (ImGui::IsMouseDragging(1)) {
-        // while the mouse continues to drag draw the potential new link
-        if (slot_idx == slot_selected_) {
-          col = IM_COL32(250, 150, 250, 150);
-          ImVec2 mouse_pos = ImGui::GetMousePos();
-          draw_list->AddCircleFilled(mouse_pos, NODE_SLOT_RADIUS, col);
-          draw_list->AddBezierCurve(
-              pos, pos + ImVec2(+50, 0),
-              mouse_pos + ImVec2(-50, 0), mouse_pos,
-              IM_COL32(200, 200, 100, 255), 3.0f);
-        }
-      } else {
-        // if the mouse is no longer dragging the slot_selected is reset
-        slot_selected_ = -1;
-        node_for_slot_selected = nullptr;
-      }
-    }
-
-  }
-  #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -343,4 +295,48 @@ void SignalCombine::update(const double& seconds)
 void SignalCombine::draw2(ImDrawList* draw_list)
 {
   Node::draw2(draw_list);
+}
+
+////////////
+FloatPublisher::FloatPublisher(const std::string& name, const ImVec2& pos,
+    const std::string& topic) :
+    Node(name, pos, ImColor(255, 100, 0, 255)),
+    topic_(topic)
+{
+}
+
+void FloatPublisher::init()
+{
+  resetConnections();
+  {
+    auto con = std::make_shared<Connector>(true);
+    con->name_ = "input";
+    con->parent_ = shared_from_this();
+    con->pos_ = ImVec2(-40, 10);
+    inputs_[con->name_] = con;
+  }
+}
+
+void FloatPublisher::update(const double& seconds)
+{
+  float value = 0.0;
+  for (auto input_pair : inputs_) {
+    value += input_pair.second->value_;  // input_node_->value_;  // * coefficient_[i];
+  }
+  outputs_["signal"]->value_ = value;
+
+  // TODO(lucasw) may want an update rate control
+  // that won't publish every update.
+  if (pub_) {
+    std_msgs::msg::Float32 msg;
+    msg.data = value;
+    pub_->publish(msg);
+  }
+  Node::update(seconds);
+}
+
+void FloatPublisher::draw2(ImDrawList* draw_list)
+{
+  Node::draw2(draw_list);
+  ImGui::Text("Topic: '%s'", topic_.c_str());
 }

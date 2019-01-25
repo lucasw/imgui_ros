@@ -166,6 +166,8 @@ void Graph::draw()
   } else {
     ImGui::Text("connector source - none");
   }
+  // This should always be none, as soon as something is clicked it resets
+  // to nullptr
   if (con_dst_) {
     ImGui::Text("connector dest %s %s",
         con_dst_->parent_->name_.c_str(), con_dst_->name_.c_str());
@@ -223,7 +225,6 @@ void Graph::draw()
         node_hovered_in_list,
         node_hovered_in_scene,
         open_context_menu,
-        node_for_slot_selected_,
         con_src_, con_dst_);
     ImGui::PopID();
     ++id;
@@ -248,53 +249,49 @@ void Graph::draw()
   }
   draw_list->ChannelsMerge();
 
-  #if 0
   // Open context menu
   if (!ImGui::IsAnyItemHovered() && ImGui::IsMouseHoveringWindow() && ImGui::IsMouseClicked(1))
   {
-    node_selected_ = node_hovered_in_list = node_hovered_in_scene = -1;
+    node_selected_ = node_hovered_in_list = node_hovered_in_scene = nullptr;
     open_context_menu = true;
   }
   if (open_context_menu)
   {
     ImGui::OpenPopup("context_menu");
-    if (node_hovered_in_list != -1) {
+    if (node_hovered_in_list != nullptr) {
       node_selected_ = node_hovered_in_list;
     }
-    if (node_hovered_in_scene != -1) {
+    if (node_hovered_in_scene != nullptr) {
       node_selected_ = node_hovered_in_scene;
     }
   }
-  #endif
 
   // Draw context menu
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
 
-  // TODO(lucasw) bring this back
-  #if 0
   if (ImGui::BeginPopup("context_menu"))
   {
-    auto node = node_selected_ != -1 ? nodes_[node_selected_] : NULL;
+    auto node = node_selected_;
     ImVec2 scene_pos = ImGui::GetMousePosOnOpeningCurrentPopup() - offset;
     if (node)
     {
       ImGui::Text("Node '%s'", node->name_.c_str());
       ImGui::Separator();
-      if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
-      if (ImGui::MenuItem("Delete", NULL, false, false)) {}
-      if (ImGui::MenuItem("Copy", NULL, false, false)) {}
+      if (ImGui::MenuItem("TBD Rename..", NULL, false, false)) {}
+      if (ImGui::MenuItem("TBD Delete", NULL, false, false)) {}
+      if (ImGui::MenuItem("TBD Copy", NULL, false, false)) {}
     }
     else
     {
-      if (ImGui::MenuItem("Add")) {
-        nodes_.push_back(std::make_shared<Node>(nodes_.size(), "New node", scene_pos, 0.5f,
-            ImColor(100, 100, 200), 2, 2));
+      // TODO(lucasw) add a menu item for every node type
+      if (ImGui::MenuItem("TBD Add")) {
+        // nodes_.push_back(std::make_shared<Node>(nodes_.size(), "New node", scene_pos, 0.5f,
+        //    ImColor(100, 100, 200), 2, 2));
       }
-      if (ImGui::MenuItem("Paste", NULL, false, false)) {}
+      if (ImGui::MenuItem("TBD Paste", NULL, false, false)) {}
     }
     ImGui::EndPopup();
   }
-  #endif
   ImGui::PopStyleVar();
 
   // Scrolling

@@ -71,9 +71,6 @@ protected:
   ImVec2 scrolling_ = ImVec2(0.0f, 0.0f);
   bool show_grid_ = true;
   std::shared_ptr<Node> node_selected_;
-
-  // adding a new link
-  std::shared_ptr<Node> node_for_slot_selected_;
 };
 
 #endif  // IMGUI_ROS_GRAPH_H

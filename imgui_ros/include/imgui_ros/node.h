@@ -35,6 +35,7 @@
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/float32.hpp>
 
 // Adapting from https://gist.github.com/ocornut/7e9b3ec566a333d725d4 by ocornut
 // NB: You can use math functions/operators on ImVec2 if you #define IMGUI_DEFINE_MATH_OPERATORS and #include "imgui_internal.h"
@@ -100,7 +101,6 @@ struct Connector : std::enable_shared_from_this<Connector>
         std::shared_ptr<Node>& node_hovered_in_list,
         std::shared_ptr<Node>& node_hovered_in_scene,
         bool& open_context_menu,
-        std::shared_ptr<Node>& node_for_slot_selected,
         std::shared_ptr<Connector>& con_src, std::shared_ptr<Connector>& con_dst);
 
     double seconds_;
@@ -143,6 +143,17 @@ struct Connector : std::enable_shared_from_this<Connector>
     virtual void init();
     virtual void update(const double& seconds);
     virtual void draw2(ImDrawList* draw_list);
+  };
+
+  struct FloatPublisher : public Node
+  {
+    FloatPublisher(const std::string& name, const ImVec2& pos, const std::string& topic);
+    virtual void init();
+    virtual void update(const double& seconds);
+    virtual void draw2(ImDrawList* draw_list);
+
+    std::string topic_;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_;
   };
 
 #endif  // IMGUI_ROS_NODE_H
