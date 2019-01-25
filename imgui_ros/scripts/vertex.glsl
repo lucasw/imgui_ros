@@ -1,4 +1,4 @@
-const int MAX_PROJECTORS = 4;
+const int MAX_PROJECTORS = 6;
 
 uniform mat4 model_matrix;
 uniform mat4 view_matrix;

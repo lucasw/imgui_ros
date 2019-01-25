@@ -117,7 +117,7 @@ struct Viz3D : public Window {
   // Can exceed this number of projectors but this is the number
   // than can simultaneously be projectored on any surface.
   // This constant has to be matched in shaders
-  static const int MAX_PROJECTORS = 4;
+  static const int MAX_PROJECTORS = 6;
 
   void addOrReplaceShape(const std::string& name, const std::shared_ptr<Shape> shape);
   // void removeShape(const std::shared_ptr<Shape> shape);

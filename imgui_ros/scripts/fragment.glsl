@@ -9,7 +9,7 @@ uniform float far_clip;
 // TEMP debug
 uniform samplerCube cube_map;
 
-const int MAX_PROJECTORS = 4;
+const int MAX_PROJECTORS = 6;
 uniform vec3 eye_pos;
 uniform sampler2D Texture;
 uniform sampler2D shininess_texture;
@@ -166,17 +166,21 @@ void main()
 
    // TODO(lucasw) need opengl 4.0 to do this within for loop
    // error: sampler arrays indexed with non-constant expressions are forbidden in GLSL 1.30 and later
-   vec3 proj_light[4];
+   vec3 proj_light[MAX_PROJECTORS];
    proj_light[0] = texture(ProjectedTexture[0], uv[0].st).rgb;
    proj_light[1] = texture(ProjectedTexture[1], uv[1].st).rgb;
    proj_light[2] = texture(ProjectedTexture[2], uv[2].st).rgb;
    proj_light[3] = texture(ProjectedTexture[3], uv[3].st).rgb;
+   proj_light[4] = texture(ProjectedTexture[4], uv[4].st).rgb;
+   proj_light[5] = texture(ProjectedTexture[5], uv[5].st).rgb;
 
-   float shadow_dist[4];
+   float shadow_dist[MAX_PROJECTORS];
    shadow_dist[0] = texture(projector_shadow_map[0], uv[0].st).r;
    shadow_dist[1] = texture(projector_shadow_map[1], uv[1].st).r;
    shadow_dist[2] = texture(projector_shadow_map[2], uv[2].st).r;
    shadow_dist[3] = texture(projector_shadow_map[3], uv[3].st).r;
+   shadow_dist[4] = texture(projector_shadow_map[4], uv[4].st).r;
+   shadow_dist[5] = texture(projector_shadow_map[5], uv[5].st).r;
 
    // pure white for now
    vec3 specular_color = vec3(1.0, 1.0, 1.0);
