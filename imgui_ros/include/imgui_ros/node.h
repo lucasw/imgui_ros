@@ -67,6 +67,7 @@ struct Connector : std::enable_shared_from_this<Connector>
   void draw(ImDrawList* draw_list, const ImVec2& offset,
       std::shared_ptr<Connector>& src, std::shared_ptr<Connector>& dst);
   ImVec2 getPos();
+  ImVec2 getEndPos();
 
   std::shared_ptr<Node> parent_;
   std::shared_ptr<Link> link_;

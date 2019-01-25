@@ -57,16 +57,20 @@ void Graph::update(const rclcpp::Time& stamp)
   if ((con_src_ != nullptr) && (con_dst_ != nullptr)) {
     if (con_src_->input_not_output_ != con_dst_->input_not_output_) {
       // linkNodes(con_src_, con_dst_);
+      bool success;
       if (con_dst_->input_not_output_) {
-        linkNodes(con_src_->parent_->name_, con_src_->name_,
-                  con_dst_->parent_->name_, con_dst_->name_);
+        success = linkNodes(con_src_->parent_->name_, con_src_->name_,
+                            con_dst_->parent_->name_, con_dst_->name_);
       } else {
-        linkNodes(con_dst_->parent_->name_, con_dst_->name_,
-                  con_src_->parent_->name_, con_src_->name_);
+        success = linkNodes(con_dst_->parent_->name_, con_dst_->name_,
+                            con_src_->parent_->name_, con_src_->name_);
       }
-      con_src_ = nullptr;
-      con_dst_ = nullptr;
+
+      if (success) {
+        con_src_ = nullptr;
+      }
     }
+    con_dst_ = nullptr;
   }
 
   // copy all the outputs to inputs
@@ -154,6 +158,21 @@ void Graph::draw()
       ImGui::Text("  - %s", node_pair.second->name_.c_str());
     }
   }
+
+  ImGui::Separator();
+  if (con_src_) {
+    ImGui::Text("connector source %s %s",
+        con_src_->parent_->name_.c_str(), con_src_->name_.c_str());
+  } else {
+    ImGui::Text("connector source - none");
+  }
+  if (con_dst_) {
+    ImGui::Text("connector dest %s %s",
+        con_dst_->parent_->name_.c_str(), con_dst_->name_.c_str());
+  } else {
+    ImGui::Text("connector dest - none");
+  }
+
   ImGui::EndChild();
 
   ImGui::SameLine();
@@ -208,6 +227,24 @@ void Graph::draw()
         con_src_, con_dst_);
     ImGui::PopID();
     ++id;
+  }
+
+  // draw a link from the last selected connector to current mouse position
+  if ((con_src_ != nullptr) && (con_dst_ == nullptr)) {
+    ImVec2 p1;
+    ImVec2 p2;
+    if (con_src_->input_not_output_) {
+      p2 = offset + con_src_->getPos() + ImVec2(0.0, con_src_->size_.y * 0.5);
+      p1 = ImGui::GetMousePos();
+    } else {
+      p2 = ImGui::GetMousePos();
+      p1 = offset + con_src_->getEndPos();
+    }
+
+    draw_list->AddBezierCurve(
+        p1, p1 + ImVec2(+80, 0),
+        p2 + ImVec2(-80, 0), p2,
+        IM_COL32(220, 190, 100, 205), 3.0f);
   }
   draw_list->ChannelsMerge();
 

@@ -67,7 +67,10 @@ void Connector::draw(ImDrawList* draw_list, const ImVec2& offset,
     if (ImGui::IsMouseClicked(0)) {
       if (src == nullptr) {
         src = shared_from_this();
-      } else if (src != shared_from_this()) {
+      } else if (src == shared_from_this()) {
+        // unselect
+        src = nullptr;
+      } else {
         dst = shared_from_this();
       }
     }
@@ -86,6 +89,10 @@ ImVec2 Connector::getPos()
   return parent_->getPos() + pos_;
 }
 
+ImVec2 Connector::getEndPos()
+{
+  return getPos() + ImVec2(parent_->size_.x + size_.x, size_.y * 0.5);
+}
 ////////////////////////////////////////////////////////////////////////////
 
 void Node::resetConnections()
@@ -242,8 +249,7 @@ void Link::draw(ImDrawList* draw_list, const ImVec2& offset)
     return;
   }
 
-  const ImVec2 p1 = offset + input_->getPos() +
-      ImVec2(input_->parent_->size_.x + input_->size_.x, input_->size_.y * 0.5);
+  const ImVec2 p1 = offset + input_->getEndPos();
   // ImGui::Text("p1 %f %f", p1.x, p1.y);
   for (auto output_pair : outputs_) {
     const auto output = output_pair.second;
