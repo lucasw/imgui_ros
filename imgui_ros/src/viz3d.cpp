@@ -282,6 +282,9 @@ Viz3D::Viz3D(const std::string name,
   // render_message_.precision(2);
   // render_message_.fill('0');
 
+  node->get_parameter_or("frame_id", frame_id_, frame_id_);
+  node->get_parameter_or("viewer_frame_id", main_window_frame_id_, main_window_frame_id_);
+
   glsl_version_string_ = renderer->GlslVersionString;
 
   // TODO(lucasw) set via service all
@@ -528,10 +531,12 @@ bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_p
 {
   // std::shared_ptr<rclcpp::Node> node = node_.lock();
   // std::stringstream ss;
-  std::cout << "updating shape shader connections '"
-      << shape->name_ << "' to '" << shaders->name_ << "'" << std::endl;  //"\n";
-  std::cout << "vao handle: " << shape->vao_handle_ << ", ";
-  std::cout << "vbo handle: " << shape->vbo_handle_ << ", ";
+  if (false) {
+    std::cout << "updating shape shader connections '"
+        << shape->name_ << "' to '" << shaders->name_ << "'" << std::endl;  //"\n";
+    std::cout << "vao handle: " << shape->vao_handle_ << ", ";
+    std::cout << "vbo handle: " << shape->vbo_handle_ << ", ";
+  }
 
   glBindVertexArray(shape->vao_handle_);
   glBindBuffer(GL_ARRAY_BUFFER, shape->vbo_handle_);
@@ -789,6 +794,11 @@ void Viz3D::drawMain()
   const int display_size_y = ImGui::GetIO().DisplaySize.y;
   const int fb_width = display_size_x * ImGui::GetIO().DisplayFramebufferScale.x;
   const int fb_height = display_size_y * ImGui::GetIO().DisplayFramebufferScale.y;
+  // TODO(lucasw) make both these frames editable with an InputText,
+  // and provide a combo of all known frames
+  ImGui::Text("viewer frame: '%s'", main_window_frame_id_.c_str());
+  ImGui::Text("viz frame: '%s'", frame_id_.c_str());
+
   ImGui::Text("size %d x %d, %d x %d",
       display_size_x, display_size_y,
       fb_width, fb_height);
