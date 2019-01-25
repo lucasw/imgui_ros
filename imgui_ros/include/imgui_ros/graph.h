@@ -60,7 +60,7 @@ protected:
 
   std::map<std::string, std::shared_ptr<Node> > nodes_;
   std::map<std::string, std::shared_ptr<Link> > links_;
-  void linkNodes(
+  bool linkNodes(
       const std::string& output_node_name, const std::string& output_node_con_name,
       const std::string& input_node_name, const std::string& input_node_con_name);
   rclcpp::Time start_, stamp_;

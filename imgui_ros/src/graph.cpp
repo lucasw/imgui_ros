@@ -57,8 +57,13 @@ void Graph::update(const rclcpp::Time& stamp)
   if ((con_src_ != nullptr) && (con_dst_ != nullptr)) {
     if (con_src_->input_not_output_ != con_dst_->input_not_output_) {
       // linkNodes(con_src_, con_dst_);
-      linkNodes(con_src_->parent_->name_, con_src_->name_,
-                con_dst_->parent_->name_, con_dst_->name_);
+      if (con_dst_->input_not_output_) {
+        linkNodes(con_src_->parent_->name_, con_src_->name_,
+                  con_dst_->parent_->name_, con_dst_->name_);
+      } else {
+        linkNodes(con_dst_->parent_->name_, con_dst_->name_,
+                  con_src_->parent_->name_, con_src_->name_);
+      }
       con_src_ = nullptr;
       con_dst_ = nullptr;
     }
@@ -268,30 +273,33 @@ void Graph::draw()
 }
 
 
-void Graph::linkNodes(
+bool Graph::linkNodes(
     const std::string& output_node_name, const std::string& output_node_con_name,
     const std::string& input_node_name, const std::string& input_node_con_name)
 {
   if (nodes_.count(output_node_name) < 1) {
-    std::cerr << output_node_name << " doesn't exist\n";
-    return;
+    std::cerr << "output node '" << output_node_name << "' doesn't exist\n";
+    return false;
   }
   auto output_node = nodes_[output_node_name];
-  if (nodes_.count(input_node_name) < 1) {
-    std::cerr << output_node_name << " doesn't exist\n";
-    return;
-  }
-  auto input_node = nodes_[input_node_name];
   if (output_node->outputs_.count(output_node_con_name) < 1) {
     // TODO(lucasw) throw
-    std::cerr << output_node_name << " input '" << output_node_con_name << "' doesn't exit\n";
-    return;
+    std::cerr << "'" << output_node_name << "' output '"
+        << output_node_con_name << "' doesn't exit\n";
+    return false;
   }
   auto output_con = output_node->outputs_[output_node_con_name];
+
+  if (nodes_.count(input_node_name) < 1) {
+    std::cerr << "input node '" << input_node_name << "' doesn't exist\n";
+    return false;
+  }
+  auto input_node = nodes_[input_node_name];
   if (input_node->inputs_.count(input_node_con_name) < 1) {
     // TODO(lucasw) throw
-    std::cerr << input_node_name << " input '" << input_node_con_name << "' doesn't exit\n";
-    return;
+    std::cerr << "'" << input_node_name << "' input '"
+        << input_node_con_name << "' doesn't exit\n";
+    return false;
   }
   auto input_con = input_node->inputs_[input_node_con_name];
 
@@ -301,7 +309,7 @@ void Graph::linkNodes(
   if (input_con->link_ != nullptr) {
     if (input_con->link_->input_ == output_con) {
       // already linked, don't need to do anything
-      return;
+      return false;
     }
     // break incoming link if any
     input_con->link_->outputs_.erase(link_output_con_name);
@@ -317,4 +325,5 @@ void Graph::linkNodes(
 
   output_con->link_->outputs_[link_output_con_name] = input_con;
   input_con->link_ = output_con->link_;
+  return true;
 }
