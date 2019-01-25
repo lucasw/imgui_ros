@@ -53,16 +53,48 @@ void Graph::update(const rclcpp::Time& stamp)
 {
   // std::cout << "update " << stamp.nanoseconds() << "\n";
   const double seconds = (stamp - start_).nanoseconds() / 1e9;
+
+  if ((con_src_ != nullptr) && (con_dst_ != nullptr)) {
+    if (con_src_->input_not_output_ != con_dst_->input_not_output_) {
+      // linkNodes(con_src_, con_dst_);
+      linkNodes(con_src_->parent_->name_, con_src_->name_,
+                con_dst_->parent_->name_, con_dst_->name_);
+      con_src_ = nullptr;
+      con_dst_ = nullptr;
+    }
+  }
+
+  // copy all the outputs to inputs
   for (auto links_pair : links_)
   {
     links_pair.second->update();
   }
 
+  // process all the inputs into outputs
   for (auto node_pair : nodes_)
   {
     node_pair.second->update(seconds);
   }
   stamp_ = stamp;
+}
+
+void Graph::init()
+{
+  // TODO(lucasw) if a node with the same name already exist it is not
+  // going to destruct properly because of circular shared_ptrs - need to fix that.
+  nodes_["Sine1"] = std::make_shared<SignalGenerator>("Sine1", ImVec2(40, 50));
+  nodes_["Sine2"] = std::make_shared<SignalGenerator>("Sine2", ImVec2(40, 150));
+  nodes_["Combine1"] = std::make_shared<SignalCombine>("Combine1", ImVec2(270, 80));
+
+  // create the connections
+  for (auto node_pair : nodes_) {
+    node_pair.second->init();
+  }
+
+  linkNodes("Sine1", "signal", "Combine1", "in1");
+  linkNodes("Sine2", "signal", "Combine1", "in2");
+
+  std::cout << "initted graph\n";
 }
 
 // Really dumb data structure provided for the example.
@@ -76,50 +108,32 @@ void Graph::draw()
 
   if (!inited_)
   {
-    // TODO(lucasw) if a node with the same name already exist it is not
-    // going to destruct properly because of circular shared_ptrs - need to fix that.
-    nodes_["Sine1"] = std::make_shared<SignalGenerator>("Sine1", ImVec2(40, 50));
-    nodes_["Sine2"] = std::make_shared<SignalGenerator>("Sine2", ImVec2(40, 150));
-    nodes_["Combine1"] = std::make_shared<SignalCombine>("Combine1", ImVec2(270, 80));
-
-    // create the connections
-    for (auto node_pair : nodes_) {
-      node_pair.second->init();
-    }
-
-    linkNodes("Sine1", "signal", "Combine1", "in1");
-    linkNodes("Sine2", "signal", "Combine1", "in2");
-
+    init();
     inited_ = true;
-    std::cout << "initted graph\n";
   }
 
   // Draw a list of nodes on the left side
   bool open_context_menu = false;
-  int node_hovered_in_list = -1;
-  int node_hovered_in_scene = -1;
-  ImGui::BeginChild("node_list", ImVec2(200, 0));
+  std::shared_ptr<Node> node_hovered_in_list;
+  std::shared_ptr<Node> node_hovered_in_scene;
+  ImGui::BeginChild("nodes and link list", ImVec2(200, 0));
   ImGui::Text("Nodes at time: %f", seconds);
   ImGui::Separator();
-  int node_idx = 0;
+  // int node_idx = 0;
   for (auto node_pair : nodes_)
   {
     auto node = node_pair.second;
-    // TODO(lucasw)
-    node->id_ = node_idx;
-    ImGui::PushID(node_idx);
-    #if 0
-    if (ImGui::Selectable(node->name_.c_str(), node->id_ == node_selected_)) {
-      node_selected_ = node->id_;
+    // ImGui::PushID(node_idx);
+    if (ImGui::Selectable(node->name_.c_str(), node == node_selected_)) {
+      node_selected_ = node;
     }
-    #endif
     if (ImGui::IsItemHovered())
     {
-      node_hovered_in_list = node->id_;
+      node_hovered_in_list = node;
       open_context_menu |= ImGui::IsMouseClicked(1);
     }
-    ImGui::PopID();
-    ++node_idx;
+    // ImGui::PopID();
+    // ++node_idx;
   }
   // ImGui::EndChild();
 
@@ -127,6 +141,7 @@ void Graph::draw()
   ImGui::Separator();
   for (const auto link_pair : links_)
   {
+    // TODO(lucasw) make these selectable also
     const auto link = link_pair.second;
     ImGui::Text("%s : %s -> %lu", link->name_.c_str(),
         link->input_->name_.c_str(), link->outputs_.size());
@@ -175,14 +190,19 @@ void Graph::draw()
   }
 
   // Display nodes
+  int id = 0;
   for (auto node_pair : nodes_)
   {
     auto node = node_pair.second;
-    ImGui::PushID(node->id_);
-    node->draw(draw_list, offset, node_hovered_in_list,
-        node_hovered_in_scene, open_context_menu,
-        node_for_slot_selected_);
+    ImGui::PushID(id);
+    node->draw(draw_list, offset,
+        node_hovered_in_list,
+        node_hovered_in_scene,
+        open_context_menu,
+        node_for_slot_selected_,
+        con_src_, con_dst_);
     ImGui::PopID();
+    ++id;
   }
   draw_list->ChannelsMerge();
 
@@ -264,13 +284,13 @@ void Graph::linkNodes(
   auto input_node = nodes_[input_node_name];
   if (output_node->outputs_.count(output_node_con_name) < 1) {
     // TODO(lucasw) throw
-    std::cerr << output_node_name << " input " << output_node_con_name << " doesn't exit\n";
+    std::cerr << output_node_name << " input '" << output_node_con_name << "' doesn't exit\n";
     return;
   }
   auto output_con = output_node->outputs_[output_node_con_name];
   if (input_node->inputs_.count(input_node_con_name) < 1) {
     // TODO(lucasw) throw
-    std::cerr << input_node_name << " input " << input_node_con_name << " doesn't exit\n";
+    std::cerr << input_node_name << " input '" << input_node_con_name << "' doesn't exit\n";
     return;
   }
   auto input_con = input_node->inputs_[input_node_con_name];

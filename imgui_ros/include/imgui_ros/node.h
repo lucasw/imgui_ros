@@ -46,9 +46,9 @@ struct Link;
 struct Node;
 
 // either input or output
-struct Connector
+struct Connector : std::enable_shared_from_this<Connector>
 {
-  Connector()
+  Connector(const bool input_not_output) : input_not_output_(input_not_output)
   {
     color_ = ImVec4(0.5, 0.5, 0.5, 0.6);
   }
@@ -61,8 +61,11 @@ struct Connector
   ImVec2 pos_;
   ImVec2 size_;
 
+  bool input_not_output_ = true;
+
   void update();
-  void draw(ImDrawList* draw_list, const ImVec2& offset);
+  void draw(ImDrawList* draw_list, const ImVec2& offset,
+      std::shared_ptr<Connector>& src, std::shared_ptr<Connector>& dst);
   ImVec2 getPos();
 
   std::shared_ptr<Node> parent_;
@@ -73,7 +76,6 @@ struct Connector
   {
     std::string name_;
     ImVec2  pos_, size_;
-    int id_ = -1;
     ImVec4  color_;
     bool selected_ = false;
     const ImVec2 NODE_WINDOW_PADDING = ImVec2(8.0f, 8.0f);
@@ -94,9 +96,11 @@ struct Connector
 
     virtual void draw2(ImDrawList* draw_list);
     virtual void draw(ImDrawList* draw_list, const ImVec2& offset,
-        int& node_hovered_in_list, int& node_hovered_in_scene,
+        std::shared_ptr<Node>& node_hovered_in_list,
+        std::shared_ptr<Node>& node_hovered_in_scene,
         bool& open_context_menu,
-        std::shared_ptr<Node>& node_for_slot_selected);
+        std::shared_ptr<Node>& node_for_slot_selected,
+        std::shared_ptr<Connector>& con_src, std::shared_ptr<Connector>& con_dst);
 
     double seconds_;
 

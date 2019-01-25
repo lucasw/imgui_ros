@@ -55,6 +55,9 @@ protected:
 
   bool opened_;
 
+  std::shared_ptr<Connector> con_src_;
+  std::shared_ptr<Connector> con_dst_;
+
   std::map<std::string, std::shared_ptr<Node> > nodes_;
   std::map<std::string, std::shared_ptr<Link> > links_;
   void linkNodes(
@@ -62,10 +65,12 @@ protected:
       const std::string& input_node_name, const std::string& input_node_con_name);
   rclcpp::Time start_, stamp_;
 
+  void init();
   bool inited_ = false;
+
   ImVec2 scrolling_ = ImVec2(0.0f, 0.0f);
   bool show_grid_ = true;
-  // int node_selected_ = -1;
+  std::shared_ptr<Node> node_selected_;
 
   // adding a new link
   std::shared_ptr<Node> node_for_slot_selected_;

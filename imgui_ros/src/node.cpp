@@ -38,10 +38,11 @@ void Connector::update()
 
 }
 
-void Connector::draw(ImDrawList* draw_list, const ImVec2& offset)
+void Connector::draw(ImDrawList* draw_list, const ImVec2& offset,
+    std::shared_ptr<Connector>& src, std::shared_ptr<Connector>& dst)
 {
-  const auto col = IM_COL32(250, 150, 250, 150);
   const auto pos = getPos() + offset;
+  // const auto col = IM_COL32(250, 150, 250, 150);
   // draw_list->AddCircleFilled(pos, RADIUS, col);
 
   draw_list->ChannelsSetCurrent(1); // Foreground
@@ -53,8 +54,29 @@ void Connector::draw(ImDrawList* draw_list, const ImVec2& offset)
   size_ = ImGui::GetItemRectSize();  // + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
   ImVec2 node_rect_max = pos + size_;
 
+  ImGui::SetCursorScreenPos(pos);
+  ImGui::InvisibleButton("output", size_);
+  const bool is_hovered = ImGui::IsItemHovered();
+
   draw_list->ChannelsSetCurrent(0); // Background
-  auto con_bg_color = IM_COL32(85, 75, 75, 255);
+
+  int green = 85;
+  if (is_hovered) {
+    green = 145;
+    // if ((src == nullptr) && ImGui::IsMouseDragging(0)) {
+    if (ImGui::IsMouseClicked(0)) {
+      if (src == nullptr) {
+        src = shared_from_this();
+      } else if (src != shared_from_this()) {
+        dst = shared_from_this();
+      }
+    }
+  }
+  int red = 85;
+  if (src == shared_from_this()) {
+    red = 130;
+  }
+  auto con_bg_color = IM_COL32(red, green, 75, 255);
   draw_list->AddRectFilled(pos, node_rect_max, con_bg_color, 4.0f);
 }
 
@@ -89,9 +111,11 @@ void Node::draw2(ImDrawList* draw_list)
 }
 
 void Node::draw(ImDrawList* draw_list, const ImVec2& offset,
-    int& node_hovered_in_list, int& node_hovered_in_scene,
+    std::shared_ptr<Node>& node_hovered_in_list,
+    std::shared_ptr<Node>& node_hovered_in_scene,
     bool& open_context_menu,
-    std::shared_ptr<Node>& node_for_slot_selected)
+    std::shared_ptr<Node>& node_for_slot_selected,
+    std::shared_ptr<Connector>& con_src, std::shared_ptr<Connector>& con_dst)
 {
   ImVec2 node_rect_min = offset + pos_;
 
@@ -117,30 +141,43 @@ void Node::draw(ImDrawList* draw_list, const ImVec2& offset,
   ImGui::InvisibleButton("node", size_);
   if (ImGui::IsItemHovered())
   {
-    node_hovered_in_scene = id_;
+    node_hovered_in_scene = shared_from_this();
     open_context_menu |= ImGui::IsMouseClicked(1);
   }
   bool node_moving_active = ImGui::IsItemActive();
   if (node_widgets_active || node_moving_active) {
+    // TODO(lucasw) how to unselect?
     selected_ = true;
   }
   if (node_moving_active && ImGui::IsMouseDragging(0)) {
     pos_ = pos_ + ImGui::GetIO().MouseDelta;
   }
 
-  ImU32 node_bg_color = (node_hovered_in_list == id_ ||
-      node_hovered_in_scene == id_ ||
-      (node_hovered_in_list == -1 && selected_)) ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255);
+  int red = 60;
+  int green = 60;
+  int blue = 60;
+  if (node_hovered_in_list == shared_from_this()) {
+    red = 100;
+  }
+  if (node_hovered_in_scene == shared_from_this()) {
+    green = 100;
+  }
+  if (node_hovered_in_list == nullptr && selected_) {
+    blue = 100;
+  }
+  ImU32 node_bg_color = IM_COL32(red, green, blue, 255);
 
   draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 4.0f);
   draw_list->AddRect(node_rect_min, node_rect_max, IM_COL32(100, 100, 100, 255), 4.0f);
 
   for (auto input_pair : inputs_) {
-    input_pair.second->draw(draw_list, offset);
+    input_pair.second->draw(draw_list, offset,
+        con_src, con_dst);
   }
 
   for (auto output_pair : outputs_) {
-    output_pair.second->draw(draw_list, offset + ImVec2(size_.x, 0));
+    output_pair.second->draw(draw_list, offset + ImVec2(size_.x, 0),
+        con_src, con_dst);
   }
 
   #if 0
@@ -232,10 +269,11 @@ SignalGenerator::SignalGenerator(const std::string& name,
 void SignalGenerator::init()
 {
   resetConnections();
-  auto con = std::make_shared<Connector>();
+  auto con = std::make_shared<Connector>(false);
+  con->name_ = "signal";
   con->parent_ = shared_from_this();
   con->pos_ = ImVec2(0, 10);
-  outputs_["signal"] = con;
+  outputs_[con->name_] = con;
 }
 
 void SignalGenerator::update(const double& seconds)
@@ -263,22 +301,25 @@ void SignalCombine::init()
 {
   resetConnections();
   {
-    auto con = std::make_shared<Connector>();
+    auto con = std::make_shared<Connector>(true);
+    con->name_ = "in1";
     con->parent_ = shared_from_this();
     con->pos_ = ImVec2(-40, 10);
-    inputs_["in1"] = con;
+    inputs_[con->name_] = con;
   }
   {
-    auto con = std::make_shared<Connector>();
+    auto con = std::make_shared<Connector>(true);
+    con->name_ = "in2";
     con->parent_ = shared_from_this();
     con->pos_ = ImVec2(-40, 50);
-    inputs_["in2"] = con;
+    inputs_[con->name_] = con;
   }
   {
-    auto con = std::make_shared<Connector>();
+    auto con = std::make_shared<Connector>(false);
+    con->name_ = "signal";
     con->parent_ = shared_from_this();
     con->pos_ = ImVec2(0, 10);
-    outputs_["signal"] = con;
+    outputs_[con->name_] = con;
   }
 }
 
