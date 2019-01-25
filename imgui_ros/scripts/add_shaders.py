@@ -19,6 +19,7 @@ import cv_bridge
 import math
 # TODO(lucasW) this doesn't exist in python yet?
 # import tf2_ros
+import time
 import rclpy
 import sys
 
@@ -41,7 +42,8 @@ class AddShadersNode(Node):
         # self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
         self.shaders_cli = self.create_client(AddShaders, 'add_shaders')
         while not self.shaders_cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('service not available, waiting again...')
+            self.get_logger().info('add_shaders service not available, waiting again...')
+            time.sleep(1.0)
 
         self.bridge = cv_bridge.CvBridge()
         sleep(1.0)
