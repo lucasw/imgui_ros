@@ -83,7 +83,8 @@ struct Viz3D : public Window {
     const std::string topic,
     std::shared_ptr<ImGuiImplOpenGL3> renderer,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    std::shared_ptr<rclcpp::Node> node
+    std::shared_ptr<rclcpp::Node> node,
+    std::shared_ptr<ImageTransfer> image_transfer
     );
   ~Viz3D();
 
@@ -227,6 +228,7 @@ protected:
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::weak_ptr<rclcpp::Node> node_;
 
+  std::shared_ptr<ImageTransfer> image_transfer_;
   std::map<std::string, std::shared_ptr<RosImage> > textures_;
 
   // std::shared_ptr<imgui_ros::TfBroadcaster> tf_broadcaster_;

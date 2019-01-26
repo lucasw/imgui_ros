@@ -49,7 +49,11 @@ using std::placeholders::_1;
   }
 
   RosImage::RosImage(const std::string name, const std::string topic, const bool sub_not_pub,
-                     std::shared_ptr<rclcpp::Node> node) : GlImage(name, topic), node_(node)
+                     std::shared_ptr<rclcpp::Node> node,
+                     std::shared_ptr<ImageTransfer> image_transfer) :
+                     GlImage(name, topic),
+                     node_(node),
+                     image_transfer_(image_transfer)
   {
     wrap_modes_.push_back(GL_CLAMP_TO_EDGE);
     wrap_modes_.push_back(GL_MIRRORED_REPEAT);
@@ -72,7 +76,7 @@ using std::placeholders::_1;
         sub_ = node->create_subscription<sensor_msgs::msg::Image>(topic,
             std::bind(&RosImage::imageCallback, this, _1));
       } else {
-        pub_ = node->create_publisher<sensor_msgs::msg::Image>(topic);
+        // pub_ = node->create_publisher<sensor_msgs::msg::Image>(topic);
       }
     }
   }
@@ -201,9 +205,12 @@ using std::placeholders::_1;
 
   void RosImage::publish(const rclcpp::Time& stamp) {
     // std::cout << name_ << " " << pub_ << " " << image_ << " " <<  texture_id_ << "\n";
-    if (!pub_) {
+    if (!image_transfer_) {
+      std::cerr << "No image transfer object\n";
       return;
     }
+    // TODO(lucasw) am I re-using the same image?  Need to create a new one instead,
+    // then could use unique_ptr
     if (!image_) {
       // TODO(lucasw) debug message
       return;
@@ -232,7 +239,8 @@ using std::placeholders::_1;
     glBindTexture(GL_TEXTURE_2D, 0);
 
     image_->header.stamp = stamp;
-    pub_->publish(image_);
+    // pub_->publish(image_);
+    image_transfer_->publish(topic_, image_);
   }
 
   // TODO(lucasw) factor out common code

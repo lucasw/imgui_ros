@@ -31,6 +31,7 @@
 #ifndef IMGUI_ROS_IMAGE_H
 #define IMGUI_ROS_IMAGE_H
 
+#include <deque>
 #include <imgui.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/window.h>
@@ -52,6 +53,8 @@ struct GlImage : public Widget {
   size_t height_ = 0;
 };
 
+class ImageTransfer;
+
 // TODO(lucasw) move ros specific code out, have not ros code in common
 // location that ros1 and ros2 versions can use.
 // TODO(lucasw) should every window be a node?  Or less overhead to
@@ -59,7 +62,8 @@ struct GlImage : public Widget {
 struct RosImage : public GlImage {
   RosImage(const std::string name, const std::string topic = "",
            const bool pub_not_sub = false,
-           std::shared_ptr<rclcpp::Node> node = nullptr);
+           std::shared_ptr<rclcpp::Node> node = nullptr,
+           std::shared_ptr<ImageTransfer> image_transfer = nullptr);
 
   void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
 
@@ -82,9 +86,10 @@ struct RosImage : public GlImage {
   bool enable_draw_image_ = false;
 private:
   std::weak_ptr<rclcpp::Node> node_;
-  // TODO(lucasw) split these into two separate subclasses?
+  std::shared_ptr<ImageTransfer> image_transfer_;
+
+  // temp until image_transfer supports subs
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
 
   std::vector<int> min_filter_modes_;
   std::vector<int> mag_filter_modes_;
@@ -107,4 +112,61 @@ struct CvImage : public GlImage {
   virtual void draw();
 };
 
+class ImageTransfer : public rclcpp::Node
+{
+public:
+  ImageTransfer() : Node("image_transfer")
+  {
+
+  }
+
+  // this will remove the image from the queue, so can't have
+  // multiple subscriber on same message- they need to share downstream from here
+  bool getSub(const std::string& topic, sensor_msgs::msg::Image::SharedPtr& image)
+  {
+    std::lock_guard<std::mutex> lock(sub_mutex_);
+    // TODO(lucasw) if the sub doesn't exist at all need to create it
+    if (from_sub_.count(topic) < 1) {
+      return false;
+    }
+    image = from_sub_[topic];
+    from_sub_.erase(topic);
+    return true;
+  }
+
+  bool publish(const std::string& topic, sensor_msgs::msg::Image::SharedPtr image)
+  {
+    std::lock_guard<std::mutex> lock(pub_mutex_);
+    to_pub_.push_back(std::pair<std::string, sensor_msgs::msg::Image::SharedPtr>(topic, image));
+    return true;
+  }
+
+  // TODO(lucasw) need way to remove publisher or subscriber
+
+  void update()
+  {
+    {
+      std::lock_guard<std::mutex> lock(pub_mutex_);
+      while (to_pub_.size() > 0) {
+        const std::string topic = to_pub_.front().first;
+        sensor_msgs::msg::Image::SharedPtr image = to_pub_.front().second;
+        to_pub_.pop_front();
+
+        if (pubs_.count(topic) < 1) {
+          pubs_[topic] = create_publisher<sensor_msgs::msg::Image>(topic);
+        }
+        pubs_[topic]->publish(image);
+      }
+    }
+  }
+private:
+  std::mutex sub_mutex_;
+  std::map<std::string, sensor_msgs::msg::Image::SharedPtr> from_sub_;
+  std::map<std::string, rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> subs_;
+
+  std::mutex pub_mutex_;
+  std::deque<std::pair<std::string, sensor_msgs::msg::Image::SharedPtr> > to_pub_;
+  std::map<std::string, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr> pubs_;
+
+};
 #endif  // IMGUI_ROS_IMAGE_H

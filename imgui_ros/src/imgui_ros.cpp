@@ -68,6 +68,8 @@ using namespace std::chrono_literals;
 namespace imgui_ros {
   ImguiRos::ImguiRos() : Node("imgui_ros") {
 
+    image_transfer_ = std::make_shared<ImageTransfer>();
+
     tf_pub_ = create_publisher<tf2_msgs::msg::TFMessage>("/tf");
     clock_ = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
     #if 1
@@ -215,7 +217,8 @@ namespace imgui_ros {
     viz3d = std::make_shared<Viz3D>(viz3d_name, "shapes",
         imgui_impl_opengl3_,
         tf_buffer_,
-        shared_from_this());
+        shared_from_this(),
+        image_transfer_);
 
     windows_[viz3d_name] = viz3d;
 
@@ -294,7 +297,12 @@ namespace imgui_ros {
       std::shared_ptr<RosImage> ros_image;
       const bool sub_not_pub = true;
       // std::cout << "new ros image " << widget.name << "\n";
-      ros_image.reset(new RosImage(widget.name, widget.topic, sub_not_pub, shared_from_this()));
+
+      // TODO(lucasw) if widget.topic already exists somewhere in a RosImage
+      // subscriber need to re-use it, can't duplicate subscribers.i
+      // viz3d has any number of RosImages also.
+      ros_image.reset(new RosImage(widget.name, widget.topic, sub_not_pub, shared_from_this(),
+          image_transfer_));
       ros_image->enable_draw_image_ = true;
       imgui_widget = ros_image;
       return true;
@@ -655,6 +663,9 @@ namespace imgui_ros {
     ImGui::NewFrame();
 
     {
+      // TODO(lucasw) make image_transfer into a widget?
+      image_transfer_->update();
+
       for (auto& window : windows_) {
         if (window.second) {
           window.second->update(stamp);

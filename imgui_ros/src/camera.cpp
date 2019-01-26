@@ -63,11 +63,12 @@ Camera::Camera(const std::string name,
 
 void Camera::init(const size_t width, const size_t height,
     const std::string& texture_name, const std::string& topic,
-    std::shared_ptr<rclcpp::Node> node)
+    std::shared_ptr<rclcpp::Node> node,
+    std::shared_ptr<ImageTransfer> image_transfer)
 {
   RCLCPP_INFO(node->get_logger(), "regular camera");
   const bool sub_not_pub = false;
-  image_ = std::make_shared<RosImage>(texture_name, topic, sub_not_pub, node);
+  image_ = std::make_shared<RosImage>(texture_name, topic, sub_not_pub, node, image_transfer);
   {
     // node is bad
     // RCLCPP_INFO(node->get_logger(), "creating camera %s %d %d", name, width, height);

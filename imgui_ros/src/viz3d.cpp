@@ -274,10 +274,12 @@ Viz3D::Viz3D(const std::string name,
     const std::string topic,
     std::shared_ptr<ImGuiImplOpenGL3> renderer,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    std::shared_ptr<rclcpp::Node> node) :
+    std::shared_ptr<rclcpp::Node> node,
+    std::shared_ptr<ImageTransfer> image_transfer) :
     Window(name),
     tf_buffer_(tf_buffer),
-    node_(node)
+    node_(node),
+    image_transfer_(image_transfer)
 {
   // render_message_.precision(2);
   // render_message_.fill('0');
@@ -291,7 +293,8 @@ Viz3D::Viz3D(const std::string name,
   ambient_ = glm::vec3(0.3, 0.3, 0.3);
 
   const bool sub_not_pub = true;
-  textures_["default"] = std::make_shared<RosImage>("default", "default_texture", sub_not_pub, node);
+  textures_["default"] = std::make_shared<RosImage>("default", "default_texture", sub_not_pub,
+      node, image_transfer_);
 
   transform_.setIdentity();
 
@@ -357,7 +360,8 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
         req->camera.width, req->camera.height,
         req->camera.texture_name,
         req->camera.topic,
-        node);
+        node,
+        image_transfer_);
     render_texture->near_ = req->camera.near;
     render_texture->far_ = req->camera.far;
     textures_[req->camera.texture_name] = render_texture->image_;
@@ -409,7 +413,8 @@ void Viz3D::addCubeCamera(const std::shared_ptr<imgui_ros::srv::AddCubeCamera::R
         req->face_width,
         req->camera.texture_name,
         req->camera.topic,
-        node);
+        node,
+        image_transfer_);
     cube_camera->near_ = req->camera.near;
     cube_camera->far_ = req->camera.far;
     textures_[req->camera.texture_name] = cube_camera->image_;

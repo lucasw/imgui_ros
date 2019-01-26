@@ -95,6 +95,8 @@ private:
   // node_name, widget_name
   std::map<std::string, std::map<std::string, std::shared_ptr<Param> > > param_widgets_;
 
+  std::shared_ptr<ImageTransfer> image_transfer_;
+
   // this will get parameter events for all nodes in same namespace (or just root namespace?
   // namespacing seems broken in ros2 currently)
   rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;

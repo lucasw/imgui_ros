@@ -72,7 +72,8 @@ void CubeCamera::init(
     const size_t width, const size_t height,
     const size_t face_width,
     const std::string& texture_name, const std::string& topic,
-    std::shared_ptr<rclcpp::Node> node)
+    std::shared_ptr<rclcpp::Node> node,
+    std::shared_ptr<ImageTransfer> image_transfer)
 {
   const bool sub_not_pub = false;
 
@@ -81,7 +82,7 @@ void CubeCamera::init(
       name_.c_str(), texture_name.c_str(), topic.c_str(),
       faces_.size(), width, height, face_width);
 
-  Camera::init(width, height, texture_name, topic, node);
+  Camera::init(width, height, texture_name, topic, node, image_transfer);
 
   glGenTextures(1, &cube_texture_id_);
   glBindTexture(GL_TEXTURE_CUBE_MAP, cube_texture_id_);
