@@ -69,6 +69,10 @@ namespace imgui_ros {
   ImguiRos::ImguiRos() : Node("imgui_ros") {
 
     image_transfer_ = std::make_shared<ImageTransfer>();
+    #if 1
+    ros_io_thread_ = std::thread(
+        std::bind(&ImguiRos::runNodeSingleThreaded, this, image_transfer_));
+    #endif
 
     tf_pub_ = create_publisher<tf2_msgs::msg::TFMessage>("/tf");
     clock_ = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
@@ -98,6 +102,7 @@ namespace imgui_ros {
   }
 
   ImguiRos::~ImguiRos() {
+    ros_io_thread_.join();
     // Cleanup
     imgui_impl_opengl3_->Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -228,6 +233,13 @@ namespace imgui_ros {
     get_parameter_or("alpha", viz3d->clear_color_.w, viz3d->clear_color_.w);
 
     init_ = true;  // viz3d->initialized_;
+  }
+
+  // TODO(lucasw) could make this take a node as an argument
+  void ImguiRos::runNodeSingleThreaded(rclcpp::Node::SharedPtr node)
+  {
+    // TODO(lucasw) make a multi threaded executor version of this function
+    rclcpp::spin(node);
   }
 
   void ImguiRos::addTf(const std::shared_ptr<imgui_ros::srv::AddTf::Request> req,
@@ -664,7 +676,9 @@ namespace imgui_ros {
 
     {
       // TODO(lucasw) make image_transfer into a widget?
+      #if 0
       image_transfer_->update();
+      #endif
 
       for (auto& window : windows_) {
         if (window.second) {
@@ -672,12 +686,17 @@ namespace imgui_ros {
         }
       }
 
-      ImGui::Begin("stats"); // Create a window called "stats"
-                             // and append into it.
+      {
+        ImGui::Begin("stats"); // Create a window called "stats"
+                               // and append into it.
 
-      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                  1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-      ImGui::End();
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                    1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        std::stringstream ss;
+        ss << std::this_thread::get_id();
+        ImGui::Text("Thread %s", ss.str().c_str());
+        ImGui::End();
+      }
 
       // TODO(lucasw) mutex lock just for windows
       for (auto& window : windows_) {

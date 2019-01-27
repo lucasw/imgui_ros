@@ -42,6 +42,7 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
 #include <tf2_ros/transform_listener.h>
+#include <thread>
 #include <SDL.h>
 
 namespace imgui_ros {
@@ -51,6 +52,7 @@ public:
   ~ImguiRos();
 
 private:
+  void runNodeSingleThreaded(rclcpp::Node::SharedPtr node);
   rclcpp::Service<srv::AddTf>::SharedPtr add_tf_;
   void addTf(const std::shared_ptr<imgui_ros::srv::AddTf::Request> req,
              std::shared_ptr<imgui_ros::srv::AddTf::Response> res);
@@ -95,6 +97,8 @@ private:
   // node_name, widget_name
   std::map<std::string, std::map<std::string, std::shared_ptr<Param> > > param_widgets_;
 
+  // thread dedicate to large ros messages
+  std::thread ros_io_thread_;
   std::shared_ptr<ImageTransfer> image_transfer_;
 
   // this will get parameter events for all nodes in same namespace (or just root namespace?

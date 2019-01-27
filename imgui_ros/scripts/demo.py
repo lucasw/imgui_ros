@@ -76,7 +76,7 @@ class Demo(Node):
         widget = Widget()
         widget.name = "image_out viewer"
         widget.tab_name = tab_name
-        widget.topic = "/image_out"
+        widget.topic = "/camera1"
         widget.type = Widget.IMAGE
         req.widgets.append(widget)
         self.future = self.cli.call_async(req)

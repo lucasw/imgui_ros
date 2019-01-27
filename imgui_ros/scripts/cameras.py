@@ -148,8 +148,8 @@ class Cameras(Node):
             req.camera.name = 'camera1'
             req.camera.texture_name = 'camera1'
             req.camera.topic = 'camera1'
-            req.camera.width = 256
-            req.camera.height = 256
+            req.camera.width = 1024
+            req.camera.height = 1024
             req.camera.aov_y = 120.0
             self.future = self.camera_cli.call_async(req)
             self.wait_for_response()

@@ -40,6 +40,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
+using namespace std::chrono_literals;
+
 struct GlImage : public Widget {
   GlImage(const std::string name, const std::string topic);
   ~GlImage();
@@ -115,9 +117,11 @@ struct CvImage : public GlImage {
 class ImageTransfer : public rclcpp::Node
 {
 public:
+  rclcpp::TimerBase::SharedPtr update_timer_;
   ImageTransfer() : Node("image_transfer")
   {
-
+    update_timer_ = this->create_wall_timer(33ms,
+        std::bind(&ImageTransfer::update, this));
   }
 
   // this will remove the image from the queue, so can't have
@@ -143,15 +147,25 @@ public:
 
   // TODO(lucasw) need way to remove publisher or subscriber
 
+  // TODO(lucasw) virtual void draw()
+
+  bool initted_ = false;
   void update()
   {
+    if (!initted_) {
+      std::cout << "image transfer " << std::this_thread::get_id() << "\n";
+      initted_ = true;
+    }
     {
-      std::lock_guard<std::mutex> lock(pub_mutex_);
       while (to_pub_.size() > 0) {
-        const std::string topic = to_pub_.front().first;
-        sensor_msgs::msg::Image::SharedPtr image = to_pub_.front().second;
-        to_pub_.pop_front();
-
+        std::string topic;
+        sensor_msgs::msg::Image::SharedPtr image;
+        {
+          std::lock_guard<std::mutex> lock(pub_mutex_);
+          topic = to_pub_.front().first;
+          image = to_pub_.front().second;
+          to_pub_.pop_front();
+        }
         if (pubs_.count(topic) < 1) {
           pubs_[topic] = create_publisher<sensor_msgs::msg::Image>(topic);
         }
