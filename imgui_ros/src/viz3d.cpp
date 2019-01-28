@@ -592,9 +592,10 @@ void Viz3D::addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request
     return;
   }
 
-  auto texture = std::make_shared<RosImage>(req->name);
+  auto texture = std::make_shared<RosImage>(req->name,
+    std::make_shared<sensor_msgs::msg::Image>(req->image));
   texture->draw_texture_controls_ = true;
-  texture->imageCallback(std::make_shared<sensor_msgs::msg::Image>(req->image));
+  // texture->imageCallback(std::make_shared<sensor_msgs::msg::Image>(req->image));
   texture->wrap_s_ind_ = req->wrap_s;
   texture->wrap_t_ind_ = req->wrap_t;
   texture->updateTexture();

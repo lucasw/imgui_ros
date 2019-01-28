@@ -52,6 +52,7 @@ using std::placeholders::_1;
                      std::shared_ptr<rclcpp::Node> node,
                      std::shared_ptr<ImageTransfer> image_transfer) :
                      GlImage(name, topic),
+                     sub_not_pub_(sub_not_pub),
                      node_(node),
                      image_transfer_(image_transfer)
   {
@@ -71,16 +72,27 @@ using std::placeholders::_1;
 
     if (topic != "") {
       if (sub_not_pub) {
+      #if 0
         RCLCPP_DEBUG(node->get_logger(), "%s subscribing to topic '%s'",
             name.c_str(), topic.c_str());
         sub_ = node->create_subscription<sensor_msgs::msg::Image>(topic,
             std::bind(&RosImage::imageCallback, this, _1));
+      #endif
       } else {
         // pub_ = node->create_publisher<sensor_msgs::msg::Image>(topic);
       }
     }
   }
 
+  RosImage::RosImage(const std::string& name,
+    sensor_msgs::msg::Image::SharedPtr image) :
+    RosImage(name)
+  {
+    image_ = image;
+    dirty_ = true;
+  }
+
+#if 0
   void RosImage::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg) {
 #if 0
     std::cout << "image callback "
@@ -96,6 +108,7 @@ using std::placeholders::_1;
     image_ = msg;
     dirty_ = true;
   }
+#endif
 
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
@@ -103,6 +116,13 @@ using std::placeholders::_1;
     sensor_msgs::msg::Image::SharedPtr image;
     {
       std::lock_guard<std::mutex> lock(mutex_);
+      if (sub_not_pub_) {
+        image_transfer_->getSub(topic_, image);
+        dirty_ |= (image != image_);
+        image_ = image;
+      }
+      // TODO(lucasw) updateTexture does nothing if this isn't a subscriber,
+      // except the first time it is run?
       if (!dirty_)
         return true;
       dirty_ = false;

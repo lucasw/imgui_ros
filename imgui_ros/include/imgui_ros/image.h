@@ -66,8 +66,10 @@ struct RosImage : public GlImage {
            const bool pub_not_sub = false,
            std::shared_ptr<rclcpp::Node> node = nullptr,
            std::shared_ptr<ImageTransfer> image_transfer = nullptr);
+  RosImage(const std::string& name,
+    sensor_msgs::msg::Image::SharedPtr image);
 
-  void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
+  // void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
 
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
@@ -87,11 +89,12 @@ struct RosImage : public GlImage {
   bool draw_texture_controls_ = false;
   bool enable_draw_image_ = false;
 private:
+  const bool sub_not_pub_ = false;
   std::weak_ptr<rclcpp::Node> node_;
   std::shared_ptr<ImageTransfer> image_transfer_;
 
   // temp until image_transfer supports subs
-  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
+  // rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
 
   std::vector<int> min_filter_modes_;
   std::vector<int> mag_filter_modes_;
@@ -124,17 +127,27 @@ public:
         std::bind(&ImageTransfer::update, this));
   }
 
-  // this will remove the image from the queue, so can't have
-  // multiple subscriber on same message- they need to share downstream from here
   bool getSub(const std::string& topic, sensor_msgs::msg::Image::SharedPtr& image)
   {
     std::lock_guard<std::mutex> lock(sub_mutex_);
+    if (subs_.count(topic) < 1) {
+      // TODO(lucasw) is it better to create the publisher here
+      // or inside the thread update is running in?
+      std::function<void(std::shared_ptr<sensor_msgs::msg::Image>)> fnc;
+      fnc = std::bind(&ImageTransfer::imageCallback, this, std::placeholders::_1,
+              topic);
+      subs_[topic] = create_subscription<sensor_msgs::msg::Image>(topic, fnc);
+      // subs_[topic] = nullptr;
+    }
     // TODO(lucasw) if the sub doesn't exist at all need to create it
     if (from_sub_.count(topic) < 1) {
       return false;
     }
     image = from_sub_[topic];
-    from_sub_.erase(topic);
+    // this will remove the image from the queue, so can't have
+    // multiple subscriber on same message- they need to share downstream from here
+    // So instead keep all the most recent messages on every topic
+    // from_sub_.erase(topic);
     return true;
   }
 
@@ -149,7 +162,6 @@ public:
 
   // TODO(lucasw) virtual void draw()
 
-  bool initted_ = false;
   void update()
   {
     if (!initted_) {
@@ -174,7 +186,14 @@ public:
     }
   }
 private:
+  bool initted_ = false;
   std::mutex sub_mutex_;
+  void imageCallback(sensor_msgs::msg::Image::SharedPtr msg, const std::string& topic)
+  {
+    std::lock_guard<std::mutex> lock(sub_mutex_);
+    from_sub_[topic] = msg;
+  }
+
   std::map<std::string, sensor_msgs::msg::Image::SharedPtr> from_sub_;
   std::map<std::string, rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> subs_;
 
