@@ -144,6 +144,18 @@ target_link_libraries(generate_pointcloud2
 )
 install(TARGETS generate_pointcloud2 DESTINATION lib/${PROJECT_NAME})
 
+add_executable(pub_sub_non_ros src/test/pub_sub_non_ros.cpp)
+ament_target_dependencies(pub_sub_non_ros
+  "rcl_interfaces"
+  "rclcpp"
+  "rcutils"
+  "sensor_msgs"
+  "std_msgs"
+)
+# target_link_libraries(pub_sub_non_ros)
+install(TARGETS pub_sub_non_ros DESTINATION lib/${PROJECT_NAME})
+
+
 add_executable(param_to_topic src/param_to_topic.cpp)
 ament_target_dependencies(param_to_topic
   # "example_interfaces"
