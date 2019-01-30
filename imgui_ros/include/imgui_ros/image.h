@@ -34,6 +34,7 @@
 #include <deque>
 #include <imgui.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
+#include <imgui_ros/pub_sub_core.hpp>
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -117,12 +118,14 @@ struct CvImage : public GlImage {
   virtual void draw();
 };
 
+// TODO(lucasw) get rid of this and restore pub/sub to where needed
 class ImageTransfer : public rclcpp::Node
 {
 public:
   rclcpp::TimerBase::SharedPtr update_timer_;
   ImageTransfer() : Node("image_transfer")
   {
+    core_ = std::make_shared<Core>();
     update_timer_ = this->create_wall_timer(33ms,
         std::bind(&ImageTransfer::update, this));
   }
@@ -136,7 +139,8 @@ public:
       std::function<void(std::shared_ptr<sensor_msgs::msg::Image>)> fnc;
       fnc = std::bind(&ImageTransfer::imageCallback, this, std::placeholders::_1,
               topic);
-      subs_[topic] = create_subscription<sensor_msgs::msg::Image>(topic, fnc);
+      // subs_[topic] = create_subscription<sensor_msgs::msg::Image>(topic, fnc);
+      subs_[topic] = core_->create_subscription(topic, fnc, shared_from_this());
       // subs_[topic] = nullptr;
     }
     // TODO(lucasw) if the sub doesn't exist at all need to create it
@@ -179,13 +183,15 @@ public:
           to_pub_.pop_front();
         }
         if (pubs_.count(topic) < 1) {
-          pubs_[topic] = create_publisher<sensor_msgs::msg::Image>(topic);
+          // pubs_[topic] = create_publisher<sensor_msgs::msg::Image>(topic);
+          pubs_[topic] = core_->create_publisher(topic, shared_from_this());
         }
         pubs_[topic]->publish(image);
       }
     }
   }
 private:
+  std::shared_ptr<Core> core_;
   bool initted_ = false;
   std::mutex sub_mutex_;
   void imageCallback(sensor_msgs::msg::Image::SharedPtr msg, const std::string& topic)
@@ -195,11 +201,11 @@ private:
   }
 
   std::map<std::string, sensor_msgs::msg::Image::SharedPtr> from_sub_;
-  std::map<std::string, rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> subs_;
+  std::map<std::string, std::shared_ptr<Subscriber> > subs_;
 
   std::mutex pub_mutex_;
   std::deque<std::pair<std::string, sensor_msgs::msg::Image::SharedPtr> > to_pub_;
-  std::map<std::string, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr> pubs_;
-
+  // std::map<std::string, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr> pubs_;
+  std::map<std::string, std::shared_ptr<Publisher> > pubs_;
 };
 #endif  // IMGUI_ROS_IMAGE_H

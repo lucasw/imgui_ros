@@ -789,6 +789,13 @@ void Viz3D::update(const rclcpp::Time& stamp)
     camera.second->image_->publish(stamp);
     camera.second->publishCameraInfo(stamp);
   }
+  for (auto camera : cube_cameras_) {
+    // TODO(lucasw) are all these textures also in the texture list below?
+    camera.second->image_->updateTexture();
+    camera.second->image_->publish(stamp);
+    camera.second->publishCameraInfo(stamp);
+  }
+
   for (auto texture_pair : textures_) {
     texture_pair.second->updateTexture();
   }

@@ -69,14 +69,14 @@ class Demo(Node):
         widget = Widget()
         widget.name = "roto image"
         widget.tab_name = tab_name
-        widget.topic = "/image_raw"
+        widget.topic = "camera1"
         widget.type = Widget.IMAGE
         req.widgets.append(widget)
 
         widget = Widget()
         widget.name = "image_out viewer"
         widget.tab_name = tab_name
-        widget.topic = "/camera1"
+        widget.topic = "cube_camera1"
         widget.type = Widget.IMAGE
         req.widgets.append(widget)
         self.future = self.cli.call_async(req)

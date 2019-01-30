@@ -77,7 +77,8 @@ struct Publisher : std::enable_shared_from_this<Publisher>
 
   std::list<std::weak_ptr<Subscriber> > subs_;
 
-  bool ros_enable_ = false;
+  // the internal method isn't working fully yet- only updates once
+  bool ros_enable_ = true;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr ros_pub_;
 };
 
