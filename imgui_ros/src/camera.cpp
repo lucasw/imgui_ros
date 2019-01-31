@@ -74,7 +74,10 @@ void Camera::init(const size_t width, const size_t height,
     // RCLCPP_INFO(node->get_logger(), "creating camera %s %d %d", name, width, height);
     image_->width_ = width;
     image_->height_ = height;
+    image_->header_frame_id_ = header_frame_id_;
 
+    // TODO(lucasw) is this needed here if same thing is being done in RosImage::publish?
+    #if 0
     image_->image_ = std::make_shared<sensor_msgs::msg::Image>();
     // Need ability to report a different frame than the sim is using internally-
     // this allows for calibration error simulation
@@ -84,6 +87,7 @@ void Camera::init(const size_t width, const size_t height,
     image_->image_->encoding = "bgr8";
     image_->image_->step = width * 3;
     image_->image_->data.resize(width * height * 3);
+    #endif
 
     image_->min_filter_ind_ = 0;
     image_->mag_filter_ind_ = 0;
@@ -154,6 +158,9 @@ Camera::~Camera()
 
 void Camera::publishCameraInfo(const rclcpp::Time& stamp)
 {
+  if (!enable_) {
+    return;
+  }
   sensor_msgs::msg::CameraInfo camera_info_msg;
   camera_info_msg.header.frame_id = header_frame_id_;
   camera_info_msg.header.stamp = stamp;

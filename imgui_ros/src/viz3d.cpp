@@ -784,8 +784,11 @@ void Viz3D::update(const rclcpp::Time& stamp)
 
   // update
   for (auto camera : cameras_) {
+    // TODO(lucasw) the cameras shouldn't need to updateTexture, that is for
+    // transfering data to the gpu not from it.
     // TODO(lucasw) are all these textures also in the texture list below?
     camera.second->image_->updateTexture();
+    // these will do nothing if pub_dirty_ isn't set
     camera.second->image_->publish(stamp);
     camera.second->publishCameraInfo(stamp);
   }
@@ -1467,8 +1470,9 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
       //    << " indices " << lens_shape->indices_.Size;
     }
   }
+  cube_camera->image_->pub_dirty_ = true;
   return true;
-}
+}  // render cube camera
 
 // don't interleave this with regular 3d rendering imgui rendering
 void Viz3D::renderToTexture()
@@ -1524,6 +1528,7 @@ void Viz3D::renderToTexture()
         camera->far_,
         vert_flip);
 
+    camera->image_->pub_dirty_ = true;
     // TODO(lucasw) copy the date from the texture out to a cv::Mat?
     checkGLError(__FILE__, __LINE__);
   }

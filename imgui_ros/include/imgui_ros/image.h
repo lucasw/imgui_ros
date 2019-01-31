@@ -89,6 +89,9 @@ struct RosImage : public GlImage {
   int mag_filter_ind_ = 1;
   bool draw_texture_controls_ = false;
   bool enable_draw_image_ = false;
+  std::string header_frame_id_ = "";
+  // is there a fresh image to publish?
+  bool pub_dirty_ = true;
 private:
   const bool sub_not_pub_ = false;
   std::weak_ptr<rclcpp::Node> node_;
@@ -123,9 +126,14 @@ class ImageTransfer : public rclcpp::Node
 {
 public:
   rclcpp::TimerBase::SharedPtr update_timer_;
-  ImageTransfer() : Node("image_transfer")
+  ImageTransfer(std::shared_ptr<Core> core) :
+      Node("image_transfer"),
+      core_(core)
   {
-    core_ = std::make_shared<Core>();
+    if (!core_) {
+      std::cout << "image_transfer making new pub sub core\n";
+      core_ = std::make_shared<Core>();
+    }
     update_timer_ = this->create_wall_timer(33ms,
         std::bind(&ImageTransfer::update, this));
   }
@@ -168,6 +176,7 @@ public:
 
   void update()
   {
+    // std::lock_guard<std::mutex> lock(sub_mutex_);
     if (!initted_) {
       std::cout << "image transfer " << std::this_thread::get_id() << "\n";
       initted_ = true;
@@ -182,20 +191,40 @@ public:
           image = to_pub_.front().second;
           to_pub_.pop_front();
         }
-        if (pubs_.count(topic) < 1) {
-          // pubs_[topic] = create_publisher<sensor_msgs::msg::Image>(topic);
-          pubs_[topic] = core_->create_publisher(topic, shared_from_this());
+        auto pub = core_->get_create_publisher(topic, shared_from_this());
+        if (pub) {
+          pub->publish(image);
         }
-        pubs_[topic]->publish(image);
+      }
+    }  // publish all queued up messages
+  }
+
+  void draw()
+  {
+    ImGui::Separator();
+    ImGui::Text("enable sensor_msgs/Image publishing, otherwise in-process only");
+    // TODO(lucasw) turn all the publishers on or off with a master checkbox
+    // ImGui::Checkbox("multisample", &multisample_);
+    ImGui::Columns(2);
+    for (auto pub_pair : core_->publishers_) {
+      auto pub = pub_pair.second;
+      if (pub) {
+        ImGui::Checkbox(pub->topic_.c_str(), &pub->ros_enable_);
+        ImGui::NextColumn();
+        ImGui::Text("%lu subs", pub->subs_.size());
+        ImGui::NextColumn();
       }
     }
+    ImGui::Columns(1);
   }
+
 private:
   std::shared_ptr<Core> core_;
   bool initted_ = false;
   std::mutex sub_mutex_;
   void imageCallback(sensor_msgs::msg::Image::SharedPtr msg, const std::string& topic)
   {
+    // std::cout << "image transfer " << topic << " msg received " << msg->header.stamp.sec << "\n";
     std::lock_guard<std::mutex> lock(sub_mutex_);
     from_sub_[topic] = msg;
   }
@@ -205,7 +234,5 @@ private:
 
   std::mutex pub_mutex_;
   std::deque<std::pair<std::string, sensor_msgs::msg::Image::SharedPtr> > to_pub_;
-  // std::map<std::string, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr> pubs_;
-  std::map<std::string, std::shared_ptr<Publisher> > pubs_;
 };
 #endif  // IMGUI_ROS_IMAGE_H

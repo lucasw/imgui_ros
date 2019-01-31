@@ -28,10 +28,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef IMGUI_ROS_IMGUI_ROS_H
+#define IMGUI_ROS_IMGUI_ROS_H
+
 #include "imgui.h"
 #include <imgui_ros/viz3d.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/param.h>
+#include <imgui_ros/pub_sub_core.hpp>
 #include <imgui_ros/srv/add_tf.hpp>
 #include <imgui_ros/srv/add_window.hpp>
 #include <map>
@@ -48,7 +52,7 @@
 namespace imgui_ros {
 class ImguiRos : public rclcpp::Node {
 public:
-  ImguiRos();
+  ImguiRos(std::shared_ptr<Core> core);
   ~ImguiRos();
 
 private:
@@ -108,3 +112,5 @@ private:
 };
 
 }  // namespace imgui_ros
+
+#endif  // IMGUI_ROS_IMGUI_ROS_H

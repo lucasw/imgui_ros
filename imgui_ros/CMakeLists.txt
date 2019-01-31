@@ -18,6 +18,7 @@ endif()
 find_package(OpenCV REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(ament_cmake REQUIRED)
+find_package(class_loader REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(glm REQUIRED)
 # find_package(example_interfaces REQUIRED)
@@ -71,7 +72,7 @@ include_directories(
   ${SDL2_INCLUDE_DIRS}
 )
 
-add_executable(imgui_ros_node
+add_library(imguiros SHARED
   src/camera.cpp
   src/cube_camera.cpp
   src/graph.cpp
@@ -100,7 +101,8 @@ add_executable(imgui_ros_node
 )
 set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPILE_FLAGS -Wno-pedantic)
 
-ament_target_dependencies(imgui_ros_node
+ament_target_dependencies(imguiros
+  "class_loader"
   "geometry_msgs"
   "pcl_conversions"
   "rcl_interfaces"
@@ -114,8 +116,8 @@ ament_target_dependencies(imgui_ros_node
   "tf2_ros"
   "visualization_msgs"
 )
-rosidl_target_interfaces(imgui_ros_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
-target_link_libraries(imgui_ros_node
+rosidl_target_interfaces(imguiros ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_link_libraries(imguiros
   ${Boost_SYSTEM_LIBRARY}  # pcl_conversions requires this
   ${OpenCV_LIBRARIES}
   ${PCL_LIBRARIES}
@@ -124,6 +126,15 @@ target_link_libraries(imgui_ros_node
   dl
 )
 
+install(TARGETS imguiros
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+add_executable(imgui_ros_node src/imgui_ros_node.cpp)
+target_link_libraries(imgui_ros_node imguiros)
+ament_target_dependencies(imgui_ros_node rclcpp imguiros)
 install(TARGETS imgui_ros_node DESTINATION lib/${PROJECT_NAME})
 
 add_executable(generate_pointcloud2 src/test/generate_pointcloud2.cpp)
@@ -192,5 +203,10 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+ament_export_include_directories(include)
+# ament_export_dependencies()
+ament_export_libraries(imguiros)
+install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
 
 ament_package()

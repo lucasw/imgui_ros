@@ -66,9 +66,9 @@ using namespace std::chrono_literals;
 // using std::placeholders::_2;
 
 namespace imgui_ros {
-  ImguiRos::ImguiRos() : Node("imgui_ros") {
-
-    image_transfer_ = std::make_shared<ImageTransfer>();
+  ImguiRos::ImguiRos(std::shared_ptr<Core> core = nullptr) : Node("imgui_ros")
+  {
+    image_transfer_ = std::make_shared<ImageTransfer>(core);
     #if 1
     ros_io_thread_ = std::thread(
         std::bind(&ImguiRos::runNodeSingleThreaded, this, image_transfer_));
@@ -686,6 +686,7 @@ namespace imgui_ros {
         }
       }
 
+      // TODO(lucasw) move to draw method
       {
         ImGui::Begin("stats"); // Create a window called "stats"
                                // and append into it.
@@ -695,6 +696,7 @@ namespace imgui_ros {
         std::stringstream ss;
         ss << std::this_thread::get_id();
         ImGui::Text("Thread %s", ss.str().c_str());
+        image_transfer_->draw();
         ImGui::End();
       }
 
@@ -822,15 +824,6 @@ namespace imgui_ros {
 
 }  // namespace imgui_ros
 
-int main(int argc, char * argv[])
-{
-  rclcpp::init(argc, argv);
+#include <class_loader/register_macro.hpp>
 
-  // Force flush of the stdout buffer.
-  // This ensures a correct sync of all prints
-  // even when executed simultaneously within a launch file.
-  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-  rclcpp::spin(std::make_shared<imgui_ros::ImguiRos>());
-  rclcpp::shutdown();
-  return 0;
-}
+CLASS_LOADER_REGISTER_CLASS(imgui_ros::ImguiRos, rclcpp::Node)

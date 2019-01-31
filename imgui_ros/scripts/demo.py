@@ -249,7 +249,7 @@ class Demo(Node):
         widget.items.append("projector1")
         widget.items.append("bar2")
         widget.items.append("camera1")
-        widget.items.append("camera2")
+        widget.items.append("cube_camera1")
         req.widgets.append(widget)
 
         self.future = self.cli.call_async(req)
@@ -276,7 +276,7 @@ class Demo(Node):
         widget.sub_type = Widget.TF
         widget.min = -4.0
         widget.max = 4.0
-        widget.items.append("projector1")
+        widget.items.append("viz3d_main_window_camera")
         widget.items.append("camera1")
         req.widgets.append(widget)
 

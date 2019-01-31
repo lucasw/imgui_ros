@@ -90,6 +90,7 @@ using std::placeholders::_1;
   {
     image_ = image;
     dirty_ = true;
+    pub_dirty_ = true;
   }
 
 #if 0
@@ -110,6 +111,7 @@ using std::placeholders::_1;
   }
 #endif
 
+  // Transfer image data from cpu to gpu
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
   bool RosImage::updateTexture() {
@@ -225,18 +227,32 @@ using std::placeholders::_1;
 
   void RosImage::publish(const rclcpp::Time& stamp) {
     // std::cout << name_ << " " << pub_ << " " << image_ << " " <<  texture_id_ << "\n";
+    if (!pub_dirty_) {
+      return;
+    }
+    pub_dirty_ = false;
+
     if (!image_transfer_) {
       std::cerr << "No image transfer object\n";
       return;
     }
-    // TODO(lucasw) am I re-using the same image?  Need to create a new one instead,
-    // then could use unique_ptr
-    if (!image_) {
-      // TODO(lucasw) debug message
-      return;
+
+    {
+      image_ = std::make_shared<sensor_msgs::msg::Image>();
+      // Need ability to report a different frame than the sim is using internally-
+      // this allows for calibration error simulation
+      image_->header.frame_id = header_frame_id_;
+      image_->width = width_;
+      image_->height = height_;
+      image_->encoding = "bgr8";
+      image_->step = width_ * 3;
+      // TODO(lucasw) this step may be expensive
+      image_->data.resize(image_->step * height_);
     }
+
     // TODO(lucasw) check to see if there are any subscribers?  If none return.
 
+    // Copy image from gpu for sending- but don't do this if the image hasn't changed
     // TODO(lucasw) lock image_
     glBindTexture(GL_TEXTURE_2D, texture_id_);
     if (image_->encoding == "bgr8") {
@@ -274,14 +290,19 @@ using std::placeholders::_1;
       // const std::string checkbox_text = "info##" + name;
       // ImGui::Checkbox(checkbox_text.c_str(), &enable_info_);
       if (enable_info_) {
+        #if 0
         std::stringstream ss;
         ss << name_ << " " << texture_id_ << " " << topic_ << " "
             << width_ << " " << height_;  // << " " << count++;
-        // const char* text = ss.str().c_str();
-        // TODO(lucasw) write text value of 10-20 pixels values
         std::string text = ss.str();
-        // std::cout << "draw " << text << "\n";
-        ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
+        ImGui::Text("%s %d %s %d %d", static_cast<int>(text.size()), text.data());
+        #else
+        ImGui::Text("%s %d %s %lu %lu", name_.c_str(), texture_id_, topic_.c_str(),
+            width_, height_);
+        #endif
+        if (image_) {
+          ImGui::Text("%d %u", image_->header.stamp.sec, image_->header.stamp.nanosec);
+        }
       }
 
       // Texture settings

@@ -6,7 +6,7 @@ struct Pub
 {
   Pub(std::shared_ptr<Core> core) : core_(core)
   {
-    pub_ = core_->create_publisher("foo");
+    pub_ = core_->get_create_publisher("foo");
   }
 
   void update()
