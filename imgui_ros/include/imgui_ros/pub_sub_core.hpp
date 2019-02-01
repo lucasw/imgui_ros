@@ -1,6 +1,7 @@
 #ifndef IMGUI_ROS_PUB_SUB_CORE_HPP
 #define IMGUI_ROS_PUB_SUB_CORE_HPP
 
+#include <deque>
 #include <functional>
 #include <list>
 #include <rclcpp/rclcpp.hpp>
@@ -117,6 +118,16 @@ struct Publisher  // : std::enable_shared_from_this<Publisher>
       subs_.remove(sub_weak);
     }
     #endif
+
+    // TODO(lucasw) make this optional
+    rclcpp::Time cur = msg->header.stamp;
+    stamps_.push_back(cur);
+    if (stamps_.size() > 50) {
+      stamps_.pop_front();
+    } else if ((stamps_.size() > 10) &&
+        ((cur - stamps_.front()).nanoseconds() > 2e9)) {
+      stamps_.pop_front();
+    }
   }
 
   std::list<std::weak_ptr<Subscriber> > subs_;
@@ -125,6 +136,8 @@ struct Publisher  // : std::enable_shared_from_this<Publisher>
   bool ros_enable_ = false;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr ros_pub_;
   std::mutex sub_mutex_;
+
+  std::deque<rclcpp::Time> stamps_;
 };
 
 class Core

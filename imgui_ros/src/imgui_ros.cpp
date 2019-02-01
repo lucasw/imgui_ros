@@ -698,7 +698,7 @@ namespace imgui_ros {
         std::stringstream ss;
         ss << std::this_thread::get_id();
         ImGui::Text("Thread %s", ss.str().c_str());
-        image_transfer_->draw();
+        image_transfer_->draw(stamp);
         ImGui::End();
       }
 

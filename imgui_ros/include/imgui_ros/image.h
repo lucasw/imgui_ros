@@ -202,8 +202,10 @@ public:
     }  // publish all queued up messages
   }
 
-  void draw()
+  void draw(rclcpp::Time cur)
   {
+    // auto cur = now();
+
     ImGui::Separator();
     ImGui::Text("enable sensor_msgs/Image publishing, otherwise in-process only");
     // TODO(lucasw) turn all the publishers on or off with a master checkbox
@@ -215,6 +217,21 @@ public:
         ImGui::Checkbox(pub->topic_.c_str(), &pub->ros_enable_);
         ImGui::NextColumn();
         ImGui::Text("%lu subs", pub->subs_.size());
+        ImGui::NextColumn();
+        float rate = 0.0;
+        if (pub->stamps_.size() > 2) {
+          rclcpp::Time earliest = pub->stamps_.front();
+          rate = static_cast<float>(pub->stamps_.size()) /
+            ((cur - earliest).nanoseconds() / 1e9);
+        }
+        ImGui::Text("%0.2f Hz", rate);
+        ImGui::NextColumn();
+        float time_since_last = 0.0;
+        if (pub->stamps_.size() > 0) {
+          rclcpp::Time latest = pub->stamps_.back();
+          time_since_last =  (cur - latest).nanoseconds() / 1e9;
+        }
+        ImGui::Text("%0.2f since last", time_since_last);
         ImGui::NextColumn();
       }
     }
