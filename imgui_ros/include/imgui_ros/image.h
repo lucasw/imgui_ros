@@ -64,7 +64,7 @@ class ImageTransfer;
 // have a single node in the imgui parent?
 struct RosImage : public GlImage {
   RosImage(const std::string name, const std::string topic = "",
-           const bool pub_not_sub = false,
+           const bool sub_not_pub = false,
            std::shared_ptr<rclcpp::Node> node = nullptr,
            std::shared_ptr<ImageTransfer> image_transfer = nullptr);
   RosImage(const std::string& name,
@@ -89,9 +89,12 @@ struct RosImage : public GlImage {
   int mag_filter_ind_ = 1;
   bool draw_texture_controls_ = false;
   bool enable_draw_image_ = false;
+  bool enable_cpu_to_gpu_ = true;
   std::string header_frame_id_ = "";
   // is there a fresh image to publish?
   bool pub_dirty_ = true;
+  // may want to keep the image just within imgui, don't send it anywhere
+  bool enable_publish_ = true;
 private:
   const bool sub_not_pub_ = false;
   std::weak_ptr<rclcpp::Node> node_;

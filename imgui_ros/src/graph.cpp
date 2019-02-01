@@ -272,7 +272,7 @@ void Graph::draw()
   if (ImGui::BeginPopup("context_menu"))
   {
     auto node = node_selected_;
-    ImVec2 scene_pos = ImGui::GetMousePosOnOpeningCurrentPopup() - offset;
+    // ImVec2 scene_pos = ImGui::GetMousePosOnOpeningCurrentPopup() - offset;
     if (node)
     {
       ImGui::Text("Node '%s'", node->name_.c_str());

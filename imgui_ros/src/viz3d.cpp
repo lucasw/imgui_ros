@@ -788,7 +788,8 @@ void Viz3D::update(const rclcpp::Time& stamp)
     // transfering data to the gpu not from it.
     // TODO(lucasw) are all these textures also in the texture list below?
     camera.second->image_->updateTexture();
-    // these will do nothing if pub_dirty_ isn't set
+    // these will do nothing if pub_dirty_ isn't set,
+    // or publish isn't enabled
     camera.second->image_->publish(stamp);
     camera.second->publishCameraInfo(stamp);
   }

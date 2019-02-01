@@ -29,9 +29,10 @@
  */
 
 #include <memory>
-#include <rclcpp/rclcpp.hpp>
 #include <imgui_ros/imgui_ros.h>
 #include <imgui_ros/pub_sub_core.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/executors.hpp>
 
 int main(int argc, char * argv[])
 {
@@ -39,7 +40,10 @@ int main(int argc, char * argv[])
   rclcpp::init(argc, argv);
   auto core = std::make_shared<Core>();
   auto imgui_ros = std::make_shared<imgui_ros::ImguiRos>(core);
-  rclcpp::spin(imgui_ros);
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(imgui_ros);
+  executor.spin();
+  // rclcpp::spin(imgui_ros);
   rclcpp::shutdown();
   return 0;
 }

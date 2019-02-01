@@ -65,11 +65,13 @@ using namespace std::chrono_literals;
 // using std::placeholders::_1;
 // using std::placeholders::_2;
 
+#define RUN_IMAGE_TRANSFER_SEPARATE_THREAD
+
 namespace imgui_ros {
   ImguiRos::ImguiRos(std::shared_ptr<Core> core = nullptr) : Node("imgui_ros")
   {
     image_transfer_ = std::make_shared<ImageTransfer>(core);
-    #if 1
+    #ifdef RUN_IMAGE_TRANSFER_SEPARATE_THREAD
     ros_io_thread_ = std::thread(
         std::bind(&ImguiRos::runNodeSingleThreaded, this, image_transfer_));
     #endif
@@ -676,7 +678,7 @@ namespace imgui_ros {
 
     {
       // TODO(lucasw) make image_transfer into a widget?
-      #if 0
+      #ifndef RUN_IMAGE_TRANSFER_SEPARATE_THREAD
       image_transfer_->update();
       #endif
 

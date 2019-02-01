@@ -137,6 +137,11 @@ target_link_libraries(imgui_ros_node imguiros)
 ament_target_dependencies(imgui_ros_node rclcpp imguiros)
 install(TARGETS imgui_ros_node DESTINATION lib/${PROJECT_NAME})
 
+add_executable(executor_imgui_ros_node src/executor_imgui_ros_node.cpp)
+target_link_libraries(executor_imgui_ros_node imguiros)
+ament_target_dependencies(executor_imgui_ros_node rclcpp imguiros)
+install(TARGETS executor_imgui_ros_node DESTINATION lib/${PROJECT_NAME})
+
 add_executable(generate_pointcloud2 src/test/generate_pointcloud2.cpp)
 ament_target_dependencies(generate_pointcloud2
   # "example_interfaces"
@@ -204,9 +209,23 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_include_directories(include)
-# ament_export_dependencies()
+ament_export_include_directories(
+  include
+  # imgui/examples
+  # imgui/examples/libs/gl3w
+)
+ament_export_dependencies(SDL2)
 ament_export_libraries(imguiros)
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
+install(DIRECTORY imgui/examples/libs/gl3w/GL/ DESTINATION include/GL)
+install(FILES
+  imgui/imconfig.h
+  imgui/imgui.h
+  # imgui/imgui_internal.h
+  imgui/imstb_rectpack.h
+  imgui/imstb_textedit.h
+  imgui/imstb_truetype.h
+  DESTINATION include
+)
 
 ament_package()

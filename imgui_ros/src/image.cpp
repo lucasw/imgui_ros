@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "imgui.h"
-#include "imgui_impl_sdl.h"
+#include <imgui.h>
+#include <imgui_impl_sdl.h>
 // #include <imgui_ros/AddWindow.h>
 #include <imgui_ros/image.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
@@ -115,6 +115,9 @@ using std::placeholders::_1;
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
   bool RosImage::updateTexture() {
+    if (!enable_cpu_to_gpu_) {
+      return true;
+    }
     sensor_msgs::msg::Image::SharedPtr image;
     {
       std::lock_guard<std::mutex> lock(mutex_);
@@ -227,6 +230,9 @@ using std::placeholders::_1;
 
   void RosImage::publish(const rclcpp::Time& stamp) {
     // std::cout << name_ << " " << pub_ << " " << image_ << " " <<  texture_id_ << "\n";
+    if (!enable_publish_) {
+      return;
+    }
     if (!pub_dirty_) {
       return;
     }
@@ -346,13 +352,22 @@ using std::placeholders::_1;
         }
       }
 
-      const std::string checkbox_text2 = "show image##" + name;
-      const std::string one_one_checkbox_text2 = "1:1##" + name;
 
       ImGui::Columns(2);
-      ImGui::Checkbox(checkbox_text2.c_str(), &enable_draw_image_);
+      const std::string show_image_text = "show##" + name;
+      ImGui::Checkbox(show_image_text.c_str(), &enable_draw_image_);
       ImGui::NextColumn();
+      const std::string cpu_to_gpu_text = "cpu->gpu##" + name;
+      ImGui::Checkbox(cpu_to_gpu_text.c_str(), &enable_cpu_to_gpu_);
+      ImGui::NextColumn();
+      if (!sub_not_pub_) {
+        const std::string show_image_text = "publish##" + name;
+        ImGui::Checkbox(show_image_text.c_str(), &enable_publish_);
+      }
+      ImGui::NextColumn();
+      const std::string one_one_checkbox_text2 = "1:1##" + name;
       ImGui::Checkbox(one_one_checkbox_text2.c_str(), &enable_one_to_one_);
+      ImGui::NextColumn();
       ImGui::Columns(1);
 
       if ((enable_draw_image_) && (texture_id_ != 0) && (width_ != 0) && (height_ != 0)) {
