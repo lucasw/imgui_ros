@@ -96,6 +96,16 @@ struct Publisher  // : std::enable_shared_from_this<Publisher>
 
   void publish(sensor_msgs::msg::Image::SharedPtr msg)
   {
+    // TODO(lucasw) make this optional
+    rclcpp::Time cur = msg->header.stamp;
+    stamps_.push_back(cur);
+    if (stamps_.size() > 50) {
+      stamps_.pop_front();
+    } else if ((stamps_.size() > 10) &&
+        ((cur - stamps_.front()).nanoseconds() > 2e9)) {
+      stamps_.pop_front();
+    }
+
     if (ros_enable_ && ros_pub_) {
       ros_pub_->publish(msg);
       return;
@@ -119,16 +129,6 @@ struct Publisher  // : std::enable_shared_from_this<Publisher>
         // TODO(lucasw) should be impossible to get here after remove_if above
         std::cerr << topic_ << " bad sub lock\n";
       }
-    }
-
-    // TODO(lucasw) make this optional
-    rclcpp::Time cur = msg->header.stamp;
-    stamps_.push_back(cur);
-    if (stamps_.size() > 50) {
-      stamps_.pop_front();
-    } else if ((stamps_.size() > 10) &&
-        ((cur - stamps_.front()).nanoseconds() > 2e9)) {
-      stamps_.pop_front();
     }
   }
 
