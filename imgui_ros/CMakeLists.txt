@@ -134,15 +134,25 @@ install(TARGETS imguiros
   RUNTIME DESTINATION bin
 )
 
-add_executable(imgui_ros_node src/imgui_ros_node.cpp)
+add_executable(imgui_ros_node src/nodes/imgui_ros_node.cpp)
 target_link_libraries(imgui_ros_node imguiros)
 ament_target_dependencies(imgui_ros_node rclcpp imguiros)
 install(TARGETS imgui_ros_node DESTINATION lib/${PROJECT_NAME})
 
-add_executable(executor_imgui_ros_node src/executor_imgui_ros_node.cpp)
+add_executable(executor_imgui_ros_node src/nodes/executor_imgui_ros_node.cpp)
 target_link_libraries(executor_imgui_ros_node imguiros)
 ament_target_dependencies(executor_imgui_ros_node rclcpp imguiros)
 install(TARGETS executor_imgui_ros_node DESTINATION lib/${PROJECT_NAME})
+
+# only optionally build usb_cam node, need right version of usb_cam
+# https://github.com/lucasw/usb_cam/tree/internal_pub_sub
+find_package(usb_cam)
+if (usb_cam_FOUND_AMENT_PACKAGE)
+  add_executable(usb_cam_viewer src/nodes/usb_cam_viewer.cpp)
+  target_link_libraries(usb_cam_viewer imguiros)
+  ament_target_dependencies(usb_cam_viewer rclcpp imguiros usb_cam)
+  install(TARGETS usb_cam_viewer DESTINATION lib/${PROJECT_NAME})
+endif()
 
 add_executable(generate_pointcloud2 src/test/generate_pointcloud2.cpp)
 ament_target_dependencies(generate_pointcloud2
