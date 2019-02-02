@@ -71,7 +71,7 @@ private:
   // is run in, not necessarily the same thread onInit runs in
   void glInit();
   std::mutex mutex_;
-  bool init_;
+  bool init_ = false;
   // TODO(lucasw) std::shared_ptr
   SDL_Window *window;
   SDL_GLContext gl_context;
@@ -109,6 +109,9 @@ private:
   // namespacing seems broken in ros2 currently)
   rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
   void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event);
+
+  // check to make sure opengl context accesses never happen in different thread
+  std::thread::id thread_id_;
 };
 
 }  // namespace imgui_ros

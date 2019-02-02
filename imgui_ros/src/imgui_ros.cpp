@@ -116,6 +116,8 @@ namespace imgui_ros {
   }
 
   void ImguiRos::glInit() {
+    thread_id_ = std::this_thread::get_id();
+    std::cout << "imgui thread init " << thread_id_ << std::endl;
     RCLCPP_INFO(this->get_logger(), "opengl init %d", init_);
 
     // Setup SDL
@@ -631,18 +633,12 @@ namespace imgui_ros {
   }
 
   void ImguiRos::update() {
+    if (!init_) {
+      glInit();
+    }
     // TODO(lucasw) this should be the stamp at which most of the tf frames were derived from?
     const rclcpp::Time stamp = now();
 
-    if (!init_) {
-      glInit();
-#if 0
-    // can't do this in constructor because node hasn't finished yet?
-    // but then putting it here ruins ability of param clients to interact with other nodes parameters
-      param_sub_ = parameters_client_->on_parameter_event(
-          std::bind(&ImguiRos::onParameterEvent, this, std::placeholders::_1));
-#endif
-    }
     // Poll and handle events (inputs, window resize, etc.)
     // You can read the gui_io.WantCaptureMouse, gui_io.WantCaptureKeyboard flags to
     // tell if dear imgui wants to use your inputs.
@@ -672,6 +668,12 @@ namespace imgui_ros {
     {
     std::lock_guard<std::mutex> lock(mutex_);
     // Start the Dear ImGui frame
+    if (std::this_thread::get_id() != thread_id_) {
+      std::cerr << "imgui thread " << std::this_thread::get_id() <<
+        " " << thread_id_ << std::endl;
+      // TODO(lucasw) throw
+      return;
+    }
     imgui_impl_opengl3_->NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
@@ -696,7 +698,7 @@ namespace imgui_ros {
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                     1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         std::stringstream ss;
-        ss << std::this_thread::get_id();
+        ss << std::this_thread::get_id();  // << " " << thread_id_;
         ImGui::Text("Thread %s", ss.str().c_str());
         image_transfer_->draw(stamp);
         ImGui::End();
