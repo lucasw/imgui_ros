@@ -145,7 +145,7 @@ struct Publisher  // : std::enable_shared_from_this<Publisher>
 class Core
 {
 public:
-  Core()
+  Core(const bool ros_enable_default=false) : ros_enable_default_(ros_enable_default)
   {
     std::cout << std::this_thread::get_id() << " new non-ros core" << std::endl;
   }
@@ -182,7 +182,8 @@ public:
     setFullTopic(node, topic);
 
     if ((publishers_.count(topic) < 1)) { //  || (!(pub = publishers_[topic].lock()))) {
-      std::cout << "creating new publisher on topic :'" << topic << "'\n";
+      std::cout << "creating new publisher on topic :'" << topic << "' "
+          << ros_enable_default_ << "\n";
       pub = std::make_shared<Publisher>(topic, node);
       pub->ros_enable_ = ros_enable_default_;
       publishers_[topic] = pub;
