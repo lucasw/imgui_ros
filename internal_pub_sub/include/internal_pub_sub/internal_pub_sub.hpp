@@ -1,5 +1,5 @@
-#ifndef IMGUI_ROS_PUB_SUB_CORE_HPP
-#define IMGUI_ROS_PUB_SUB_CORE_HPP
+#ifndef INTERNAL_PUB_SUB_INTERNAL_PUB_SUB_HPP
+#define INTERNAL_PUB_SUB_INTERNAL_PUB_SUB_HPP
 
 #include <deque>
 #include <functional>
@@ -27,6 +27,9 @@ inline void setFullTopic(std::shared_ptr<rclcpp::Node> node, std::string& topic)
     topic = ns + topic;
   }
 }
+
+namespace internal_pub_sub
+{
 
 struct Subscriber
 {
@@ -98,26 +101,25 @@ struct Publisher  // : std::enable_shared_from_this<Publisher>
       return;
     }
 
-    std::vector<std::weak_ptr<Subscriber> > to_remove;
-
     std::lock_guard<std::mutex> lock(sub_mutex_);
+    // remove dead subscribers
+    subs_.remove_if([](std::weak_ptr<Subscriber> p) {
+        if (auto sp = p.lock()) {
+          return false;
+        }
+        std::cout << "removing dead sub\n";
+        return true;
+        });
+
     for (auto sub_weak : subs_) {
       if (auto sub = sub_weak.lock()) {
         // std::cout << topic_ << " publishing to " << sub->topic_ << "\n";
         sub->callback(msg);
       } else {
+        // TODO(lucasw) should be impossible to get here after remove_if above
         std::cerr << topic_ << " bad sub lock\n";
-        to_remove.push_back(sub_weak);
       }
     }
-
-    #if 0
-    for (auto sub_weak : to_remove) {
-      std::cout << "removing sub\n";
-      // no match for operator
-      subs_.remove(sub_weak);
-    }
-    #endif
 
     // TODO(lucasw) make this optional
     rclcpp::Time cur = msg->header.stamp;
@@ -209,4 +211,5 @@ public:
   std::map<std::string, std::shared_ptr<Publisher> > publishers_;
 };
 
-#endif  // IMGUI_ROS_PUB_SUB_CORE_HPP
+}  // internal_pub_sub
+#endif  // INTERNAL_PUB_SUB_INTERNAL_PUB_SUB_HPP

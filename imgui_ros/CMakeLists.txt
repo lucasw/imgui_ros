@@ -21,6 +21,7 @@ find_package(ament_cmake REQUIRED)
 find_package(class_loader REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(glm REQUIRED)
+find_package(internal_pub_sub REQUIRED)
 # find_package(example_interfaces REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -104,6 +105,7 @@ set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPIL
 ament_target_dependencies(imguiros
   "class_loader"
   "geometry_msgs"
+  "internal_pub_sub"
   "pcl_conversions"
   "rcl_interfaces"
   "rclcpp"
@@ -159,18 +161,6 @@ target_link_libraries(generate_pointcloud2
   ${PCL_LIBRARIES}
 )
 install(TARGETS generate_pointcloud2 DESTINATION lib/${PROJECT_NAME})
-
-add_executable(pub_sub_non_ros src/test/pub_sub_non_ros.cpp)
-ament_target_dependencies(pub_sub_non_ros
-  "rcl_interfaces"
-  "rclcpp"
-  "rcutils"
-  "sensor_msgs"
-  "std_msgs"
-)
-# target_link_libraries(pub_sub_non_ros)
-install(TARGETS pub_sub_non_ros DESTINATION lib/${PROJECT_NAME})
-
 
 add_executable(param_to_topic src/param_to_topic.cpp)
 ament_target_dependencies(param_to_topic

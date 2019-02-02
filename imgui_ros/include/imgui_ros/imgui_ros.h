@@ -35,7 +35,7 @@
 #include <imgui_ros/viz3d.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/param.h>
-#include <imgui_ros/pub_sub_core.hpp>
+#include <internal_pub_sub/internal_pub_sub.hpp>
 #include <imgui_ros/srv/add_tf.hpp>
 #include <imgui_ros/srv/add_window.hpp>
 #include <map>
@@ -52,7 +52,7 @@
 namespace imgui_ros {
 class ImguiRos : public rclcpp::Node {
 public:
-  ImguiRos(std::shared_ptr<Core> core);
+  ImguiRos(std::shared_ptr<internal_pub_sub::Core> core);
   ~ImguiRos();
 
 private:

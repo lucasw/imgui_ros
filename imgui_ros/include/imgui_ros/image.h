@@ -34,7 +34,7 @@
 #include <deque>
 #include <imgui.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
-#include <imgui_ros/pub_sub_core.hpp>
+#include <internal_pub_sub/internal_pub_sub.hpp>
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -129,13 +129,13 @@ class ImageTransfer : public rclcpp::Node
 {
 public:
   rclcpp::TimerBase::SharedPtr update_timer_;
-  ImageTransfer(std::shared_ptr<Core> core) :
+  ImageTransfer(std::shared_ptr<internal_pub_sub::Core> core) :
       Node("image_transfer"),
       core_(core)
   {
     if (!core_) {
       std::cout << "image_transfer making new pub sub core\n";
-      core_ = std::make_shared<Core>();
+      core_ = std::make_shared<internal_pub_sub::Core>();
     }
     update_timer_ = this->create_wall_timer(33ms,
         std::bind(&ImageTransfer::update, this));
@@ -239,7 +239,7 @@ public:
   }
 
 private:
-  std::shared_ptr<Core> core_;
+  std::shared_ptr<internal_pub_sub::Core> core_;
   bool initted_ = false;
   std::mutex sub_mutex_;
   void imageCallback(sensor_msgs::msg::Image::SharedPtr msg, const std::string& topic)
@@ -250,7 +250,7 @@ private:
   }
 
   std::map<std::string, sensor_msgs::msg::Image::SharedPtr> from_sub_;
-  std::map<std::string, std::shared_ptr<Subscriber> > subs_;
+  std::map<std::string, std::shared_ptr<internal_pub_sub::Subscriber> > subs_;
 
   std::mutex pub_mutex_;
   std::deque<std::pair<std::string, sensor_msgs::msg::Image::SharedPtr> > to_pub_;

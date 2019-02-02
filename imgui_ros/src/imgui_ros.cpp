@@ -68,7 +68,7 @@ using namespace std::chrono_literals;
 #define RUN_IMAGE_TRANSFER_SEPARATE_THREAD
 
 namespace imgui_ros {
-  ImguiRos::ImguiRos(std::shared_ptr<Core> core = nullptr) : Node("imgui_ros")
+  ImguiRos::ImguiRos(std::shared_ptr<internal_pub_sub::Core> core = nullptr) : Node("imgui_ros")
   {
     image_transfer_ = std::make_shared<ImageTransfer>(core);
     #ifdef RUN_IMAGE_TRANSFER_SEPARATE_THREAD

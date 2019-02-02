@@ -1,10 +1,10 @@
-#include <imgui_ros/pub_sub_core.hpp>
+#include <internal_pub_sub/internal_pub_sub.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
 struct Pub
 {
-  Pub(std::shared_ptr<Core> core) : core_(core)
+  Pub(std::shared_ptr<internal_pub_sub::Core> core) : core_(core)
   {
     pub_ = core_->get_create_publisher("foo");
   }
@@ -23,14 +23,14 @@ struct Pub
     pub_->publish(msg);
   }
 
-  std::shared_ptr<Core> core_;
-  std::shared_ptr<Publisher> pub_;
+  std::shared_ptr<internal_pub_sub::Core> core_;
+  std::shared_ptr<internal_pub_sub::Publisher> pub_;
   int count_ = 0;
 };
 
 struct Sub
 {
-  Sub(std::shared_ptr<Core> core) : core_(core)
+  Sub(std::shared_ptr<internal_pub_sub::Core> core) : core_(core)
   {
     sub_ = core_->create_subscription("foo", std::bind(&Sub::callback, this, std::placeholders::_1));
   }
@@ -45,14 +45,14 @@ struct Sub
     std::cout << this << " new message " << msg->header.stamp.sec
         << " " << msg->data.size() << "\n";
   }
-  std::shared_ptr<Core> core_;
-  std::shared_ptr<Subscriber> sub_;
+  std::shared_ptr<internal_pub_sub::Core> core_;
+  std::shared_ptr<internal_pub_sub::Subscriber> sub_;
 };
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  auto core = std::make_shared<Core>();
+  auto core = std::make_shared<internal_pub_sub::Core>();
   auto publisher_node = std::make_shared<Pub>(core);
   std::cout << "------\n";
   auto subscriber_node = std::make_shared<Sub>(core);

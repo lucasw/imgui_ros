@@ -30,7 +30,7 @@
 
 #include <memory>
 #include <imgui_ros/imgui_ros.h>
-#include <imgui_ros/pub_sub_core.hpp>
+#include <internal_pub_sub/internal_pub_sub.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/executors.hpp>
 
@@ -38,7 +38,7 @@ int main(int argc, char * argv[])
 {
   setvbuf(stdout, NULL, _IONBF, BUFSIZ);
   rclcpp::init(argc, argv);
-  auto core = std::make_shared<Core>();
+  auto core = std::make_shared<internal_pub_sub::Core>();
   auto imgui_ros = std::make_shared<imgui_ros::ImguiRos>(core);
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(imgui_ros);
