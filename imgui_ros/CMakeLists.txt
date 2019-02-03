@@ -195,6 +195,7 @@ install(PROGRAMS
   scripts/fragment.glsl
   scripts/graph.py
   scripts/pub_shape.py
+  scripts/usb_cam_viewer.py
   scripts/vertex.glsl
   DESTINATION lib/${PROJECT_NAME})
 
