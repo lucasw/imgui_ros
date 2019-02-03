@@ -147,11 +147,13 @@ class Core
 public:
   Core(const bool ros_enable_default=false) : ros_enable_default_(ros_enable_default)
   {
-    std::cout << std::this_thread::get_id() << " new non-ros core" << std::endl;
+    std::cout << "0x" << std::hex << std::this_thread::get_id() << std::dec
+        << " new internal pub sub core" << std::endl;
   }
   ~Core()
   {
-    std::cout << std::this_thread::get_id() << " shutting down non-ros core" << std::endl;
+    std::cout << "0x" << std::hex << std::this_thread::get_id() << std::dec
+        << " shutting down internal pub sub core" << std::endl;
   }
 
   std::shared_ptr<Subscriber> create_subscription(const std::string& topic,

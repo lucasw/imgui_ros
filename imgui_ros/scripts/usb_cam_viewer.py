@@ -54,12 +54,12 @@ class Demo(Node):
 
     def add_images(self):
         req = AddWindow.Request()
-        req.name = "usb cam viewer"
+        req.name = 'usb cam viewer'
         tab_name = 'images'
         widget = Widget()
         widget.name = "roto image"
         widget.tab_name = tab_name
-        widget.topic = "image_raw"
+        widget.topic = '/image_raw'
         widget.type = Widget.IMAGE
         req.widgets.append(widget)
         self.future = self.cli.call_async(req)

@@ -181,7 +181,8 @@ public:
   {
     // std::lock_guard<std::mutex> lock(sub_mutex_);
     if (!initted_) {
-      std::cout << "image transfer " << std::this_thread::get_id() << "\n";
+      std::cout << "image transfer 0x" << std::hex << std::this_thread::get_id()
+          << std::dec << "\n";
       initted_ = true;
     }
     {

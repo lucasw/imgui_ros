@@ -34,21 +34,46 @@
 #include <internal_pub_sub/internal_pub_sub.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/executors.hpp>
+#include <thread>
+
+void run_usb_cam(std::shared_ptr<internal_pub_sub::Core> core)
+{
+  // rclcpp::executors::MultiThreadedExecutor executor;
+  rclcpp::executors::SingleThreadedExecutor executor;
+  auto usb_cam = std::make_shared<usb_cam::UsbCam>(core);
+  executor.add_node(usb_cam);
+  executor.spin();
+}
 
 int main(int argc, char * argv[])
 {
   setvbuf(stdout, NULL, _IONBF, BUFSIZ);
   rclcpp::init(argc, argv);
+
+
   auto core = std::make_shared<internal_pub_sub::Core>();
-  rclcpp::executors::SingleThreadedExecutor executor;
 
+  rclcpp::executors::SingleThreadedExecutor single_executor;
+  // imgui_ros has to be single threaded for now to avoid context switches with opengl
   auto imgui_ros = std::make_shared<imgui_ros::ImguiRos>(core);
-  executor.add_node(imgui_ros);
+  single_executor.add_node(imgui_ros);
 
-  auto usb_cam = std::make_shared<usb_cam::UsbCam>(core);
-  executor.add_node(usb_cam);
+  rclcpp::WallRate rate(50);
+#if 0
+  // This doesn't work even though the execution time out to be in a different thread than
+  // this one- need to spawn to different threads to spin each executor in.
+  rclcpp::Clock::SharedPtr clock = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
+  while (rclcpp::ok()) {
+    single_executor.spin_some();
+    multi_executor.spin_some();
+    rate.sleep();
+  }
+#else
+  std::thread cam_thread(std::bind(run_usb_cam, core));
+  single_executor.spin();
+  cam_thread.join();
+#endif
 
-  executor.spin();
   rclcpp::shutdown();
   return 0;
 }

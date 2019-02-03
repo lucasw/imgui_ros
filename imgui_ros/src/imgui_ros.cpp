@@ -117,7 +117,7 @@ namespace imgui_ros {
 
   void ImguiRos::glInit() {
     thread_id_ = std::this_thread::get_id();
-    std::cout << "imgui thread init " << thread_id_ << std::endl;
+    std::cout << "imgui thread init 0x" << std::hex << thread_id_ << std::dec << std::endl;
     RCLCPP_INFO(this->get_logger(), "opengl init %d", init_);
 
     // Setup SDL
