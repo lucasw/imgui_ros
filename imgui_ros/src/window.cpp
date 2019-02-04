@@ -42,6 +42,12 @@ Window::~Window()
 }
 
 void Window::draw() {
+  if (init_) {
+    ImGui::SetNextWindowPos(pos_);
+    ImGui::SetNextWindowSize(size_);
+    ImGui::SetNextWindowCollapsed(collapsed_);
+    init_ = false;
+  }
   ImGui::Begin(name_.c_str());
 
   // std::stringstream ss;

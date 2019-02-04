@@ -80,6 +80,15 @@ struct Window {
       tab_pair.second->update(stamp);
     }
   }
+
+  // over ride the current settings with these
+  void setSettings(const ImVec2 pos, const ImVec2 size, const bool collapsed)
+  {
+    pos_ = pos;
+    size_ = size;
+    collapsed_ = collapsed;
+    init_ = true;
+  }
 protected:
   // TODO(lucasw) this sorts into alphabetical order, but want to preserve insertion order
   struct TabGroup {
@@ -112,6 +121,12 @@ protected:
   };  // TabGroup
 
   std::map<std::string, std::shared_ptr<TabGroup> > tab_groups_;
+
+  // initial settings
+  ImVec2 pos_;
+  ImVec2 size_;
+  bool collapsed_;
+  bool init_ = false;
 
   rclcpp::Time stamp_;
   bool dirty_ = true;

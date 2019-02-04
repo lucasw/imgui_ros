@@ -287,6 +287,13 @@ namespace imgui_ros {
       window = std::make_shared<Window>(req->name);
     }
 
+    if (req->init) {
+      window->setSettings(
+          ImVec2(req->position.x, req->position.y),
+          ImVec2(req->size.x, req->size.y),
+          req->collapsed);
+    }
+
     for (size_t i = 0; i < req->widgets.size(); ++i) {
       const auto tab_name = req->widgets[i].tab_name;
       if (req->widgets[i].remove) {

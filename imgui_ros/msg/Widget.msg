@@ -36,5 +36,3 @@ float64 value 0.0
 float64 min 0.0
 float64 max 1.0
 string[] items
-# TODO(lucasw) any number of other window properties
-# geometry_msgs/Point position

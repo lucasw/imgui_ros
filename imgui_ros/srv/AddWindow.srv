@@ -1,6 +1,14 @@
 string name
 bool remove false
 imgui_ros/Widget[] widgets
+# TODO(lucasw) any number of other window properties
+# these are saved in the imgui.ini file
+# whether to use the settings before, or continue to use
+# what has already been set.
+bool init False
+geometry_msgs/Point position
+geometry_msgs/Point size
+bool collapsed False
 ---
 string message ""
 bool success False
