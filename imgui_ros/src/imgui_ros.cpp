@@ -291,6 +291,7 @@ namespace imgui_ros {
       window->setSettings(
           ImVec2(req->position.x, req->position.y),
           ImVec2(req->size.x, req->size.y),
+          req->scroll_y,
           req->collapsed);
     }
 
@@ -639,6 +640,27 @@ namespace imgui_ros {
     return true;
   }
 
+  // TODO(lucasw) move to draw method
+  void ImguiRos::drawStats(rclcpp::Time stamp)
+  {
+    if (stats_window_init_) {
+      stats_window_init_ = false;
+      ImGui::SetNextWindowPos(ImVec2(0, 0));
+      ImGui::SetNextWindowSize(ImVec2(400, 200));
+      ImGui::SetNextWindowCollapsed(false);
+    }
+    ImGui::Begin("stats");
+    // Make tab, put all viz3d stuff into tab?
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    std::stringstream ss;
+    ss << std::this_thread::get_id();  // << " " << thread_id_;
+    ImGui::Text("Thread %s", ss.str().c_str());
+    // TODO(lucasw) put this in different tab?
+    image_transfer_->draw(stamp);
+    ImGui::End();
+  }
+
   void ImguiRos::update() {
     if (!init_) {
       glInit();
@@ -697,19 +719,7 @@ namespace imgui_ros {
         }
       }
 
-      // TODO(lucasw) move to draw method
-      {
-        ImGui::Begin("stats"); // Create a window called "stats"
-                               // and append into it.
-
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                    1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        std::stringstream ss;
-        ss << std::this_thread::get_id();  // << " " << thread_id_;
-        ImGui::Text("Thread %s", ss.str().c_str());
-        image_transfer_->draw(stamp);
-        ImGui::End();
-      }
+      drawStats(stamp);
 
       // TODO(lucasw) mutex lock just for windows
       for (auto& window : windows_) {

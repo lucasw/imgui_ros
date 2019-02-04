@@ -8,6 +8,9 @@ imgui_ros/Widget[] widgets
 bool init False
 geometry_msgs/Point position
 geometry_msgs/Point size
+# 0 - 1.0 to scroll from min to max
+float32 scroll_x  # not currently supported
+float32 scroll_y
 bool collapsed False
 ---
 string message ""

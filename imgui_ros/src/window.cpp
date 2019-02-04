@@ -42,12 +42,13 @@ Window::~Window()
 }
 
 void Window::draw() {
+
   if (init_) {
     ImGui::SetNextWindowPos(pos_);
     ImGui::SetNextWindowSize(size_);
     ImGui::SetNextWindowCollapsed(collapsed_);
-    init_ = false;
   }
+
   ImGui::Begin(name_.c_str());
 
   // std::stringstream ss;
@@ -71,6 +72,14 @@ void Window::draw() {
   }
   // ImGui::Text("%s", ss.str().c_str());
 
+  // won't know scroll max y until after drawing window?
+  if (init_) {
+    const float scroll_y_adj = scroll_y_ * ImGui::GetScrollMaxY();
+    ImGui::SetScrollY(scroll_y_adj);
+    init_ = false;
+  }
+  ImGui::Text("%0.2f %0.2f %0.2f", ImGui::GetScrollY(),
+        ImGui::GetScrollMaxY(), scroll_y_);
   ImGui::End();
 }
 

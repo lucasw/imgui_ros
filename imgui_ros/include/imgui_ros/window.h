@@ -82,10 +82,12 @@ struct Window {
   }
 
   // over ride the current settings with these
-  void setSettings(const ImVec2 pos, const ImVec2 size, const bool collapsed)
+  void setSettings(const ImVec2 pos, const ImVec2 size,
+      const float scroll_y, const bool collapsed)
   {
     pos_ = pos;
     size_ = size;
+    scroll_y_ = scroll_y;
     collapsed_ = collapsed;
     init_ = true;
   }
@@ -125,6 +127,7 @@ protected:
   // initial settings
   ImVec2 pos_;
   ImVec2 size_;
+  float scroll_y_;
   bool collapsed_;
   bool init_ = false;
 

@@ -94,6 +94,9 @@ private:
   int width_ = 1280;
   int height_ = 720;
 
+  bool stats_window_init_ = true;
+  void drawStats(rclcpp::Time stamp);
+
   std::shared_ptr<ImGuiImplOpenGL3> imgui_impl_opengl3_;
   std::shared_ptr<Viz3D> viz3d;
 
