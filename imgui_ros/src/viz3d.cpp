@@ -281,6 +281,7 @@ Viz3D::Viz3D(const std::string name,
     node_(node),
     image_transfer_(image_transfer)
 {
+  setSettings(ImVec2(0, 200), ImVec2(400, 400), 0.0, false);
   // render_message_.precision(2);
   // render_message_.fill('0');
 
