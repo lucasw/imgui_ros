@@ -287,12 +287,23 @@ namespace imgui_ros {
       window = std::make_shared<Window>(req->name);
     }
 
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
+
+    // TODO(lucasw) if python can have access to what flags are just pass in an int
+    if (req->no_title_bar) { window_flags |= ImGuiWindowFlags_NoTitleBar; }
+    if (req->no_resize) { window_flags |= ImGuiWindowFlags_NoResize; }
+    if (req->no_move) { window_flags |= ImGuiWindowFlags_NoMove; }
+    if (req->no_scrollbar) { window_flags |= ImGuiWindowFlags_NoScrollbar; }
+    if (req->no_collapse) { window_flags |= ImGuiWindowFlags_NoCollapse; }
+    if (req->no_decoration) { window_flags |= ImGuiWindowFlags_NoDecoration; }
+
     if (req->init) {
       window->setSettings(
           ImVec2(req->position.x, req->position.y),
           ImVec2(req->size.x, req->size.y),
           req->scroll_y,
-          req->collapsed);
+          req->collapsed,
+          window_flags);
     }
 
     for (size_t i = 0; i < req->widgets.size(); ++i) {

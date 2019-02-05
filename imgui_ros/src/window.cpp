@@ -49,7 +49,7 @@ void Window::draw() {
     ImGui::SetNextWindowCollapsed(collapsed_);
   }
 
-  ImGui::Begin(name_.c_str());
+  ImGui::Begin(name_.c_str(), NULL, window_flags_);
 
   // std::stringstream ss;
   // ss << tab_groups_.size() << " ";

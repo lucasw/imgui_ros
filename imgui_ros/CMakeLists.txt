@@ -215,7 +215,7 @@ ament_export_include_directories(
   # imgui/examples
   # imgui/examples/libs/gl3w
 )
-ament_export_dependencies(SDL2)
+ament_export_dependencies(SDL2 sensor_msgs)
 ament_export_libraries(imguiros)
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY imgui/examples/libs/gl3w/GL/ DESTINATION include/GL)

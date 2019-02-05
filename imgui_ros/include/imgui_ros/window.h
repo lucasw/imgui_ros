@@ -83,12 +83,15 @@ struct Window {
 
   // over ride the current settings with these
   void setSettings(const ImVec2 pos, const ImVec2 size,
-      const float scroll_y, const bool collapsed)
+      const float scroll_y,
+      const bool collapsed,
+      const ImGuiWindowFlags window_flags = ImGuiWindowFlags_None)
   {
     pos_ = pos;
     size_ = size;
     scroll_y_ = scroll_y;
     collapsed_ = collapsed;
+    window_flags_ = window_flags;
     init_ = true;
   }
 protected:
@@ -130,6 +133,8 @@ protected:
   float scroll_y_;
   bool collapsed_;
   bool init_ = false;
+
+  ImGuiWindowFlags window_flags_ = ImGuiWindowFlags_None;
 
   rclcpp::Time stamp_;
   bool dirty_ = true;
