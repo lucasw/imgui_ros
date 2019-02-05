@@ -61,11 +61,15 @@ void Window::draw() {
       const auto tab_group = tab_pair.second;
       // std::cout << "'" << name_ << "' " << tab_name << "\n";
       // ss << tab_name << " ";
-      if (tab_group) {
-        if (ImGui::BeginTabItem(tab_name.c_str())) {
-          tab_group->draw();
-          ImGui::EndTabItem();
+      if (tab_groups_.size() > 1) {
+        if (tab_group) {
+          if (ImGui::BeginTabItem(tab_name.c_str())) {
+            tab_group->draw();
+            ImGui::EndTabItem();
+          }
         }
+      } else {
+        tab_group->draw();
       }
     }
     ImGui::EndTabBar();

@@ -88,6 +88,7 @@ struct RosImage : public GlImage {
   int min_filter_ind_ = 5;
   int mag_filter_ind_ = 1;
   bool draw_texture_controls_ = false;
+  bool draw_controls_ = true;
   bool enable_draw_image_ = false;
   bool enable_cpu_to_gpu_ = true;
   std::string header_frame_id_ = "";

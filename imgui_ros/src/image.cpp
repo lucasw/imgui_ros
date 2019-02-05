@@ -293,6 +293,35 @@ using std::placeholders::_1;
       std::lock_guard<std::mutex> lock(mutex_);
 
       std::string name = name_ + " texture";
+
+      if ((enable_draw_image_) && (texture_id_ != 0) && (width_ != 0) && (height_ != 0)) {
+        ImVec2 image_size;
+        ImVec2 win_size = ImGui::GetWindowSize();
+        const double fr_x = win_size.x / width_;
+        const double fr_y = win_size.y / height_;
+        double fr = fr_x;
+        if (fr_x > fr_y) {
+          fr = fr_y;
+        }
+
+        if (enable_one_to_one_) {
+          image_size.x = width_;
+          image_size.y = height_;
+        } else {
+          // TODO(lucasw) get this vertical offset from somewhere
+          // is it the height of the title bar?
+          image_size.y = height_ * fr - 15;
+          // have to get a new scale factor because of the manual offset
+          image_size.x = width_ * (image_size.y / height_);
+          const float y = ImGui::GetCursorPosY();
+          ImGui::SetCursorPos(ImVec2((win_size.x - image_size.x) * 0.5f,
+               y));
+               // y + (win_size.y - image_size.y) * 0.5f));
+        }
+
+        ImGui::Image((void*)(intptr_t)texture_id_, image_size);
+      }
+
       // const std::string checkbox_text = "info##" + name;
       // ImGui::Checkbox(checkbox_text.c_str(), &enable_info_);
       if (enable_info_) {
@@ -352,50 +381,23 @@ using std::placeholders::_1;
         }
       }
 
-
-      ImGui::Columns(2);
-      const std::string show_image_text = "show##" + name;
-      ImGui::Checkbox(show_image_text.c_str(), &enable_draw_image_);
-      ImGui::NextColumn();
-      const std::string cpu_to_gpu_text = "cpu->gpu##" + name;
-      ImGui::Checkbox(cpu_to_gpu_text.c_str(), &enable_cpu_to_gpu_);
-      ImGui::NextColumn();
-      if (!sub_not_pub_) {
-        const std::string show_image_text = "publish##" + name;
-        ImGui::Checkbox(show_image_text.c_str(), &enable_publish_);
-      }
-      ImGui::NextColumn();
-      const std::string one_one_checkbox_text2 = "1:1##" + name;
-      ImGui::Checkbox(one_one_checkbox_text2.c_str(), &enable_one_to_one_);
-      ImGui::NextColumn();
-      ImGui::Columns(1);
-
-      if ((enable_draw_image_) && (texture_id_ != 0) && (width_ != 0) && (height_ != 0)) {
-        ImVec2 image_size;
-        ImVec2 win_size = ImGui::GetWindowSize();
-        const double fr_x = win_size.x / width_;
-        const double fr_y = win_size.y / height_;
-        double fr = fr_x;
-        if (fr_x > fr_y) {
-          fr = fr_y;
+      if (draw_controls_) {
+        ImGui::Columns(2);
+        const std::string show_image_text = "show##" + name;
+        ImGui::Checkbox(show_image_text.c_str(), &enable_draw_image_);
+        ImGui::NextColumn();
+        const std::string cpu_to_gpu_text = "cpu->gpu##" + name;
+        ImGui::Checkbox(cpu_to_gpu_text.c_str(), &enable_cpu_to_gpu_);
+        ImGui::NextColumn();
+        if (!sub_not_pub_) {
+          const std::string show_image_text = "publish##" + name;
+          ImGui::Checkbox(show_image_text.c_str(), &enable_publish_);
         }
-
-        if (enable_one_to_one_) {
-          image_size.x = width_;
-          image_size.y = height_;
-        } else {
-          // TODO(lucasw) get this vertical offset from somewhere
-          // is it the height of the title bar?
-          image_size.y = height_ * fr - 15;
-          // have to get a new scale factor because of the manual offset
-          image_size.x = width_ * (image_size.y / height_);
-          const float y = ImGui::GetCursorPosY();
-          ImGui::SetCursorPos(ImVec2((win_size.x - image_size.x) * 0.5f,
-               y));
-               // y + (win_size.y - image_size.y) * 0.5f));
-        }
-
-        ImGui::Image((void*)(intptr_t)texture_id_, image_size);
+        ImGui::NextColumn();
+        const std::string one_one_checkbox_text2 = "1:1##" + name;
+        ImGui::Checkbox(one_one_checkbox_text2.c_str(), &enable_one_to_one_);
+        ImGui::NextColumn();
+        ImGui::Columns(1);
       }
     }
   }
