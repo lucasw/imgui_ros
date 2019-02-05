@@ -52,6 +52,7 @@ struct Widget {
     (void)tfm;
     (void)now;
   }
+  bool enable_info_ = true;
 protected:
   bool dirty_ = true;
   std::string topic_ = "";

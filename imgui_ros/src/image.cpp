@@ -338,6 +338,23 @@ using std::placeholders::_1;
         if (image_) {
           ImGui::Text("%d %u", image_->header.stamp.sec, image_->header.stamp.nanosec);
         }
+
+        ImGui::Columns(2);
+        const std::string show_image_text = "show##" + name;
+        ImGui::Checkbox(show_image_text.c_str(), &enable_draw_image_);
+        ImGui::NextColumn();
+        const std::string cpu_to_gpu_text = "cpu->gpu##" + name;
+        ImGui::Checkbox(cpu_to_gpu_text.c_str(), &enable_cpu_to_gpu_);
+        ImGui::NextColumn();
+        if (!sub_not_pub_) {
+          const std::string show_image_text = "publish##" + name;
+          ImGui::Checkbox(show_image_text.c_str(), &enable_publish_);
+        }
+        ImGui::NextColumn();
+        const std::string one_one_checkbox_text2 = "1:1##" + name;
+        ImGui::Checkbox(one_one_checkbox_text2.c_str(), &enable_one_to_one_);
+        ImGui::NextColumn();
+        ImGui::Columns(1);
       }
 
       // Texture settings
@@ -379,25 +396,6 @@ using std::placeholders::_1;
           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter_modes_[mag_filter_ind_]);
           glBindTexture(GL_TEXTURE_2D, 0);
         }
-      }
-
-      if (draw_controls_) {
-        ImGui::Columns(2);
-        const std::string show_image_text = "show##" + name;
-        ImGui::Checkbox(show_image_text.c_str(), &enable_draw_image_);
-        ImGui::NextColumn();
-        const std::string cpu_to_gpu_text = "cpu->gpu##" + name;
-        ImGui::Checkbox(cpu_to_gpu_text.c_str(), &enable_cpu_to_gpu_);
-        ImGui::NextColumn();
-        if (!sub_not_pub_) {
-          const std::string show_image_text = "publish##" + name;
-          ImGui::Checkbox(show_image_text.c_str(), &enable_publish_);
-        }
-        ImGui::NextColumn();
-        const std::string one_one_checkbox_text2 = "1:1##" + name;
-        ImGui::Checkbox(one_one_checkbox_text2.c_str(), &enable_one_to_one_);
-        ImGui::NextColumn();
-        ImGui::Columns(1);
       }
     }
   }

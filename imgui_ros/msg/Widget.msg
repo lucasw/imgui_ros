@@ -35,4 +35,5 @@ bool remove False
 float64 value 0.0
 float64 min 0.0
 float64 max 1.0
+bool enable_info True  # draw extra misc info, controls
 string[] items

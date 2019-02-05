@@ -319,6 +319,7 @@ namespace imgui_ros {
       res->success = res->success && rv && widget;
       res->message += ", " + message;
       if (rv && widget) {
+        widget->enable_info_ = req->widgets[i].enable_info;
         window->add(widget, tab_name);
       }
     }
