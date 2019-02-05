@@ -55,24 +55,28 @@ void Window::draw() {
   // ss << tab_groups_.size() << " ";
 
   ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-  if (ImGui::BeginTabBar(name_.c_str(), tab_bar_flags)) {
-    for (auto tab_pair : tab_groups_) {
-      const auto tab_name = tab_pair.first;
-      const auto tab_group = tab_pair.second;
-      // std::cout << "'" << name_ << "' " << tab_name << "\n";
-      // ss << tab_name << " ";
-      if (tab_groups_.size() > 1) {
+  if (tab_groups_.size() > 1) {
+    if (ImGui::BeginTabBar(name_.c_str(), tab_bar_flags)) {
+      for (auto tab_pair : tab_groups_) {
+        const auto tab_name = tab_pair.first;
+        const auto tab_group = tab_pair.second;
+        // std::cout << "'" << name_ << "' " << tab_name << "\n";
+        // ss << tab_name << " ";
         if (tab_group) {
           if (ImGui::BeginTabItem(tab_name.c_str())) {
             tab_group->draw();
             ImGui::EndTabItem();
           }
         }
-      } else {
-        tab_group->draw();
       }
     }
     ImGui::EndTabBar();
+  } else if (tab_groups_.size() == 1) {
+    for (auto tab_pair : tab_groups_) {
+      const auto tab_name = tab_pair.first;
+      const auto tab_group = tab_pair.second;
+      tab_group->draw();
+    }
   }
   // ImGui::Text("%s", ss.str().c_str());
 
@@ -82,8 +86,8 @@ void Window::draw() {
     ImGui::SetScrollY(scroll_y_adj);
     init_ = false;
   }
-  ImGui::Text("%0.2f %0.2f %0.2f", ImGui::GetScrollY(),
-        ImGui::GetScrollMaxY(), scroll_y_);
+  // ImGui::Text("%0.2f %0.2f %0.2f", ImGui::GetScrollY(),
+  //       ImGui::GetScrollMaxY(), scroll_y_);
   ImGui::End();
 }
 
