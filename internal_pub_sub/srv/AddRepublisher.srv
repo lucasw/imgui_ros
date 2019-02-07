@@ -1,0 +1,7 @@
+# All the republishers in this vector will be time synchronized,
+# they will be collected into matching timestamp sets and ordered
+# before being republished or not.
+internal_pub_sub/Republisher[] republishers
+---
+string message ""
+bool success True

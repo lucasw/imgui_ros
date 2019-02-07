@@ -27,6 +27,12 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/Republisher.msg"
+  "srv/AddRepublisher.srv"
+  DEPENDENCIES sensor_msgs std_msgs
+)
+
 include_directories(
   include
 )

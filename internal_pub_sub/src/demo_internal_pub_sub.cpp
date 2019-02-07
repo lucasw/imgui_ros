@@ -4,9 +4,10 @@
 
 struct Pub
 {
-  Pub(std::shared_ptr<internal_pub_sub::Core> core) : core_(core)
+  Pub(const std::string& topic,
+      std::shared_ptr<internal_pub_sub::Core> core) : core_(core)
   {
-    pub_ = core_->get_create_publisher("foo");
+    pub_ = core_->get_create_publisher(topic);
   }
 
   void update()
@@ -30,9 +31,10 @@ struct Pub
 
 struct Sub
 {
-  Sub(std::shared_ptr<internal_pub_sub::Core> core) : core_(core)
+  Sub(const std::string& topic, std::shared_ptr<internal_pub_sub::Core> core) : core_(core)
   {
-    sub_ = core_->create_subscription("foo", std::bind(&Sub::callback, this, std::placeholders::_1));
+    sub_ = core_->create_subscription(topic,
+        std::bind(&Sub::callback, this, std::placeholders::_1));
   }
 
   ~Sub()
@@ -42,7 +44,7 @@ struct Sub
 
   void callback(sensor_msgs::msg::Image::SharedPtr msg)
   {
-    std::cout << this << " new message " << msg->header.stamp.sec
+    std::cout << "sub " << this << " new message " << msg->header.stamp.sec
         << " " << msg->data.size() << "\n";
   }
   std::shared_ptr<internal_pub_sub::Core> core_;
@@ -53,11 +55,15 @@ int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   auto core = std::make_shared<internal_pub_sub::Core>();
-  auto publisher_node = std::make_shared<Pub>(core);
+  auto publisher_node = std::make_shared<Pub>("foo", core);
   std::cout << "------\n";
-  auto subscriber_node = std::make_shared<Sub>(core);
+  auto subscriber_node = std::make_shared<Sub>("foo", core);
+  auto subscriber_node2 = std::make_shared<Sub>("foo_throttled", core);
   std::cout << "------\n";
   std::cout << std::endl;
+
+  auto republisher = std::make_shared<internal_pub_sub::Republisher>(
+      "foo", "foo_throttled", 4, core);
 
   int count = 0;
   while (rclcpp::ok()) {

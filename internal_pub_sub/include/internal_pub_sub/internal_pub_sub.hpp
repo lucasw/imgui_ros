@@ -212,7 +212,45 @@ public:
   // to stick around, so for now can't delete publishers
   // A deletion function would have to check for zero subscribers.
   std::map<std::string, std::shared_ptr<Publisher> > publishers_;
-};
+};  // Core
+
+struct Republisher
+{
+  Republisher(const std::string& input, const std::string& output,
+      const size_t skip,
+      std::shared_ptr<Core> core,
+      std::shared_ptr<rclcpp::Node> node = nullptr) :
+      skip_max_(skip)
+  {
+    if (!core) {
+      return;
+    }
+    sub_ = core->create_subscription(input,
+        std::bind(&Republisher::callback, this, std::placeholders::_1), node);
+    pub_ = core->get_create_publisher(output, node);
+  }
+
+  // TODO(lucasw) what is result if Republisher goes out of scope?
+
+  void callback(sensor_msgs::msg::Image::SharedPtr msg)
+  {
+    if (!pub_) {
+      return;
+    }
+    ++skip_count_;
+    if (skip_count_ > skip_max_) {
+      skip_count_ = 0;
+    }
+    if (skip_count_ == 0) {
+      pub_->publish(msg);
+    }
+  }
+
+  std::shared_ptr<Subscriber> sub_;
+  std::shared_ptr<Publisher> pub_;
+  size_t skip_count_ = 0;
+  size_t skip_max_ = 0;
+};  // Republisher
 
 }  // internal_pub_sub
 #endif  // INTERNAL_PUB_SUB_INTERNAL_PUB_SUB_HPP
