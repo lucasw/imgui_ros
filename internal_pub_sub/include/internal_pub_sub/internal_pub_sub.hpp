@@ -216,6 +216,34 @@ public:
 
 struct Republisher
 {
+  // TODO(lucasw) need to make this take a vector of pairs of inputs and outputs,
+  // and synchronize them so all the messages on all the topics will get republished together
+  // with the same timestamp.
+  Republisher(
+      const std::vector<std::string>& inputs,
+      const std::vector<std::string>& outputs,
+      const size_t skip,
+      std::shared_ptr<Core> core,
+      std::shared_ptr<rclcpp::Node> node = nullptr) :
+      input_topics_(inputs),
+      // outputs_(outputs),
+      skip_max_(skip)
+  {
+    if (!core) {
+      return;
+    }
+    if (inputs.size() != outputs.size()) {
+      std::cerr << "republisher size mismatch " << inputs.size() << " != "
+          << outputs.size() << "\n";
+      return;
+    }
+    for (size_t i = 0; i < inputs.size(); ++i) {
+      // output_topics_.push_back(output);
+      subs_.push_back(core->create_subscription(inputs[i],
+          std::bind(&Republisher::callback, this, std::placeholders::_1, inputs[i]), node));
+      pubs_[inputs[i]] = core->get_create_publisher(outputs[i], node);
+    }
+  }
   Republisher(const std::string& input, const std::string& output,
       const size_t skip,
       std::shared_ptr<Core> core,
@@ -225,16 +253,32 @@ struct Republisher
     if (!core) {
       return;
     }
-    sub_ = core->create_subscription(input,
-        std::bind(&Republisher::callback, this, std::placeholders::_1), node);
-    pub_ = core->get_create_publisher(output, node);
+    input_topics_.push_back(input);
+    // output_topics_.push_back(output);
+    subs_.push_back(core->create_subscription(input,
+        std::bind(&Republisher::callback, this, std::placeholders::_1, input), node));
+    pubs_[input] = core->get_create_publisher(output, node);
   }
 
   // TODO(lucasw) what is result if Republisher goes out of scope?
 
-  void callback(sensor_msgs::msg::Image::SharedPtr msg)
+  bool allMessagesReceived(rclcpp::Time stamp)
   {
-    if (!pub_) {
+    if (messages_.count(stamp) < 1) {
+      return false;
+    }
+
+    return (messages_[stamp].size() == input_topics_.size());
+  }
+
+  void callback(sensor_msgs::msg::Image::SharedPtr msg, const std::string& topic)
+  {
+    auto stamp = msg->header.stamp;
+    messages_[stamp][topic] = msg;
+    // std::cout << "callback " << topic << " " << stamp.sec << " "
+    //     << messages_[stamp].size() << " " << input_topics_.size() << "\n";
+    if (!allMessagesReceived(stamp)) {
+      // TODO(lucasw) need to do cleanup on messages_ to get rid of old messages
       return;
     }
     ++skip_count_;
@@ -242,12 +286,20 @@ struct Republisher
       skip_count_ = 0;
     }
     if (skip_count_ == 0) {
-      pub_->publish(msg);
+      for (auto pair : messages_[stamp]) {
+        pubs_[pair.first]->publish(pair.second);
+      }
     }
+    messages_.erase(stamp);
   }
 
-  std::shared_ptr<Subscriber> sub_;
-  std::shared_ptr<Publisher> pub_;
+  std::vector<std::string> input_topics_;
+
+  std::vector<std::shared_ptr<Subscriber> > subs_;
+  std::map<std::string, std::shared_ptr<Publisher> > pubs_;
+
+  std::map<rclcpp::Time,
+      std::map<std::string, sensor_msgs::msg::Image::SharedPtr> > messages_;
   size_t skip_count_ = 0;
   size_t skip_max_ = 0;
 };  // Republisher

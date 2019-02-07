@@ -10,17 +10,17 @@ struct Pub
     pub_ = core_->get_create_publisher(topic);
   }
 
-  void update()
+  void update(rclcpp::Time stamp)
   {
     auto msg = std::make_shared<sensor_msgs::msg::Image>();
     msg->header.frame_id = "map";
-    msg->header.stamp.sec = count_++;
+    msg->header.stamp = stamp;
     msg->width = 1024;
     msg->height = 1024;
     msg->encoding = "mono8";
     msg->step = msg->width;
     msg->data.resize(msg->step * msg->height);
-    std::cout << this << " " << msg->header.stamp.sec << "\n";
+    std::cout << "pub " << pub_->topic_ << " " << this << " " << msg->header.stamp.sec << "\n";
     pub_->publish(msg);
   }
 
@@ -44,7 +44,7 @@ struct Sub
 
   void callback(sensor_msgs::msg::Image::SharedPtr msg)
   {
-    std::cout << "sub " << this << " new message " << msg->header.stamp.sec
+    std::cout << "sub " << sub_->topic_ << " " << this << " new message " << msg->header.stamp.sec
         << " " << msg->data.size() << "\n";
   }
   std::shared_ptr<internal_pub_sub::Core> core_;
@@ -56,18 +56,30 @@ int main(int argc, char * argv[])
   rclcpp::init(argc, argv);
   auto core = std::make_shared<internal_pub_sub::Core>();
   auto publisher_node = std::make_shared<Pub>("foo", core);
+  auto publisher_node2 = std::make_shared<Pub>("foo2", core);
   std::cout << "------\n";
-  auto subscriber_node = std::make_shared<Sub>("foo", core);
+  auto subscriber_node = nullptr;  // std::make_shared<Sub>("foo", core);
   auto subscriber_node2 = std::make_shared<Sub>("foo_throttled", core);
+  auto subscriber_node3 = std::make_shared<Sub>("foo2_throttled", core);
   std::cout << "------\n";
   std::cout << std::endl;
 
+#if 0
   auto republisher = std::make_shared<internal_pub_sub::Republisher>(
       "foo", "foo_throttled", 4, core);
+#else
+  std::vector<std::string> inputs = {"foo", "foo2"};
+  std::vector<std::string> outputs = {"foo_throttled", "foo2_throttled"};
+  auto republisher = std::make_shared<internal_pub_sub::Republisher>(
+      inputs, outputs, 4, core);
+
+#endif
 
   int count = 0;
   while (rclcpp::ok()) {
-    publisher_node->update();
+    rclcpp::Time stamp(count, 0);
+    publisher_node->update(stamp);
+    publisher_node2->update(stamp);
     std::this_thread::sleep_for(std::chrono::milliseconds(25));
     // std::cout << count << "\n";
     if (count > 10) {
