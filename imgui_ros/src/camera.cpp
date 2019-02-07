@@ -156,9 +156,32 @@ Camera::~Camera()
   glDeleteFramebuffers(1, &frame_buffer_);
 }
 
-void Camera::publishCameraInfo(const rclcpp::Time& stamp)
+bool Camera::isReadyToRender()
 {
   if (!enable_) {
+    return false;
+  }
+  if (skip_count_ > skip_max_) {
+    skip_count_ = 0;
+  }
+  if (skip_max_ == 0) {
+    return true;
+  }
+  if (skip_count_ == 0) {
+    return true;
+  }
+  return false;
+}
+
+void Camera::setFrameRate(const float target_frame_rate, const float update_rate)
+{
+  (void)target_frame_rate;
+  (void)update_rate;
+}
+
+void Camera::publishCameraInfo(const rclcpp::Time& stamp)
+{
+  if (!isReadyToRender()) {
     return;
   }
   sensor_msgs::msg::CameraInfo camera_info_msg;
@@ -217,6 +240,12 @@ void Camera::draw()
     max = 1000.0;
     ImGui::SliderScalar(("far clip##" + name).c_str(), ImGuiDataType_Double,
           &far_, &min, &max, "%lf", 3);
+  }
+
+  {
+    int skip = skip_max_;
+    ImGui::SliderInt(("skip##" + name).c_str(), &skip, 0, 30);
+    skip_max_ = skip;
   }
 
   if (enable_) {

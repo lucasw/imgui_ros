@@ -357,6 +357,7 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
         req->camera.aov_y,
         req->camera.aov_x,
         node);
+    render_texture->skip_max_ = req->camera.skip;
     render_texture->init(
         req->camera.width, req->camera.height,
         req->camera.texture_name,
@@ -784,21 +785,23 @@ void Viz3D::update(const rclcpp::Time& stamp)
   }
 
   // update
-  for (auto camera : cameras_) {
+  for (auto camera_pair : cameras_) {
+    auto camera = camera_pair.second;
     // TODO(lucasw) the cameras shouldn't need to updateTexture, that is for
     // transfering data to the gpu not from it.
     // TODO(lucasw) are all these textures also in the texture list below?
-    camera.second->image_->updateTexture();
+    camera->image_->updateTexture();
     // these will do nothing if pub_dirty_ isn't set,
     // or publish isn't enabled
-    camera.second->image_->publish(stamp);
-    camera.second->publishCameraInfo(stamp);
+    camera->image_->publish(stamp);
+    camera->publishCameraInfo(stamp);
   }
-  for (auto camera : cube_cameras_) {
+  for (auto camera_pair : cube_cameras_) {
+    auto cube_camera = camera_pair.second;
     // TODO(lucasw) are all these textures also in the texture list below?
-    camera.second->image_->updateTexture();
-    camera.second->image_->publish(stamp);
-    camera.second->publishCameraInfo(stamp);
+    cube_camera->image_->updateTexture();
+    cube_camera->image_->publish(stamp);
+    cube_camera->publishCameraInfo(stamp);
   }
 
   for (auto texture_pair : textures_) {
@@ -1486,7 +1489,8 @@ void Viz3D::renderToTexture()
   gl_state.backup();
   for (auto camera_pair : cameras_) {
     auto camera = camera_pair.second;
-    if (!camera->enable_) {
+    camera->skip_count_++;
+    if (!camera->isReadyToRender()) {
       continue;
     }
     // render_message_ << "\nrender to texture " << camera->name_ << "\n";

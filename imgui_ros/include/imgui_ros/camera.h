@@ -100,6 +100,42 @@ struct Camera {
   double near_ = 0.01;
   double far_ = 100.0;
 
+  bool isReadyToRender();
+  // <= 0.0 means render as fast as main loop, otherwise
+  // try to get close to the desired framerate by skipping some frames
+  float frame_rate = 0.0;
+  // the easiest frame rates to do will be those that involving skipping n
+  // frames for every rendered, or rendering n frames for every skipped,
+  // so for 30Hz update rate this means:
+  // skip_max output frame rate (30 / (skip_max)
+  // 1        30
+  // 2        15
+  // 3        10
+  // 4        7.5
+  // 5        6
+  // 6        5
+  // 7        4.28
+  // 8        3.75
+  // ...
+  // pub_max  output frame rate 30 * pub_max / (pub_max + 1)
+  // 1        15
+  // 2        20
+  // 3        22.5
+  // 4        24.0
+  // 5        25
+  // 6        25.7
+  // 7        26.25
+  // 8        26.7
+  // ...
+  // 19       28.5
+  // ...
+  // TODO make a map of pairs of pub/skip maxes
+  size_t pub_count_ = 0;
+  size_t pub_max_ = 0;
+  size_t skip_count_ = 0;
+  size_t skip_max_ = 0;
+  void setFrameRate(const float target_frame_rate, const float update_rate);
+
   // TODO(lucasw) put in own class later
   bool enable_ = true;
   GLuint frame_buffer_;

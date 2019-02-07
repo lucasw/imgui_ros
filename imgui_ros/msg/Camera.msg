@@ -18,3 +18,6 @@ string topic ''
 # TODO(lucasw) reduce update rate down from full frame rate
 # int32 update_skip
 # TODO(lucasw) focal distance and aperture to model depth of field
+# TODO(lucasw) later allow actual framerate, for now have to specify
+# number to skip before next render.
+uint8 skip 0

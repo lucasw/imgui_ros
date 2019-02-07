@@ -151,6 +151,7 @@ class Cameras(Node):
             req.camera.width = 1024
             req.camera.height = 1024
             req.camera.aov_y = 120.0
+            req.camera.skip = 2
             self.future = self.camera_cli.call_async(req)
             self.wait_for_response()
 
