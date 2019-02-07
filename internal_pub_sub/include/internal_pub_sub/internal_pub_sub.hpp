@@ -112,6 +112,20 @@ struct Publisher  // : std::enable_shared_from_this<Publisher>
     }
 
     std::lock_guard<std::mutex> lock(sub_mutex_);
+
+    for (auto sub_weak : subs_) {
+      if (auto sub = sub_weak.lock()) {
+        // std::cout << topic_ << " publishing to " << sub->topic_ << "\n";
+        sub->callback(msg);
+      } else {
+        // TODO(lucasw) should be impossible to get here after remove_if above
+        // std::cerr << topic_ << " bad sub lock\n";
+      }
+    }
+  }
+
+  void clean()
+  {
     // remove dead subscribers
     subs_.remove_if([](std::weak_ptr<Subscriber> p) {
         if (auto sp = p.lock()) {
@@ -120,16 +134,6 @@ struct Publisher  // : std::enable_shared_from_this<Publisher>
         std::cout << "removing dead sub\n";
         return true;
         });
-
-    for (auto sub_weak : subs_) {
-      if (auto sub = sub_weak.lock()) {
-        // std::cout << topic_ << " publishing to " << sub->topic_ << "\n";
-        sub->callback(msg);
-      } else {
-        // TODO(lucasw) should be impossible to get here after remove_if above
-        std::cerr << topic_ << " bad sub lock\n";
-      }
-    }
   }
 
   std::list<std::weak_ptr<Subscriber> > subs_;
@@ -167,7 +171,7 @@ public:
 
     auto pub = get_create_publisher(topic, node);
     if (pub) {
-      std::cout << "creating new subscriber on topic :'" << pub->topic_ << "'\n";
+      std::cout << "CORE creating new subscriber on topic :'" << pub->topic_ << "'\n";
       std::lock_guard<std::mutex> lock(pub->sub_mutex_);
       pub->subs_.push_back(sub);
     } else {
@@ -184,7 +188,7 @@ public:
     setFullTopic(node, topic);
 
     if ((publishers_.count(topic) < 1)) { //  || (!(pub = publishers_[topic].lock()))) {
-      std::cout << "creating new publisher on topic :'" << topic << "' "
+      std::cout << "CORE creating new publisher on topic :'" << topic << "', ros_enable "
           << ros_enable_default_ << "\n";
       pub = std::make_shared<Publisher>(topic, node);
       pub->ros_enable_ = ros_enable_default_;
@@ -207,6 +211,34 @@ public:
       }
     }
   }
+
+  void clean()
+  {
+    std::cout << "CORE clean " << publishers_.size() << "\n";
+    // TODO(lucasw)
+    // need to use reference otherwise use_count below will be increased
+    // by additional shared_ptrs, though this may cause problems with
+    // multi threading?
+    // TODO(lucasw) lock a mutex?
+    for (auto& pub_pair : publishers_) {
+      auto& pub = pub_pair.second;
+      if (!pub) {
+        publishers_.erase(pub_pair.first);
+        continue;
+      }
+      pub->clean();
+      // if nothing else has a shared_ptr to this pub, and it has no subscribers,
+      // get rid of it
+      std::cout << "  pub " << pub->topic_ << " has subs " << pub->subs_.size() << ", use_count "
+          << pub.use_count() << "\n";
+      if (pub->subs_.size() < 1) {
+        if (pub.use_count() == 1) {
+          publishers_.erase(pub_pair.first);
+        }
+      }
+    }
+  }
+
   // TODO(lucasw)
   // These can't be weak_ptrs because a subscriber without a publisher may need it
   // to stick around, so for now can't delete publishers
@@ -237,13 +269,14 @@ struct Republisher
           << outputs.size() << "\n";
       return;
     }
+    std::cout << "new republisher " << this << " " << input_topics_.size() << "\n";
     for (size_t i = 0; i < inputs.size(); ++i) {
-      // output_topics_.push_back(output);
       subs_.push_back(core->create_subscription(inputs[i],
           std::bind(&Republisher::callback, this, std::placeholders::_1, inputs[i]), node));
       pubs_[inputs[i]] = core->get_create_publisher(outputs[i], node);
     }
   }
+
   Republisher(const std::string& input, const std::string& output,
       const size_t skip,
       std::shared_ptr<Core> core,
@@ -254,13 +287,23 @@ struct Republisher
       return;
     }
     input_topics_.push_back(input);
-    // output_topics_.push_back(output);
     subs_.push_back(core->create_subscription(input,
         std::bind(&Republisher::callback, this, std::placeholders::_1, input), node));
     pubs_[input] = core->get_create_publisher(output, node);
   }
 
-  // TODO(lucasw) what is result if Republisher goes out of scope?
+  ~Republisher()
+  {
+    // TODO(lucasw) what is result if Republisher goes out of scope/gets deleted?
+    // The publishers on the input topics detect that the subscribers here
+    // are dead and removes them.
+    std::cout << "Republisher " << this << " shutting down "
+        << input_topics_.size() << " " << subs_.size() << " " << pubs_.size() << "  ";
+    for (auto& topic : input_topics_) {
+      std::cout << topic << " ";
+    }
+    std::cout << "\n";
+  }
 
   bool allMessagesReceived(rclcpp::Time stamp)
   {
