@@ -98,6 +98,7 @@ int main(int argc, char * argv[])
       subscriber_node2 = std::make_shared<Sub>("foo_throttled", core);
     }
     if (count == 2) {
+      // TODO(lucasw) core->create_republisher(inputs, outputs, 4);
       republisher = std::make_shared<internal_pub_sub::Republisher>(
         inputs, outputs, 4, core);
     }

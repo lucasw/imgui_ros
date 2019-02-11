@@ -37,6 +37,22 @@ include_directories(
   include
 )
 
+add_library(internalpubsub SHARED
+  src/internal_pub_sub.cpp
+)
+ament_target_dependencies(internalpubsub
+  "rcl_interfaces"
+  "rclcpp"
+  "rcutils"
+  "sensor_msgs"
+  "std_msgs"
+)
+install(TARGETS internalpubsub
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
 add_executable(demo_internal_pub_sub src/demo_internal_pub_sub.cpp)
 ament_target_dependencies(demo_internal_pub_sub
   "rcl_interfaces"
@@ -45,7 +61,7 @@ ament_target_dependencies(demo_internal_pub_sub
   "sensor_msgs"
   "std_msgs"
 )
-# target_link_libraries(pub_sub_non_ros)
+target_link_libraries(demo_internal_pub_sub internalpubsub)
 install(TARGETS demo_internal_pub_sub DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
@@ -65,5 +81,6 @@ endif()
 ament_export_include_directories(
   include
 )
+ament_export_libraries(internalpubsub)
 
 ament_package()
