@@ -42,7 +42,7 @@ Param::Param(const std::string name,
       double min,
       double max,
       std::shared_ptr<rclcpp::Node> node) :
-      Widget(name, node_name + "/" + parameter_name),
+      Widget(name, parameter_name, node_name),
       node_name_(node_name),
       parameter_name_(parameter_name),
       // type_(type),
@@ -65,6 +65,10 @@ Param::~Param()
 
 void Param::draw()
 {
+  // TODO(lucasw) is this needed anywhere?
+  // It would be nice if there was a group of parameters for one node that
+  // the topic_prefix_ was shown at the top of the group.
+  // const std::string full_topic = topic_prefix_ + "/" + topic_;
   // TODO(lucasw) typeToString()
   // const std::string text = topic_;
   // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
@@ -149,8 +153,7 @@ void Param::draw()
   } catch (rclcpp::ParameterTypeException& ex) {
     ImGui::Text("%s", ex.what());
   }
-  std::string text = ss.str();
-  ImGui::Text("%s", ss.str().c_str());
+  // ImGui::Text("%s", ss.str().c_str());
 }
 
 void Param::responseReceivedCallback(

@@ -40,8 +40,8 @@
 #include <vector>
 
 struct Widget {
-  Widget(const std::string name, const std::string topic) :
-      name_(name), topic_(topic) {}
+  Widget(const std::string name, const std::string topic, const std::string topic_prefix = "") :
+      name_(name), topic_(topic), topic_prefix_(topic_prefix) {}
   ~Widget() {}
   virtual void update(const rclcpp::Time& stamp) {(void)stamp;};
   virtual void draw() = 0;
@@ -56,6 +56,7 @@ struct Widget {
 protected:
   bool dirty_ = true;
   std::string topic_ = "";
+  std::string topic_prefix_ = "";
   std::mutex mutex_;
 };
 
