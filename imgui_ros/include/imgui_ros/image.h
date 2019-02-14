@@ -142,7 +142,7 @@ public:
 
   bool getSub(const std::string& topic, sensor_msgs::msg::Image::SharedPtr& image)
   {
-    std::lock_guard<std::mutex> lock(sub_mutex_);
+    std::lock_guard<std::mutex> lock(sub_mutexes_[topic]);
     if (subs_.count(topic) < 1) {
       // TODO(lucasw) is it better to create the publisher here
       // or inside the thread update is running in?
@@ -241,11 +241,11 @@ public:
 private:
   std::shared_ptr<internal_pub_sub::Core> core_;
   bool initted_ = false;
-  std::mutex sub_mutex_;
+  std::map<std::string, std::mutex> sub_mutexes_;
   void imageCallback(sensor_msgs::msg::Image::SharedPtr msg, const std::string& topic)
   {
     // std::cout << "image transfer " << topic << " msg received " << msg->header.stamp.sec << "\n";
-    std::lock_guard<std::mutex> lock(sub_mutex_);
+    std::lock_guard<std::mutex> lock(sub_mutexes_[topic]);
     from_sub_[topic] = msg;
   }
 
