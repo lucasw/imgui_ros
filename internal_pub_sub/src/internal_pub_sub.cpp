@@ -235,7 +235,7 @@ void Core::rosEnableAllPublishers(const bool enable)
 
 void Core::clean()
 {
-  std::cout << "CORE clean " << publishers_.size() << "\n";
+  // std::cout << "CORE clean " << publishers_.size() << "\n";
   // TODO(lucasw)
   // need to use reference otherwise use_count below will be increased
   // by additional shared_ptrs, though this may cause problems with
@@ -250,8 +250,8 @@ void Core::clean()
     pub->clean();
     // if nothing else has a shared_ptr to this pub, and it has no subscribers,
     // get rid of it
-    std::cout << "  pub " << pub->topic_ << " has subs " << pub->subs_.size() << ", use_count "
-        << pub.use_count() << "\n";
+    // std::cout << "  pub " << pub->topic_ << " has subs " << pub->subs_.size() << ", use_count "
+    //    << pub.use_count() << "\n";
     if (pub->subs_.size() < 1) {
       if (pub.use_count() == 1) {
         publishers_.erase(pub_pair.first);
