@@ -50,7 +50,7 @@ struct Publisher  // : std::enable_shared_from_this<Publisher>
 
   std::list<std::weak_ptr<Subscriber> > subs_;
 
-  // the internal method isn't working fully yet- only updates once
+  bool enable_ = true;
   bool ros_enable_ = false;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr ros_pub_;
   std::mutex sub_mutex_;

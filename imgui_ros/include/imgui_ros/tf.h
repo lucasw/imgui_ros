@@ -44,7 +44,6 @@
 #include <tf2_msgs/msg/tf_message.hpp>
 // #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-using std::placeholders::_1;
 
 // TODO(lucasw)
 // namespace imgui_ros

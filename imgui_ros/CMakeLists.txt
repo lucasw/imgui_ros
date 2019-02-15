@@ -79,6 +79,7 @@ add_library(imguiros SHARED
   src/graph.cpp
   src/imgui_ros.cpp
   src/image.cpp
+  src/image_transfer.cpp
   src/node.cpp
   src/param.cpp
   src/pub.cpp

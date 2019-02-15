@@ -122,6 +122,10 @@ void Publisher::publish(sensor_msgs::msg::Image::SharedPtr msg)
     stamps_.pop_front();
   }
 
+  if (!enable_) {
+    return;
+  }
+
   if (ros_enable_ && ros_pub_) {
     ros_pub_->publish(msg);
     return;
