@@ -107,6 +107,9 @@ private:
   std::vector<int> mag_filter_modes_;
   std::vector<int> wrap_modes_;
 
+  // TODO(lucasw) Duration(0, 0) may have resulted in crashes?
+  rclcpp::Duration image_gap_ = rclcpp::Duration(0);
+  rclcpp::Duration image_age_ = rclcpp::Duration(0);
   bool enable_one_to_one_ = false;
 };  // RosImage
 
@@ -208,23 +211,29 @@ public:
 
     ImGui::Separator();
     ImGui::Text("enable sensor_msgs/Image publishing, otherwise in-process only");
+    ImGui::Checkbox("show unused", &show_unused_);
+
     // TODO(lucasw) turn all the publishers on or off with a master checkbox
     // ImGui::Checkbox("multisample", &multisample_);
     ImGui::Columns(2);
     for (auto pub_pair : core_->publishers_) {
       auto pub = pub_pair.second;
       if (pub) {
-        ImGui::Checkbox(pub->topic_.c_str(), &pub->ros_enable_);
-        ImGui::NextColumn();
-        ImGui::Text("%lu subs", pub->subs_.size());
-        ImGui::NextColumn();
         float rate = 0.0;
         if (pub->stamps_.size() > 2) {
           rclcpp::Time earliest = pub->stamps_.front();
           rate = static_cast<float>(pub->stamps_.size()) /
             ((cur - earliest).nanoseconds() / 1e9);
         }
-        ImGui::Text("%0.2f Hz", rate);
+        if (!show_unused_ && (pub->subs_.size() == 0) && (rate < 0.05)) {
+          continue;
+        }
+
+        ImGui::Checkbox(pub->topic_.c_str(), &pub->ros_enable_);
+        ImGui::NextColumn();
+        ImGui::Text("%lu subs", pub->subs_.size());
+        ImGui::NextColumn();
+        ImGui::Text("%0.2f Hz, %0.3f ms duration", rate, pub->publish_duration_.nanoseconds() / 1e6);
         ImGui::NextColumn();
         float time_since_last = 0.0;
         if (pub->stamps_.size() > 0) {
@@ -248,6 +257,8 @@ private:
     std::lock_guard<std::mutex> lock(sub_mutexes_[topic]);
     from_sub_[topic] = msg;
   }
+
+  bool show_unused_ = false;
 
   std::map<std::string, sensor_msgs::msg::Image::SharedPtr> from_sub_;
   std::map<std::string, std::shared_ptr<internal_pub_sub::Subscriber> > subs_;

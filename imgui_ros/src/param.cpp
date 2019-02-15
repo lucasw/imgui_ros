@@ -86,7 +86,7 @@ void Param::draw()
       // this doesn't work, the parameter isn't on this node
       // get_parameter_or(parameter_name_, value, value);
       // TODO(lucasw) is there a bool slider?
-      const bool changed = ImGui::Checkbox(topic_.c_str(), &value);
+      const bool changed = ImGui::Checkbox((topic_ + "##" + node_name_).c_str(), &value);
       if (changed) {
         value_.bool_value = value;
         update_ = true;
@@ -102,7 +102,7 @@ void Param::draw()
       // int value2 = value;
       // get_parameter_or(parameter_name_, value2, value2);
       // value = value2;
-      const bool changed = ImGui::SliderScalar(topic_.c_str(),
+      const bool changed = ImGui::SliderScalar((topic_ + "##" + node_name_).c_str(),
           ImGuiDataType_S32, &value, &min, &max, "%d");
       if (changed) {
         value_.integer_value = value;
@@ -119,7 +119,7 @@ void Param::draw()
       // get_parameter_or(parameter_name_, value, value);
       // TODO(lucasw) may want to only return changed if slider is released
       // https://github.com/ocornut/imgui/issues/1875
-      const bool changed = ImGui::SliderScalar(topic_.c_str(),
+      const bool changed = ImGui::SliderScalar((topic_ + "##" + node_name_).c_str(),
           ImGuiDataType_Double, &value, &min, &max, "%lf");
       if (changed) {
         value_.double_value = value;
@@ -137,7 +137,7 @@ void Param::draw()
       const size_t sz2 = (text.size() > (sz - 1)) ? (sz - 1) : text.size();
       strncpy(buf, text.c_str(), sz2);
       buf[sz2 + 1] = '\0';
-      const bool changed = ImGui::InputText(topic_.c_str(), buf, sz,
+      const bool changed = ImGui::InputText((topic_ + "##" + node_name_).c_str(), buf, sz,
           ImGuiInputTextFlags_EnterReturnsTrue);
       if (changed) {
         value_.string_value = buf;

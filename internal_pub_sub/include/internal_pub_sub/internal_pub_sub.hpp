@@ -44,6 +44,7 @@ struct Publisher  // : std::enable_shared_from_this<Publisher>
 
   std::string topic_;
 
+  rclcpp::Duration publish_duration_ = rclcpp::Duration(0, 0);
   void publish(sensor_msgs::msg::Image::SharedPtr msg);
   void clean();
 
@@ -55,6 +56,8 @@ struct Publisher  // : std::enable_shared_from_this<Publisher>
   std::mutex sub_mutex_;
 
   std::deque<rclcpp::Time> stamps_;
+
+  rclcpp::Clock::SharedPtr clock_;
 };
 
 class Core;

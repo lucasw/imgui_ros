@@ -115,6 +115,7 @@ using std::placeholders::_1;
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
   bool RosImage::updateTexture() {
+    auto t0 = clock_->now();
     if (!enable_cpu_to_gpu_) {
       return true;
     }
@@ -123,7 +124,11 @@ using std::placeholders::_1;
       std::lock_guard<std::mutex> lock(mutex_);
       if (sub_not_pub_) {
         image_transfer_->getSub(topic_, image);
-        dirty_ |= (image != image_);
+        bool different_image = (image != image_);
+        dirty_ |= different_image;
+        if (image_ && image && different_image) {
+          image_gap_ = rclcpp::Time(image->header.stamp) - rclcpp::Time(image_->header.stamp);
+        }
         image_ = image;
       }
       // TODO(lucasw) updateTexture does nothing if this isn't a subscriber,
@@ -225,6 +230,9 @@ using std::placeholders::_1;
     // ROS_INFO_STREAM(texture_id_ << " " << image.size());
     // std::cout << "update texture done " << texture_id_ << "\n";
     glBindTexture(GL_TEXTURE_2D, 0);
+    update_duration_ = clock_->now() - t0;
+    // The age when updated, not age for every draw after of the same data
+    image_age_ = clock_->now() - image_->header.stamp;
     return true;
   }
 
@@ -294,6 +302,7 @@ using std::placeholders::_1;
 
       std::string name = name_ + " texture";
 
+      // auto t0 = clock_->now();
       if ((enable_draw_image_) && (texture_id_ != 0) && (width_ != 0) && (height_ != 0)) {
         ImVec2 image_size;
         ImVec2 win_size = ImGui::GetWindowSize();
@@ -321,6 +330,7 @@ using std::placeholders::_1;
 
         ImGui::Image((void*)(intptr_t)texture_id_, image_size);
       }
+      // auto draw_duration = clock_->now() - t0;
 
       // const std::string checkbox_text = "info##" + name;
       // ImGui::Checkbox(checkbox_text.c_str(), &enable_info_);
@@ -332,11 +342,23 @@ using std::placeholders::_1;
         std::string text = ss.str();
         ImGui::Text("%s %d %s %d %d", static_cast<int>(text.size()), text.data());
         #else
-        ImGui::Text("%s %d %s %lu %lu", name_.c_str(), texture_id_, topic_.c_str(),
+        ImGui::Text("%s %d %lu %lu", name_.c_str(), texture_id_,
             width_, height_);
+        ImGui::Text("%s", topic_.c_str());
         #endif
         if (image_) {
-          ImGui::Text("%d %u", image_->header.stamp.sec, image_->header.stamp.nanosec);
+          ImGui::Columns(2);
+          ImGui::Text("%d %0.3f",
+              image_->header.stamp.sec,
+              image_->header.stamp.nanosec / 1e9);
+          ImGui::NextColumn();
+          ImGui::Text("age %0.5f", image_age_.nanoseconds() / 1e9);
+          ImGui::NextColumn();
+          ImGui::Text("gap %0.5f", image_gap_.nanoseconds() / 1e9);
+          ImGui::NextColumn();
+          ImGui::Text("tex update %0.5f", update_duration_.nanoseconds() / 1e9);
+              // draw_duration.nanoseconds() / 1e6);
+          ImGui::Columns(1);
         }
 
         ImGui::Columns(2);

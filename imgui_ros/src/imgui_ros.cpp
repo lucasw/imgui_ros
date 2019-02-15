@@ -658,7 +658,7 @@ namespace imgui_ros {
     if (stats_window_init_) {
       stats_window_init_ = false;
       ImGui::SetNextWindowPos(ImVec2(0, 0));
-      ImGui::SetNextWindowSize(ImVec2(400, 200));
+      ImGui::SetNextWindowSize(ImVec2(400, 500));
       ImGui::SetNextWindowCollapsed(false);
     }
     ImGui::Begin("stats");

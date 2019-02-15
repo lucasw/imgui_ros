@@ -100,6 +100,7 @@ Publisher::Publisher(const std::string& topic,
     std::cout << this << " creating new publisher without ros pub option '" << topic_ << "'\n";
     ros_enable_ = false;
   }
+  clock_ = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
 }
 
 Publisher::~Publisher()
@@ -110,6 +111,7 @@ Publisher::~Publisher()
 
 void Publisher::publish(sensor_msgs::msg::Image::SharedPtr msg)
 {
+  auto t0 = clock_->now();
   // TODO(lucasw) make this optional
   rclcpp::Time cur = msg->header.stamp;
   stamps_.push_back(cur);
@@ -139,6 +141,8 @@ void Publisher::publish(sensor_msgs::msg::Image::SharedPtr msg)
       // std::cerr << topic_ << " bad sub lock\n";
     }
   }
+
+  publish_duration_ = clock_->now() - t0;
 }
 
 void Publisher::clean()

@@ -41,7 +41,10 @@
 
 struct Widget {
   Widget(const std::string name, const std::string topic, const std::string topic_prefix = "") :
-      name_(name), topic_(topic), topic_prefix_(topic_prefix) {}
+      name_(name), topic_(topic), topic_prefix_(topic_prefix)
+  {
+    clock_ = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
+  }
   ~Widget() {}
   virtual void update(const rclcpp::Time& stamp) {(void)stamp;};
   virtual void draw() = 0;
@@ -58,6 +61,8 @@ protected:
   std::string topic_ = "";
   std::string topic_prefix_ = "";
   std::mutex mutex_;
+  rclcpp::Duration update_duration_ = rclcpp::Duration(0);
+  rclcpp::Clock::SharedPtr clock_;
 };
 
 struct Window {
