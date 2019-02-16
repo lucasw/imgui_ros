@@ -62,6 +62,7 @@ struct GlImage : public Widget {
 struct RosImage : public GlImage {
   RosImage(const std::string name, const std::string topic = "",
            const bool sub_not_pub = false,
+           const bool ros_pub = false,
            std::shared_ptr<rclcpp::Node> node = nullptr,
            std::shared_ptr<ImageTransfer> image_transfer = nullptr);
   RosImage(const std::string& name,

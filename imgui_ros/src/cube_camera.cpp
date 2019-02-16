@@ -72,6 +72,7 @@ void CubeCamera::init(
     const size_t width, const size_t height,
     const size_t face_width,
     const std::string& texture_name, const std::string& topic,
+    const bool ros_pub,
     std::shared_ptr<rclcpp::Node> node,
     std::shared_ptr<ImageTransfer> image_transfer)
 {
@@ -82,7 +83,7 @@ void CubeCamera::init(
       name_.c_str(), texture_name.c_str(), topic.c_str(),
       faces_.size(), width, height, face_width);
 
-  Camera::init(width, height, texture_name, topic, node, image_transfer);
+  Camera::init(width, height, texture_name, topic, ros_pub, node, image_transfer);
 
   glGenTextures(1, &cube_texture_id_);
   glBindTexture(GL_TEXTURE_CUBE_MAP, cube_texture_id_);
@@ -135,7 +136,7 @@ void CubeCamera::init(
     // TODO(lucasw) texture_name + std::to_string(face->dir_);
     std::shared_ptr<RosImage> image = std::make_shared<RosImage>(
         texture_name + "_face" + std::to_string(ind),
-        "", sub_not_pub, node);
+        "", sub_not_pub, false, node);
     image->min_filter_ind_ = 0;
     image->mag_filter_ind_ = 0;
     face->image_ = image;

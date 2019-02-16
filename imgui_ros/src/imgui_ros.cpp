@@ -337,7 +337,8 @@ namespace imgui_ros {
       // TODO(lucasw) if widget.topic already exists somewhere in a RosImage
       // subscriber need to re-use it, can't duplicate subscribers.i
       // viz3d has any number of RosImages also.
-      ros_image.reset(new RosImage(widget.name, widget.topic, sub_not_pub, shared_from_this(),
+      ros_image.reset(new RosImage(widget.name, widget.topic, sub_not_pub,
+          false, shared_from_this(),
           image_transfer_));
       ros_image->enable_draw_image_ = true;
       imgui_widget = ros_image;

@@ -7,6 +7,8 @@ string name
 # needs to be unique out of all textures for cameras or shapes
 string texture_name
 bool add True
+# publish onto ros2 dds
+bool ros_pub False
 int32 width 128
 int32 height 128
 float32 aov_y 90.0

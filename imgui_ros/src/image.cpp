@@ -49,6 +49,7 @@ using std::placeholders::_1;
   }
 
   RosImage::RosImage(const std::string name, const std::string topic, const bool sub_not_pub,
+                     const bool ros_pub,
                      std::shared_ptr<rclcpp::Node> node,
                      std::shared_ptr<ImageTransfer> image_transfer) :
                      GlImage(name, topic),
@@ -80,6 +81,7 @@ using std::placeholders::_1;
       #endif
       } else {
         // pub_ = node->create_publisher<sensor_msgs::msg::Image>(topic);
+        image_transfer_->setRosPub(topic_, ros_pub);
       }
     }
   }

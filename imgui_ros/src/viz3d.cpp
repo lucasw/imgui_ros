@@ -295,7 +295,7 @@ Viz3D::Viz3D(const std::string name,
 
   const bool sub_not_pub = true;
   textures_["default"] = std::make_shared<RosImage>("default", "default_texture", sub_not_pub,
-      node, image_transfer_);
+      false, node, image_transfer_);
 
   transform_.setIdentity();
 
@@ -362,12 +362,16 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
         req->camera.width, req->camera.height,
         req->camera.texture_name,
         req->camera.topic,
+        req->camera.ros_pub,
         node,
         image_transfer_);
     render_texture->near_ = req->camera.near;
     render_texture->far_ = req->camera.far;
+
+
     textures_[req->camera.texture_name] = render_texture->image_;
     cameras_[req->camera.name] = render_texture;
+
   } catch (std::runtime_error& ex) {
     res->message = ex.what();
     res->success = false;
@@ -415,6 +419,7 @@ void Viz3D::addCubeCamera(const std::shared_ptr<imgui_ros::srv::AddCubeCamera::R
         req->face_width,
         req->camera.texture_name,
         req->camera.topic,
+        req->camera.ros_pub,
         node,
         image_transfer_);
     cube_camera->near_ = req->camera.near;

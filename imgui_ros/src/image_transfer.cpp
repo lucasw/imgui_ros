@@ -83,6 +83,14 @@ bool ImageTransfer::publish(const std::string& topic, sensor_msgs::msg::Image::S
   return true;
 }
 
+void ImageTransfer::setRosPub(const std::string& topic, const bool ros_pub)
+{
+  auto pub = core_->get_create_publisher(topic, shared_from_this());
+  if (pub) {
+    pub->ros_enable_ = ros_pub;
+  }
+}
+
 void ImageTransfer::update()
 {
   // std::lock_guard<std::mutex> lock(sub_mutex_);
