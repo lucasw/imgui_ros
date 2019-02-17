@@ -107,7 +107,7 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
 {
 
   res->success = true;
-  for (auto node_to_add : req->nodes) {
+  for (auto node_to_add : req->node_settings) {
     auto loader = getLoader(node_to_add.package_name);
     if (loader == nullptr) {
       return;

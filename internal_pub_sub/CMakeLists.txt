@@ -30,7 +30,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/Node.msg"
+  "msg/NodeSettings.msg"
   "msg/Republisher.msg"
   "srv/AddNode.srv"
   "srv/AddRepublisher.srv"
@@ -84,6 +84,10 @@ ament_target_dependencies(demo_internal_pub_sub
 )
 target_link_libraries(demo_internal_pub_sub internalpubsub)
 install(TARGETS demo_internal_pub_sub DESTINATION lib/${PROJECT_NAME})
+
+install(PROGRAMS
+  scripts/add_node.py
+  DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
 # install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
