@@ -16,7 +16,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
-# find_package(class_loader REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+find_package(class_loader REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(rcutils)
@@ -52,6 +53,22 @@ install(TARGETS internalpubsub
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
+
+add_executable(node_loader src/node_loader.cpp)
+ament_target_dependencies(node_loader
+  "ament_index_cpp"
+  "class_loader"
+  "rcl_interfaces"
+  "rclcpp"
+  "rcutils"
+  "sensor_msgs"
+  "std_msgs"
+)
+target_link_libraries(node_loader internalpubsub)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  target_link_libraries(node_loader "stdc++fs")
+endif()
+install(TARGETS node_loader DESTINATION lib/${PROJECT_NAME})
 
 add_executable(demo_internal_pub_sub src/demo_internal_pub_sub.cpp)
 ament_target_dependencies(demo_internal_pub_sub

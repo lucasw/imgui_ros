@@ -133,5 +133,21 @@ public:
   std::list<std::weak_ptr<Republisher> > republishers_;
 };  // Core
 
+class Node : public rclcpp::Node
+{
+public:
+  Node() : rclcpp::Node()
+  {
+
+  }
+
+  void setCore(std::shared_ptr<Core> core)
+  {
+    core_ = core;
+  }
+protected:
+  std::shared_ptr<Core> core_;
+};
+
 }  // internal_pub_sub
 #endif  // INTERNAL_PUB_SUB_INTERNAL_PUB_SUB_HPP
