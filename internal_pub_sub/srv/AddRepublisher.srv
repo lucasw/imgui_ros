@@ -4,4 +4,4 @@
 internal_pub_sub/Republisher[] republishers
 ---
 string message ""
-bool success True
+bool success False

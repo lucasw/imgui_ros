@@ -33,29 +33,34 @@
 
 #include <class_loader/class_loader.hpp>
 #include <internal_pub_sub/internal_pub_sub.hpp>
+#include <internal_pub_sub/srv/add_node.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 namespace internal_pub_sub
 {
 
-struct NodeLoader : public rclcpp::Node
+struct NodeLoader : public internal_pub_sub::Node
 {
   NodeLoader();
+  virtual void postInit();
 
-  // TODO(lucasw) need to refactor
-  bool load(const std::string& package_name, const std::string& node_plugin_name,
-      std::shared_ptr<rclcpp::Node>& node);
+  rclcpp::Service<srv::AddNode>::SharedPtr add_node_;
+  void addNode(const std::shared_ptr<srv::AddNode::Request> req,
+      std::shared_ptr<srv::AddNode::Response> res);
 
-  // bool load(const std::string& package_name, const std::string& node_plugin_name,
-  //    std::shared_ptr<internal_pub_sub::Node>& node);
-
-  bool loadInner(const std::string& library_path, const std::string& node_plugin_name);
-  bool loadInner(const std::string& library_path, const std::string& node_plugin_name,
-      std::shared_ptr<rclcpp::Node>& node);
+  std::shared_ptr<class_loader::ClassLoader> getLoader(const std::string& package_name);
+  bool load(
+      std::shared_ptr<class_loader::ClassLoader> loader,
+      const std::string& package_name, const std::string& plugin_name,
+      const std::string& node_name, const std::string& node_namespace,
+      const bool internal_pub_sub);
 
   std::vector<std::shared_ptr<class_loader::ClassLoader> > loaders_;
   std::vector<std::shared_ptr<rclcpp::Node> > nodes_;
+  // TODO(lucasw) or shove these into nodes above?
   std::vector<std::shared_ptr<internal_pub_sub::Node> > ips_nodes_;
+
+  std::shared_ptr<Core> core_;
 };
 
 }  // namespace internal_pub_sub

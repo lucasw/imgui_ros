@@ -138,13 +138,22 @@ class Node : public rclcpp::Node
 public:
   Node() : rclcpp::Node()
   {
-
   }
 
   void setCore(std::shared_ptr<Core> core)
   {
     core_ = core;
   }
+
+  // TODO(lucasw) how to make this automatic
+  // all the inheriting nodes need to call this
+  virtual void postInit()
+  {
+    if (core_ == nullptr) {
+      core_ = std::make_shared<internal_pub_sub::Core>();
+    }
+  }
+
 protected:
   std::shared_ptr<Core> core_;
 };

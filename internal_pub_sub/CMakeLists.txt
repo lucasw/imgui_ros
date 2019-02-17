@@ -21,17 +21,20 @@ find_package(class_loader REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(rcutils)
+find_package(rcl_interfaces REQUIRED)
 find_package(rmw REQUIRED)
 find_package(rosidl_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-# find_package(rosidl_typesupport_cpp REQUIRED)
+find_package(rosidl_typesupport_cpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/Node.msg"
   "msg/Republisher.msg"
+  "srv/AddNode.srv"
   "srv/AddRepublisher.srv"
-  DEPENDENCIES sensor_msgs std_msgs
+  DEPENDENCIES rcl_interfaces sensor_msgs std_msgs
 )
 
 include_directories(
@@ -48,6 +51,7 @@ ament_target_dependencies(internalpubsub
   "sensor_msgs"
   "std_msgs"
 )
+rosidl_target_interfaces(internalpubsub ${PROJECT_NAME} "rosidl_typesupport_cpp")
 install(TARGETS internalpubsub
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib

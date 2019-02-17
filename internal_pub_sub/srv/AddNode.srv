@@ -1,0 +1,6 @@
+internal_pub_sub/Node[] nodes
+# TODO(lucasw) if only some nodes load correctly, should they all be unloaded,
+# or handled differently?
+---
+string message ""
+bool success False
