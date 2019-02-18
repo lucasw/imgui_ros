@@ -32,6 +32,7 @@ import time
 
 from internal_pub_sub.msg import NodeSettings
 from internal_pub_sub.srv import AddNode
+from rcl_interfaces.msg import Parameter, ParameterType
 from rclpy.node import Node
 
 
@@ -66,6 +67,33 @@ class DemoAddNode(Node):
             node_settings.node_name = 'foo'
             node_settings.node_namespace = 'bar'
             node_settings.internal_pub_sub = True
+
+            # parameters
+            param = Parameter()
+            param.name = "red"
+            param.value.type = ParameterType.PARAMETER_INTEGER
+            param.value.integer_value = 32
+            node_settings.parameters.new_parameters.append(param)
+
+            param = Parameter()
+            param.name = "width"
+            param.value.type = ParameterType.PARAMETER_INTEGER
+            param.value.integer_value = 2048
+            node_settings.parameters.new_parameters.append(param)
+
+            param = Parameter()
+            param.name = "height"
+            param.value.type = ParameterType.PARAMETER_INTEGER
+            param.value.integer_value = 1536
+            node_settings.parameters.new_parameters.append(param)
+
+            param = Parameter()
+            param.name = "frame_rate"
+            param.value.type = ParameterType.PARAMETER_DOUBLE
+            param.value.double_value = 13.0
+            node_settings.parameters.new_parameters.append(param)
+
+
             add_node = AddNode.Request()
             add_node.node_settings.append(node_settings)
             self.future = self.node_cli.call_async(add_node)
