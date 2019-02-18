@@ -76,10 +76,20 @@ std::vector<std::string> split(
   return result;
 }
 
+void run_node(std::shared_ptr<rclcpp::Node> node)
+{
+  // rclcpp::executors::MultiThreadedExecutor executor;
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node);
+  // TODO(lucasw) how to interrupt this spin and kill this node?
+  // std::future?  Maybe will need a spin and sleep_for loop
+  executor.spin();
+}
+
 namespace internal_pub_sub
 {
 
-NodeLoader::NodeLoader() : Node()
+NodeLoader::NodeLoader()
 {
 #if 0
   auto packages = ament_index_cpp::get_packages_with_prefixes();
@@ -95,9 +105,16 @@ NodeLoader::NodeLoader() : Node()
 #endif
 }
 
-void NodeLoader::postInit()
+NodeLoader::~NodeLoader()
 {
-  Node::postInit();
+  for (size_t i = 0; i < threads_.size(); ++i) {
+    threads_[i].join();
+  }
+}
+
+void NodeLoader::postInit(std::shared_ptr<Core> core)
+{
+  Node::postInit(core);
   add_node_ = create_service<srv::AddNode>("add_node",
       std::bind(&NodeLoader::addNode, this, std::placeholders::_1, std::placeholders::_2));
   RCLCPP_INFO(get_logger(), "ready to load nodes");
@@ -139,28 +156,36 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
 {
   const std::string full_node_plugin_name = package_name + "::" + plugin_name;
 
+  std::shared_ptr<rclcpp::Node> node;
   try {
     if (internal_pub_sub) {
       if (core_ == nullptr) {
         RCLCPP_ERROR(get_logger(), "core is uininitialized");
         return false;
       }
-      auto node = loader->createInstance<internal_pub_sub::Node>(full_node_plugin_name);
-      node->setCore(core_);
-      node->init(node_name, node_namespace);
-      node->postInit();
-      ips_nodes_.push_back(node);
+      auto ips_node = loader->createInstance<internal_pub_sub::Node>(full_node_plugin_name);
+      node = ips_node;
+      // TODO(lucasw) how to run node in separate thread?
+      // is it even running?
+      ips_node->init(node_name, node_namespace);
+      ips_node->postInit(core_);
+      // ips_nodes_.push_back(ips_node);
     } else {
-      auto node = loader->createInstance<rclcpp::Node>(full_node_plugin_name);
-      RCLCPP_INFO(get_logger(), "created node %s", full_node_plugin_name.c_str());
+      node = loader->createInstance<rclcpp::Node>(full_node_plugin_name);
       // TODO(lucasw) parameters
       node->init(node_name, node_namespace);
-      nodes_.push_back(node);
+      // nodes_.push_back(node);
     }
   } catch (class_loader::CreateClassException & ex) {
     RCLCPP_ERROR(get_logger(), "Failed to load node: %s", ex.what());
     return false;
   }
+  if (node == nullptr) {
+    RCLCPP_ERROR(get_logger(), "Failed to create node: %s", full_node_plugin_name.c_str());
+    return false;
+  }
+  RCLCPP_INFO(get_logger(), "created node %s", full_node_plugin_name.c_str());
+  threads_.push_back(std::thread(std::bind(run_node, node)));
 
   // TODO(lucasw) does this really need to be kept?
   loaders_.push_back(loader);
@@ -242,8 +267,7 @@ int main(int argc, char * argv[])
   auto node_loader = std::make_shared<internal_pub_sub::NodeLoader>();
   auto core = std::make_shared<internal_pub_sub::Core>();
   node_loader->init("node_loader", "management");
-  node_loader->setCore(core);
-  node_loader->postInit();
+  node_loader->postInit(core);
 
   exec.add_node(node_loader);
   exec.spin();

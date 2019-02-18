@@ -42,7 +42,8 @@ namespace internal_pub_sub
 struct NodeLoader : public internal_pub_sub::Node
 {
   NodeLoader();
-  virtual void postInit();
+  ~NodeLoader();
+  virtual void postInit(std::shared_ptr<Core> core);
 
   rclcpp::Service<srv::AddNode>::SharedPtr add_node_;
   void addNode(const std::shared_ptr<srv::AddNode::Request> req,
@@ -57,6 +58,9 @@ struct NodeLoader : public internal_pub_sub::Node
       const std::string& node_name, const std::string& node_namespace,
       const bool internal_pub_sub);
 
+  // TODO(lucasw) make  std::map of namespace and node_name keys to hold a struct
+  // of the thread, loader, node
+  std::vector<std::thread> threads_;
   std::vector<std::shared_ptr<class_loader::ClassLoader> > loaders_;
   std::vector<std::shared_ptr<rclcpp::Node> > nodes_;
   // TODO(lucasw) or shove these into nodes above?

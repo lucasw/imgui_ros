@@ -140,16 +140,13 @@ public:
   {
   }
 
-  void setCore(std::shared_ptr<Core> core)
-  {
-    core_ = core;
-  }
-
   // TODO(lucasw) how to make this automatic
   // all the inheriting nodes need to call this
-  virtual void postInit()
+  virtual void postInit(std::shared_ptr<Core> core)
   {
+    core_ = core;
     if (core_ == nullptr) {
+      RCLCPP_INFO(get_logger(), "creating new Core for this node");
       core_ = std::make_shared<internal_pub_sub::Core>();
     }
   }
