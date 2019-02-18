@@ -100,6 +100,7 @@ void NodeLoader::postInit()
   Node::postInit();
   add_node_ = create_service<srv::AddNode>("add_node",
       std::bind(&NodeLoader::addNode, this, std::placeholders::_1, std::placeholders::_2));
+  RCLCPP_INFO(get_logger(), "ready to load nodes");
 }
 
 void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
@@ -107,10 +108,17 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
 {
 
   res->success = true;
+
+  if (req->node_settings.size() == 0) {
+    res->message = "no nodes to load";
+    return;
+  }
+  res->message = "attempting to load nodes " + std::to_string(req->node_settings.size());
+
   for (auto node_to_add : req->node_settings) {
-    auto loader = getLoader(node_to_add.package_name);
+    auto loader = getLoader(node_to_add.package_name, node_to_add.plugin_name);
     if (loader == nullptr) {
-      return;
+      continue;
     }
     const bool rv = load(
         loader,
@@ -139,6 +147,7 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
       ips_nodes_.push_back(node);
     } else {
       auto node = loader->createInstance<rclcpp::Node>(full_node_plugin_name);
+      RCLCPP_INFO(get_logger(), "created node %s", full_node_plugin_name.c_str());
       // TODO(lucasw) parameters
       node->init(node_name, node_namespace);
       nodes_.push_back(node);
@@ -154,8 +163,12 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
   return true;
 }
 
-std::shared_ptr<class_loader::ClassLoader> NodeLoader::getLoader(const std::string& package_name)
+std::shared_ptr<class_loader::ClassLoader> NodeLoader::getLoader(
+    const std::string& package_name,
+    const std::string& plugin_name)
 {
+  const std::string full_node_plugin_name = package_name + "::" + plugin_name;
+  RCLCPP_INFO(get_logger(), "want to load %s", full_node_plugin_name.c_str());
   std::shared_ptr<class_loader::ClassLoader> loader = nullptr;
   // get node plugin resource from package
   std::string content;
@@ -195,7 +208,10 @@ image_manip::SaveImage;lib/libimagemanip.so
 /home/lucasw/colcon_ws/install/image_manip/lib/libimagemanip.so image_manip::ImageDeque
 /home/lucasw/colcon_ws/install/image_manip/lib/libimagemanip.so image_manip::SaveImage
     */
-    std::cout << library_path << " " << class_name << "\n";
+    RCLCPP_INFO(get_logger(), "loader %s %s",  library_path.c_str(), class_name.c_str());
+    if (class_name != full_node_plugin_name) {
+      continue;
+    }
 
     try {
       loader = std::make_shared<class_loader::ClassLoader>(library_path);

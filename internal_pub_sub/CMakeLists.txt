@@ -86,7 +86,7 @@ target_link_libraries(demo_internal_pub_sub internalpubsub)
 install(TARGETS demo_internal_pub_sub DESTINATION lib/${PROJECT_NAME})
 
 install(PROGRAMS
-  scripts/add_node.py
+  scripts/demo_add_node.py
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})

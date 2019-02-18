@@ -48,7 +48,9 @@ struct NodeLoader : public internal_pub_sub::Node
   void addNode(const std::shared_ptr<srv::AddNode::Request> req,
       std::shared_ptr<srv::AddNode::Response> res);
 
-  std::shared_ptr<class_loader::ClassLoader> getLoader(const std::string& package_name);
+  std::shared_ptr<class_loader::ClassLoader> getLoader(const std::string& package_name,
+      const std::string& plugin_name);
+
   bool load(
       std::shared_ptr<class_loader::ClassLoader> loader,
       const std::string& package_name, const std::string& plugin_name,

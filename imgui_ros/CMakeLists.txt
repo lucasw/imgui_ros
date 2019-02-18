@@ -36,6 +36,7 @@ find_package(shape_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(visualization_msgs REQUIRED)
 
@@ -116,6 +117,7 @@ ament_target_dependencies(imguiros
   "std_msgs"
   "tf2"
   "tf2_geometry_msgs"
+  "tf2_msgs"
   "tf2_ros"
   "visualization_msgs"
 )
@@ -216,7 +218,7 @@ ament_export_include_directories(
   # imgui/examples
   # imgui/examples/libs/gl3w
 )
-ament_export_dependencies(SDL2 sensor_msgs)
+ament_export_dependencies(SDL2 sensor_msgs tf2_msgs tf2_ros tf2)
 ament_export_libraries(imguiros)
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY imgui/examples/libs/gl3w/GL/ DESTINATION include/GL)

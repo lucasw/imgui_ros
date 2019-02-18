@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright (c) 2019 Lucas Walter
 # February 2019
 # All rights reserved.
@@ -34,9 +35,9 @@ from internal_pub_sub.srv import AddNode
 from rclpy.node import Node
 
 
-class AddNode(Node):
+class DemoAddNode(Node):
     def __init__(self):
-        super().__init__('add_node')
+        super().__init__('demo_add_node')
         self.node_cli = self.create_client(AddNode, 'add_node')
         while not self.node_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info(self.get_namespace() + '/add_node service not available')
@@ -56,18 +57,25 @@ class AddNode(Node):
                 break
 
     def run(self):
-        node_settings = NodeSettings()
-        node_settings.package_name = 'imgui_ros'
-        node_settings.plugin_name = 'imgui_ros_node'
-        node_settings.node_name = 'foo'
-        node_settings.node_namespace = 'bar'
-        node_settings.internal_pub_sub = False
+        if True:
+            node_settings = NodeSettings()
+            # node_settings.package_name = 'imgui_ros'
+            # node_settings.plugin_name = 'imgui_ros_node'
+            node_settings.package_name = 'image_manip'
+            node_settings.plugin_name = 'Color'
+            node_settings.node_name = 'foo'
+            node_settings.node_namespace = 'bar'
+            node_settings.internal_pub_sub = False
+            add_node = AddNode.Request()
+            add_node.node_settings.append(node_settings)
+            self.future = self.node_cli.call_async(add_node)
+            self.wait_for_response()
 
 def main(args=None):
     rclpy.init(args=args)
 
     try:
-        demo = AddNode()
+        demo = DemoAddNode()
         demo.run()
         rclpy.spin(demo)
     finally:
