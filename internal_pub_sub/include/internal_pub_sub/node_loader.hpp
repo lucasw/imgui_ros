@@ -61,8 +61,6 @@ struct NodeLoader : public internal_pub_sub::Node
   std::vector<std::shared_ptr<rclcpp::Node> > nodes_;
   // TODO(lucasw) or shove these into nodes above?
   std::vector<std::shared_ptr<internal_pub_sub::Node> > ips_nodes_;
-
-  std::shared_ptr<Core> core_;
 };
 
 }  // namespace internal_pub_sub

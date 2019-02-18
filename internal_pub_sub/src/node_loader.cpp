@@ -141,9 +141,14 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
 
   try {
     if (internal_pub_sub) {
+      if (core_ == nullptr) {
+        RCLCPP_ERROR(get_logger(), "core is uininitialized");
+        return false;
+      }
       auto node = loader->createInstance<internal_pub_sub::Node>(full_node_plugin_name);
       node->setCore(core_);
       node->init(node_name, node_namespace);
+      node->postInit();
       ips_nodes_.push_back(node);
     } else {
       auto node = loader->createInstance<rclcpp::Node>(full_node_plugin_name);
@@ -179,7 +184,7 @@ std::shared_ptr<class_loader::ClassLoader> NodeLoader::getLoader(
     return loader;
   }
 
-  RCLCPP_INFO(get_logger(), "%s %s", content.c_str(), base_path.c_str());
+  RCLCPP_INFO(get_logger(), "resources:\n%sbase path: %s", content.c_str(), base_path.c_str());
   /** example output for package_name 'image_manip':
 image_manip::IIRImage;lib/libimagemanip.so
 image_manip::ImageDeque;lib/libimagemanip.so
@@ -235,8 +240,9 @@ int main(int argc, char * argv[])
   rclcpp::executors::SingleThreadedExecutor exec;
 
   auto node_loader = std::make_shared<internal_pub_sub::NodeLoader>();
-
+  auto core = std::make_shared<internal_pub_sub::Core>();
   node_loader->init("node_loader", "management");
+  node_loader->setCore(core);
   node_loader->postInit();
 
   exec.add_node(node_loader);

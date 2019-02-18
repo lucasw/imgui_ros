@@ -65,7 +65,7 @@ class DemoAddNode(Node):
             node_settings.plugin_name = 'Color'
             node_settings.node_name = 'foo'
             node_settings.node_namespace = 'bar'
-            node_settings.internal_pub_sub = False
+            node_settings.internal_pub_sub = True
             add_node = AddNode.Request()
             add_node.node_settings.append(node_settings)
             self.future = self.node_cli.call_async(add_node)
