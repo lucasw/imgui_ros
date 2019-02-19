@@ -31,6 +31,7 @@ find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/NodeSettings.msg"
+  "msg/Remapping.msg"
   "msg/Republisher.msg"
   "srv/AddNode.srv"
   "srv/AddRepublisher.srv"

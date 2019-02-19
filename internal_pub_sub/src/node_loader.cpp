@@ -149,12 +149,18 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
       parameters.push_back(parameter);  // rclcpp::Parameter(param.name, rclcpp::ParameterValue(param.value)));
     }
 
+    std::vector<std::string> arguments;
+    for (auto& remapping : node_to_add.remappings) {
+      arguments.push_back(remapping.from_topic + ":=" + remapping.to_topic);
+    }
+
     const bool rv = load(
         loader,
         node_to_add.package_name,
         node_to_add.plugin_name,
         node_to_add.node_name,
         node_to_add.node_namespace,
+        arguments,
         parameters,
         node_to_add.internal_pub_sub);
     res->success &= rv;
@@ -165,6 +171,7 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
 bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
     const std::string& package_name, const std::string& plugin_name,
     const std::string& node_name, const std::string& node_namespace,
+    const std::vector<std::string>& arguments,
     const std::vector<rclcpp::Parameter>& parameters,
     const bool internal_pub_sub)
 {
@@ -198,7 +205,7 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
   // TODO(lucasw) arguments -> remappings?
   node->init(node_name, node_namespace,
       rclcpp::contexts::default_context::get_global_default_context(),
-      {}, parameters);
+      arguments, parameters);
 
   if (ips_node) {
     ips_node->postInit(core_);

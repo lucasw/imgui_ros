@@ -30,7 +30,7 @@
 import rclpy
 import time
 
-from internal_pub_sub.msg import NodeSettings
+from internal_pub_sub.msg import NodeSettings, Remapping
 from internal_pub_sub.srv import AddNode
 from rcl_interfaces.msg import Parameter, ParameterType
 from rclpy.node import Node
@@ -93,6 +93,10 @@ class DemoAddNode(Node):
             param.value.double_value = 13.0
             node_settings.parameters.append(param)
 
+            remapping = Remapping()
+            remapping.from_topic = "image"
+            remapping.to_topic = "different_image"
+            node_settings.remappings.append(remapping)
 
             add_node = AddNode.Request()
             add_node.node_settings.append(node_settings)
