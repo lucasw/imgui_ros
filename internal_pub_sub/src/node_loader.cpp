@@ -32,6 +32,8 @@
 #include <ament_index_cpp/get_resource.hpp>
 #include <ament_index_cpp/get_search_paths.hpp>
 #include <internal_pub_sub/node_loader.hpp>
+#include <rclcpp/parameter.hpp>
+#include <rclcpp/parameter_value.hpp>
 
 #ifdef __clang__
 // TODO(dirk-thomas) custom implementation until we can use libc++ 3.9
@@ -123,7 +125,6 @@ void NodeLoader::postInit(std::shared_ptr<Core> core)
 void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
     std::shared_ptr<srv::AddNode::Response> res)
 {
-
   res->success = true;
 
   if (req->node_settings.size() == 0) {
@@ -137,12 +138,24 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
     if (loader == nullptr) {
       continue;
     }
+
+    std::vector<rclcpp::Parameter> parameters;
+    for (auto& param : node_to_add.parameters) {
+      rclcpp::Parameter parameter = rclcpp::Parameter::from_parameter_msg(param);
+      RCLCPP_INFO(get_logger(), "parameter %s %s %s",
+          parameter.get_name().c_str(),
+          parameter.get_type_name().c_str(),
+          parameter.value_to_string().c_str());
+      parameters.push_back(parameter);  // rclcpp::Parameter(param.name, rclcpp::ParameterValue(param.value)));
+    }
+
     const bool rv = load(
         loader,
         node_to_add.package_name,
         node_to_add.plugin_name,
         node_to_add.node_name,
         node_to_add.node_namespace,
+        parameters,
         node_to_add.internal_pub_sub);
     res->success &= rv;
   }
@@ -152,28 +165,25 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
 bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
     const std::string& package_name, const std::string& plugin_name,
     const std::string& node_name, const std::string& node_namespace,
+    const std::vector<rclcpp::Parameter>& parameters,
     const bool internal_pub_sub)
 {
   const std::string full_node_plugin_name = package_name + "::" + plugin_name;
 
   std::shared_ptr<rclcpp::Node> node;
+  std::shared_ptr<internal_pub_sub::Node> ips_node;
+
   try {
     if (internal_pub_sub) {
       if (core_ == nullptr) {
         RCLCPP_ERROR(get_logger(), "core is uininitialized");
         return false;
       }
-      auto ips_node = loader->createInstance<internal_pub_sub::Node>(full_node_plugin_name);
+      ips_node = loader->createInstance<internal_pub_sub::Node>(full_node_plugin_name);
       node = ips_node;
-      // TODO(lucasw) how to run node in separate thread?
-      // is it even running?
-      ips_node->init(node_name, node_namespace);
-      ips_node->postInit(core_);
       // ips_nodes_.push_back(ips_node);
     } else {
       node = loader->createInstance<rclcpp::Node>(full_node_plugin_name);
-      // TODO(lucasw) parameters
-      node->init(node_name, node_namespace);
       // nodes_.push_back(node);
     }
   } catch (class_loader::CreateClassException & ex) {
@@ -184,10 +194,21 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
     RCLCPP_ERROR(get_logger(), "Failed to create node: %s", full_node_plugin_name.c_str());
     return false;
   }
+
+  // TODO(lucasw) arguments -> remappings?
+  node->init(node_name, node_namespace,
+      rclcpp::contexts::default_context::get_global_default_context(),
+      {}, parameters);
+
+  if (ips_node) {
+    ips_node->postInit(core_);
+  }
+
   RCLCPP_INFO(get_logger(), "created node %s", full_node_plugin_name.c_str());
   threads_.push_back(std::thread(std::bind(run_node, node)));
 
   // TODO(lucasw) does this really need to be kept?
+  // Yes, it will unload anything loaded with it if destructed.
   loaders_.push_back(loader);
 
   return true;

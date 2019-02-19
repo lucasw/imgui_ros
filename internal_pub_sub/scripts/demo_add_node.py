@@ -73,25 +73,25 @@ class DemoAddNode(Node):
             param.name = "red"
             param.value.type = ParameterType.PARAMETER_INTEGER
             param.value.integer_value = 32
-            node_settings.parameters.new_parameters.append(param)
+            node_settings.parameters.append(param)
 
             param = Parameter()
             param.name = "width"
             param.value.type = ParameterType.PARAMETER_INTEGER
             param.value.integer_value = 2048
-            node_settings.parameters.new_parameters.append(param)
+            node_settings.parameters.append(param)
 
             param = Parameter()
             param.name = "height"
             param.value.type = ParameterType.PARAMETER_INTEGER
             param.value.integer_value = 1536
-            node_settings.parameters.new_parameters.append(param)
+            node_settings.parameters.append(param)
 
             param = Parameter()
             param.name = "frame_rate"
             param.value.type = ParameterType.PARAMETER_DOUBLE
             param.value.double_value = 13.0
-            node_settings.parameters.new_parameters.append(param)
+            node_settings.parameters.append(param)
 
 
             add_node = AddNode.Request()

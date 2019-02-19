@@ -56,6 +56,7 @@ struct NodeLoader : public internal_pub_sub::Node
       std::shared_ptr<class_loader::ClassLoader> loader,
       const std::string& package_name, const std::string& plugin_name,
       const std::string& node_name, const std::string& node_namespace,
+      const std::vector<rclcpp::Parameter>& parameters,
       const bool internal_pub_sub);
 
   // TODO(lucasw) make  std::map of namespace and node_name keys to hold a struct
