@@ -11,18 +11,19 @@
 
 typedef std::function<void (sensor_msgs::msg::Image::SharedPtr)> Function;
 
-// inline
 void setFullTopic(std::shared_ptr<rclcpp::Node> node, std::string& topic);
 
 namespace internal_pub_sub
 {
 
+class Node;
+
 struct Subscriber
 {
 public:
-  Subscriber(const std::string& topic,
+  Subscriber(const std::string& topic, const std::string& remapped_topic,
       Function callback,
-      std::shared_ptr<rclcpp::Node> node=nullptr);
+      std::shared_ptr<Node> node=nullptr);
   ~Subscriber();
 
   void bind(Function fn);
@@ -32,6 +33,7 @@ public:
   // when it goes dead?
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr ros_sub_;
   std::string topic_;
+  std::string remapped_topic_;
 private:
   Function callback_;
 };
@@ -39,10 +41,12 @@ private:
 struct Publisher  // : std::enable_shared_from_this<Publisher>
 {
   Publisher(const std::string& topic,
-      std::shared_ptr<rclcpp::Node> node=nullptr);
+      const std::string& remapped_topic,
+      std::shared_ptr<Node> node=nullptr);
   ~Publisher();
 
   std::string topic_;
+  std::string remapped_topic_;
 
   rclcpp::Duration publish_duration_ = rclcpp::Duration(0, 0);
   void publish(sensor_msgs::msg::Image::SharedPtr msg);
@@ -72,12 +76,12 @@ struct Republisher
       const std::vector<std::string>& outputs,
       const size_t skip,
       std::shared_ptr<Core> core,
-      std::shared_ptr<rclcpp::Node> node = nullptr);
+      std::shared_ptr<Node> node = nullptr);
 
   Republisher(const std::string& input, const std::string& output,
       const size_t skip,
       std::shared_ptr<Core> core,
-      std::shared_ptr<rclcpp::Node> node = nullptr);
+      std::shared_ptr<Node> node = nullptr);
 
   ~Republisher();
 
@@ -102,19 +106,26 @@ public:
   Core(const bool ros_enable_default=false);
   ~Core();
 
-  std::shared_ptr<Subscriber> create_subscription(const std::string& topic,
+  std::shared_ptr<Subscriber> create_subscription(
+      const std::string& topic,
+      const std::string& remapped_topic,
       Function callback,
-      std::shared_ptr<rclcpp::Node> node=nullptr);
-  std::shared_ptr<Publisher> get_create_publisher(std::string topic,
-      std::shared_ptr<rclcpp::Node> node=nullptr);
+      std::shared_ptr<Node> node=nullptr);
+  std::shared_ptr<Publisher> get_create_publisher(
+      std::string topic,
+      std::string remapped_topic,
+      std::shared_ptr<Node> node=nullptr,
+      const bool create_ros_pub=true);
 
+  // TODO(lucasw) should the parent node remapping alter what the republisher does?
+  // For now it does not.
   // it's up to the caller to hold on to the shared ptr then discard it when finish,
   // currently nothing is done with the weak_ptr hear but maybe in the future,
   // and whatever is done will scan for dead pointers and erase them.
   std::shared_ptr<Republisher> create_republisher(
       const std::vector<std::string>& input_topics,
       const std::vector<std::string>& output_topics,
-      std::shared_ptr<rclcpp::Node> node=nullptr);
+      std::shared_ptr<Node> node=nullptr);
 
   bool ros_enable_default_ = false;
   // TODO(lucasw) maybe all future publishers also need to be able to be enabled also?
@@ -134,9 +145,11 @@ public:
 };  // Core
 
 class Node : public rclcpp::Node
+// , std::enable_shared_from_this<Node>
+// have to std::static_pointer_cast<internal_pub_sub::Node>(shared_from_this())
 {
 public:
-  Node() : rclcpp::Node()
+  Node()  // : rclcpp::Node()
   {
   }
 
@@ -151,6 +164,33 @@ public:
     }
   }
 
+  // TODO(lucasw) make a get_create_publisher and get_subscription convenience function here
+  std::shared_ptr<Publisher> get_create_internal_publisher(const std::string& topic)
+  {
+    std::string remapped_topic = remappings_[topic];
+    if (remapped_topic == "") {
+      RCLCPP_WARN(get_logger(), "unexpected unremapped topic %s", topic.c_str());
+      remapped_topic = topic;
+      remappings_[topic] = remapped_topic;
+    }
+    return core_->get_create_publisher(topic, remapped_topic,
+        std::static_pointer_cast<internal_pub_sub::Node>(shared_from_this()));
+  }
+
+  std::shared_ptr<Subscriber> create_internal_subscription(const std::string& topic,
+      Function callback)
+  {
+    std::string remapped_topic = remappings_[topic];
+    if (remapped_topic == "") {
+      RCLCPP_WARN(get_logger(), "unexpected unremapped topic %s", topic.c_str());
+      remapped_topic = topic;
+      remappings_[topic] = remapped_topic;
+    }
+    return core_->create_subscription(topic, remapped_topic, callback,
+        std::static_pointer_cast<internal_pub_sub::Node>(shared_from_this()));
+  }
+
+  std::map<std::string, std::string> remappings_;
 protected:
   std::shared_ptr<Core> core_;
 };

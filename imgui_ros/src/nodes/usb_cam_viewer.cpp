@@ -40,7 +40,9 @@ void run_usb_cam(std::shared_ptr<internal_pub_sub::Core> core)
 {
   // rclcpp::executors::MultiThreadedExecutor executor;
   rclcpp::executors::SingleThreadedExecutor executor;
-  auto usb_cam = std::make_shared<usb_cam::UsbCam>(core);
+  auto usb_cam = std::make_shared<usb_cam::UsbCam>();
+  usb_cam->init("usb_cam");
+  usb_cam->postInit(core);
   executor.add_node(usb_cam);
   executor.spin();
 }

@@ -39,14 +39,14 @@
 
 using namespace std::chrono_literals;
 
-ImageTransfer::ImageTransfer(std::shared_ptr<internal_pub_sub::Core> core) :
-    Node("image_transfer"),
-    core_(core)
+ImageTransfer::ImageTransfer()
 {
-  if (!core_) {
-    std::cout << "image_transfer making new pub sub core\n";
-    core_ = std::make_shared<internal_pub_sub::Core>();
-  }
+
+}
+
+void ImageTransfer::postInit(std::shared_ptr<internal_pub_sub::Core> core)
+{
+  internal_pub_sub::Node::postInit(core);
   update_timer_ = this->create_wall_timer(33ms,
       std::bind(&ImageTransfer::update, this));
 }
@@ -61,7 +61,8 @@ bool ImageTransfer::getSub(const std::string& topic, sensor_msgs::msg::Image::Sh
     fnc = std::bind(&ImageTransfer::imageCallback, this, std::placeholders::_1,
             topic);
     // subs_[topic] = create_subscription<sensor_msgs::msg::Image>(topic, fnc);
-    subs_[topic] = core_->create_subscription(topic, fnc, shared_from_this());
+    // TODO(lucasw) don't use remapping with imgui_ros currently, it will break
+    subs_[topic] = create_internal_subscription(topic, fnc);
     // subs_[topic] = nullptr;
   }
   // TODO(lucasw) if the sub doesn't exist at all need to create it
@@ -85,7 +86,7 @@ bool ImageTransfer::publish(const std::string& topic, sensor_msgs::msg::Image::S
 
 void ImageTransfer::setRosPub(const std::string& topic, const bool ros_pub)
 {
-  auto pub = core_->get_create_publisher(topic, shared_from_this());
+  auto pub = get_create_internal_publisher(topic);
   if (pub) {
     pub->ros_enable_ = ros_pub;
   }
@@ -109,7 +110,7 @@ void ImageTransfer::update()
         image = to_pub_.front().second;
         to_pub_.pop_front();
       }
-      auto pub = core_->get_create_publisher(topic, shared_from_this());
+      auto pub = get_create_internal_publisher(topic);
       if (pub) {
         pub->publish(image);
       }

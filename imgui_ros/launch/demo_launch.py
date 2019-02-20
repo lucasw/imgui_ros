@@ -38,20 +38,24 @@ def generate_launch_description():
             # arguments=['0.1 0.2 0.3 0.4 .5 .6 map foo'],
             )
 
-    node_name = 'imgui_ros'
-    params = dict(
-        name = 'imgui_ros demo',
-        width = 1440,
-        height = 800,
-        )
-    param_file = prefix + node_name + '.yaml'
-    make_param_file(param_file, node_name, params)
-    imgui_ros = launch_ros.actions.Node(
-            package='imgui_ros', node_executable='imgui_ros_node', output='screen',
-            node_name=node_name,
-            # arguments=[image_manip_dir + "/data/mosaic.jpg"])
-            arguments=['__params:=' + param_file],
-            remappings=[])
+    if False:
+        node_name = 'imgui_ros'
+        params = dict(
+            name = 'imgui_ros demo',
+            width = 1440,
+            height = 800,
+            )
+        param_file = prefix + node_name + '.yaml'
+        make_param_file(param_file, node_name, params)
+        imgui_ros = launch_ros.actions.Node(
+                package='imgui_ros', node_executable='imgui_ros_node', output='screen',
+                node_name=node_name,
+                # arguments=[image_manip_dir + "/data/mosaic.jpg"])
+                arguments=['__params:=' + param_file],
+                remappings=[])
+    else:
+        configure_windows = launch_ros.actions.Node(
+                package='imgui_ros', node_executable='demo_start.py', output='screen')
 
     add_shaders = launch.actions.IncludeLaunchDescription(
             launch.launch_description_sources.PythonLaunchDescriptionSource(

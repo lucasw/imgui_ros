@@ -150,8 +150,10 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
     }
 
     std::vector<std::string> arguments;
+    std::map<std::string, std::string> remappings;
     for (auto& remapping : node_to_add.remappings) {
       arguments.push_back(remapping.from_topic + ":=" + remapping.to_topic);
+      remappings[remapping.from_topic] = remapping.to_topic;
     }
 
     const bool rv = load(
@@ -161,6 +163,7 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
         node_to_add.node_name,
         node_to_add.node_namespace,
         arguments,
+        remappings,
         parameters,
         node_to_add.internal_pub_sub);
     res->success &= rv;
@@ -172,6 +175,7 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
     const std::string& package_name, const std::string& plugin_name,
     const std::string& node_name, const std::string& node_namespace,
     const std::vector<std::string>& arguments,
+    const std::map<std::string, std::string>& remappings,
     const std::vector<rclcpp::Parameter>& parameters,
     const bool internal_pub_sub)
 {
@@ -187,6 +191,7 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
         return false;
       }
       ips_node = loader->createInstance<internal_pub_sub::Node>(full_node_plugin_name);
+      ips_node->remappings_ = remappings;
       node = ips_node;
       // ips_nodes_.push_back(ips_node);
     } else {

@@ -42,11 +42,13 @@
 #include <sensor_msgs/msg/image.hpp>
 
 // TODO(lucasw) get rid of this and restore pub/sub to where needed
-class ImageTransfer : public rclcpp::Node
+class ImageTransfer : public internal_pub_sub::Node
 {
 public:
+  ImageTransfer();
+  virtual void postInit(std::shared_ptr<internal_pub_sub::Core> core);
+
   rclcpp::TimerBase::SharedPtr update_timer_;
-  ImageTransfer(std::shared_ptr<internal_pub_sub::Core> core);
 
   bool getSub(const std::string& topic, sensor_msgs::msg::Image::SharedPtr& image);
 
@@ -62,7 +64,6 @@ public:
   void draw(rclcpp::Time cur);
 
 private:
-  std::shared_ptr<internal_pub_sub::Core> core_;
   bool initted_ = false;
   std::map<std::string, std::mutex> sub_mutexes_;
   void imageCallback(sensor_msgs::msg::Image::SharedPtr msg, const std::string& topic);

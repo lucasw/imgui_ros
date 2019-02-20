@@ -7,7 +7,7 @@ struct Pub
   Pub(const std::string& topic,
       std::shared_ptr<internal_pub_sub::Core> core)  // : core_(core)
   {
-    pub_ = core->get_create_publisher(topic);
+    pub_ = core->get_create_publisher(topic, topic);
   }
 
   ~Pub()
@@ -38,7 +38,7 @@ struct Sub
 {
   Sub(const std::string& topic, std::shared_ptr<internal_pub_sub::Core> core)  // : core_(core)
   {
-    sub_ = core->create_subscription(topic,
+    sub_ = core->create_subscription(topic, topic,
         std::bind(&Sub::callback, this, std::placeholders::_1));
   }
 

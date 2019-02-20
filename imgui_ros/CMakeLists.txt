@@ -191,6 +191,7 @@ install(PROGRAMS
   scripts/add_shaders.py
   scripts/cameras.py
   scripts/demo.py
+  # scripts/demo_start.py
   scripts/cube_camera_fragment.glsl
   scripts/cube_camera_vertex.glsl
   scripts/depth_fragment.glsl

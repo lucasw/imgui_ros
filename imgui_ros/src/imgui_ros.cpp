@@ -70,7 +70,9 @@ using namespace std::chrono_literals;
 namespace imgui_ros {
   ImguiRos::ImguiRos(std::shared_ptr<internal_pub_sub::Core> core = nullptr) : Node("imgui_ros")
   {
-    image_transfer_ = std::make_shared<ImageTransfer>(core);
+    image_transfer_ = std::make_shared<ImageTransfer>();
+    image_transfer_->init("image_transfer");
+    image_transfer_->postInit(core);
     #ifdef RUN_IMAGE_TRANSFER_SEPARATE_THREAD
     ros_io_thread_ = std::thread(
         std::bind(&ImguiRos::runNodeSingleThreaded, this, image_transfer_));

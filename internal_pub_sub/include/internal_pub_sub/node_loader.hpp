@@ -57,6 +57,7 @@ struct NodeLoader : public internal_pub_sub::Node
       const std::string& package_name, const std::string& plugin_name,
       const std::string& node_name, const std::string& node_namespace,
       const std::vector<std::string>& arguments,
+      const std::map<std::string, std::string>& remappings,
       const std::vector<rclcpp::Parameter>& parameters,
       const bool internal_pub_sub);
 

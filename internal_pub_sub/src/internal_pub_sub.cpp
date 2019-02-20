@@ -55,17 +55,21 @@ void setFullTopic(std::shared_ptr<rclcpp::Node> node, std::string& topic)
 namespace internal_pub_sub
 {
 
-Subscriber::Subscriber(const std::string& topic,
+Subscriber::Subscriber(const std::string& topic, const std::string& remapped_topic,
       Function callback,
-      std::shared_ptr<rclcpp::Node> node) :
-      topic_(topic)
+      std::shared_ptr<Node> node) :
+      topic_(topic),
+      remapped_topic_(remapped_topic)
 {
   setFullTopic(node, topic_);
+  setFullTopic(node, remapped_topic_);
 
   bind(callback);
   if (node) {
     std::cout << this << " creating new subscriber with ros sub '" << topic_ << "'\n";
     ros_sub_ = node->create_subscription<sensor_msgs::msg::Image>(topic_, callback_);
+    // TODO(lucasw) test remapped_topic_ == ros_sub_->get_topic_name() ?
+    std::cout << topic_ << " remapped to " << remapped_topic_ << "\n";
   } else {
     std::cout << this << " creating new subscriber without ros sub '" << topic_ << "'\n";
   }
@@ -88,16 +92,28 @@ void Subscriber::callback(sensor_msgs::msg::Image::SharedPtr msg)
   }
 }
 
-Publisher::Publisher(const std::string& topic,
-    std::shared_ptr<rclcpp::Node> node) :
-    topic_(topic)
+Publisher::Publisher(
+    const std::string& topic,
+    const std::string& remapped_topic,
+    std::shared_ptr<Node> node) :
+    topic_(topic),
+    remapped_topic_(remapped_topic)
 {
   setFullTopic(node, topic_);
+  setFullTopic(node, remapped_topic_);
   if (node) {
-    std::cout << this << " creating new publisher with ros pub option '" << topic_ << "'\n";
+    std::cout << this << " creating new publisher with ros pub option '" << remapped_topic_
+        << "' (remapped from '" << topic_ << "')\n";
+    // if (topic != "") {
     ros_pub_ = node->create_publisher<sensor_msgs::msg::Image>(topic);
+    // }  else {
+      // This is the case where the publisher is node doesn't exist yet, and the subscriber is causing it to come into existence
+      // TODO(lucasw) though that doesn't really make sense
+      // ros_pub_ = node->create_publisher<sensor_msgs::msg::Image>(remapped_topic);
+    // }
   } else {
-    std::cout << this << " creating new publisher without ros pub option '" << topic_ << "'\n";
+    std::cout << this << " creating new publisher without ros pub for now '" << remapped_topic_
+        << "' (remapped from '" << topic_ << "')\n";
     ros_enable_ = false;
   }
   clock_ = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
@@ -174,42 +190,52 @@ Core::~Core()
       << " shutting down internal pub sub core" << std::endl;
 }
 
-std::shared_ptr<Subscriber> Core::create_subscription(const std::string& topic,
+std::shared_ptr<Subscriber> Core::create_subscription(
+    const std::string& topic,
+    const std::string& remapped_topic,
     Function callback,
-    std::shared_ptr<rclcpp::Node> node)
+    std::shared_ptr<Node> node)
 {
   // TODO(lucasw) look through topics and see if callback is already there?
   // otherwise the same callback will get called as many times as this has been
   // called with it.
-  auto sub = std::make_shared<Subscriber>(topic, callback, node);
+  auto sub = std::make_shared<Subscriber>(topic, remapped_topic, callback, node);
 
-  auto pub = get_create_publisher(topic, node);
+  auto pub = get_create_publisher(topic, remapped_topic, node, false);
   if (pub) {
-    std::cout << "CORE creating new subscriber on topic :'" << pub->topic_ << "'\n";
+    std::cout << "CORE creating new subscriber on topic :'" << remapped_topic << "' (remapped from '" << topic << "')\n";
     std::lock_guard<std::mutex> lock(pub->sub_mutex_);
     pub->subs_.push_back(sub);
   } else {
-    std::cerr << "couldn't create new subscriber on topic :'" << topic << "'\n";
+    std::cerr << "couldn't create new subscriber on topic :'" << remapped_topic << "' (remapped from '" << topic << "')\n";
   }
 
   return sub;
 }
 
-std::shared_ptr<Publisher> Core::get_create_publisher(std::string topic,
-    std::shared_ptr<rclcpp::Node> node)
+std::shared_ptr<Publisher> Core::get_create_publisher(
+    std::string topic,
+    std::string remapped_topic,
+    std::shared_ptr<Node> node,
+    const bool create_ros_pub)
 {
   std::shared_ptr<Publisher> pub;
 
   setFullTopic(node, topic);
+  setFullTopic(node, remapped_topic);
 
-  if ((publishers_.count(topic) < 1)) { //  || (!(pub = publishers_[topic].lock()))) {
-    std::cout << "CORE creating new publisher on topic :'" << topic << "', ros_enable "
+  if ((publishers_.count(remapped_topic) < 1)) { //  || (!(pub = publishers_[topic].lock()))) {
+    std::cout << "CORE creating new publisher on topic :'" << remapped_topic << "' (remapped from '" << topic << "'), ros_enable "
         << ros_enable_default_ << "\n";
-    pub = std::make_shared<Publisher>(topic, node);
+    pub = std::make_shared<Publisher>(topic, remapped_topic, create_ros_pub ? node : nullptr);
     pub->ros_enable_ = ros_enable_default_;
-    publishers_[topic] = pub;
+    publishers_[remapped_topic] = pub;
   } else {
-    pub = publishers_[topic];
+    pub = publishers_[remapped_topic];
+    // if a subscription created a partial publisher earlier, fill in the ros_pub_ now with the proper node
+    if (create_ros_pub && pub->ros_pub_ == nullptr) {
+      pub->ros_pub_ = node->create_publisher<sensor_msgs::msg::Image>(topic);
+    }
   }
 
   return pub;
@@ -221,7 +247,7 @@ std::shared_ptr<Publisher> Core::get_create_publisher(std::string topic,
 std::shared_ptr<Republisher> Core::create_republisher(
     const std::vector<std::string>& input_topics,
     const std::vector<std::string>& output_topics,
-    std::shared_ptr<rclcpp::Node> node)
+    std::shared_ptr<Node> node)
 {
   auto repub = std::make_shared<Republisher>(
       input_topics, output_topics, 4, shared_from_this(), node);
@@ -276,7 +302,7 @@ Republisher::Republisher(
     const std::vector<std::string>& outputs,
     const size_t skip,
     std::shared_ptr<Core> core,
-    std::shared_ptr<rclcpp::Node> node) :
+    std::shared_ptr<Node> node) :
     input_topics_(inputs),
     // outputs_(outputs),
     skip_max_(skip)
@@ -291,25 +317,27 @@ Republisher::Republisher(
   }
   std::cout << "new republisher " << this << " " << input_topics_.size() << "\n";
   for (size_t i = 0; i < inputs.size(); ++i) {
-    subs_.push_back(core->create_subscription(inputs[i],
+    // TODO(lucasw) ignoring remapping for now
+    subs_.push_back(core->create_subscription(inputs[i], inputs[i],
         std::bind(&Republisher::callback, this, std::placeholders::_1, inputs[i]), node));
-    pubs_[inputs[i]] = core->get_create_publisher(outputs[i], node);
+    pubs_[inputs[i]] = core->get_create_publisher(outputs[i], outputs[i], node);
   }
 }
 
 Republisher::Republisher(const std::string& input, const std::string& output,
     const size_t skip,
     std::shared_ptr<Core> core,
-    std::shared_ptr<rclcpp::Node> node) :
+    std::shared_ptr<Node> node) :
     skip_max_(skip)
 {
   if (!core) {
     return;
   }
   input_topics_.push_back(input);
-  subs_.push_back(core->create_subscription(input,
+  // TODO(lucasw) if the node has a remapping this will break
+  subs_.push_back(core->create_subscription(input, input,
       std::bind(&Republisher::callback, this, std::placeholders::_1, input), node));
-  pubs_[input] = core->get_create_publisher(output, node);
+  pubs_[input] = core->get_create_publisher(output, output, node);
 }
 
 Republisher::~Republisher()
