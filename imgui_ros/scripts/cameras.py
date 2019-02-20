@@ -76,7 +76,7 @@ class Cameras(Node):
 
     def add_gui(self):
         self.tf_cli = self.create_client(AddTf, 'add_tf')
-        while not self.tf_cli.wait_for_service(timeout_sec=1.0):
+        while not self.tf_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('service not available, waiting again...')
 
         # TODO(lucasw) what if this window doesn't exist yet?
@@ -138,7 +138,7 @@ class Cameras(Node):
 
     def add_cameras(self):
         self.camera_cli = self.create_client(AddCamera, 'add_camera')
-        while not self.camera_cli.wait_for_service(timeout_sec=1.0):
+        while not self.camera_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('camera service not available, waiting again...')
 
         if True:
@@ -158,8 +158,9 @@ class Cameras(Node):
 
     def add_cube_cameras(self):
         self.cube_camera_cli = self.create_client(AddCubeCamera, 'add_cube_camera')
-        while not self.cube_camera_cli.wait_for_service(timeout_sec=1.0):
+        while not self.cube_camera_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('cube camera service not available, waiting again...')
+            sleep(1.0)
 
         aspect = 1.0  # 4.0 / 2.0
         height = 768
@@ -180,7 +181,7 @@ class Cameras(Node):
     def make_lenses(self, aspect=1.0):
         req = AddShape.Request()
         self.shape_cli = self.create_client(AddShape, 'add_shape')
-        while not self.shape_cli.wait_for_service(timeout_sec=1.0):
+        while not self.shape_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('shape service not available, waiting again...')
 
         if False:

@@ -68,8 +68,13 @@ using namespace std::chrono_literals;
 #define RUN_IMAGE_TRANSFER_SEPARATE_THREAD
 
 namespace imgui_ros {
-  ImguiRos::ImguiRos(std::shared_ptr<internal_pub_sub::Core> core = nullptr) : Node("imgui_ros")
+  ImguiRos::ImguiRos()
   {
+  }
+
+  void ImguiRos::postInit(std::shared_ptr<internal_pub_sub::Core> core)
+  {
+    internal_pub_sub::Node::postInit(core);
     image_transfer_ = std::make_shared<ImageTransfer>();
     image_transfer_->init("image_transfer");
     image_transfer_->postInit(core);
@@ -862,4 +867,4 @@ namespace imgui_ros {
 
 #include <class_loader/register_macro.hpp>
 
-CLASS_LOADER_REGISTER_CLASS(imgui_ros::ImguiRos, rclcpp::Node)
+CLASS_LOADER_REGISTER_CLASS(imgui_ros::ImguiRos, internal_pub_sub::Node)

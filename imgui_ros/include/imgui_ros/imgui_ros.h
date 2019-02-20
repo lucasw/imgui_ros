@@ -50,10 +50,11 @@
 #include <SDL.h>
 
 namespace imgui_ros {
-class ImguiRos : public rclcpp::Node {
+class ImguiRos : public internal_pub_sub::Node {
 public:
-  ImguiRos(std::shared_ptr<internal_pub_sub::Core> core);
+  ImguiRos();
   ~ImguiRos();
+  void postInit(std::shared_ptr<internal_pub_sub::Core> core);
 
 private:
   void runNodeSingleThreaded(rclcpp::Node::SharedPtr node);

@@ -32,7 +32,7 @@ class Demo(Node):
     def __init__(self):
         super().__init__('usb_cam_viewer')
         self.cli = self.create_client(AddWindow, 'add_window')
-        while not self.cli.wait_for_service(timeout_sec=1.0):
+        while not self.cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('add_window service not available, waiting again...')
 
     # TODO(lucasw) can't this be a callback instead?

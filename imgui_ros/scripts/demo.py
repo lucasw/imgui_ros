@@ -34,10 +34,10 @@ class Demo(Node):
         self.marker_pub = self.create_publisher(Marker, 'marker')
         self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
         self.cli = self.create_client(AddWindow, 'add_window')
-        while not self.cli.wait_for_service(timeout_sec=1.0):
+        while not self.cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('service not available, waiting again...')
         self.tf_cli = self.create_client(AddTf, 'add_tf')
-        while not self.tf_cli.wait_for_service(timeout_sec=1.0):
+        while not self.tf_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('service not available, waiting again...')
 
     # TODO(lucasw) can't this be a callback instead?

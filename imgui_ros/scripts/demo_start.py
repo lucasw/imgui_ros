@@ -36,7 +36,7 @@ from rcl_interfaces.msg import Parameter, ParameterType
 from rclpy.node import Node
 
 
-class DemoAddNode(Node):
+class DemoStart(Node):
     def __init__(self):
         super().__init__('demo_add_node')
         self.node_cli = self.create_client(AddNode, 'add_node')
@@ -61,42 +61,54 @@ class DemoAddNode(Node):
         if True:
             node_settings = NodeSettings()
             node_settings.package_name = 'imgui_ros'
-            node_settings.plugin_name = 'imgui_ros_node'
-            # node_settings.package_name = 'image_manip'
-            # node_settings.plugin_name = 'Color'
-            node_settings.node_name = 'foo'
-            node_settings.node_namespace = 'bar'
+            node_settings.plugin_name = 'ImguiRos'
+            node_settings.node_name = 'imgui_ros'
+            node_settings.node_namespace = ''
             node_settings.internal_pub_sub = True
 
+            # TODO(lucasw) need to be able to specify parameters with fewer lines
             # parameters
             param = Parameter()
-            param.name = "red"
-            param.value.type = ParameterType.PARAMETER_INTEGER
-            param.value.integer_value = 32
+            param.name = 'name'
+            param.value.type = ParameterType.PARAMETER_STRING
+            param.value.string_value = 'imgui_ros demo'
             node_settings.parameters.append(param)
 
             param = Parameter()
-            param.name = "width"
+            param.name = 'width'
             param.value.type = ParameterType.PARAMETER_INTEGER
-            param.value.integer_value = 2048
+            param.value.integer_value = 1440
             node_settings.parameters.append(param)
 
             param = Parameter()
-            param.name = "height"
+            param.name = 'height'
             param.value.type = ParameterType.PARAMETER_INTEGER
-            param.value.integer_value = 1536
+            param.value.integer_value = 800
             node_settings.parameters.append(param)
 
             param = Parameter()
-            param.name = "frame_rate"
+            param.name = 'red'
             param.value.type = ParameterType.PARAMETER_DOUBLE
-            param.value.double_value = 13.0
+            param.value.double_value = 0.5
             node_settings.parameters.append(param)
 
-            remapping = Remapping()
-            remapping.from_topic = "image"
-            remapping.to_topic = "different_image"
-            node_settings.remappings.append(remapping)
+            param = Parameter()
+            param.name = 'green'
+            param.value.type = ParameterType.PARAMETER_DOUBLE
+            param.value.double_value = 0.5
+            node_settings.parameters.append(param)
+
+            param = Parameter()
+            param.name = 'blue'
+            param.value.type = ParameterType.PARAMETER_DOUBLE
+            param.value.double_value = 0.52
+            node_settings.parameters.append(param)
+
+            if False:
+                remapping = Remapping()
+                remapping.from_topic = "image"
+                remapping.to_topic = "different_image"
+                node_settings.remappings.append(remapping)
 
             add_node = AddNode.Request()
             add_node.node_settings.append(node_settings)
@@ -107,7 +119,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     try:
-        demo = DemoAddNode()
+        demo = DemoStart()
         demo.run()
         rclpy.spin(demo)
     finally:

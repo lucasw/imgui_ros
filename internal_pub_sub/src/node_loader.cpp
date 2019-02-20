@@ -136,6 +136,7 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
   for (auto node_to_add : req->node_settings) {
     auto loader = getLoader(node_to_add.package_name, node_to_add.plugin_name);
     if (loader == nullptr) {
+      res->success = false;
       continue;
     }
 
@@ -299,7 +300,8 @@ int main(int argc, char * argv[])
 
   auto node_loader = std::make_shared<internal_pub_sub::NodeLoader>();
   auto core = std::make_shared<internal_pub_sub::Core>();
-  node_loader->init("node_loader", "management");
+  // TODO(lucasw) take __name & __ns parameters from command line
+  node_loader->init("node_loader", "");
   node_loader->postInit(core);
 
   exec.add_node(node_loader);

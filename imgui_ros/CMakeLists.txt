@@ -130,12 +130,13 @@ target_link_libraries(imguiros
   GL
   dl
 )
-
+rclcpp_register_node_plugins(imguiros "imgui_ros::ImguiRos")
 install(TARGETS imguiros
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
+
 
 add_executable(imgui_ros_node src/nodes/imgui_ros_node.cpp)
 target_link_libraries(imgui_ros_node imguiros)
@@ -191,7 +192,7 @@ install(PROGRAMS
   scripts/add_shaders.py
   scripts/cameras.py
   scripts/demo.py
-  # scripts/demo_start.py
+  scripts/demo_start.py
   scripts/cube_camera_fragment.glsl
   scripts/cube_camera_vertex.glsl
   scripts/depth_fragment.glsl

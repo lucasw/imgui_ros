@@ -52,16 +52,18 @@ int main(int argc, char * argv[])
   setvbuf(stdout, NULL, _IONBF, BUFSIZ);
   rclcpp::init(argc, argv);
 
-
-  auto core = std::make_shared<internal_pub_sub::Core>();
+  const bool ros_pub_enable = false;
+  auto core = std::make_shared<internal_pub_sub::Core>(ros_pub_enable);
 
   rclcpp::executors::SingleThreadedExecutor single_executor;
   // imgui_ros has to be single threaded for now to avoid context switches with opengl
-  auto imgui_ros = std::make_shared<imgui_ros::ImguiRos>(core);
+  auto imgui_ros = std::make_shared<imgui_ros::ImguiRos>();
+  imgui_ros->init("imgui_ros");
+  imgui_ros->postInit(core);
   single_executor.add_node(imgui_ros);
 
-  rclcpp::WallRate rate(50);
 #if 0
+  rclcpp::WallRate rate(50);
   // This doesn't work even though the execution time out to be in a different thread than
   // this one- need to spawn to different threads to spin each executor in.
   rclcpp::Clock::SharedPtr clock = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);

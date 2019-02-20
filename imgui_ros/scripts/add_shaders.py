@@ -41,7 +41,7 @@ class AddShadersNode(Node):
         # self.marker_pub = self.create_publisher(Marker, 'marker')
         # self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
         self.shaders_cli = self.create_client(AddShaders, 'add_shaders')
-        while not self.shaders_cli.wait_for_service(timeout_sec=1.0):
+        while not self.shaders_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('add_shaders service not available, waiting again...')
             time.sleep(1.0)
 

@@ -45,8 +45,9 @@ class Demo(Node):
         sleep(1.0)
 
         self.cli = self.create_client(AddShape, 'add_shape')
-        while not self.cli.wait_for_service(timeout_sec=1.0):
+        while not self.cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('shape service not available, waiting again...')
+            sleep(1.0)
 
         self.bridge = cv_bridge.CvBridge()
 
@@ -92,7 +93,7 @@ class Demo(Node):
 
     def add_projectors(self):
         self.projector_cli = self.create_client(AddProjector, 'add_projector')
-        while not self.projector_cli.wait_for_service(timeout_sec=1.0):
+        while not self.projector_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('projector service not available, waiting again...')
 
         req = AddProjector.Request()
@@ -119,7 +120,7 @@ class Demo(Node):
 
     def add_texture(self, name='diffract', pkg_name='image_manip', image_name='diffract1.png'):
         self.texture_cli = self.create_client(AddTexture, 'add_texture')
-        while not self.texture_cli.wait_for_service(timeout_sec=1.0):
+        while not self.texture_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('service not available, waiting again...')
 
         # imread an image

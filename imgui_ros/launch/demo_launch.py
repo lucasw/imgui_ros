@@ -38,6 +38,8 @@ def generate_launch_description():
             # arguments=['0.1 0.2 0.3 0.4 .5 .6 map foo'],
             )
 
+    launches = []
+
     if False:
         node_name = 'imgui_ros'
         params = dict(
@@ -53,44 +55,49 @@ def generate_launch_description():
                 # arguments=[image_manip_dir + "/data/mosaic.jpg"])
                 arguments=['__params:=' + param_file],
                 remappings=[])
+        launches.append(imgui_ros)
     else:
-        configure_windows = launch_ros.actions.Node(
-                package='imgui_ros', node_executable='demo_start.py', output='screen')
+        node = launch_ros.actions.Node(
+                package='internal_pub_sub', node_executable='node_loader', output='screen',
+                node_name='node_loader',
+                )
+        launches.append(node)
 
-    add_shaders = launch.actions.IncludeLaunchDescription(
+        node = launch_ros.actions.Node(
+                package='imgui_ros', node_executable='demo_start.py', output='screen')
+        launches.append(node)
+
+    node = launch.actions.IncludeLaunchDescription(
             launch.launch_description_sources.PythonLaunchDescriptionSource(
              get_package_share_directory('imgui_ros') + '/launch/shaders_launch.py'))
+    launches.append(node)
 
-    configure_windows = launch_ros.actions.Node(
+    node = launch_ros.actions.Node(
             package='imgui_ros', node_executable='demo.py', output='screen')
-    add_shapes = launch_ros.actions.Node(
+    launches.append(node)
+
+    node = launch_ros.actions.Node(
             package='imgui_ros', node_executable='pub_shape.py', output='screen',
             )
-    cameras = launch_ros.actions.Node(
+    launches.append(node)
+
+    node = launch_ros.actions.Node(
             package='imgui_ros', node_executable='cameras.py', output='screen',
             )
+    launches.append(node)
 
+    # TODO(lucasw) move to node loader
     node_name = 'generate_pointcloud2'
     params = dict(
         frame_id = 'bar2',
         )
     param_file = prefix + node_name + '.yaml'
     make_param_file(param_file, node_name, params)
-    generate_pointcloud2 = launch_ros.actions.Node(
+    node = launch_ros.actions.Node(
             package='imgui_ros', node_executable='generate_pointcloud2', output='screen',
             node_name=node_name,
             arguments=['__params:=' + param_file],
             )
+    launches.append(node)
 
-    return launch.LaunchDescription([
-        # thse are both taking 100% cpu
-        # roto_zoom,
-        # static_tf,
-        # image_pub,
-        imgui_ros,
-        configure_windows,
-        add_shapes,
-        cameras,
-        add_shaders,
-        generate_pointcloud2,
-    ])
+    return launch.LaunchDescription(launches)
