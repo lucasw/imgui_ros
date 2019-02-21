@@ -58,6 +58,18 @@ class DemoAddNode(Node):
                 break
 
     def run(self):
+        add_node = AddNode.Request()
+        if False:
+            # rviz2 isn't composable
+            node_settings = NodeSettings()
+            node_settings.package_name = 'rviz'
+            node_settings.plugin_name = 'Rviz2'
+            node_settings.node_name = 'foo'
+            node_settings.node_namespace = 'bar'
+            node_settings.arguments.extend(['-f', 'foo'])
+            node_settings.internal_pub_sub = True
+            add_node.node_settings.append(node_settings)
+
         if True:
             node_settings = NodeSettings()
             node_settings.package_name = 'imgui_ros'
@@ -98,10 +110,9 @@ class DemoAddNode(Node):
             remapping.to_topic = "different_image"
             node_settings.remappings.append(remapping)
 
-            add_node = AddNode.Request()
             add_node.node_settings.append(node_settings)
-            self.future = self.node_cli.call_async(add_node)
-            self.wait_for_response()
+        self.future = self.node_cli.call_async(add_node)
+        self.wait_for_response()
 
 def main(args=None):
     rclpy.init(args=args)

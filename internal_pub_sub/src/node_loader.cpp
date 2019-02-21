@@ -150,7 +150,7 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
       parameters.push_back(parameter);  // rclcpp::Parameter(param.name, rclcpp::ParameterValue(param.value)));
     }
 
-    std::vector<std::string> arguments;
+    std::vector<std::string> arguments = node_to_add.arguments;
     std::map<std::string, std::string> remappings;
     for (auto& remapping : node_to_add.remappings) {
       arguments.push_back(remapping.from_topic + ":=" + remapping.to_topic);
