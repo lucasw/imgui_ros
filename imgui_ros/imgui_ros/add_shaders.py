@@ -64,20 +64,7 @@ class AddShadersNode(Node):
                     return None
                 break
 
-    def run(self):
-        parser = argparse.ArgumentParser(description='add_shaders')
-        parser.add_argument('-n', '--name', dest='name', type=str,
-                help='shader set name', default='default')
-        parser.add_argument('-v', '--vertex', dest='vertex', type=str,
-                help='vertex shader file', default='')
-        parser.add_argument('-f', '--fragment', dest='fragment', type=str,
-                help='vertex shader file', default='')
-        self.args, unknown = parser.parse_known_args(sys.argv)
-        self.get_logger().info("unknown args: {}".format(unknown))
-        self.get_logger().info("args: {}".format(self.args))
-        self.add_shaders(self.args.name, self.args.vertex, self.args.fragment)
-
-    def add_shaders(self, name, vertex_filename, fragment_filename):
+    def run(self, name, vertex_filename, fragment_filename):
         req = AddShaders.Request()
         req.name = name
         req.vertex = ''
@@ -108,13 +95,25 @@ class AddShadersNode(Node):
 def main(args=None):
     rclpy.init(args=args)
 
+    parser = argparse.ArgumentParser(description='add_shaders')
+    parser.add_argument('-n', '--name', dest='name', type=str,
+            help='shader set name', default='default')
+    parser.add_argument('-v', '--vertex', dest='vertex', type=str,
+            help='vertex shader file', default='')
+    parser.add_argument('-f', '--fragment', dest='fragment', type=str,
+            help='vertex shader file', default='')
+    args, unknown = parser.parse_known_args(sys.argv)
+    # self.get_logger().info("unknown args: {}".format(unknown))
+    # self.get_logger().info("args: {}".format(self.args))
+
     try:
         demo = AddShadersNode()
-        demo.run()
-        rclpy.spin(demo)
+        demo.run(args.name, args.vertex, args.fragment)
+        # rclpy.spin(demo)
     finally:
         demo.destroy_node()
-        rclpy.shutdown()
+
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

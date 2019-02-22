@@ -40,7 +40,7 @@ def generate_launch_description():
 
     launches = []
 
-    if False:
+    if True:
         node_name = 'imgui_ros'
         params = dict(
             name = 'imgui_ros demo',
@@ -64,7 +64,7 @@ def generate_launch_description():
         launches.append(node)
 
         node = launch_ros.actions.Node(
-                package='imgui_ros', node_executable='demo_start.py', output='screen')
+                package='imgui_ros', node_executable='demo_imgui_ros.py', output='screen')
         launches.append(node)
 
     node = launch.actions.IncludeLaunchDescription(

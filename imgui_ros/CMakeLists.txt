@@ -188,18 +188,22 @@ install(TARGETS param_to_topic DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+
+ament_python_install_package(imgui_ros)
+
 install(PROGRAMS
-  scripts/add_shaders.py
-  scripts/cameras.py
+  # TODO(lucasw) is this redundant with install package above, or necessary to run this from ros2 run?
+  imgui_ros/add_shaders.py
+  imgui_ros/cameras.py
+  imgui_ros/demo_imgui_ros.py
+  imgui_ros/pub_shape.py
   scripts/demo.py
-  scripts/demo_start.py
   scripts/cube_camera_fragment.glsl
   scripts/cube_camera_vertex.glsl
   scripts/depth_fragment.glsl
   scripts/depth_vertex.glsl
   scripts/fragment.glsl
   scripts/graph.py
-  scripts/pub_shape.py
   scripts/usb_cam_viewer.py
   scripts/vertex.glsl
   DESTINATION lib/${PROJECT_NAME})

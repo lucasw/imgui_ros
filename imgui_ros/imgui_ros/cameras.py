@@ -338,7 +338,6 @@ def main(args=None):
     try:
         demo = Cameras()
         demo.run()
-        rclpy.spin(demo)
     finally:
         demo.destroy_node()
         rclpy.shutdown()

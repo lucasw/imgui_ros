@@ -36,7 +36,7 @@ from visualization_msgs.msg import Marker
 def vector3_len(vec):
     return math.sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z)
 
-class Demo(Node):
+class PubShape(Node):
 
     def __init__(self):
         super().__init__('add_shape')
@@ -450,9 +450,8 @@ def main(args=None):
     rclpy.init(args=args)
 
     try:
-        demo = Demo()
+        demo = PubShape()
         demo.run()
-        rclpy.spin(demo)
     finally:
         demo.destroy_node()
         rclpy.shutdown()

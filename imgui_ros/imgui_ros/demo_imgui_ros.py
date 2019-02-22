@@ -27,16 +27,53 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #POSSIBILITY OF SUCH DAMAGE.
 
+import imgui_ros
 import rclpy
 import time
 
+from ament_index_python.packages import get_package_share_directory
 from internal_pub_sub.msg import NodeSettings, Remapping
 from internal_pub_sub.srv import AddNode
 from rcl_interfaces.msg import Parameter, ParameterType
 from rclpy.node import Node
 
 
-class DemoStart(Node):
+# TODO(lucasw) make an importable script in internal_pub_sub with all of these
+def double_param(name, value=0.0):
+    param = Parameter()
+    param.name = name
+    param.value.type = ParameterType.PARAMETER_DOUBLE
+    param.value.double_value = value
+    return param
+
+def integer_param(name, value=0):
+    param = Parameter()
+    param.name = name
+    param.value.type = ParameterType.PARAMETER_INTEGER
+    param.value.integer_value = value
+    return param
+
+def bool_param(name, value=0):
+    param = Parameter()
+    param.name = name
+    param.value.type = ParameterType.PARAMETER_BOOL
+    param.value.bool_value = value
+    return param
+
+def string_param(name, value=''):
+    param = Parameter()
+    param.name = name
+    param.value.type = ParameterType.PARAMETER_STRING
+    param.value.string_value = value
+    return param
+
+def make_remapping(from_topic, to_topic):
+    remapping = Remapping()
+    remapping.from_topic = "image"
+    remapping.to_topic = "different_image"
+    return remapping
+
+class DemoImguiRos(Node):
     def __init__(self):
         super().__init__('demo_add_node')
         self.node_cli = self.create_client(AddNode, 'add_node')
@@ -58,7 +95,8 @@ class DemoStart(Node):
                 break
 
     def run(self):
-        if True:
+        add_node = AddNode.Request()
+        if False:
             node_settings = NodeSettings()
             node_settings.package_name = 'imgui_ros'
             node_settings.plugin_name = 'ImguiRos'
@@ -68,60 +106,58 @@ class DemoStart(Node):
 
             # TODO(lucasw) need to be able to specify parameters with fewer lines
             # parameters
-            param = Parameter()
-            param.name = 'name'
-            param.value.type = ParameterType.PARAMETER_STRING
-            param.value.string_value = 'imgui_ros demo'
-            node_settings.parameters.append(param)
-
-            param = Parameter()
-            param.name = 'width'
-            param.value.type = ParameterType.PARAMETER_INTEGER
-            param.value.integer_value = 1440
-            node_settings.parameters.append(param)
-
-            param = Parameter()
-            param.name = 'height'
-            param.value.type = ParameterType.PARAMETER_INTEGER
-            param.value.integer_value = 800
-            node_settings.parameters.append(param)
-
-            param = Parameter()
-            param.name = 'red'
-            param.value.type = ParameterType.PARAMETER_DOUBLE
-            param.value.double_value = 0.5
-            node_settings.parameters.append(param)
-
-            param = Parameter()
-            param.name = 'green'
-            param.value.type = ParameterType.PARAMETER_DOUBLE
-            param.value.double_value = 0.5
-            node_settings.parameters.append(param)
-
-            param = Parameter()
-            param.name = 'blue'
-            param.value.type = ParameterType.PARAMETER_DOUBLE
-            param.value.double_value = 0.52
-            node_settings.parameters.append(param)
+            node_settings.parameters.append(string_param('name', 'imgui_ros_demo'))
+            node_settings.parameters.append(integer_param('width', 1440))
+            node_settings.parameters.append(integer_param('height', 800))
+            node_settings.parameters.append(double_param('red', 0.5))
+            node_settings.parameters.append(double_param('green', 0.5))
+            node_settings.parameters.append(double_param('blue', 0.52))
 
             if False:
-                remapping = Remapping()
-                remapping.from_topic = "image"
-                remapping.to_topic = "different_image"
-                node_settings.remappings.append(remapping)
+                node_settings.remappings.append(make_remapping('image', 'different_image'))
 
-            add_node = AddNode.Request()
             add_node.node_settings.append(node_settings)
-            self.future = self.node_cli.call_async(add_node)
-            self.wait_for_response()
+
+        self.future = self.node_cli.call_async(add_node)
+        self.wait_for_response()
+
+        shader_dir = get_package_share_directory('imgui_ros') + '/../../lib/imgui_ros/'
+        print("loading shaders from " + shader_dir)
+
+        try:
+            node = imgui_ros.AddShadersNode()
+            node.run('default',
+                     shader_dir + 'vertex.glsl',
+                     shader_dir + 'fragment.glsl')
+            node.run('depth',
+                     shader_dir + 'depth_vertex.glsl',
+                     shader_dir + 'depth_fragment.glsl')
+            node.run('cube_map',
+                     shader_dir + 'cube_camera_vertex.glsl',
+                     shader_dir + 'cube_camera_fragment.glsl')
+        finally:
+            node.destroy_node()
+
+        try:
+            node = imgui_ros.PubShape()
+            node.run()
+        finally:
+            node.destroy_node()
+
+        try:
+            node = imgui_ros.Cameras()
+            node.run()
+        finally:
+            node.destroy_node()
+
+        # TODO(lucasw) generate_pointcloud2
 
 def main(args=None):
     rclpy.init(args=args)
 
     try:
-        demo = DemoStart()
+        demo = DemoImguiRos()
         demo.run()
-        rclpy.spin(demo)
     finally:
         demo.destroy_node()
         rclpy.shutdown()
