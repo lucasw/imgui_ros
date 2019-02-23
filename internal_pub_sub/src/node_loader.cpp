@@ -136,6 +136,7 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
   for (auto node_to_add : req->node_settings) {
     auto loader = getLoader(node_to_add.package_name, node_to_add.plugin_name);
     if (loader == nullptr) {
+      res->message += ", " + node_to_add.plugin_name + " loader is null";
       res->success = false;
       continue;
     }
@@ -167,6 +168,9 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
         remappings,
         parameters,
         node_to_add.internal_pub_sub);
+    if (!rv) {
+      res->message += ", " + node_to_add.plugin_name + " load failed";
+    }
     res->success &= rv;
   }
   return;
@@ -272,10 +276,12 @@ image_manip::SaveImage;lib/libimagemanip.so
 /home/lucasw/colcon_ws/install/image_manip/lib/libimagemanip.so image_manip::ImageDeque
 /home/lucasw/colcon_ws/install/image_manip/lib/libimagemanip.so image_manip::SaveImage
     */
-    RCLCPP_INFO(get_logger(), "loader %s %s",  library_path.c_str(), class_name.c_str());
+    RCLCPP_INFO(get_logger(), "candidate loader %s %s = %s",
+        library_path.c_str(), class_name.c_str(), full_node_plugin_name.c_str());
     if (class_name != full_node_plugin_name) {
       continue;
     }
+    RCLCPP_INFO(get_logger(), "found matching loader %s %s",  library_path.c_str(), class_name.c_str());
 
     try {
       loader = std::make_shared<class_loader::ClassLoader>(library_path);
@@ -285,6 +291,7 @@ image_manip::SaveImage;lib/libimagemanip.so
       return loader;
     }
   }
+  RCLCPP_ERROR(get_logger(), "Found no matching libraries: %s", full_node_plugin_name.c_str());
   return loader;
 }
 

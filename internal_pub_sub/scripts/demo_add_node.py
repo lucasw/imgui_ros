@@ -27,6 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #POSSIBILITY OF SUCH DAMAGE.
 
+import internal_pub_sub
 import rclpy
 import time
 
@@ -73,7 +74,7 @@ class DemoAddNode(Node):
         if True:
             node_settings = NodeSettings()
             node_settings.package_name = 'imgui_ros'
-            node_settings.plugin_name = 'imgui_ros_node'
+            node_settings.plugin_name = 'ImguiRos'
             # node_settings.package_name = 'image_manip'
             # node_settings.plugin_name = 'Color'
             node_settings.node_name = 'foo'
@@ -81,34 +82,11 @@ class DemoAddNode(Node):
             node_settings.internal_pub_sub = True
 
             # parameters
-            param = Parameter()
-            param.name = "red"
-            param.value.type = ParameterType.PARAMETER_INTEGER
-            param.value.integer_value = 32
-            node_settings.parameters.append(param)
-
-            param = Parameter()
-            param.name = "width"
-            param.value.type = ParameterType.PARAMETER_INTEGER
-            param.value.integer_value = 2048
-            node_settings.parameters.append(param)
-
-            param = Parameter()
-            param.name = "height"
-            param.value.type = ParameterType.PARAMETER_INTEGER
-            param.value.integer_value = 1536
-            node_settings.parameters.append(param)
-
-            param = Parameter()
-            param.name = "frame_rate"
-            param.value.type = ParameterType.PARAMETER_DOUBLE
-            param.value.double_value = 13.0
-            node_settings.parameters.append(param)
-
-            remapping = Remapping()
-            remapping.from_topic = "image"
-            remapping.to_topic = "different_image"
-            node_settings.remappings.append(remapping)
+            node_settings.parameters.append(internal_pub_sub.double_param('red', 0.3))
+            node_settings.parameters.append(internal_pub_sub.integer_param('width', 2048))
+            node_settings.parameters.append(internal_pub_sub.integer_param('height', 1536))
+            node_settings.parameters.append(internal_pub_sub.double_param('frame_rate', 13.0))
+            node_settings.remappings.append(internal_pub_sub.make_remapping('image', 'different_image'))
 
             add_node.node_settings.append(node_settings)
         self.future = self.node_cli.call_async(add_node)

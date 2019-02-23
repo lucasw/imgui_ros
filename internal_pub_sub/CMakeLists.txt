@@ -86,6 +86,8 @@ ament_target_dependencies(demo_internal_pub_sub
 target_link_libraries(demo_internal_pub_sub internalpubsub)
 install(TARGETS demo_internal_pub_sub DESTINATION lib/${PROJECT_NAME})
 
+ament_python_install_package(internal_pub_sub)
+
 install(PROGRAMS
   scripts/demo_add_node.py
   DESTINATION lib/${PROJECT_NAME})

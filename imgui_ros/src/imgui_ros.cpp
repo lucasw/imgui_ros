@@ -102,9 +102,13 @@ namespace imgui_ros {
     #endif
 
     // TODO(lucasw) check if width and height are > minimum value
-    get_parameter_or("name", name_, name_);
-    get_parameter_or("width", width_, width_);
-    get_parameter_or("height", height_, height_);
+    try {
+      get_parameter_or("name", name_, name_);
+      get_parameter_or("width", width_, width_);
+      get_parameter_or("height", height_, height_);
+    } catch (rclcpp::ParameterTypeException& ex) {
+      RCLCPP_ERROR(get_logger(), ex.what());
+    }
 
     // parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(this);
 
@@ -247,11 +251,14 @@ namespace imgui_ros {
 
     windows_[viz3d_name] = viz3d;
 
-    get_parameter_or("red", viz3d->clear_color_.x, viz3d->clear_color_.x);
-    get_parameter_or("green", viz3d->clear_color_.y, viz3d->clear_color_.y);
-    get_parameter_or("blue", viz3d->clear_color_.z, viz3d->clear_color_.z);
-    get_parameter_or("alpha", viz3d->clear_color_.w, viz3d->clear_color_.w);
-
+    try {
+      get_parameter_or("red", viz3d->clear_color_.x, viz3d->clear_color_.x);
+      get_parameter_or("green", viz3d->clear_color_.y, viz3d->clear_color_.y);
+      get_parameter_or("blue", viz3d->clear_color_.z, viz3d->clear_color_.z);
+      get_parameter_or("alpha", viz3d->clear_color_.w, viz3d->clear_color_.w);
+    } catch (rclcpp::ParameterTypeException& ex) {
+      RCLCPP_ERROR(get_logger(), ex.what());
+    }
     init_ = true;  // viz3d->initialized_;
   }
 
