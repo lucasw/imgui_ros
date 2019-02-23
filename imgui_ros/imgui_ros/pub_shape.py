@@ -51,13 +51,6 @@ class PubShape(Node):
 
         self.bridge = cv_bridge.CvBridge()
 
-        parser = argparse.ArgumentParser(description='imgui_ros demo')
-        parser.add_argument('-nt', '--no-textures', dest='no_textures',  # type=bool,
-                help='enable textures', action='store_true')  # , default=True)
-        parser.add_argument('-ns', '--no-shapes', dest='no_shapes',  # type=bool,
-                help='enable shapes', action='store_true')  # , default=True)
-        self.args, unknown = parser.parse_known_args(sys.argv)
-
     # TODO(lucasw) can't this be a callback instead?
     def wait_for_response(self):
         while rclpy.ok():
@@ -72,10 +65,10 @@ class PubShape(Node):
                         'Service call failed %r' % (self.future.exception(),))
                 break
 
-    def run(self):
-        # print(self.args.no_textures)
-        # print(self.args.no_shapes)
-        if not self.args.no_textures:
+    def run(self, no_textures=False, no_shapes=False):
+        # print(no_textures)
+        # print(no_shapes)
+        if not no_textures:
             self.add_texture('default', 'imgui_ros', 'black.png')
             self.add_texture('white', 'imgui_ros', 'white.png')
             self.add_texture('gradient', 'imgui_ros', 'gradient.png')
@@ -84,7 +77,7 @@ class PubShape(Node):
             self.add_texture('chess', 'image_manip', 'chess.png')
             self.add_texture('gradient_radial', 'image_manip', 'gradient_radial.png')
             # self.add_texture('projected_texture', 'image_manip', 'plasma.png')
-        if not self.args.no_shapes:
+        if not no_shapes:
             # TODO(lucasw) there is something wrong with storing new shapes
             # on top of old ones, all the shapes disappear until
             # add_shaders is run again.
@@ -449,8 +442,15 @@ class PubShape(Node):
 def main(args=None):
     rclpy.init(args=args)
 
+    parser = argparse.ArgumentParser(description='imgui_ros demo')
+    parser.add_argument('-nt', '--no-textures', dest='no_textures',  # type=bool,
+            help='enable textures', action='store_true')  # , default=True)
+    parser.add_argument('-ns', '--no-shapes', dest='no_shapes',  # type=bool,
+            help='enable shapes', action='store_true')  # , default=True)
+    args, unknown = parser.parse_known_args(sys.argv)
+
     try:
-        demo = PubShape()
+        demo = PubShape(args.no_textures, args.no_shapes)
         demo.run()
     finally:
         demo.destroy_node()

@@ -76,7 +76,7 @@ namespace imgui_ros {
   {
     internal_pub_sub::Node::postInit(core);
     image_transfer_ = std::make_shared<ImageTransfer>();
-    image_transfer_->init("image_transfer");
+    image_transfer_->init("image_transfer", get_namespace());
     image_transfer_->postInit(core);
     #ifdef RUN_IMAGE_TRANSFER_SEPARATE_THREAD
     ros_io_thread_ = std::thread(
@@ -90,7 +90,16 @@ namespace imgui_ros {
     #else
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>();
     #endif
-    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+    #if 0
+    // this puts tf listening in this same thread, don't want that
+    const bool spin_thread = false;
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_,
+        shared_from_this(), spin_thread);
+    #else
+    auto tf_node = rclcpp::Node::make_shared("transform_listener_impl", get_namespace());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_,
+        tf_node);
+    #endif
 
     // TODO(lucasw) check if width and height are > minimum value
     get_parameter_or("name", name_, name_);

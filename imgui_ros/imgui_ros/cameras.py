@@ -44,16 +44,8 @@ class Cameras(Node):
         super().__init__('add_shape')
         # self.marker_pub = self.create_publisher(Marker, 'marker')
         # self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
-        sleep(1.0)
 
         self.bridge = cv_bridge.CvBridge()
-
-        parser = argparse.ArgumentParser(description='imgui_ros demo')
-        # parser.add_argument('-nt', '--no-textures', dest='no_textures',  # type=bool,
-        #         help='enable textures', action='store_true')  # , default=True)
-        # parser.add_argument('-ns', '--no-shapes', dest='no_shapes',  # type=bool,
-        #         help='enable shapes', action='store_true')  # , default=True)
-        self.args, unknown = parser.parse_known_args(sys.argv)
 
     # TODO(lucasw) can't this be a callback instead?
     def wait_for_response(self):
@@ -189,7 +181,8 @@ class Cameras(Node):
                                        cols=32, rows=32, aspect=aspect)
         else:
             shape = self.make_polar_omnidirectional_lens(name='cube_camera_lens',
-                                       segs_lat=64, segs_long=64, aspect=aspect)
+                                       # segs_lat=64, segs_long=64, aspect=aspect)
+                                       segs_lat=12, segs_long=12, aspect=aspect)
         shape.header.frame_id = 'cube_camera_lens'
         req.shapes.append(shape)
 
@@ -208,7 +201,7 @@ class Cameras(Node):
         shape.shininess_texture = 'default'
         shape.enable = False
 
-        max_j = int(segs_lat * 2.0)  # int(segs_lat * 3 / 2)
+        max_j = int(segs_lat * 2)  # int(segs_lat * 3 / 2)
         max_i = segs_long
         for j in range(max_j):
             fr_j = float(j) / float(segs_lat - 1)
@@ -334,6 +327,13 @@ class Cameras(Node):
 
 def main(args=None):
     rclpy.init(args=args)
+
+    parser = argparse.ArgumentParser(description='imgui_ros demo')
+    # parser.add_argument('-nt', '--no-textures', dest='no_textures',  # type=bool,
+    #         help='enable textures', action='store_true')  # , default=True)
+    # parser.add_argument('-ns', '--no-shapes', dest='no_shapes',  # type=bool,
+    #         help='enable shapes', action='store_true')  # , default=True)
+    args, unknown = parser.parse_known_args(sys.argv)
 
     try:
         demo = Cameras()

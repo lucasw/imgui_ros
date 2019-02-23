@@ -217,13 +217,13 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
     ips_node->postInit(core_);
   }
 
-  RCLCPP_INFO(get_logger(), "created node %s", full_node_plugin_name.c_str());
+  RCLCPP_INFO(get_logger(), "created node %s %s",
+      node_namespace.c_str(), full_node_plugin_name.c_str());
   threads_.push_back(std::thread(std::bind(run_node, node)));
 
   // TODO(lucasw) does this really need to be kept?
   // Yes, it will unload anything loaded with it if destructed.
   loaders_.push_back(loader);
-
   return true;
 }
 

@@ -25,10 +25,12 @@
 # INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#POSSIBILITY OF SUCH DAMAGE.
+# POSSIBILITY OF SUCH DAMAGE.
 
+import argparse
 import imgui_ros
 import rclpy
+import sys
 import time
 
 from ament_index_python.packages import get_package_share_directory
@@ -94,9 +96,9 @@ class DemoImguiRos(Node):
                         'Service call failed %r' % (self.future.exception(),))
                 break
 
-    def run(self):
+    def run(self, load_imgui_node=True):
         add_node = AddNode.Request()
-        if False:
+        if load_imgui_node:
             node_settings = NodeSettings()
             node_settings.package_name = 'imgui_ros'
             node_settings.plugin_name = 'ImguiRos'
@@ -125,6 +127,7 @@ class DemoImguiRos(Node):
         print("loading shaders from " + shader_dir)
 
         try:
+            print("add shaders")
             node = imgui_ros.AddShadersNode()
             node.run('default',
                      shader_dir + 'vertex.glsl',
@@ -139,12 +142,14 @@ class DemoImguiRos(Node):
             node.destroy_node()
 
         try:
+            print("add shapes and textures")
             node = imgui_ros.PubShape()
             node.run()
         finally:
             node.destroy_node()
 
         try:
+            print("add cameras")
             node = imgui_ros.Cameras()
             node.run()
         finally:
@@ -155,12 +160,18 @@ class DemoImguiRos(Node):
 def main(args=None):
     rclpy.init(args=args)
 
+    parser = argparse.ArgumentParser(description='load_sim_line_nodes')
+    parser.add_argument('-n', '--load-imgui-node', dest='load_imgui_node',  # type=bool,
+            help='enable node loading', action='store_true')  # , default=True)
+    args, unknown = parser.parse_known_args(sys.argv)
+
     try:
         demo = DemoImguiRos()
-        demo.run()
+        demo.run(args.load_imgui_node)
     finally:
         demo.destroy_node()
-        rclpy.shutdown()
+
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

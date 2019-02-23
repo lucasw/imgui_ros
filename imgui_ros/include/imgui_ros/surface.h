@@ -113,6 +113,7 @@ struct Shape {
   // ROS
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
 
+  // GL_LINE_LOOP doesn't handle points meant for GL_TRIANGLES well.
   static constexpr std::array<GLuint, 3> draw_modes_ = {GL_TRIANGLES, GL_LINE_LOOP, GL_POINTS};
   int draw_mode_ = 0;
 
