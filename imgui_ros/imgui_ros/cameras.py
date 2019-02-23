@@ -61,13 +61,13 @@ class Cameras(Node):
                         'Service call failed %r' % (self.future.exception(),))
                 break
 
-    def run(self):
-        self.add_cameras()
-        self.add_cube_cameras()
-        self.add_gui()
+    def run(self, namespace=''):
+        self.add_cameras(namespace)
+        self.add_cube_cameras(namespace)
+        self.add_gui(namespace)
 
-    def add_gui(self):
-        self.tf_cli = self.create_client(AddTf, 'add_tf')
+    def add_gui(self, namespace):
+        self.tf_cli = self.create_client(AddTf, namespace + '/add_tf')
         while not self.tf_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('service not available, waiting again...')
 
@@ -128,8 +128,8 @@ class Cameras(Node):
         self.future = self.tf_cli.call_async(tf_req)
         self.wait_for_response()
 
-    def add_cameras(self):
-        self.camera_cli = self.create_client(AddCamera, 'add_camera')
+    def add_cameras(self, namespace):
+        self.camera_cli = self.create_client(AddCamera, namespace + '/add_camera')
         while not self.camera_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('camera service not available, waiting again...')
 
@@ -148,8 +148,8 @@ class Cameras(Node):
             self.future = self.camera_cli.call_async(req)
             self.wait_for_response()
 
-    def add_cube_cameras(self):
-        self.cube_camera_cli = self.create_client(AddCubeCamera, 'add_cube_camera')
+    def add_cube_cameras(self, namespace):
+        self.cube_camera_cli = self.create_client(AddCubeCamera, namespace + '/add_cube_camera')
         while not self.cube_camera_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info('cube camera service not available, waiting again...')
             sleep(1.0)

@@ -40,16 +40,6 @@ class PubShape(Node):
 
     def __init__(self):
         super().__init__('add_shape')
-        # self.marker_pub = self.create_publisher(Marker, 'marker')
-        # self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
-        sleep(1.0)
-
-        self.cli = self.create_client(AddShape, 'add_shape')
-        while not self.cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info('shape service not available, waiting again...')
-            sleep(1.0)
-
-        self.bridge = cv_bridge.CvBridge()
 
     # TODO(lucasw) can't this be a callback instead?
     def wait_for_response(self):
@@ -65,7 +55,17 @@ class PubShape(Node):
                         'Service call failed %r' % (self.future.exception(),))
                 break
 
-    def run(self, no_textures=False, no_shapes=False):
+    def run(self, namespace='', no_textures=False, no_shapes=False):
+        # self.marker_pub = self.create_publisher(Marker, 'marker')
+        # self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
+
+        self.cli = self.create_client(AddShape, namespace + '/add_shape')
+        while not self.cli.wait_for_service(timeout_sec=3.0):
+            self.get_logger().info('shape service not available, waiting again...')
+            sleep(1.0)
+
+        self.bridge = cv_bridge.CvBridge()
+
         # print(no_textures)
         # print(no_shapes)
         if not no_textures:
@@ -450,8 +450,8 @@ def main(args=None):
     args, unknown = parser.parse_known_args(sys.argv)
 
     try:
-        demo = PubShape(args.no_textures, args.no_shapes)
-        demo.run()
+        demo = PubShape()
+        demo.run('', args.no_textures, args.no_shapes)
     finally:
         demo.destroy_node()
         rclpy.shutdown()

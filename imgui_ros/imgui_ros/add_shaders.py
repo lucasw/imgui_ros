@@ -38,15 +38,6 @@ class AddShadersNode(Node):
 
     def __init__(self):
         super().__init__('add_shaders')
-        # self.marker_pub = self.create_publisher(Marker, 'marker')
-        # self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
-        self.shaders_cli = self.create_client(AddShaders, 'add_shaders')
-        while not self.shaders_cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info('add_shaders service not available, waiting again...')
-            time.sleep(1.0)
-
-        self.bridge = cv_bridge.CvBridge()
-        sleep(1.0)
 
     # TODO(lucasw) can't this be a callback instead?
     def wait_for_response(self):
@@ -64,7 +55,16 @@ class AddShadersNode(Node):
                     return None
                 break
 
-    def run(self, name, vertex_filename, fragment_filename):
+    def run(self, namespace, name, vertex_filename, fragment_filename):
+        # self.marker_pub = self.create_publisher(Marker, 'marker')
+        # self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
+        self.shaders_cli = self.create_client(AddShaders, namespace + '/add_shaders')
+        while not self.shaders_cli.wait_for_service(timeout_sec=3.0):
+            self.get_logger().info(namespace + '/add_shaders service not available, waiting again...')
+            time.sleep(1.0)
+
+        self.bridge = cv_bridge.CvBridge()
+
         req = AddShaders.Request()
         req.name = name
         req.vertex = ''
@@ -92,6 +92,23 @@ class AddShadersNode(Node):
             return rv.success
         return False
 
+def add_default_shaders(namespace=''):
+    shader_dir = get_package_share_directory('imgui_ros') + '/../../lib/imgui_ros/'
+    print("loading shaders " + namespace)
+    try:
+        node = AddShadersNode()
+        node.run(namespace, 'default',
+                 shader_dir + 'vertex.glsl',
+                 shader_dir + 'fragment.glsl')
+        node.run(namespace, 'depth',
+                 shader_dir + 'depth_vertex.glsl',
+                 shader_dir + 'depth_fragment.glsl')
+        node.run(namespace, 'cube_map',
+                 shader_dir + 'cube_camera_vertex.glsl',
+                 shader_dir + 'cube_camera_fragment.glsl')
+    finally:
+        node.destroy_node()
+
 def main(args=None):
     rclpy.init(args=args)
 
@@ -108,7 +125,7 @@ def main(args=None):
 
     try:
         demo = AddShadersNode()
-        demo.run(args.name, args.vertex, args.fragment)
+        demo.run('', args.name, args.vertex, args.fragment)
         # rclpy.spin(demo)
     finally:
         demo.destroy_node()

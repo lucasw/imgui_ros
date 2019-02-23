@@ -29,6 +29,7 @@
 
 import argparse
 import imgui_ros
+import internal_pub_sub
 import rclpy
 import sys
 import time
@@ -39,41 +40,6 @@ from internal_pub_sub.srv import AddNode
 from rcl_interfaces.msg import Parameter, ParameterType
 from rclpy.node import Node
 
-
-# TODO(lucasw) make an importable script in internal_pub_sub with all of these
-def double_param(name, value=0.0):
-    param = Parameter()
-    param.name = name
-    param.value.type = ParameterType.PARAMETER_DOUBLE
-    param.value.double_value = value
-    return param
-
-def integer_param(name, value=0):
-    param = Parameter()
-    param.name = name
-    param.value.type = ParameterType.PARAMETER_INTEGER
-    param.value.integer_value = value
-    return param
-
-def bool_param(name, value=0):
-    param = Parameter()
-    param.name = name
-    param.value.type = ParameterType.PARAMETER_BOOL
-    param.value.bool_value = value
-    return param
-
-def string_param(name, value=''):
-    param = Parameter()
-    param.name = name
-    param.value.type = ParameterType.PARAMETER_STRING
-    param.value.string_value = value
-    return param
-
-def make_remapping(from_topic, to_topic):
-    remapping = Remapping()
-    remapping.from_topic = "image"
-    remapping.to_topic = "different_image"
-    return remapping
 
 class DemoImguiRos(Node):
     def __init__(self):
@@ -96,62 +62,53 @@ class DemoImguiRos(Node):
                         'Service call failed %r' % (self.future.exception(),))
                 break
 
-    def run(self, load_imgui_node=True):
+    def run(self, namespace='', load_imgui_node=True):
         add_node = AddNode.Request()
         if load_imgui_node:
             node_settings = NodeSettings()
             node_settings.package_name = 'imgui_ros'
             node_settings.plugin_name = 'ImguiRos'
             node_settings.node_name = 'imgui_ros'
-            node_settings.node_namespace = ''
+            node_settings.node_namespace = namespace
             node_settings.internal_pub_sub = True
 
             # TODO(lucasw) need to be able to specify parameters with fewer lines
             # parameters
-            node_settings.parameters.append(string_param('name', 'imgui_ros_demo'))
-            node_settings.parameters.append(integer_param('width', 1440))
-            node_settings.parameters.append(integer_param('height', 800))
-            node_settings.parameters.append(double_param('red', 0.5))
-            node_settings.parameters.append(double_param('green', 0.5))
-            node_settings.parameters.append(double_param('blue', 0.52))
+            node_settings.parameters.append(internal_pub_sub.string_param('name', 'imgui_ros_demo'))
+            node_settings.parameters.append(internal_pub_sub.integer_param('width', 1440))
+            node_settings.parameters.append(internal_pub_sub.integer_param('height', 800))
+            node_settings.parameters.append(internal_pub_sub.double_param('red', 0.5))
+            node_settings.parameters.append(internal_pub_sub.double_param('green', 0.5))
+            node_settings.parameters.append(internal_pub_sub.double_param('blue', 0.52))
 
             if False:
-                node_settings.remappings.append(make_remapping('image', 'different_image'))
+                node_settings.remappings.append(internal_pub_sub.make_remapping('image', 'different_image'))
 
             add_node.node_settings.append(node_settings)
 
         self.future = self.node_cli.call_async(add_node)
         self.wait_for_response()
 
-        shader_dir = get_package_share_directory('imgui_ros') + '/../../lib/imgui_ros/'
-        print("loading shaders from " + shader_dir)
-
-        try:
-            print("add shaders")
-            node = imgui_ros.AddShadersNode()
-            node.run('default',
-                     shader_dir + 'vertex.glsl',
-                     shader_dir + 'fragment.glsl')
-            node.run('depth',
-                     shader_dir + 'depth_vertex.glsl',
-                     shader_dir + 'depth_fragment.glsl')
-            node.run('cube_map',
-                     shader_dir + 'cube_camera_vertex.glsl',
-                     shader_dir + 'cube_camera_fragment.glsl')
-        finally:
-            node.destroy_node()
+        imgui_ros.add_default_shaders(namespace)
 
         try:
             print("add shapes and textures")
             node = imgui_ros.PubShape()
-            node.run()
+            node.run(namespace)
         finally:
             node.destroy_node()
 
         try:
             print("add cameras")
             node = imgui_ros.Cameras()
-            node.run()
+            node.run(namespace)
+        finally:
+            node.destroy_node()
+
+        try:
+            print("add gui controls")
+            node = imgui_ros.DemoGui()
+            node.run(namespace)
         finally:
             node.destroy_node()
 
@@ -167,7 +124,7 @@ def main(args=None):
 
     try:
         demo = DemoImguiRos()
-        demo.run(args.load_imgui_node)
+        demo.run('', args.load_imgui_node)
     finally:
         demo.destroy_node()
 

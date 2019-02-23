@@ -196,8 +196,8 @@ install(PROGRAMS
   imgui_ros/add_shaders.py
   imgui_ros/cameras.py
   imgui_ros/demo_imgui_ros.py
+  imgui_ros/demo_gui.py
   imgui_ros/pub_shape.py
-  scripts/demo.py
   scripts/cube_camera_fragment.glsl
   scripts/cube_camera_vertex.glsl
   scripts/depth_fragment.glsl

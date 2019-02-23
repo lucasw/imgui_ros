@@ -27,18 +27,10 @@ from transforms3d import _gohlketransforms as tg
 from visualization_msgs.msg import Marker
 
 
-class Demo(Node):
+class DemoGui(Node):
 
     def __init__(self):
         super().__init__('demo')
-        self.marker_pub = self.create_publisher(Marker, 'marker')
-        self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
-        self.cli = self.create_client(AddWindow, 'add_window')
-        while not self.cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info('service not available, waiting again...')
-        self.tf_cli = self.create_client(AddTf, 'add_tf')
-        while not self.tf_cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info('service not available, waiting again...')
 
     # TODO(lucasw) can't this be a callback instead?
     def wait_for_response(self):
@@ -54,7 +46,16 @@ class Demo(Node):
                         'Service call failed %r' % (self.future.exception(),))
                 break
 
-    def run(self):
+    def run(self, namespace):
+        self.marker_pub = self.create_publisher(Marker, namespace + '/marker')
+        self.shape_pub = self.create_publisher(TexturedShape, namespace + '/shapes')
+        self.cli = self.create_client(AddWindow, namespace + '/add_window')
+        while not self.cli.wait_for_service(timeout_sec=3.0):
+            self.get_logger().info(namespace + ' service not available, waiting again...')
+        self.tf_cli = self.create_client(AddTf, namespace + '/add_tf')
+        while not self.tf_cli.wait_for_service(timeout_sec=3.0):
+            self.get_logger().info(namespace + ' service not available, waiting again...')
+
         self.add_images()
         self.add_roto_controls()
         self.add_misc()
@@ -498,13 +499,13 @@ def main(args=None):
     rclpy.init(args=args)
 
     try:
-        demo = Demo()
+        demo = DemoGui()
         demo.run()
-        rclpy.spin(demo)
+        # don't need to spin if not publishing tf
+        # rclpy.spin(demo)
     finally:
         demo.destroy_node()
         rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()
