@@ -131,6 +131,7 @@ public:
   // TODO(lucasw) maybe all future publishers also need to be able to be enabled also?
   void rosEnableAllPublishers(const bool enable);
 
+  // TODO(lucasw) it's very easy to forget to have this called
   void clean();
 
   // TODO(lucasw)

@@ -65,7 +65,8 @@ using namespace std::chrono_literals;
 // using std::placeholders::_1;
 // using std::placeholders::_2;
 
-#define RUN_IMAGE_TRANSFER_SEPARATE_THREAD
+// TODO(lucasw) this may not shut down properly
+// #define RUN_IMAGE_TRANSFER_SEPARATE_THREAD
 
 namespace imgui_ros {
   ImguiRos::ImguiRos()
@@ -124,8 +125,15 @@ namespace imgui_ros {
   }
 
   ImguiRos::~ImguiRos() {
+    RCLCPP_INFO(get_logger(), "shutting down imgui_ros");
+    #ifdef RUN_IMAGE_TRANSFER_SEPARATE_THREAD
     ros_io_thread_.join();
-    // Cleanup
+    #endif
+    image_transfer_ = nullptr;
+    viz3d = nullptr;
+    windows_.clear();
+    // this locks up
+    // tfl_ = nullptr;
     imgui_impl_opengl3_->Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
@@ -133,6 +141,7 @@ namespace imgui_ros {
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
+    RCLCPP_INFO(get_logger(), "finished shutting down imgui_ros");
   }
 
   void ImguiRos::glInit() {
@@ -746,6 +755,7 @@ namespace imgui_ros {
     {
       // TODO(lucasw) make image_transfer into a widget?
       #ifndef RUN_IMAGE_TRANSFER_SEPARATE_THREAD
+      rclcpp::spin_some(image_transfer_);
       image_transfer_->update();
       #endif
 

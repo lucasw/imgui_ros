@@ -44,11 +44,17 @@ ImageTransfer::ImageTransfer()
 
 }
 
+ImageTransfer::~ImageTransfer()
+{
+  RCLCPP_INFO(get_logger(), "shutting down image transfer");
+}
+
 void ImageTransfer::postInit(std::shared_ptr<internal_pub_sub::Core> core)
 {
   internal_pub_sub::Node::postInit(core);
   update_timer_ = this->create_wall_timer(33ms,
       std::bind(&ImageTransfer::update, this));
+  RCLCPP_INFO(get_logger(), "started image transfer");
 }
 
 bool ImageTransfer::getSub(const std::string& topic, sensor_msgs::msg::Image::SharedPtr& image)

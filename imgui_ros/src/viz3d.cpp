@@ -338,6 +338,8 @@ Viz3D::Viz3D(const std::string name,
 
 Viz3D::~Viz3D()
 {
+  std::cout << "shutting down viz3d\n";
+  image_transfer_ = nullptr;
 }
 
 void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> req,

@@ -59,7 +59,6 @@ class DemoGui(Node):
         self.add_images()
         self.add_roto_controls()
         self.add_misc()
-        # this takes up around 15% cpu - maybe publishing tfs too much
         self.add_viz()
         self.add_markers(namespace)
         # self.add_shapes(namespace)

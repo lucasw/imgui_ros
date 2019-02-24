@@ -39,6 +39,76 @@
 namespace internal_pub_sub
 {
 
+void run_node(std::shared_ptr<rclcpp::Node> node);
+
+struct NodeInfo
+{
+  // NodeInfo()
+  // {
+  // }
+
+  NodeInfo(const std::string& node_namespace,
+      const std::string& node_name,
+      const std::string& package_name,
+      const std::string& plugin_name,
+      std::shared_ptr<rclcpp::Node> node,
+      std::shared_ptr<internal_pub_sub::Node> ips_node,
+      std::shared_ptr<class_loader::ClassLoader> loader
+      ) :
+      node_namespace_(node_namespace),
+      node_name_(node_name),
+      package_name_(package_name),
+      plugin_name_(plugin_name),
+      node_(node),
+      ips_node_(ips_node),
+      loader_(loader)
+  {
+    std::cout << "creating node " << node_namespace_ << " " << node_name_ << " "
+        << package_name_ << " " << plugin_name_ << "\n";
+
+    executor_.add_node(node);
+    // TODO(lucasw) want multi threaded option
+    // TODO(lucasw) maybe want start stop controls instead of just run
+    // at construction and stop and destruction
+    thread_ = std::thread(std::bind(&NodeInfo::run, this));
+  }
+
+  void run()
+  {
+    executor_.spin();
+  }
+
+  ~NodeInfo()
+  {
+    std::cout << "unloading node " << node_namespace_ << " " << node_name_ << " "
+        << package_name_ << " " << plugin_name_ << "\n";
+    executor_.cancel();
+    thread_.join();
+    node_ = nullptr;
+    ips_node_ = nullptr;
+    // need to unload this last, otherwise get error message
+    loader_ = nullptr;
+  }
+
+  std::string node_namespace_;
+  std::string node_name_;
+  std::string package_name_;
+  std::string plugin_name_;
+
+  std::shared_ptr<rclcpp::Node> node_;
+  // TODO(lucasw) or shove these into nodes above?
+  std::shared_ptr<internal_pub_sub::Node> ips_node_;
+
+  std::thread thread_;
+  // if the loader is destructed then the node/s it loaded go away with it
+  // TODO(lucasw) should there be a map of package_name loaders?
+  // and not keep this here?
+  std::shared_ptr<class_loader::ClassLoader> loader_;
+
+  // rclcpp::executors::MultiThreadedExecutor executor_;
+  rclcpp::executors::SingleThreadedExecutor executor_;
+};
+
 struct NodeLoader : public internal_pub_sub::Node
 {
   NodeLoader();
@@ -61,13 +131,12 @@ struct NodeLoader : public internal_pub_sub::Node
       const std::vector<rclcpp::Parameter>& parameters,
       const bool internal_pub_sub);
 
-  // TODO(lucasw) make  std::map of namespace and node_name keys to hold a struct
-  // of the thread, loader, node
-  std::vector<std::thread> threads_;
-  std::vector<std::shared_ptr<class_loader::ClassLoader> > loaders_;
-  std::vector<std::shared_ptr<rclcpp::Node> > nodes_;
-  // TODO(lucasw) or shove these into nodes above?
-  std::vector<std::shared_ptr<internal_pub_sub::Node> > ips_nodes_;
+  // namespace and node name as keys, any identically named node will
+  // unload the older node.
+  std::map<std::string, std::map<std::string, std::shared_ptr<NodeInfo> > > node_infos_;
+
+  rclcpp::TimerBase::SharedPtr timer_;
+  void update();
 };
 
 }  // namespace internal_pub_sub

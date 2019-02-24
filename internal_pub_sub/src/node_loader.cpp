@@ -78,16 +78,6 @@ std::vector<std::string> split(
   return result;
 }
 
-void run_node(std::shared_ptr<rclcpp::Node> node)
-{
-  // rclcpp::executors::MultiThreadedExecutor executor;
-  rclcpp::executors::SingleThreadedExecutor executor;
-  executor.add_node(node);
-  // TODO(lucasw) how to interrupt this spin and kill this node?
-  // std::future?  Maybe will need a spin and sleep_for loop
-  executor.spin();
-}
-
 namespace internal_pub_sub
 {
 
@@ -109,9 +99,6 @@ NodeLoader::NodeLoader()
 
 NodeLoader::~NodeLoader()
 {
-  for (size_t i = 0; i < threads_.size(); ++i) {
-    threads_[i].join();
-  }
 }
 
 void NodeLoader::postInit(std::shared_ptr<Core> core)
@@ -119,6 +106,10 @@ void NodeLoader::postInit(std::shared_ptr<Core> core)
   Node::postInit(core);
   add_node_ = create_service<srv::AddNode>("add_node",
       std::bind(&NodeLoader::addNode, this, std::placeholders::_1, std::placeholders::_2));
+
+  timer_ = create_wall_timer(std::chrono::milliseconds(1000),
+      std::bind(&NodeLoader::update, this));
+
   RCLCPP_INFO(get_logger(), "ready to load nodes");
 }
 
@@ -134,6 +125,17 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
   res->message = "attempting to load nodes " + std::to_string(req->node_settings.size());
 
   for (auto node_to_add : req->node_settings) {
+    // unload possibly existing node before loading a new one
+    node_infos_[node_to_add.node_namespace][node_to_add.node_name] = nullptr;
+    RCLCPP_INFO(get_logger(), "unloaded node");
+    core_->clean();
+    RCLCPP_INFO(get_logger(), "cleaned core");
+    if (node_to_add.remove) {
+      // TODO(lucasw) message differently if it didn't already exist?
+      res->message += ", removed " + node_to_add.node_namespace + " " + node_to_add.node_name;
+      continue;
+    }
+
     auto loader = getLoader(node_to_add.package_name, node_to_add.plugin_name);
     if (loader == nullptr) {
       res->message += ", " + node_to_add.plugin_name + " loader is null";
@@ -184,6 +186,7 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
     const std::vector<rclcpp::Parameter>& parameters,
     const bool internal_pub_sub)
 {
+  // TODO(lucasw) could move this into constructor for NodeInfo
   const std::string full_node_plugin_name = package_name + "::" + plugin_name;
 
   std::shared_ptr<rclcpp::Node> node;
@@ -198,10 +201,8 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
       ips_node = loader->createInstance<internal_pub_sub::Node>(full_node_plugin_name);
       ips_node->remappings_ = remappings;
       node = ips_node;
-      // ips_nodes_.push_back(ips_node);
     } else {
       node = loader->createInstance<rclcpp::Node>(full_node_plugin_name);
-      // nodes_.push_back(node);
     }
   } catch (class_loader::CreateClassException & ex) {
     RCLCPP_ERROR(get_logger(), "Failed to load node: %s", ex.what());
@@ -221,13 +222,11 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
     ips_node->postInit(core_);
   }
 
-  RCLCPP_INFO(get_logger(), "created node %s %s",
-      node_namespace.c_str(), full_node_plugin_name.c_str());
-  threads_.push_back(std::thread(std::bind(run_node, node)));
-
-  // TODO(lucasw) does this really need to be kept?
-  // Yes, it will unload anything loaded with it if destructed.
-  loaders_.push_back(loader);
+  node_infos_[node_namespace][node_name] = std::make_shared<NodeInfo>(
+      node_namespace, node_name, package_name, plugin_name,
+      node,
+      ips_node,
+      loader);
   return true;
 }
 
@@ -293,6 +292,12 @@ image_manip::SaveImage;lib/libimagemanip.so
   }
   RCLCPP_ERROR(get_logger(), "Found no matching libraries: %s", full_node_plugin_name.c_str());
   return loader;
+}
+
+void NodeLoader::update()
+{
+  // it's ugly to have to call this here
+  // core_->clean();
 }
 
 }  // namespace internal_pub_sub

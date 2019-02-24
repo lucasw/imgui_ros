@@ -59,36 +59,80 @@ class DemoAddNode(Node):
                 break
 
     def run(self):
-        add_node = AddNode.Request()
         if False:
+            add_node = AddNode.Request()
             # rviz2 isn't composable
             node_settings = NodeSettings()
             node_settings.package_name = 'rviz'
             node_settings.plugin_name = 'Rviz2'
-            node_settings.node_name = 'foo'
-            node_settings.node_namespace = 'bar'
+            node_settings.node_namespace = 'foo'
+            node_settings.node_name = 'bar'
             node_settings.arguments.extend(['-f', 'foo'])
             node_settings.internal_pub_sub = True
             add_node.node_settings.append(node_settings)
 
-        if True:
-            node_settings = NodeSettings()
-            node_settings.package_name = 'imgui_ros'
-            node_settings.plugin_name = 'ImguiRos'
-            # node_settings.package_name = 'image_manip'
-            # node_settings.plugin_name = 'Color'
-            node_settings.node_name = 'foo'
-            node_settings.node_namespace = 'bar'
-            node_settings.internal_pub_sub = True
+        # time.sleep(2.0)
+        # demonstrate replacing loading nodes with different node
+        # self.add_color_node('foo', 'bar')
 
-            # parameters
-            node_settings.parameters.append(internal_pub_sub.double_param('red', 0.3))
-            node_settings.parameters.append(internal_pub_sub.integer_param('width', 2048))
-            node_settings.parameters.append(internal_pub_sub.integer_param('height', 1536))
-            node_settings.parameters.append(internal_pub_sub.double_param('frame_rate', 13.0))
-            node_settings.remappings.append(internal_pub_sub.make_remapping('image', 'different_image'))
+        self.add_imgui_node('foo', 'bar')
 
-            add_node.node_settings.append(node_settings)
+        time.sleep(2.0)
+        self.unload_node('foo', 'bar')
+
+    def unload_node(self, node_namespace, node_name):
+        # demonstrate replacing loading nodes with different node
+        add_node = AddNode.Request()
+
+        node_settings = NodeSettings()
+        node_settings.node_namespace = node_namespace
+        node_settings.node_name = node_name
+        node_settings.remove= True
+        add_node.node_settings.append(node_settings)
+
+        self.future = self.node_cli.call_async(add_node)
+        self.wait_for_response()
+
+    def add_imgui_node(self, node_namespace, node_name):
+        add_node = AddNode.Request()
+
+        node_settings = NodeSettings()
+        node_settings.package_name = 'imgui_ros'
+        node_settings.plugin_name = 'ImguiRos'
+        # node_settings.package_name = 'image_manip'
+        # node_settings.plugin_name = 'Color'
+        node_settings.node_namespace = node_namespace
+        node_settings.node_name = node_name
+        node_settings.internal_pub_sub = True
+
+        node_settings.parameters.append(internal_pub_sub.string_param('name', 'imgui'))
+        node_settings.parameters.append(internal_pub_sub.double_param('red', 0.3))
+        node_settings.parameters.append(internal_pub_sub.integer_param('width', 1800))
+        node_settings.parameters.append(internal_pub_sub.integer_param('height', 800))
+
+        add_node.node_settings.append(node_settings)
+
+        self.future = self.node_cli.call_async(add_node)
+        self.wait_for_response()
+
+    def add_color_node(self, node_namespace, node_name):
+        add_node = AddNode.Request()
+
+        node_settings = NodeSettings()
+        node_settings.package_name = 'image_manip'
+        node_settings.plugin_name = 'Color'
+        node_settings.node_namespace = node_namespace
+        node_settings.node_name = node_name
+        node_settings.internal_pub_sub = True
+
+        node_settings.parameters.append(internal_pub_sub.integer_param('red', 250))
+        node_settings.parameters.append(internal_pub_sub.integer_param('width', 768))
+        node_settings.parameters.append(internal_pub_sub.integer_param('height', 758))
+        node_settings.parameters.append(internal_pub_sub.double_param('frame_rate', 13.0))
+        node_settings.remappings.append(internal_pub_sub.make_remapping('image', 'different_image'))
+
+        add_node.node_settings.append(node_settings)
+
         self.future = self.node_cli.call_async(add_node)
         self.wait_for_response()
 
@@ -98,7 +142,6 @@ def main(args=None):
     try:
         demo = DemoAddNode()
         demo.run()
-        rclpy.spin(demo)
     finally:
         demo.destroy_node()
         rclpy.shutdown()
