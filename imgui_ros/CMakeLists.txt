@@ -89,6 +89,8 @@ add_library(imguiros SHARED
   src/shaders.cpp
   src/sub.cpp
   src/surface.cpp
+  # TODO(lucasw) maybe there should be a separate test library?
+  src/test/generate_pointcloud2.cpp
   src/tf.cpp
   src/viz2d.cpp
   src/imgui_impl_opengl3.cpp
@@ -131,12 +133,12 @@ target_link_libraries(imguiros
   dl
 )
 rclcpp_register_node_plugins(imguiros "imgui_ros::ImguiRos")
+rclcpp_register_node_plugins(imguiros "imgui_ros::GeneratePointCloud2")
 install(TARGETS imguiros
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
-
 
 add_executable(imgui_ros_node src/nodes/imgui_ros_node.cpp)
 target_link_libraries(imgui_ros_node imguiros)
@@ -157,24 +159,6 @@ if (usb_cam_FOUND_AMENT_PACKAGE)
   ament_target_dependencies(usb_cam_viewer rclcpp imguiros usb_cam)
   install(TARGETS usb_cam_viewer DESTINATION lib/${PROJECT_NAME})
 endif()
-
-add_executable(generate_pointcloud2 src/test/generate_pointcloud2.cpp)
-ament_target_dependencies(generate_pointcloud2
-  # "example_interfaces"
-  "geometry_msgs"
-  "pcl_conversions"
-  "rcl_interfaces"
-  "rclcpp"
-  "rcutils"
-  "sensor_msgs"
-  "std_msgs"
-  "tf2_geometry_msgs"
-)
-target_link_libraries(generate_pointcloud2
-  ${Boost_SYSTEM_LIBRARY}  # pcl_conversions requires this
-  ${PCL_LIBRARIES}
-)
-install(TARGETS generate_pointcloud2 DESTINATION lib/${PROJECT_NAME})
 
 add_executable(param_to_topic src/param_to_topic.cpp)
 ament_target_dependencies(param_to_topic

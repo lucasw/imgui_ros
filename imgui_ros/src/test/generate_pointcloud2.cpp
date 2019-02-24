@@ -38,6 +38,9 @@
 using namespace std::chrono_literals;
 
 
+namespace imgui_ros
+{
+
 class GeneratePointCloud2 : public rclcpp::Node
 {
 public:
@@ -133,15 +136,8 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
-int main(int argc, char * argv[])
-{
-  rclcpp::init(argc, argv);
+}  // namespace imgui_ros
 
-  // Force flush of the stdout buffer.
-  // This ensures a correct sync of all prints
-  // even when executed simultaneously within a launch file.
-  setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-  rclcpp::spin(std::make_shared<GeneratePointCloud2>());
-  rclcpp::shutdown();
-  return 0;
-}
+#include <class_loader/register_macro.hpp>
+
+CLASS_LOADER_REGISTER_CLASS(imgui_ros::GeneratePointCloud2, rclcpp::Node)

@@ -86,6 +86,17 @@ class DemoImguiRos(Node):
 
             add_node.node_settings.append(node_settings)
 
+        # generate test pointcloud2
+        if False:
+            # this is taking up 100% cpu
+            node_settings = NodeSettings()
+            node_settings.package_name = 'imgui_ros'
+            node_settings.plugin_name = 'GeneratePointCloud2'
+            node_settings.node_name = 'generate_pointcloud2'
+            node_settings.node_namespace = namespace
+            node_settings.internal_pub_sub = False
+            add_node.node_settings.append(node_settings)
+
         self.future = self.node_cli.call_async(add_node)
         self.wait_for_response()
 
@@ -105,14 +116,15 @@ class DemoImguiRos(Node):
         finally:
             node.destroy_node()
 
+        return
+
+        # TODO(lucasw) something is wrong with these controls that is taking 100% cpu
         try:
             print("add gui controls")
             node = imgui_ros.DemoGui()
             node.run(namespace)
         finally:
             node.destroy_node()
-
-        # TODO(lucasw) generate_pointcloud2
 
 def main(args=None):
     rclpy.init(args=args)
