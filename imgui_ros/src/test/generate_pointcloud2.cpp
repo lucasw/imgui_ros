@@ -44,8 +44,31 @@ namespace imgui_ros
 class GeneratePointCloud2 : public rclcpp::Node
 {
 public:
-  GeneratePointCloud2() : Node("generate_point_cloud2")
+  GeneratePointCloud2()
   {
+  }
+
+  void init(
+    const std::string & node_name,
+    const std::string & namespace_,
+    rclcpp::Context::SharedPtr context,
+    const std::vector<std::string> & arguments,
+    const std::vector<rclcpp::Parameter> & initial_parameters,
+    bool use_global_arguments,
+    bool use_intra_process_comms,
+    bool start_parameter_services)
+  {
+    // If this is forgotten the node loader will crash
+    rclcpp::Node::init(
+      node_name,
+      namespace_,
+      context,
+      arguments,
+      initial_parameters,
+      use_global_arguments,
+      use_intra_process_comms,
+      start_parameter_services);
+
     get_parameter_or("num_lat", num_lat_, num_lat_);
     set_parameter_if_not_set("num_lat", num_lat_);
     get_parameter_or("num_long", num_long_, num_long_);

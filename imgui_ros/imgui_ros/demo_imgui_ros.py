@@ -87,7 +87,7 @@ class DemoImguiRos(Node):
             add_node.node_settings.append(node_settings)
 
         # generate test pointcloud2
-        if False:
+        if True:
             # this is taking up 100% cpu
             node_settings = NodeSettings()
             node_settings.package_name = 'imgui_ros'
@@ -116,7 +116,6 @@ class DemoImguiRos(Node):
         finally:
             node.destroy_node()
 
-        # TODO(lucasw) something is wrong with these controls that is taking 100% cpu
         try:
             print("add gui controls")
             node = imgui_ros.DemoGui()
