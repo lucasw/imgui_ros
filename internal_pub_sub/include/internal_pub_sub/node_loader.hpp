@@ -63,8 +63,9 @@ struct NodeInfo
       ips_node_(ips_node),
       loader_(loader)
   {
-    std::cout << "creating node " << node_namespace_ << " " << node_name_ << " "
-        << package_name_ << " " << plugin_name_ << "\n";
+    RCLCPP_INFO(node->get_logger(), "executing node %s %s %s %s",
+        node_namespace_.c_str(), node_name_.c_str(),
+        package_name_.c_str(), plugin_name_.c_str());
 
     executor_.add_node(node);
     // TODO(lucasw) want multi threaded option
@@ -119,8 +120,8 @@ struct NodeLoader : public internal_pub_sub::Node
   void addNode(const std::shared_ptr<srv::AddNode::Request> req,
       std::shared_ptr<srv::AddNode::Response> res);
 
-  std::shared_ptr<class_loader::ClassLoader> getLoader(const std::string& package_name,
-      const std::string& plugin_name);
+  std::shared_ptr<class_loader::ClassLoader> getLoader(const std::string& package_name);
+  //    const std::string& plugin_name);
 
   bool load(
       std::shared_ptr<class_loader::ClassLoader> loader,
@@ -134,7 +135,7 @@ struct NodeLoader : public internal_pub_sub::Node
   // namespace and node name as keys, any identically named node will
   // unload the older node.
   std::map<std::string, std::map<std::string, std::shared_ptr<NodeInfo> > > node_infos_;
-
+  std::map<std::string, std::shared_ptr<class_loader::ClassLoader> > loaders_;
   rclcpp::TimerBase::SharedPtr timer_;
   void update();
 };

@@ -125,21 +125,32 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
   res->message = "attempting to load nodes " + std::to_string(req->node_settings.size());
 
   for (auto node_to_add : req->node_settings) {
+    const std::string& node_namespace = node_to_add.node_namespace;
+    const std::string& node_name = node_to_add.node_name;
     // unload possibly existing node before loading a new one
-    RCLCPP_INFO(get_logger(), "unloading node");
-    node_infos_[node_to_add.node_namespace][node_to_add.node_name] = nullptr;
-    RCLCPP_INFO(get_logger(), "unloaded node");
-    core_->clean();
-    RCLCPP_INFO(get_logger(), "cleaned core");
+
+    bool removed = false;
+    if ((node_infos_.count(node_namespace) > 0) &&
+        (node_infos_[node_namespace].count(node_name) > 0)) {
+      RCLCPP_INFO(get_logger(), "unloading node %s/%s", node_namespace.c_str(), node_name.c_str());
+      node_infos_[node_namespace][node_name] = nullptr;
+      RCLCPP_INFO(get_logger(), "unloaded node");
+      core_->clean();
+      RCLCPP_INFO(get_logger(), "cleaned core");
+      removed = true;
+    }
     if (node_to_add.remove) {
-      // TODO(lucasw) message differently if it didn't already exist?
-      res->message += ", removed " + node_to_add.node_namespace + " " + node_to_add.node_name;
+      if (removed) {
+        res->message += ", removed: " + node_namespace + "/" + node_name;
+      } else {
+        res->message += ", no node to remove: " + node_namespace + "/" + node_name;
+      }
       continue;
     }
 
-    auto loader = getLoader(node_to_add.package_name, node_to_add.plugin_name);
+    auto loader = getLoader(node_to_add.package_name);  //, node_to_add.plugin_name);
     if (loader == nullptr) {
-      res->message += ", " + node_to_add.plugin_name + " loader is null";
+      res->message += ", " + node_to_add.package_name + " loader is null";
       res->success = false;
       continue;
     }
@@ -147,7 +158,7 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
     std::vector<rclcpp::Parameter> parameters;
     for (auto& param : node_to_add.parameters) {
       rclcpp::Parameter parameter = rclcpp::Parameter::from_parameter_msg(param);
-      RCLCPP_INFO(get_logger(), "parameter %s %s %s",
+      RCLCPP_DEBUG(get_logger(), "parameter %s %s %s",
           parameter.get_name().c_str(),
           parameter.get_type_name().c_str(),
           parameter.value_to_string().c_str());
@@ -232,11 +243,15 @@ bool NodeLoader::load(std::shared_ptr<class_loader::ClassLoader> loader,
 }
 
 std::shared_ptr<class_loader::ClassLoader> NodeLoader::getLoader(
-    const std::string& package_name,
-    const std::string& plugin_name)
+    const std::string& package_name)
+    // const std::string& plugin_name)
 {
-  const std::string full_node_plugin_name = package_name + "::" + plugin_name;
-  RCLCPP_INFO(get_logger(), "want to load %s", full_node_plugin_name.c_str());
+  if (loaders_.count(package_name) > 0) {
+    RCLCPP_INFO(get_logger(), "returning already loaded loader %s", package_name.c_str());
+    return loaders_[package_name];
+  }
+  // const std::string full_node_plugin_name = package_name + "::" + plugin_name;
+  // RCLCPP_INFO(get_logger(), "want to load %s", full_node_plugin_name.c_str());
   std::shared_ptr<class_loader::ClassLoader> loader = nullptr;
   // get node plugin resource from package
   std::string content;
@@ -264,34 +279,40 @@ image_manip::SaveImage;lib/libimagemanip.so
     }
 
     std::string class_name = parts[0];
-
     // load node plugin
     std::string library_path = parts[1];
-
     if (!fs::path(library_path).is_absolute()) {
       library_path = base_path + "/" + library_path;
     }
+
+    // skip the plugin match and just return the loader for the package
+    // TODO(lucasw) is the list of library_paths ever have multiple paths,
+    // one which has the right plugin and the other that doesn't?
+    // that doesn't seem like something to support anyhow.
+#if 0
     /**
 /home/lucasw/colcon_ws/install/image_manip/lib/libimagemanip.so image_manip::IIRImage
 /home/lucasw/colcon_ws/install/image_manip/lib/libimagemanip.so image_manip::ImageDeque
 /home/lucasw/colcon_ws/install/image_manip/lib/libimagemanip.so image_manip::SaveImage
     */
-    RCLCPP_INFO(get_logger(), "candidate loader %s %s = %s",
+    RCLCPP_DEBUG(get_logger(), "candidate loader %s %s = %s",
         library_path.c_str(), class_name.c_str(), full_node_plugin_name.c_str());
     if (class_name != full_node_plugin_name) {
       continue;
     }
     RCLCPP_INFO(get_logger(), "found matching loader %s %s",  library_path.c_str(), class_name.c_str());
+#endif
 
     try {
-      loader = std::make_shared<class_loader::ClassLoader>(library_path);
-      return loader;
+      loaders_[package_name] = std::make_shared<class_loader::ClassLoader>(library_path);
+      return loaders_[package_name];
     } catch (const std::exception & ex) {
-      RCLCPP_ERROR(get_logger(), "Failed to load library: %s", ex.what());
+      RCLCPP_ERROR(get_logger(), "Failed to load library loader: %s %s",
+          ex.what(), library_path.c_str());
       return loader;
     }
   }
-  RCLCPP_ERROR(get_logger(), "Found no matching libraries: %s", full_node_plugin_name.c_str());
+  RCLCPP_ERROR(get_logger(), "Found no library for package: %s", package_name.c_str());
   return loader;
 }
 

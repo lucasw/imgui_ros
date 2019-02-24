@@ -59,26 +59,22 @@ class DemoAddNode(Node):
                 break
 
     def run(self):
-        if False:
-            add_node = AddNode.Request()
-            # rviz2 isn't composable
-            node_settings = NodeSettings()
-            node_settings.package_name = 'rviz'
-            node_settings.plugin_name = 'Rviz2'
-            node_settings.node_namespace = 'foo'
-            node_settings.node_name = 'bar'
-            node_settings.arguments.extend(['-f', 'foo'])
-            node_settings.internal_pub_sub = True
-            add_node.node_settings.append(node_settings)
+        if True:
+            self.add_color_node('foo', 'color1')
+            time.sleep(1.0)
+            self.add_color_node('foo', 'color2')
+            time.sleep(1.0)
+            self.add_resize_node('foo', 'resize')
+            # demonstrate loading two different nodes of same type
+            #self.add_color_node('foo', 'color2')
 
-        # time.sleep(2.0)
         # demonstrate replacing loading nodes with different node
-        # self.add_color_node('foo', 'bar')
 
-        self.add_imgui_node('foo', 'bar')
-
-        time.sleep(2.0)
-        self.unload_node('foo', 'bar')
+        if False:
+            # demonstrate unloading
+            self.add_imgui_node('foo', 'bar')
+            time.sleep(2.0)
+            self.unload_node('foo', 'bar')
 
     def unload_node(self, node_namespace, node_name):
         # demonstrate replacing loading nodes with different node
@@ -109,6 +105,26 @@ class DemoAddNode(Node):
         node_settings.parameters.append(internal_pub_sub.double_param('red', 0.3))
         node_settings.parameters.append(internal_pub_sub.integer_param('width', 1800))
         node_settings.parameters.append(internal_pub_sub.integer_param('height', 800))
+
+        add_node.node_settings.append(node_settings)
+
+        self.future = self.node_cli.call_async(add_node)
+        self.wait_for_response()
+
+    def add_resize_node(self, node_namespace, node_name):
+        add_node = AddNode.Request()
+
+        node_settings = NodeSettings()
+        node_settings.package_name = 'image_manip'
+        node_settings.plugin_name = 'Resize'
+        node_settings.node_namespace = node_namespace
+        node_settings.node_name = node_name
+        node_settings.internal_pub_sub = True
+
+        node_settings.parameters.append(internal_pub_sub.integer_param('width', 268))
+        node_settings.parameters.append(internal_pub_sub.integer_param('height', 258))
+        node_settings.parameters.append(internal_pub_sub.double_param('frame_rate', 5.0))
+        node_settings.remappings.append(internal_pub_sub.make_remapping('image_in', 'different_image'))
 
         add_node.node_settings.append(node_settings)
 
