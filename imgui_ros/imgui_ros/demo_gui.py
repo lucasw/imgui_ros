@@ -23,6 +23,7 @@ from imgui_ros.msg import TexturedShape, TfWidget, Widget
 from imgui_ros.srv import AddTf, AddWindow
 from rclpy.node import Node
 from shape_msgs.msg import MeshTriangle, Mesh
+from time import sleep
 from transforms3d import _gohlketransforms as tg
 from visualization_msgs.msg import Marker
 
@@ -47,11 +48,10 @@ class DemoGui(Node):
                 break
 
     def run(self, namespace):
-        self.marker_pub = self.create_publisher(Marker, namespace + '/marker')
-        self.shape_pub = self.create_publisher(TexturedShape, namespace + '/shapes')
         self.cli = self.create_client(AddWindow, namespace + '/add_window')
         while not self.cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info(namespace + ' service not available, waiting again...')
+
         self.tf_cli = self.create_client(AddTf, namespace + '/add_tf')
         while not self.tf_cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info(namespace + ' service not available, waiting again...')
@@ -59,9 +59,10 @@ class DemoGui(Node):
         self.add_images()
         self.add_roto_controls()
         self.add_misc()
+        # this takes up around 15% cpu - maybe publishing tfs too much
         self.add_viz()
-        self.add_markers()
-        # self.add_shapes()
+        self.add_markers(namespace)
+        # self.add_shapes(namespace)
 
     def add_images(self):
         req = AddWindow.Request()
@@ -305,6 +306,7 @@ class DemoGui(Node):
             widget.items.append("projector1")
             req.widgets.append(widget)
 
+        # All the above take up about 10% cpu
         self.future = self.cli.call_async(req)
         self.wait_for_response()
 
@@ -421,7 +423,10 @@ class DemoGui(Node):
             self.br = tf2_ros.TransformBroadcaster()
             self.timer = self.create_timer(self.period, self.update)
 
-    def add_markers(self):
+    def add_markers(self, namespace):
+        self.marker_pub = self.create_publisher(Marker, namespace + '/marker')
+        sleep(1.0)
+
         # now publish some markers for the Viz2D
         marker = Marker()
         marker.ns = "test"
@@ -436,6 +441,7 @@ class DemoGui(Node):
         marker.pose.position.y = 0.25
         marker.text = "bar marker"
         self.marker_pub.publish(marker)
+        sleep(1.0)
 
         marker = Marker()
         marker.ns = "test"
@@ -449,8 +455,12 @@ class DemoGui(Node):
         marker.color.a = 1.0
         marker.text = "bar2 marker"
         self.marker_pub.publish(marker)
+        sleep(1.0)
 
-    def add_shapes(self):
+    def add_shapes(self, namespace):
+        self.shape_pub = self.create_publisher(TexturedShape, namespace + '/shapes')
+        sleep(1.0)
+
         shape = TexturedShape()
         shape.name = "foo"
         shape.header.frame_id = 'map'
@@ -483,6 +493,7 @@ class DemoGui(Node):
         print("shape {} {} {}".format(shape.name, len(shape.mesh.vertices),
               len(shape.mesh.triangles) * 3))
         self.shape_pub.publish(shape)
+        sleep(1.0)
 
     def update(self):
         ts = TransformStamped()

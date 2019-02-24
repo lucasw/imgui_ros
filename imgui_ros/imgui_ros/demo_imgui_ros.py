@@ -116,8 +116,6 @@ class DemoImguiRos(Node):
         finally:
             node.destroy_node()
 
-        return
-
         # TODO(lucasw) something is wrong with these controls that is taking 100% cpu
         try:
             print("add gui controls")
