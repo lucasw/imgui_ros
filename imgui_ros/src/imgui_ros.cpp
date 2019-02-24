@@ -95,15 +95,27 @@ namespace imgui_ros {
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>();
     #endif
     #if 0
-    // this puts tf listening in this same thread, don't want that
+    // this puts tf listening in this same thread, will that hurt performance?
     const bool spin_thread = false;
+    // shared_from_this won't unload properly
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_,
         shared_from_this(), spin_thread);
     #else
-    auto tf_node = rclcpp::Node::make_shared("transform_listener_impl", get_namespace());
+
+    #if 1
+    // TODO(lucasw) can't seem to kill tfl_ once it starts,
+    // maybe should hold onto tf_node?  Or don't depend on spinning inside TransformListener,
+    // make own executor out here?
+    // auto tf_node = rclcpp::Node::make_shared("transform_listener_impl", get_namespace());
+    tf_node_ = rclcpp::Node::make_shared("transform_listener_impl", get_namespace());
     // auto tf2_buffer = tf2_ros::Buffer(clock_);
+    tf_buffer_->setUsingDedicatedThread(true);
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_,  // buffer_,
-        tf_node);
+        tf_node_, false);
+    #else
+    // this doesn't shut down properly either
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+    #endif
     #endif
 
     // TODO(lucasw) check if width and height are > minimum value
@@ -859,6 +871,8 @@ namespace imgui_ros {
       }
       parameters_clients_[node_name]->set_parameters(parameters);
     } // param update
+
+    rclcpp::spin_some(tf_node_);
   }
 
   // TODO(lucasw) need to push this up into containing viz3d class,

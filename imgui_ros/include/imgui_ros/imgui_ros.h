@@ -86,6 +86,7 @@ private:
   rclcpp::Service<srv::AddWindow>::SharedPtr add_window_;
 
   rclcpp::Clock::SharedPtr clock_;
+  std::shared_ptr<rclcpp::Node> tf_node_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   // TODO(lucasw) maybe a non shared pointer works better

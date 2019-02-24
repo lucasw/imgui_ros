@@ -47,7 +47,7 @@ class DemoGui(Node):
                         'Service call failed %r' % (self.future.exception(),))
                 break
 
-    def run(self, namespace):
+    def run(self, namespace=''):
         self.cli = self.create_client(AddWindow, namespace + '/add_window')
         while not self.cli.wait_for_service(timeout_sec=3.0):
             self.get_logger().info(namespace + ' service not available, waiting again...')
