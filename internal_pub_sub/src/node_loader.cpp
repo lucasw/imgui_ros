@@ -126,6 +126,7 @@ void NodeLoader::addNode(const std::shared_ptr<srv::AddNode::Request> req,
 
   for (auto node_to_add : req->node_settings) {
     // unload possibly existing node before loading a new one
+    RCLCPP_INFO(get_logger(), "unloading node");
     node_infos_[node_to_add.node_namespace][node_to_add.node_name] = nullptr;
     RCLCPP_INFO(get_logger(), "unloaded node");
     core_->clean();

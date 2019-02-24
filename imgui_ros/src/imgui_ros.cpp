@@ -69,12 +69,15 @@ using namespace std::chrono_literals;
 // #define RUN_IMAGE_TRANSFER_SEPARATE_THREAD
 
 namespace imgui_ros {
-  ImguiRos::ImguiRos()
+  ImguiRos::ImguiRos()  // :
+    // clock_(std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME)),
+    // buffer_(clock_)
   {
   }
 
   void ImguiRos::postInit(std::shared_ptr<internal_pub_sub::Core> core)
   {
+    RCLCPP_INFO(get_logger(), "imgui ros init");
     internal_pub_sub::Node::postInit(core);
     image_transfer_ = std::make_shared<ImageTransfer>();
     image_transfer_->init("image_transfer", get_namespace());
@@ -98,7 +101,8 @@ namespace imgui_ros {
         shared_from_this(), spin_thread);
     #else
     auto tf_node = rclcpp::Node::make_shared("transform_listener_impl", get_namespace());
-    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_,
+    // auto tf2_buffer = tf2_ros::Buffer(clock_);
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_,  // buffer_,
         tf_node);
     #endif
 
@@ -132,6 +136,7 @@ namespace imgui_ros {
     image_transfer_ = nullptr;
     viz3d = nullptr;
     windows_.clear();
+    // tf_buffer_ = nullptr;
     // this locks up
     // tfl_ = nullptr;
     imgui_impl_opengl3_->Shutdown();
