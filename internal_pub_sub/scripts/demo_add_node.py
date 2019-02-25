@@ -59,11 +59,12 @@ class DemoAddNode(Node):
                 break
 
     def run(self):
-        if True:
+        if False:
             self.add_color_node('foo', 'color1')
             time.sleep(1.0)
             self.add_color_node('foo', 'color2')
             time.sleep(1.0)
+        if True:
             self.add_resize_node('foo', 'resize')
             # demonstrate loading two different nodes of same type
             #self.add_color_node('foo', 'color2')

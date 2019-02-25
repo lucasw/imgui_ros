@@ -71,6 +71,6 @@ def string_array_param(name, value=[]):
 
 def make_remapping(from_topic, to_topic):
     remapping = Remapping()
-    remapping.from_topic = "image"
-    remapping.to_topic = "different_image"
+    remapping.from_topic = from_topic
+    remapping.to_topic = to_topic
     return remapping

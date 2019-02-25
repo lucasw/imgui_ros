@@ -165,30 +165,35 @@ public:
     }
   }
 
-  // TODO(lucasw) make a get_create_publisher and get_subscription convenience function here
-  std::shared_ptr<Publisher> get_create_internal_publisher(const std::string& topic)
+  std::string getRemappedTopic(const std::string& topic)
   {
+#if 0
+    for (auto pair : remappings_) {
+      std::cout << "'" << pair.first << "' -> '" << pair.second << "', '" << topic << "'\n";
+    }
+#endif
     std::string remapped_topic = remappings_[topic];
     if (remapped_topic == "") {
-      RCLCPP_WARN(get_logger(), "unexpected unremapped topic %s", topic.c_str());
+      RCLCPP_WARN(get_logger(), "unexpected unremapped topic '%s', %d",
+          topic.c_str(), remappings_.size());
       remapped_topic = topic;
       remappings_[topic] = remapped_topic;
     }
-    return core_->get_create_publisher(topic, remapped_topic,
-        std::static_pointer_cast<internal_pub_sub::Node>(shared_from_this()));
+    return remapped_topic;
+  }
+
+  // TODO(lucasw) make a get_create_publisher and get_subscription convenience function here
+  std::shared_ptr<Publisher> get_create_internal_publisher(const std::string& topic)
+  {
+      auto node = std::static_pointer_cast<internal_pub_sub::Node>(shared_from_this());
+    return core_->get_create_publisher(topic, getRemappedTopic(topic), node);
   }
 
   std::shared_ptr<Subscriber> create_internal_subscription(const std::string& topic,
       Function callback)
   {
-    std::string remapped_topic = remappings_[topic];
-    if (remapped_topic == "") {
-      RCLCPP_WARN(get_logger(), "unexpected unremapped topic %s", topic.c_str());
-      remapped_topic = topic;
-      remappings_[topic] = remapped_topic;
-    }
-    return core_->create_subscription(topic, remapped_topic, callback,
-        std::static_pointer_cast<internal_pub_sub::Node>(shared_from_this()));
+    auto node = std::static_pointer_cast<internal_pub_sub::Node>(shared_from_this());
+    return core_->create_subscription(topic, getRemappedTopic(topic), callback, node);
   }
 
   std::map<std::string, std::string> remappings_;
