@@ -102,8 +102,9 @@ Publisher::Publisher(
   setFullTopic(node, topic_);
   setFullTopic(node, remapped_topic_);
   if (node) {
-    std::cout << this << " creating new publisher with ros pub option '" << remapped_topic_
-        << "' (remapped from '" << topic_ << "')\n";
+    RCLCPP_INFO(node->get_logger(),
+        "creating new publisher with ros pub option '%s' (remapped from '%s')",
+        remapped_topic_.c_str(), topic_.c_str());
     // if (topic != "") {
     ros_pub_ = node->create_publisher<sensor_msgs::msg::Image>(topic);
     // }  else {
