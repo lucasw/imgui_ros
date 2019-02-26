@@ -76,5 +76,6 @@ private:
 
   std::mutex pub_mutex_;
   std::deque<std::pair<std::string, sensor_msgs::msg::Image::SharedPtr> > to_pub_;
+  std::map<std::string, std::shared_ptr<internal_pub_sub::Publisher> > pubs_;
 };
 #endif  // IMGUI_ROS_IMAGE_TRANSFER_H

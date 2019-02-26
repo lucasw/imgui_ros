@@ -69,11 +69,14 @@ Core::~Core()
 }
 
 std::shared_ptr<Subscriber> Core::create_subscription(
-    const std::string& topic,
-    const std::string& remapped_topic,
+    std::string topic,
+    std::string remapped_topic,
     Function callback,
     std::shared_ptr<Node> node)
 {
+  setFullTopic(node, topic);
+  setFullTopic(node, remapped_topic);
+
   // TODO(lucasw) look through topics and see if callback is already there?
   // otherwise the same callback will get called as many times as this has been
   // called with it.
@@ -110,6 +113,7 @@ std::shared_ptr<Publisher> Core::create_publisher(
       << ros_enable_default_ << "\n";
   pub = std::make_shared<Publisher>(topics_[remapped_topic], node);
   pub->ros_enable_ = ros_enable_default_;
+  topics_[remapped_topic]->pubs_.push_back(pub);
 
   return pub;
 }

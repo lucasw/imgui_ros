@@ -133,24 +133,36 @@ void ImageTransfer::draw(rclcpp::Time cur)
   // TODO(lucasw) turn all the publishers on or off with a master checkbox
   // ImGui::Checkbox("multisample", &multisample_);
   ImGui::Columns(2);
-  for (auto pub_pair : core_->topics_) {
-    auto pub = pub_pair.second;
-    if (pub) {
+  // TODO(lucasw) or just loop through local pubs_?  This is more
+  // of an internal_pub_sub widget draw.
+  for (auto topic_pair : core_->topics_) {
+    auto topic = topic_pair.second;
+    if (!topic) {
+      continue;
+    }
+    ImGui::Text("%s", topic->full_topic_.c_str());
+    ImGui::NextColumn();
+    ImGui::Text("%lu pubs, %lu subs", topic->pubs_.size(), topic->subs_.size());
+    ImGui::NextColumn();
+    for (auto weak_pub : topic->pubs_) {
+      auto pub = weak_pub.lock();
+      if (!pub) {
+        continue;
+      }
+
       float rate = 0.0;
       if (pub->stamps_.size() > 2) {
         rclcpp::Time earliest = pub->stamps_.front();
         rate = static_cast<float>(pub->stamps_.size()) /
           ((cur - earliest).nanoseconds() / 1e9);
       }
-      if (!show_unused_ && (pub->subs_.size() == 0) && (rate < 0.05)) {
+      if (!show_unused_ && (topic->subs_.size() == 0) && (rate < 0.05)) {
         continue;
       }
 
-      ImGui::Checkbox(pub->topic_.c_str(), &pub->enable_);
+      ImGui::Checkbox(("enable ##" + topic->full_topic_).c_str(), &pub->enable_);
       ImGui::NextColumn();
-      ImGui::Checkbox(("ros2 dds ##" + pub->topic_).c_str(), &pub->ros_enable_);
-      ImGui::NextColumn();
-      ImGui::Text("%lu subs", pub->subs_.size());
+      ImGui::Checkbox(("ros2 dds ##" + topic->full_topic_).c_str(), &pub->ros_enable_);
       ImGui::NextColumn();
       ImGui::Text("%0.2f Hz", rate);
       ImGui::NextColumn();
@@ -162,6 +174,7 @@ void ImageTransfer::draw(rclcpp::Time cur)
         time_since_last =  (cur - latest).nanoseconds() / 1e9;
       }
       ImGui::Text("%0.2f since last", time_since_last);
+      ImGui::NextColumn();
       ImGui::NextColumn();
     }
   }

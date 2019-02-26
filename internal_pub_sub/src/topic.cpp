@@ -30,8 +30,9 @@
 
 #include <deque>
 #include <functional>
-#include <internal_pub_sub/topic.hpp>
+#include <internal_pub_sub/node.hpp>
 #include <internal_pub_sub/subscriber.hpp>
+#include <internal_pub_sub/topic.hpp>
 #include <list>
 #include <rclcpp/rclcpp.hpp>
 
@@ -43,8 +44,9 @@ Topic::Topic(
     std::shared_ptr<Node> node) :
     full_topic_(full_topic)
 {
-  (void)node;
-  std::cout << "creating new topic " << full_topic_ << "\n";
+  if (node) {
+    RCLCPP_INFO(node->get_logger(), "creating new topic '%s'", full_topic_.c_str());
+  }
 }
 
 Topic::~Topic()
@@ -65,8 +67,7 @@ void Topic::publish(sensor_msgs::msg::Image::SharedPtr msg)
       // std::cout << topic_ << " publishing to " << sub->topic_ << "\n";
       sub->callback(msg);
     } else {
-      // TODO(lucasw) should be impossible to get here after remove_if above
-      // std::cerr << topic_ << " bad sub lock\n";
+      // TODO(lucasw) remove here, or wait for clean?
     }
   }
 }

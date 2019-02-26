@@ -22,8 +22,8 @@ public:
   ~Core();
 
   std::shared_ptr<Subscriber> create_subscription(
-      const std::string& topic,
-      const std::string& remapped_topic,
+      std::string topic,
+      std::string remapped_topic,
       Function callback,
       std::shared_ptr<Node> node=nullptr);
   std::shared_ptr<Publisher> create_publisher(
