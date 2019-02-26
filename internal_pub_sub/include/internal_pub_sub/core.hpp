@@ -13,6 +13,7 @@ class Node;
 class Subscriber;
 class Publisher;
 class Republisher;
+class Topic;
 
 class Core : std::enable_shared_from_this<Core>
 {
@@ -25,11 +26,10 @@ public:
       const std::string& remapped_topic,
       Function callback,
       std::shared_ptr<Node> node=nullptr);
-  std::shared_ptr<Publisher> get_create_publisher(
+  std::shared_ptr<Publisher> create_publisher(
       std::string topic,
       std::string remapped_topic,
-      std::shared_ptr<Node> node=nullptr,
-      const bool create_ros_pub=true);
+      std::shared_ptr<Node> node=nullptr);
 
   // TODO(lucasw) should the parent node remapping alter what the republisher does?
   // For now it does not.
@@ -52,7 +52,7 @@ public:
   // These can't be weak_ptrs because a subscriber without a publisher may need it
   // to stick around, so for now can't delete publishers
   // A deletion function would have to check for zero subscribers.
-  std::map<std::string, std::shared_ptr<Publisher> > publishers_;
+  std::map<std::string, std::shared_ptr<Topic> > topics_;
 
   // TODO(lucasw) do republishers need to be kept here at all?
   // maybe for visualization can get a list of all republishers.

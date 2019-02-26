@@ -14,22 +14,21 @@ namespace internal_pub_sub
 
 class Subscriber;
 class Node;
+class Topic;
 
 struct Publisher  // : std::enable_shared_from_this<Publisher>
 {
-  Publisher(const std::string& topic,
-      const std::string& remapped_topic,
+  Publisher(
+      std::shared_ptr<Topic> topic,
       std::shared_ptr<Node> node=nullptr);
   ~Publisher();
-
-  std::string topic_;
-  std::string remapped_topic_;
 
   rclcpp::Duration publish_duration_ = rclcpp::Duration(0, 0);
   void publish(sensor_msgs::msg::Image::SharedPtr msg);
   void clean();
 
-  std::list<std::weak_ptr<Subscriber> > subs_;
+  std::weak_ptr<Topic> topic_;
+  std::string full_topic_;
 
   bool enable_ = true;
   bool ros_enable_ = false;
@@ -37,7 +36,6 @@ struct Publisher  // : std::enable_shared_from_this<Publisher>
   std::mutex sub_mutex_;
 
   std::deque<rclcpp::Time> stamps_;
-
   rclcpp::Clock::SharedPtr clock_;
 };
 

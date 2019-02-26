@@ -92,10 +92,8 @@ bool ImageTransfer::publish(const std::string& topic, sensor_msgs::msg::Image::S
 
 void ImageTransfer::setRosPub(const std::string& topic, const bool ros_pub)
 {
-  auto pub = get_create_internal_publisher(topic);
-  if (pub) {
-    pub->ros_enable_ = ros_pub;
-  }
+  pubs_[topic] = create_internal_publisher(topic);
+  pubs_[topic]->ros_enable_ = ros_pub;
 }
 
 void ImageTransfer::update()
@@ -116,10 +114,10 @@ void ImageTransfer::update()
         image = to_pub_.front().second;
         to_pub_.pop_front();
       }
-      auto pub = get_create_internal_publisher(topic);
-      if (pub) {
-        pub->publish(image);
+      if (pubs_.count(topic) > 0) {
+        pubs_[topic]->publish(image);
       }
+      // TODO(lucasw) else debug error
     }
   }  // publish all queued up messages
 }
@@ -135,7 +133,7 @@ void ImageTransfer::draw(rclcpp::Time cur)
   // TODO(lucasw) turn all the publishers on or off with a master checkbox
   // ImGui::Checkbox("multisample", &multisample_);
   ImGui::Columns(2);
-  for (auto pub_pair : core_->publishers_) {
+  for (auto pub_pair : core_->topics_) {
     auto pub = pub_pair.second;
     if (pub) {
       float rate = 0.0;

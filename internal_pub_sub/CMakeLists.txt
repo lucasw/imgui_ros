@@ -43,7 +43,12 @@ include_directories(
 )
 
 add_library(internalpubsub SHARED
-  src/internal_pub_sub.cpp
+  src/core.cpp
+  src/node.cpp
+  src/publisher.cpp
+  src/republisher.cpp
+  src/subscriber.cpp
+  src/topic.cpp
 )
 ament_target_dependencies(internalpubsub
   "rcl_interfaces"

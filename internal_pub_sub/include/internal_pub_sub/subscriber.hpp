@@ -2,7 +2,6 @@
 #define INTERNAL_PUB_SUB_SUBSCRIBER_HPP
 
 #include <functional>
-#include <internal_pub_sub/core.hpp>
 #include <internal_pub_sub/utility.hpp>
 #include <list>
 #include <rclcpp/rclcpp.hpp>
@@ -13,6 +12,8 @@
 
 namespace internal_pub_sub
 {
+
+class Node;
 
 struct Subscriber
 {

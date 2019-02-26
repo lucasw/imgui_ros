@@ -3,7 +3,6 @@
 
 #include <deque>
 #include <functional>
-#include <internal_pub_sub/core.hpp>
 #include <list>
 #include <rclcpp/rclcpp.hpp>
 
