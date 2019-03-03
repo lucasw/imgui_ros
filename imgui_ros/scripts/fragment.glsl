@@ -130,7 +130,6 @@ void main()
       // if normal is facing away from projector disable projection,
       // also dim the projection with diffuse reflection model.
       float normal_light_alignment = -dot(FraNormal, proj_ray);
-      normal_light_alignment = step(0.0, normal_light_alignment) * normal_light_alignment;
 
       // TODO(lwalter) can skip this if always border textures with alpha 0.0
       uv[i] = pos_in_projector_space.xy;
@@ -143,6 +142,7 @@ void main()
       // set luminosity to 1.0 if attenuation is 0.0
       attenuation = attenuation == 0.0 ? 1.0 : attenuation;
       float scaled_attenuated = enable_proj[i] * projected_texture_scale[i] * 1.0 / attenuation;
+      scaled_attenuated *= step(0.0, normal_light_alignment);
       luminosity[i] = normal_light_alignment * scaled_attenuated;  // * clip_light;
 
       //////////////////////////////
@@ -152,6 +152,7 @@ void main()
       vec3 reflected_proj_ray = normalize(proj_ray + 2.0 * normal_light_alignment * FraNormal);
       float specular_intensity = dot(reflected_proj_ray, -view_ray);
       specular_intensity *= step(0.0, specular_intensity);
+      specular_intensity *= step(0.0, normal_light_alignment);
       // TODO(lucasw) later per-vertex and specular maps,
       // also try uniform connected to gui slider
       specular_intensity = pow(specular_intensity, 1.0 + shininess * shiny_scale);
