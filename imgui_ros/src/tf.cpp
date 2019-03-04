@@ -31,6 +31,7 @@
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <imgui_ros/tf.h>
+#include <imgui_ros/utility.h>
 // #include <imgui_internal.h>  // for PushMulti
 #include <iomanip>
 #include <tf2/LinearMath/Matrix3x3.h>
@@ -87,11 +88,14 @@ void TfEcho::draw()
 {
   ImGui::Separator();
   ImGui::PushID(name_.c_str());
+  imgui_ros::inputText("parent", parent_);
+  imgui_ros::inputText("child", child_);
   try {
     geometry_msgs::msg::TransformStamped tf;
     tf = tf_buffer_->lookupTransform(parent_, child_, tf2::TimePointZero);
+
     std::stringstream ss;
-    ss << name_ << " " << parent_ << " -> " << child_ << "\n" << "time: "
+    ss << name_ << " " << "\n" << "time: "
     //    << std::setprecision(3) << std::setw(4) << std::setfill('0') << std::internal
         << tf.header.stamp.sec << "." << tf.header.stamp.nanosec;
     ImGui::Text("%s", ss.str().c_str());
@@ -186,31 +190,14 @@ void TfBroadcaster::update(const rclcpp::Time& stamp)
 }
 #endif
 
-bool inputText(const std::string name, std::string& text)
-{
-  const size_t sz = 64;
-  char buf[sz];
-
-  const size_t sz2 = (text.size() > (sz - 1)) ? (sz - 1) : text.size();
-  strncpy(buf, text.c_str(), sz2);
-  buf[sz2] = '\0';
-  const bool changed = ImGui::InputText(name.c_str(), buf, sz,
-      ImGuiInputTextFlags_EnterReturnsTrue);
-  if (changed) {
-    text = buf;
-    return true;
-  }
-  return false;
-}
-
 void TfBroadcaster::draw()
 {
   if (ImGui::CollapsingHeader((name_ + "##header").c_str())) {
   // ImGui::Separator();
   ImGui::PushID(name_.c_str());
   // TODO(lucasw) lock guard around ts usage?
-  inputText("parent", ts_.header.frame_id);
-  inputText("child", ts_.child_frame_id);
+  imgui_ros::inputText("parent", ts_.header.frame_id);
+  imgui_ros::inputText("child", ts_.child_frame_id);
 
   double min, max;
 

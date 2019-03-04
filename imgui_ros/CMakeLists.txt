@@ -92,6 +92,7 @@ add_library(imguiros SHARED
   # TODO(lucasw) maybe there should be a separate test library?
   src/test/generate_pointcloud2.cpp
   src/tf.cpp
+  src/utility.cpp
   src/viz2d.cpp
   src/imgui_impl_opengl3.cpp
   src/viz3d.cpp
@@ -184,6 +185,7 @@ install(PROGRAMS
   imgui_ros/pub_shape.py
   scripts/cube_camera_fragment.glsl
   scripts/cube_camera_vertex.glsl
+  scripts/demo.sh
   scripts/depth_fragment.glsl
   scripts/depth_vertex.glsl
   scripts/fragment.glsl
