@@ -34,6 +34,7 @@
 #include <imgui.h>
 // #include "imgui_impl_sdl.h"
 #include <imgui_ros/camera.h>
+#include <imgui_ros/utility.h>
 #include <iomanip>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -220,43 +221,47 @@ void Camera::publishCameraInfo(const rclcpp::Time& stamp)
 void Camera::draw()
 {
   std::string name = name_ + " camera";
+  ImGui::PushID(name.c_str());
   // ImGui::Begin(name.c_str());
   // TODO(lucasw) later re-use code in RosImage
-  ImGui::Checkbox(("render to texture##" + name).c_str(), &enable_);
-
+  ImGui::Checkbox("render to texture", &enable_);
+  imgui_ros::inputText("frame id", frame_id_);
+  imgui_ros::inputText("header frame id", header_frame_id_);
   double min = 1.0;
   double max = 170.0;
-  ImGui::SliderScalar(("aov y##" + name).c_str(), ImGuiDataType_Double,
+  ImGui::SliderScalar("aov y", ImGuiDataType_Double,
       &aov_y_, &min, &max, "%lf", 2);
 
   min = 0.0;
-  ImGui::SliderScalar(("aov x##" + name).c_str(), ImGuiDataType_Double,
+  ImGui::SliderScalar("aov x", ImGuiDataType_Double,
       &aov_x_, &min, &max, "%lf", 2);
 
   {
     double min = 0.01;
     double max = far_;
-    ImGui::SliderScalar(("near clip##" + name).c_str(), ImGuiDataType_Double,
+    ImGui::SliderScalar("near clip", ImGuiDataType_Double,
           &near_, &min, &max, "%lf", 3);
     min = near_;
     max = 1000.0;
-    ImGui::SliderScalar(("far clip##" + name).c_str(), ImGuiDataType_Double,
+    ImGui::SliderScalar("far clip", ImGuiDataType_Double,
           &far_, &min, &max, "%lf", 3);
   }
 
   {
     int skip = skip_max_;
-    ImGui::SliderInt(("skip##" + name).c_str(), &skip, 0, 30);
+    ImGui::SliderInt("skip", &skip, 0, 30);
     skip_max_ = skip;
   }
 
   if (enable_) {
     image_->draw();
   }
-  ImGui::ColorEdit4(("clear color##" + name).c_str(), (float*)&clear_color_);
+  ImGui::ColorEdit4("clear color", (float*)&clear_color_);
 
   // this does nothing if the image doesn't have a publisher set up
   // image_->publish();
+
+  ImGui::PopID();
 }
 
 // Camera::render()
