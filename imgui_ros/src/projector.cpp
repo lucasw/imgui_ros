@@ -38,6 +38,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <imgui_ros/utility.h>
 using std::placeholders::_1;
 using std::placeholders::_2;
 
@@ -132,9 +133,11 @@ void Projector::draw(const std::vector<std::string>& texture_names,
     const std::string& texture_items)
 {
   std::string name = name_ + " projector";
+  ImGui::PushID(name.c_str());
   // ImGui::Begin(name.c_str());
   // TODO(lucasw) later re-use code in RosImage
-  ImGui::Checkbox((name_ + "##" + name).c_str(), &enable_);
+  ImGui::Checkbox(name_.c_str(), &enable_);
+  imgui_ros::inputText("frame", frame_id_);
 
   // select texture
   {
@@ -147,7 +150,7 @@ void Projector::draw(const std::vector<std::string>& texture_names,
       }
     }
 
-    const bool changed = ImGui::Combo(("texture##" + name).c_str(), &texture_ind,
+    const bool changed = ImGui::Combo("texture", &texture_ind,
       texture_items.c_str());
     if (changed) {
       texture_name_ = texture_names[texture_ind];
@@ -157,11 +160,11 @@ void Projector::draw(const std::vector<std::string>& texture_names,
   {
     double min = 0.01;
     double max = far_;
-    ImGui::SliderScalar(("near clip##" + name).c_str(), ImGuiDataType_Double,
+    ImGui::SliderScalar("near clip", ImGuiDataType_Double,
           &near_, &min, &max, "%lf", 3);
     min = near_;
     max = 100.0;
-    ImGui::SliderScalar(("far clip##" + name).c_str(), ImGuiDataType_Double,
+    ImGui::SliderScalar("far clip", ImGuiDataType_Double,
           &far_, &min, &max, "%lf", 3);
   }
 
@@ -169,26 +172,26 @@ void Projector::draw(const std::vector<std::string>& texture_names,
   // 0.0 means use texture width / height * aov_y
   min = 0.0;
   max = 170.0;
-  ImGui::SliderScalar(("aov x##" + name).c_str(), ImGuiDataType_Double,
+  ImGui::SliderScalar("aov x", ImGuiDataType_Double,
       &aov_x_, &min, &max, "%lf", 2);
 
   // TODO(lucasw) 0.0 should be orthogonal
   min = 1.0;
   max = 170.0;
-  ImGui::SliderScalar(("aov y##" + name).c_str(), ImGuiDataType_Double,
+  ImGui::SliderScalar("aov y", ImGuiDataType_Double,
       &aov_y_, &min, &max, "%lf", 2);
 
   min = 0.0;
   max = 100.0;
-  ImGui::SliderScalar(("max range##" + name).c_str(), ImGuiDataType_Double,
+  ImGui::SliderScalar("max range", ImGuiDataType_Double,
       &max_range_, &min, &max, "%lf", 3);
   min = 0.0;
   max = 100.0;
-  ImGui::SliderScalar(("constant attenuation##" + name).c_str(), ImGuiDataType_Double,
+  ImGui::SliderScalar("constant attenuation", ImGuiDataType_Double,
       &constant_attenuation_, &min, &max, "%lf", 3);
-  ImGui::SliderScalar(("linear attenuation##" + name).c_str(), ImGuiDataType_Double,
+  ImGui::SliderScalar("linear attenuation", ImGuiDataType_Double,
       &linear_attenuation_, &min, &max, "%lf", 3);
-  ImGui::SliderScalar(("quadratic attenuation##" + name).c_str(), ImGuiDataType_Double,
+  ImGui::SliderScalar("quadratic attenuation", ImGuiDataType_Double,
       &quadratic_attenuation_, &min, &max, "%lf", 3);
 
   ImVec2 image_size;
@@ -196,6 +199,7 @@ void Projector::draw(const std::vector<std::string>& texture_names,
   image_size.y = shadow_height_;
   ImGui::Image((void*)(intptr_t)shadow_depth_texture_, image_size);
 
+  ImGui::PopID();
   // ImGui::End();
 }
 
