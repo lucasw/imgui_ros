@@ -34,6 +34,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 // #include "imgui_impl_sdl.h"
+#include <imgui_ros/utility.h>
 #include <imgui_ros/viz3d.h>
 #include <iomanip>
 #include <opencv2/highgui.hpp>
@@ -106,8 +107,9 @@ void Shape::init()
 void Shape::draw(const std::vector<std::string>& texture_names_,
     const std::string& texture_items)
 {
+  ImGui::PushID(name_.c_str());
   std::string name = name_ + " shape";
-  ImGui::Checkbox((name_ + "##shape").c_str(), &enable_);
+  ImGui::Checkbox(name_.c_str(), &enable_);
 
   // TODO(lucasw) this is a pain
   int texture_ind = 0;
@@ -126,19 +128,19 @@ void Shape::draw(const std::vector<std::string>& texture_names_,
   }
 
   bool changed;
-  changed = ImGui::Combo(("texture##" + name).c_str(), &texture_ind,
+  changed = ImGui::Combo("texture", &texture_ind,
       texture_items.c_str());
   if (changed) {
     texture_ = texture_names_[texture_ind];
   }
 
-  changed = ImGui::Combo(("shininess texture##" + name).c_str(),
+  changed = ImGui::Combo("shininess texture",
       &shininess_texture_ind, texture_items.c_str());
   if (changed) {
     shininess_texture_ = texture_names_[shininess_texture_ind];
   }
 
-  changed = ImGui::Combo(("emission texture##" + name).c_str(),
+  changed = ImGui::Combo("emission texture",
       &emission_texture_ind, texture_items.c_str());
   if (changed) {
     emission_texture_ = texture_names_[emission_texture_ind];
@@ -146,13 +148,13 @@ void Shape::draw(const std::vector<std::string>& texture_names_,
 
   const std::string items = std::string("triangles") + '\0' +
       std::string("lines") + '\0' + std::string("points") + '\0';
-  ImGui::Combo(("draw mode##" + name).c_str(), &draw_mode_, items.c_str());
+  ImGui::Combo("draw mode", &draw_mode_, items.c_str());
 
   // TODO(lucasw) put the frame in a combo box that allows it to be changed
   // to any other existing frame (or typed in?)
   // use tf buffer getFrames()
+  imgui_ros::inputText("frame", frame_id_);
   std::stringstream ss;
-  ss << "frame: " << frame_id_ << "\n";
   ss << " `- vertices: " << vertices_.size() << ", indices " << indices_.size() << "\n";
   ss << " `- vao: " << vao_handle_ << ", vbo " << vbo_handle_
     << ", elements " << elements_handle_ << "\n";
@@ -160,4 +162,5 @@ void Shape::draw(const std::vector<std::string>& texture_names_,
   // TODO(lucasw) add interactive way to browse vertices and indices
   // maybe highlight each graphically as it is selected
   ImGui::Text("%s", ss.str().c_str());
+  ImGui::PopID();
 }
