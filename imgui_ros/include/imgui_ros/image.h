@@ -42,6 +42,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
+namespace imgui_ros
+{
 struct GlImage : public Widget {
   GlImage(const std::string name, const std::string topic);
   ~GlImage();
@@ -123,4 +125,5 @@ struct CvImage : public GlImage {
   virtual bool updateTexture();
   virtual void draw();
 };
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_IMAGE_H

@@ -31,6 +31,8 @@
 #include <imgui.h>
 #include <imgui_ros/pub.h>
 
+namespace imgui_ros
+{
 Pub::Pub(const std::string name, const std::string topic,  // const unsigned type,
     std::shared_ptr<rclcpp::Node> node) :
     Widget(name, topic),
@@ -140,3 +142,4 @@ void MenuPub::draw() {
     pub_->publish(msg_);
   }
 }
+}  // namespace imgui_ros

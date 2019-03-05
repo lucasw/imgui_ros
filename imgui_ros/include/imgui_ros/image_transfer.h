@@ -41,6 +41,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
+namespace imgui_ros
+{
 // TODO(lucasw) get rid of this and restore pub/sub to where needed
 class ImageTransfer : public internal_pub_sub::Node
 {
@@ -78,4 +80,5 @@ private:
   std::deque<std::pair<std::string, sensor_msgs::msg::Image::SharedPtr> > to_pub_;
   std::map<std::string, std::shared_ptr<internal_pub_sub::Publisher> > pubs_;
 };
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_IMAGE_TRANSFER_H

@@ -33,6 +33,8 @@
 #include <math.h> // fmodf
 #include <memory>
 
+namespace imgui_ros
+{
 static const std::string topic = "";
 Graph::Graph(const std::string name,
     std::shared_ptr<rclcpp::Node> node) :
@@ -361,3 +363,5 @@ bool Graph::linkNodes(
   input_con->link_ = output_con->link_;
   return true;
 }
+
+}  // namespace imgui_ros

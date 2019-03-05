@@ -43,6 +43,8 @@
 #include <tf2_ros/transform_listener.h>
 #include <visualization_msgs/msg/marker.hpp>
 
+namespace imgui_ros
+{
 // TODO(lucasw)
 // namespace imgui_ros
 struct Viz2D : public Sub {
@@ -77,4 +79,5 @@ protected:
   void drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center, const float sc);
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_VIZ2D_H

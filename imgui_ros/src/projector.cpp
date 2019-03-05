@@ -42,6 +42,8 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
+namespace imgui_ros
+{
 Projector::Projector(
     const std::string name,
     const std::string texture_name,
@@ -206,3 +208,4 @@ void Projector::draw(const std::vector<std::string>& texture_names,
 // Projector::render()
 // {
 // }
+}  // namespace imgui_ros

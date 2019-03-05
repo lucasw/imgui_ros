@@ -39,6 +39,8 @@
 #include <tf2_msgs/msg/tf_message.hpp>
 #include <vector>
 
+namespace imgui_ros
+{
 struct Widget {
   Widget(const std::string name, const std::string topic, const std::string topic_prefix = "") :
       name_(name), topic_(topic), topic_prefix_(topic_prefix)
@@ -149,4 +151,5 @@ protected:
   std::mutex mutex_;
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_WINDOW_H

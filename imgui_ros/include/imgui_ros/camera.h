@@ -62,6 +62,8 @@
 #endif
 #pragma GCC diagnostic pop
 
+namespace imgui_ros
+{
 struct Camera {
   Camera(const std::string name,
       const std::string frame_id,
@@ -145,4 +147,5 @@ struct Camera {
   GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_CAMERA_H

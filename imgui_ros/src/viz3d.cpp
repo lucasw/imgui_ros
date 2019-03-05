@@ -43,6 +43,8 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
+namespace imgui_ros
+{
 // TODO(lucasw) move to utility file
 // TODO(lucasw) is there a glm double to float conversion function?
 void dmat4Todmat(const glm::dmat4& dmat, glm::mat4& mat)
@@ -1781,3 +1783,4 @@ void Viz3D::render2(
 
   return;
 }
+}  // namespace imgui_ros

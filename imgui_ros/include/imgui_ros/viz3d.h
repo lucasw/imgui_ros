@@ -73,6 +73,8 @@
 #endif
 #pragma GCC diagnostic pop
 
+namespace imgui_ros
+{
 // TODO(lucasw) need to support covering the entire background,
 // and being within a widget, possibly with subclassing.
 // For now just do entire background.
@@ -243,4 +245,5 @@ protected:
   std::mutex mutex_;
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_VIZ3D_H

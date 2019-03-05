@@ -33,6 +33,8 @@
 #include <math.h> // fmodf
 #include <memory>
 
+namespace imgui_ros
+{
 void Connector::update()
 {
 
@@ -340,3 +342,4 @@ void FloatPublisher::draw2(ImDrawList* draw_list)
   Node::draw2(draw_list);
   ImGui::Text("Topic: '%s'", topic_.c_str());
 }
+}  // namespace imgui_ros

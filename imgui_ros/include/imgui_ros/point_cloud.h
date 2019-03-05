@@ -45,6 +45,8 @@
 #include <vector>
 
 
+namespace imgui_ros
+{
 struct PointCloud : public Sub
 {
   PointCloud(const std::string name, const std::string topic,
@@ -62,4 +64,5 @@ protected:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_;
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS2_POINT_CLOUD_H

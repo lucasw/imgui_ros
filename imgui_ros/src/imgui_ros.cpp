@@ -68,7 +68,8 @@ using namespace std::chrono_literals;
 // TODO(lucasw) this may not shut down properly
 // #define RUN_IMAGE_TRANSFER_SEPARATE_THREAD
 
-namespace imgui_ros {
+namespace imgui_ros
+{
   ImguiRos::ImguiRos()  // :
     // clock_(std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME)),
     // buffer_(clock_)

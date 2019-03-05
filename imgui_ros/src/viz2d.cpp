@@ -55,6 +55,8 @@
 
 #pragma GCC diagnostic pop
 
+namespace imgui_ros
+{
 // TODO(lucasw) overload <<
 std::string printVec(const geometry_msgs::msg::Vector3& vec)
 {
@@ -352,3 +354,4 @@ void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
     }
   }  // loop through marker namespace sets
 }
+}  // namespace imgui_ros

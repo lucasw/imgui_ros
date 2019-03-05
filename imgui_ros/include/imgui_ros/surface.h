@@ -68,6 +68,8 @@ struct DrawVert {
   glm::vec4 col;
 };
 
+namespace imgui_ros
+{
 struct Shape {
   Shape(const std::string& name, const std::string& frame_id,
     const std::string& texture_name,
@@ -125,4 +127,5 @@ struct Shape {
   bool enable_ = true;
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_SURFACE_H

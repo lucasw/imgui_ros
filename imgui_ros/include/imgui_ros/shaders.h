@@ -69,6 +69,8 @@
 #endif
 #pragma GCC diagnostic pop
 
+namespace imgui_ros
+{
 struct ShaderSet {
   ShaderSet(const std::string& name, const std::string& vertex_code,
       const std::string& geometry_code, const std::string& fragment_code) :
@@ -104,4 +106,5 @@ struct ShaderSet {
   std::map<std::string, int> uniform_locations_;
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_SHADERS_H

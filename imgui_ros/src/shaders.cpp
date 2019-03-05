@@ -42,6 +42,8 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
+namespace imgui_ros
+{
 ShaderSet::~ShaderSet()
 {
   remove();
@@ -183,3 +185,4 @@ void ShaderSet::draw()
 
   ImGui::Text("%s", ss.str().c_str());
 }
+}  // namespace imgui_ros

@@ -43,6 +43,8 @@
 static inline ImVec2 operator+(const ImVec2& lhs, const ImVec2& rhs) { return ImVec2(lhs.x + rhs.x, lhs.y + rhs.y); }
 static inline ImVec2 operator-(const ImVec2& lhs, const ImVec2& rhs) { return ImVec2(lhs.x - rhs.x, lhs.y - rhs.y); }
 
+namespace imgui_ros
+{
 struct Link;
 struct Node;
 
@@ -156,4 +158,5 @@ struct Connector : std::enable_shared_from_this<Connector>
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_;
   };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_NODE_H

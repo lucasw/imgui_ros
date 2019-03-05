@@ -62,6 +62,8 @@
 #endif
 #pragma GCC diagnostic pop
 
+namespace imgui_ros
+{
 struct CubeFace
 {
   CubeFace()
@@ -105,4 +107,5 @@ struct CubeCamera : public Camera {
   std::array<std::shared_ptr<CubeFace>, 6> faces_;
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_CUBE_CAMERA_H

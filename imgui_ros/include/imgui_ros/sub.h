@@ -40,6 +40,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
 
+namespace imgui_ros
+{
 // TODO(lucasw)
 // namespace imgui_ros
 struct Sub : public Widget {
@@ -139,4 +141,5 @@ protected:
   void callback(const std_msgs::msg::Bool::SharedPtr msg);
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_SUB_H

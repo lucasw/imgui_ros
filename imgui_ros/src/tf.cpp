@@ -36,9 +36,8 @@
 #include <iomanip>
 #include <tf2/LinearMath/Matrix3x3.h>
 
-
-// TODO(lucasw)
-// namespace imgui_ros
+namespace imgui_ros
+{
 TfEcho::TfEcho(const std::string name,
     const std::string parent, const std::string child,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
@@ -242,3 +241,4 @@ void TfBroadcaster::draw()
   ImGui::PopID();
   }
 }
+}  // namespace imgui_ros

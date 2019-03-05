@@ -32,6 +32,8 @@
 #include <imgui_ros/sub.h>
 using std::placeholders::_1;
 
+namespace imgui_ros
+{
 Sub::Sub(const std::string name, const std::string topic,  // const unsigned type,
     std::shared_ptr<rclcpp::Node> node) :
     Widget(name, topic),
@@ -63,3 +65,4 @@ void BoolSub::draw() {
   }
   ImGui::Text("%s", ss.str().c_str());
 }
+}  // namespace imgui_ros

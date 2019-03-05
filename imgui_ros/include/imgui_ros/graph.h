@@ -37,6 +37,8 @@
 #include <imgui_ros/node.h>
 #include <rclcpp/rclcpp.hpp>
 
+namespace imgui_ros
+{
 // TODO(lucasw)
 // namespace imgui_ros
 // TODO(lucasw) template<typename MessageT> ?
@@ -73,4 +75,5 @@ protected:
   std::shared_ptr<Node> node_selected_;
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_GRAPH_H

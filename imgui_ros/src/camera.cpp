@@ -42,6 +42,8 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
+namespace imgui_ros
+{
 // TODO(lucasw) 'Camera' -> 'TextureCamera'
 Camera::Camera(const std::string name,
     const std::string frame_id,
@@ -267,3 +269,4 @@ void Camera::draw()
 // Camera::render()
 // {
 // }
+}  // namespace imgui_ros

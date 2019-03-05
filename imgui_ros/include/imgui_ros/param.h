@@ -43,6 +43,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
 
+namespace imgui_ros
+{
 // TODO(lucasw)
 // namespace imgui_ros
 struct Param : public Widget {
@@ -85,4 +87,5 @@ protected:
   rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_PARAM_H

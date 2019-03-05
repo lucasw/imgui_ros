@@ -44,6 +44,9 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
+
+namespace imgui_ros
+{
 constexpr std::array<GLuint, 3> Shape::draw_modes_;
 
 Shape::Shape(const std::string& name, const std::string& frame_id,
@@ -164,3 +167,4 @@ void Shape::draw(const std::vector<std::string>& texture_names_,
   ImGui::Text("%s", ss.str().c_str());
   ImGui::PopID();
 }
+}  // namespace imgui_ros

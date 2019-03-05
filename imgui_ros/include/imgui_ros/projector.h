@@ -61,6 +61,8 @@
 #endif
 #pragma GCC diagnostic pop
 
+namespace imgui_ros
+{
 struct Projector {
   // TODO(lucas) just pass in the Projector.msg
   Projector(const std::string name,
@@ -109,4 +111,5 @@ struct Projector {
   std::weak_ptr<rclcpp::Node> node_;
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_PROJECTOR_H

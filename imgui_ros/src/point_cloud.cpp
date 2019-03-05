@@ -37,7 +37,8 @@
 // #include <opencv2/highgui.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-
+namespace imgui_ros
+{
 PointCloud::PointCloud(const std::string name, const std::string topic,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
     std::shared_ptr<rclcpp::Node> node
@@ -102,3 +103,4 @@ void PointCloud::draw()
 void PointCloud::render()
 {
 }
+}  // namespace imgui_ros

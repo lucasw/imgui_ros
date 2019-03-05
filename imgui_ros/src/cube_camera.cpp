@@ -42,6 +42,8 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
+namespace imgui_ros
+{
 void drawGrid(cv::Mat& image, const size_t spacing=32)
 {
   auto color = cv::Scalar(255, 255, 255, 255);
@@ -290,3 +292,4 @@ void CubeCamera::draw()
 // CubeCamera::render()
 // {
 // }
+}  // namespace imgui_ros

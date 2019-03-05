@@ -31,6 +31,8 @@
 #include <imgui_ros/param.h>
 #include <opencv2/core.hpp>
 
+namespace imgui_ros
+{
 // TODO(lucasw)
 // namespace imgui_ros
 Param::Param(const std::string name,
@@ -211,3 +213,4 @@ bool Param::updateValue(const rcl_interfaces::msg::ParameterValue& new_value)
   value_ = new_value;
   return true;
 }
+}  // namespace imgui_ros

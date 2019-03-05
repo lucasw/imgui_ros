@@ -39,6 +39,8 @@
 
 using namespace std::chrono_literals;
 
+namespace imgui_ros
+{
 ImageTransfer::ImageTransfer()
 {
 
@@ -187,3 +189,4 @@ void ImageTransfer::imageCallback(sensor_msgs::msg::Image::SharedPtr msg, const 
   std::lock_guard<std::mutex> lock(sub_mutexes_[topic]);
   from_sub_[topic] = msg;
 }
+}  // namespace imgui_ros

@@ -50,8 +50,8 @@
 #include <std_msgs/msg/u_int64.hpp>
 #include <std_msgs/msg/string.hpp>
 
-// TODO(lucasw)
-// namespace imgui_ros
+namespace imgui_ros
+{
 // TODO(lucasw) template<typename MessageT> ?
 // Or just make a subclass for each because the imgui draw code will be different
 // for each?
@@ -194,5 +194,6 @@ protected:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
 };
 
+}  // namespace imgui_ros
 
 #endif  // IMGUI_ROS_PUB_H

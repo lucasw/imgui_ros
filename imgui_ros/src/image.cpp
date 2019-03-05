@@ -36,7 +36,8 @@
 // #include <opencv2/highgui.hpp>
 using std::placeholders::_1;
 
-// namespace {
+namespace imgui_ros
+{
   GlImage::GlImage(const std::string name, const std::string topic) :
       Widget(name, topic) {
     glGenTextures(1, &texture_id_);
@@ -486,3 +487,4 @@ using std::placeholders::_1;
     ImGui::End();
   }
 // }
+}  // namespace imgui_ros

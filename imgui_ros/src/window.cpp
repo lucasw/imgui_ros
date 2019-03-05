@@ -36,6 +36,8 @@
 #include <imgui_ros/window.h>
 // #include <opencv2/highgui.hpp>
 
+namespace imgui_ros
+{
 Window::~Window()
 {
   std::cout << "freeing window " << this << "\n";
@@ -138,3 +140,4 @@ void Window::TabGroup::remove(const std::string& name) {
   }
   widgets_.erase(name);
 }
+}  // namespace imgui_ros

@@ -45,6 +45,8 @@
 // #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+namespace imgui_ros
+{
 // TODO(lucasw)
 // namespace imgui_ros
 struct TfEcho : public Sub {
@@ -98,4 +100,5 @@ protected:
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
 };
 
+}  // namespace imgui_ros
 #endif  // IMGUI_ROS_TF_H
