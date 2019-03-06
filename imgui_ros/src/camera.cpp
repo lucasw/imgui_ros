@@ -70,7 +70,7 @@ void Camera::init(const size_t width, const size_t height,
     std::shared_ptr<rclcpp::Node> node,
     std::shared_ptr<ImageTransfer> image_transfer)
 {
-  RCLCPP_INFO(node->get_logger(), "regular camera");
+  RCLCPP_DEBUG(node->get_logger(), "regular camera");
   const bool sub_not_pub = false;
   image_ = std::make_shared<RosImage>(texture_name, topic, sub_not_pub, ros_pub,
       node, image_transfer);

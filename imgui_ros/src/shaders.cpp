@@ -120,19 +120,22 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
 
   GLint num_attribs = 0;
   glGetProgramiv(shader_handle_, GL_ACTIVE_ATTRIBUTES, &num_attribs);
-  std::cout << "shader '" << name_ << "' has " << num_attribs << " attribs\n";
+  if (false)
+    std::cout << "shader '" << name_ << "' has " << num_attribs << " attribs\n";
 
   for (int i = 0; i < num_attribs; ++i) {
     glGetActiveAttrib(shader_handle_, (GLuint)i, buf_size, &length, &size, &type, name_char);
     std::string name(name_char);
     attrib_locations_[name] = glGetAttribLocation(shader_handle_, name.c_str());
-    std::cout << "  '" << name << "' attrib location: " << attrib_locations_[name]
-        << ", size " << size << ", type " << type << "\n";
+    if (false)
+      std::cout << "  '" << name << "' attrib location: " << attrib_locations_[name]
+          << ", size " << size << ", type " << type << "\n";
   }
 
   GLint num_uniforms = 0;
   glGetProgramiv(shader_handle_, GL_ACTIVE_UNIFORMS, &num_uniforms);
-  std::cout << "shader '" << name_ << "' has " << num_uniforms << " uniforms\n";
+  if (false)
+    std::cout << "shader '" << name_ << "' has " << num_uniforms << " uniforms\n";
 
   for (int i = 0; i < num_uniforms; ++i) {
     glGetActiveUniform(shader_handle_, (GLuint)i, buf_size, &length, &size, &type, name_char);
@@ -149,8 +152,9 @@ bool ShaderSet::init(const std::string& glsl_version, std::string& message)
 
     uniform_locations_[name] = glGetUniformLocation(shader_handle_, name.c_str());
     // TODO(lucasw) ambient is -1, but still seems to work
-    std::cout << "  '" << name << "' uniform location: " << uniform_locations_[name]
-        << ", size " << size << ", type " << type << "\n";
+    if (false)
+      std::cout << "  '" << name << "' uniform location: " << uniform_locations_[name]
+          << ", size " << size << ", type " << type << "\n";
   }
 
   std::string msg;

@@ -109,6 +109,8 @@ struct Viz3D : public Window {
 
   std::stringstream render_message_;
   ImVec4 clear_color_ = ImVec4(0.4, 0.3, 0.5, 1.0);
+  // TODO(lucasw) should this go somewhere else?
+  glm::vec3 ambient_ = glm::vec3(0.3, 0.3, 0.3);
 
   virtual void update(const rclcpp::Time& stamp);
   virtual void draw();
@@ -154,9 +156,6 @@ protected:
   std::string frame_id_ = "map";
   std::string main_window_frame_id_ = "viz3d_main_window_camera";
   ////////////////////////////////////////////////////////////////
-
-  // TODO(lucasw) should this go somewhere else?
-  glm::vec3 ambient_;
 
   double aov_y_ = 45.0f;
   double aov_x_ = 0.0f;

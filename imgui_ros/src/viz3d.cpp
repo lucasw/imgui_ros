@@ -294,7 +294,9 @@ Viz3D::Viz3D(const std::string name,
   glsl_version_string_ = renderer->GlslVersionString;
 
   // TODO(lucasw) set via service all
-  ambient_ = glm::vec3(0.3, 0.3, 0.3);
+  node->get_parameter_or("ambient_red", ambient_[0], ambient_[0]);
+  node->get_parameter_or("ambient_green", ambient_[1], ambient_[1]);
+  node->get_parameter_or("ambient_blue", ambient_[2], ambient_[2]);
 
   const bool sub_not_pub = true;
   textures_["default"] = std::make_shared<RosImage>("default", "default_texture", sub_not_pub,
@@ -702,7 +704,10 @@ bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::s
   // TODO(lucasw) doesn't 'depth' need this update also?
   if (shader_sets_.size() < 1) {
     // this isn't a failure, just a race condition probably
-    std::cout << "no shaders yet, will retry when one is set\n";
+    auto node = node_.lock();
+    if (node) {
+      RCLCPP_WARN(node->get_logger(), "no shaders yet, will retry when one is set");
+    }
   } else {
     // TODO(lucasw) for now just use the last shader set
     for (auto shader_pair : shader_sets_) {
