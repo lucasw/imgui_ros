@@ -197,7 +197,7 @@ bool Viz3D::setupProjectorsWithShape(
     // this is the view of the projector
     tf2::Stamped<tf2::Transform> stamped_transform;
     try {
-      geometry_msgs::msg::TransformStamped tf;
+      geometry_msgs::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(main_frame_id,
           projector->frame_id_, tf2::TimePointZero);
       tf2::fromMsg(tf, stamped_transform);
@@ -308,7 +308,7 @@ Viz3D::Viz3D(const std::string name,
   //     "map", "viewer_camera",
   //     0.0, 0.0, tf_buffer_, node);
 
-  textured_shape_sub_ = node->create_subscription<imgui_ros::msg::TexturedShape>(topic,
+  textured_shape_sub_ = node->create_subscription<imgui_ros::TexturedShape>(topic,
         std::bind(&Viz3D::texturedShapeCallback, this, _1));
 
   texture_unit_["Texture"] = 0;
@@ -320,17 +320,17 @@ Viz3D::Viz3D(const std::string name,
     shadow_texture_unit_[i] = base_tex_ind + MAX_PROJECTORS + i;
   }
 
-  add_camera_ = node->create_service<imgui_ros::srv::AddCamera>("add_camera",
+  add_camera_ = node->create_service<imgui_ros::AddCamera>("add_camera",
       std::bind(&Viz3D::addCamera, this, _1, _2));
-  add_cube_camera_ = node->create_service<imgui_ros::srv::AddCubeCamera>("add_cube_camera",
+  add_cube_camera_ = node->create_service<imgui_ros::AddCubeCamera>("add_cube_camera",
       std::bind(&Viz3D::addCubeCamera, this, _1, _2));
-  add_projector_ = node->create_service<imgui_ros::srv::AddProjector>("add_projector",
+  add_projector_ = node->create_service<imgui_ros::AddProjector>("add_projector",
       std::bind(&Viz3D::addProjector, this, _1, _2));
-  add_shaders_ = node->create_service<imgui_ros::srv::AddShaders>("add_shaders",
+  add_shaders_ = node->create_service<imgui_ros::AddShaders>("add_shaders",
       std::bind(&Viz3D::addShaders, this, _1, _2));
-  add_texture_ = node->create_service<imgui_ros::srv::AddTexture>("add_texture",
+  add_texture_ = node->create_service<imgui_ros::AddTexture>("add_texture",
       std::bind(&Viz3D::addTexture, this, _1, _2));
-  add_shape_ = node->create_service<imgui_ros::srv::AddShape>("add_shape",
+  add_shape_ = node->create_service<imgui_ros::AddShape>("add_shape",
       std::bind(&Viz3D::addShape, this, _1, _2));
   #if 0
   test_shape_ = std::make_shared<Shape>();
@@ -347,8 +347,8 @@ Viz3D::~Viz3D()
   image_transfer_ = nullptr;
 }
 
-void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> req,
-                      std::shared_ptr<imgui_ros::srv::AddCamera::Response> res)
+void Viz3D::addCamera(const std::shared_ptr<imgui_ros::AddCamera::Request> req,
+                      std::shared_ptr<imgui_ros::AddCamera::Response> res)
 {
   auto node = node_.lock();
   if (!node) {
@@ -388,8 +388,8 @@ void Viz3D::addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> 
   res->success = true;
 }
 
-void Viz3D::addCubeCamera(const std::shared_ptr<imgui_ros::srv::AddCubeCamera::Request> req,
-                      std::shared_ptr<imgui_ros::srv::AddCubeCamera::Response> res)
+void Viz3D::addCubeCamera(const std::shared_ptr<imgui_ros::AddCubeCamera::Request> req,
+                      std::shared_ptr<imgui_ros::AddCubeCamera::Response> res)
 {
   auto node = node_.lock();
   if (!node) {
@@ -443,8 +443,8 @@ void Viz3D::addCubeCamera(const std::shared_ptr<imgui_ros::srv::AddCubeCamera::R
 }
 
 
-void Viz3D::addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Request> req,
-                         std::shared_ptr<imgui_ros::srv::AddProjector::Response> res)
+void Viz3D::addProjector(const std::shared_ptr<imgui_ros::AddProjector::Request> req,
+                         std::shared_ptr<imgui_ros::AddProjector::Response> res)
 {
   const std::string name = req->projector.camera.name;
   // const std::string texture_name = texture_name; -> std::bad_alloc - why compile at all?
@@ -504,8 +504,8 @@ void Viz3D::addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Req
   res->success = true;
 }
 
-void Viz3D::addShaders(const std::shared_ptr<imgui_ros::srv::AddShaders::Request> req,
-                       std::shared_ptr<imgui_ros::srv::AddShaders::Response> res)
+void Viz3D::addShaders(const std::shared_ptr<imgui_ros::AddShaders::Request> req,
+                       std::shared_ptr<imgui_ros::AddShaders::Response> res)
 {
   res->success = true;
   if (req->remove) {
@@ -594,8 +594,8 @@ bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_p
   return true;
 }
 
-void Viz3D::addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request> req,
-                       std::shared_ptr<imgui_ros::srv::AddTexture::Response> res)
+void Viz3D::addTexture(const std::shared_ptr<imgui_ros::AddTexture::Request> req,
+                       std::shared_ptr<imgui_ros::AddTexture::Response> res)
 {
   res->success = true;
   if (req->remove) {
@@ -607,21 +607,21 @@ void Viz3D::addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request
   }
 
   auto texture = std::make_shared<RosImage>(req->name,
-    std::make_shared<sensor_msgs::msg::Image>(req->image));
+    std::make_shared<sensor_msgs::Image>(req->image));
   texture->draw_texture_controls_ = true;
-  // texture->imageCallback(std::make_shared<sensor_msgs::msg::Image>(req->image));
+  // texture->imageCallback(std::make_shared<sensor_msgs::Image>(req->image));
   texture->wrap_s_ind_ = req->wrap_s;
   texture->wrap_t_ind_ = req->wrap_t;
   texture->updateTexture();
   textures_[req->name] = texture;
 }
 
-void Viz3D::addShape(const std::shared_ptr<imgui_ros::srv::AddShape::Request> req,
-                std::shared_ptr<imgui_ros::srv::AddShape::Response> res)
+void Viz3D::addShape(const std::shared_ptr<imgui_ros::AddShape::Request> req,
+                std::shared_ptr<imgui_ros::AddShape::Response> res)
 {
   res->success = true;
   for (auto textured_shape : req->shapes) {
-    auto shape = std::make_shared<imgui_ros::msg::TexturedShape>(textured_shape);
+    auto shape = std::make_shared<imgui_ros::TexturedShape>(textured_shape);
     if (!addShape2(shape, res->message)) {
       res->success = false;
     }
@@ -631,7 +631,7 @@ void Viz3D::addShape(const std::shared_ptr<imgui_ros::srv::AddShape::Request> re
 }
 
 // TODO(lucasw) Shape -> Mesh?
-void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr msg)
+void Viz3D::texturedShapeCallback(const imgui_ros::TexturedShape::SharedPtr msg)
 {
   std::string message;
   addShape2(msg, message);
@@ -640,7 +640,7 @@ void Viz3D::texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr
   // RCLCPP_INFO(node->get_logger(), message);
 }
 
-bool Viz3D::addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::string& message)
+bool Viz3D::addShape2(const imgui_ros::TexturedShape::SharedPtr msg, std::string& message)
 {
   if (msg->name == "") {
     message += "mesh needs name";
@@ -996,10 +996,10 @@ void Viz3D::draw()
   ImGui::End();
 }
 
-void Viz3D::addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now)
+void Viz3D::addTF(tf2_msgs::TFMessage& tfm, const rclcpp::Time& now)
 {
   // convert tf2::Transform to geometry_msgs TransformStamped
-  geometry_msgs::msg::TransformStamped ts;
+  geometry_msgs::TransformStamped ts;
   ts.transform = tf2::toMsg(transform_);
   ts.header.stamp = now;
   ts.header.frame_id = frame_id_;
@@ -1061,7 +1061,7 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
 
   model_matrix = glm::mat4(1.0f);
   try {
-    geometry_msgs::msg::TransformStamped model_tf;
+    geometry_msgs::TransformStamped model_tf;
     model_tf = tf_buffer_->lookupTransform(frame_id, child_frame_id, tf2::TimePointZero);
     tf2::Stamped<tf2::Transform> model_stamped_transform;
     tf2::fromMsg(model_tf, model_stamped_transform);
@@ -1221,7 +1221,7 @@ void Viz3D::renderShadows()
     // TODO(lucasw) if render width/height change need to update rendered_texture
 
     try {
-      geometry_msgs::msg::TransformStamped tf;
+      geometry_msgs::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(frame_id_,
           projector->frame_id_, tf2::TimePointZero);
       tf2::fromMsg(tf, projector->stamped_transform_);
@@ -1282,7 +1282,7 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
   // 1st pass - render the scene to the cube map
   {
     try {
-      geometry_msgs::msg::TransformStamped tf;
+      geometry_msgs::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(frame_id_,
           cube_camera->frame_id_, tf2::TimePointZero);
       tf2::fromMsg(tf, cube_camera->stamped_transform_);
@@ -1521,7 +1521,7 @@ void Viz3D::renderToTexture()
     // TODO(lucasw) if render width/height change need to update rendered_texture
 
     try {
-      geometry_msgs::msg::TransformStamped tf;
+      geometry_msgs::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(frame_id_,
           camera->frame_id_, tf2::TimePointZero);
       tf2::fromMsg(tf, camera->stamped_transform_);

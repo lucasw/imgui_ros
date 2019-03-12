@@ -35,7 +35,7 @@
 #include <imgui.h>
 #include <imgui_impl_sdl.h>
 #pragma GCC diagnostic pop
-#include <imgui_ros/srv/add_window.hpp>
+#include <imgui_ros/AddWindow.h>
 #include <imgui_ros/image.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/imgui_ros.h>
@@ -88,7 +88,7 @@ namespace imgui_ros
         std::bind(&ImguiRos::runNodeSingleThreaded, this, image_transfer_));
     #endif
 
-    tf_pub_ = create_publisher<tf2_msgs::msg::TFMessage>("/tf");
+    tf_pub_ = create_publisher<tf2_msgs::TFMessage>("/tf");
     clock_ = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
     #if 1
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(clock_);
@@ -131,10 +131,10 @@ namespace imgui_ros
     // parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(this);
 
     // building this causes the node to crash only in release mode
-    add_tf_ = create_service<srv::AddTf>("add_tf",
+    add_tf_ = create_service<AddTf>("add_tf",
         std::bind(&ImguiRos::addTf, this, std::placeholders::_1, std::placeholders::_2));
 
-    add_window_ = create_service<srv::AddWindow>("add_window",
+    add_window_ = create_service<AddWindow>("add_window",
         std::bind(&ImguiRos::addWindow, this, std::placeholders::_1, std::placeholders::_2));
 
     update_timer_ = this->create_wall_timer(33ms,
@@ -296,8 +296,8 @@ namespace imgui_ros
     rclcpp::spin(node);
   }
 
-  void ImguiRos::addTf(const std::shared_ptr<imgui_ros::srv::AddTf::Request> req,
-             std::shared_ptr<imgui_ros::srv::AddTf::Response> res)
+  void ImguiRos::addTf(const std::shared_ptr<imgui_ros::AddTf::Request> req,
+             std::shared_ptr<imgui_ros::AddTf::Response> res)
   {
     RCLCPP_DEBUG(get_logger(), "new tf pub %s", req->tf.name);
     std::shared_ptr<Pub> pub = std::make_shared<TfBroadcaster>(
@@ -317,8 +317,8 @@ namespace imgui_ros
     res->message += "added tf pub " + req->tf.name + " to " + req->tf.window;
   }
 
-  void ImguiRos::addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
-      std::shared_ptr<imgui_ros::srv::AddWindow::Response> res) {
+  void ImguiRos::addWindow(const std::shared_ptr<imgui_ros::AddWindow::Request> req,
+      std::shared_ptr<imgui_ros::AddWindow::Response> res) {
     // std::cout << "adding window " << req->name << "\n";
     // TODO(lucasw) there could be a mutex only protecting the windows_
     std::lock_guard<std::mutex> lock(mutex_);
@@ -377,9 +377,9 @@ namespace imgui_ros
   }
 
   // TODO(lucasw) move into widget.cpp?
-  bool ImguiRos::addWidget(const imgui_ros::msg::Widget& widget,
+  bool ImguiRos::addWidget(const imgui_ros::Widget& widget,
       std::string& message, std::shared_ptr<Widget>& imgui_widget) {
-    if (widget.type == imgui_ros::msg::Widget::IMAGE) {
+    if (widget.type == imgui_ros::Widget::IMAGE) {
       std::shared_ptr<RosImage> ros_image;
       const bool sub_not_pub = true;
       // std::cout << "new ros image " << widget.name << "\n";
@@ -395,70 +395,70 @@ namespace imgui_ros
       return true;
     ///////////////////////////////////////////////////////////////////////////
     // publisher types
-    } else if (widget.type == imgui_ros::msg::Widget::PUB) {
+    } else if (widget.type == imgui_ros::Widget::PUB) {
       std::shared_ptr<Pub> pub;
       int64_t value_int = widget.value;
       int64_t min = widget.min;
       int64_t max = widget.max;
-      if (widget.sub_type == msg::Widget::FLOAT32) {
-        pub.reset(new GenericPub<std_msgs::msg::Float32>(
+      if (widget.sub_type == Widget::FLOAT32) {
+        pub.reset(new GenericPub<std_msgs::Float32>(
             widget.name, widget.topic,
             widget.value, widget.min, widget.max, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::BOOL) {
+      } else if (widget.sub_type == Widget::BOOL) {
         bool value = widget.value;
         pub.reset(new BoolPub(widget.name, widget.topic,
             value, shared_from_this()));
       // Templated types //////////////////////////////////
-      } else if (widget.sub_type == msg::Widget::FLOAT32) {
-        pub.reset(new GenericPub<std_msgs::msg::Float32>(
+      } else if (widget.sub_type == Widget::FLOAT32) {
+        pub.reset(new GenericPub<std_msgs::Float32>(
             widget.name, widget.topic,
             widget.value, widget.min, widget.max, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::FLOAT64) {
-        pub.reset(new GenericPub<std_msgs::msg::Float64>(
+      } else if (widget.sub_type == Widget::FLOAT64) {
+        pub.reset(new GenericPub<std_msgs::Float64>(
             widget.name, widget.topic,
             widget.value, widget.min, widget.max, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT8) {
-        pub.reset(new GenericPub<std_msgs::msg::Int8>(
+      } else if (widget.sub_type == Widget::INT8) {
+        pub.reset(new GenericPub<std_msgs::Int8>(
             widget.name, widget.topic,
             value_int, min, max, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT16) {
-        pub.reset(new GenericPub<std_msgs::msg::Int16>(
+      } else if (widget.sub_type == Widget::INT16) {
+        pub.reset(new GenericPub<std_msgs::Int16>(
             widget.name, widget.topic,
             value_int, min, max, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT32) {
-        pub.reset(new GenericPub<std_msgs::msg::Int32>(
+      } else if (widget.sub_type == Widget::INT32) {
+        pub.reset(new GenericPub<std_msgs::Int32>(
             widget.name, widget.topic,
             value_int, min, max, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT64) {
-        pub.reset(new GenericPub<std_msgs::msg::Int64>(
+      } else if (widget.sub_type == Widget::INT64) {
+        pub.reset(new GenericPub<std_msgs::Int64>(
             widget.name, widget.topic,
             value_int, min, max, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::UINT8) {
-        pub.reset(new GenericPub<std_msgs::msg::UInt8>(
+      } else if (widget.sub_type == Widget::UINT8) {
+        pub.reset(new GenericPub<std_msgs::UInt8>(
             widget.name, widget.topic,
             value_int, min, max, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::UINT16) {
-        pub.reset(new GenericPub<std_msgs::msg::UInt16>(
+      } else if (widget.sub_type == Widget::UINT16) {
+        pub.reset(new GenericPub<std_msgs::UInt16>(
             widget.name, widget.topic,
             value_int, min, max, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::UINT32) {
-        pub.reset(new GenericPub<std_msgs::msg::UInt32>(
+      } else if (widget.sub_type == Widget::UINT32) {
+        pub.reset(new GenericPub<std_msgs::UInt32>(
             widget.name, widget.topic,
             value_int, min, max, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::UINT64) {
-        pub.reset(new GenericPub<std_msgs::msg::UInt64>(
+      } else if (widget.sub_type == Widget::UINT64) {
+        pub.reset(new GenericPub<std_msgs::UInt64>(
             widget.name, widget.topic,
             value_int, min, max, shared_from_this()));
       ////////////////////////////////////////////////////
-      } else if (widget.sub_type == msg::Widget::STRING) {
+      } else if (widget.sub_type == Widget::STRING) {
         pub.reset(new StringPub(
             widget.name, widget.topic,
             widget.items, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::MENU) {
+      } else if (widget.sub_type == Widget::MENU) {
         int value = widget.value;
         pub.reset(new MenuPub(widget.name, widget.topic,
             value, widget.items, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::TF) {
+      } else if (widget.sub_type == Widget::TF) {
         RCLCPP_DEBUG(get_logger(), "new tf pub");
         if (widget.items.size() < 2) {
           std::stringstream ss;
@@ -482,54 +482,54 @@ namespace imgui_ros
       return true;
     ///////////////////////////////////////////////////////////////////////////
     // subscription types
-    } else if (widget.type == imgui_ros::msg::Widget::SUB) {
+    } else if (widget.type == imgui_ros::Widget::SUB) {
       RCLCPP_DEBUG(get_logger(), "new sub %s %d", widget.name.c_str(), widget.sub_type);
       std::shared_ptr<Sub> sub;
-      if (widget.sub_type == msg::Widget::FLOAT32) {
-        sub.reset(new GenericSub<std_msgs::msg::Float32>(
+      if (widget.sub_type == Widget::FLOAT32) {
+        sub.reset(new GenericSub<std_msgs::Float32>(
             widget.name, widget.topic,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::FLOAT64) {
-        sub.reset(new GenericSub<std_msgs::msg::Float64>(
+      } else if (widget.sub_type == Widget::FLOAT64) {
+        sub.reset(new GenericSub<std_msgs::Float64>(
             widget.name, widget.topic,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT8) {
-        sub.reset(new GenericSub<std_msgs::msg::Int8>(
+      } else if (widget.sub_type == Widget::INT8) {
+        sub.reset(new GenericSub<std_msgs::Int8>(
             widget.name, widget.topic,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT16) {
-        sub.reset(new GenericSub<std_msgs::msg::Int16>(
+      } else if (widget.sub_type == Widget::INT16) {
+        sub.reset(new GenericSub<std_msgs::Int16>(
             widget.name, widget.topic,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT32) {
-        sub.reset(new GenericSub<std_msgs::msg::Int32>(
+      } else if (widget.sub_type == Widget::INT32) {
+        sub.reset(new GenericSub<std_msgs::Int32>(
             widget.name, widget.topic,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT64) {
-        sub.reset(new GenericSub<std_msgs::msg::Int64>(
+      } else if (widget.sub_type == Widget::INT64) {
+        sub.reset(new GenericSub<std_msgs::Int64>(
             widget.name, widget.topic,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::UINT8) {
-        sub.reset(new GenericSub<std_msgs::msg::UInt8>(
+      } else if (widget.sub_type == Widget::UINT8) {
+        sub.reset(new GenericSub<std_msgs::UInt8>(
             widget.name, widget.topic,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::UINT16) {
-        sub.reset(new GenericSub<std_msgs::msg::UInt16>(
+      } else if (widget.sub_type == Widget::UINT16) {
+        sub.reset(new GenericSub<std_msgs::UInt16>(
             widget.name, widget.topic,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::UINT32) {
-        sub.reset(new GenericSub<std_msgs::msg::UInt32>(
+      } else if (widget.sub_type == Widget::UINT32) {
+        sub.reset(new GenericSub<std_msgs::UInt32>(
             widget.name, widget.topic,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::UINT64) {
-        sub.reset(new GenericSub<std_msgs::msg::UInt64>(
+      } else if (widget.sub_type == Widget::UINT64) {
+        sub.reset(new GenericSub<std_msgs::UInt64>(
             widget.name, widget.topic,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::STRING) {
-        sub.reset(new GenericSub<std_msgs::msg::String>(
+      } else if (widget.sub_type == Widget::STRING) {
+        sub.reset(new GenericSub<std_msgs::String>(
             widget.name, widget.topic,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::TF) {
+      } else if (widget.sub_type == Widget::TF) {
         RCLCPP_DEBUG(get_logger(), "new tf echo");
         if (widget.items.size() < 2) {
           std::stringstream ss;
@@ -542,7 +542,7 @@ namespace imgui_ros
             widget.items[0], widget.items[1],
             tf_buffer_,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::VIZ2D) {
+      } else if (widget.sub_type == Widget::VIZ2D) {
         RCLCPP_INFO(get_logger(), "new viz 2d");
         if (widget.items.size() < 1) {
           std::stringstream ss;
@@ -560,11 +560,11 @@ namespace imgui_ros
             pixels_per_meter,
             tf_buffer_,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::BOOL) {
+      } else if (widget.sub_type == Widget::BOOL) {
         bool value = widget.value;
         sub.reset(new BoolSub(widget.name, widget.topic,  // widget.sub_type,
             value, shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::POINTCLOUD) {
+      } else if (widget.sub_type == Widget::POINTCLOUD) {
         // There won't be anything in the shape to draw yet
         if (widget.remove) {
           viz3d->removeShape(widget.name);
@@ -582,50 +582,50 @@ namespace imgui_ros
       }
       imgui_widget = sub;
       return true;
-    } else if (widget.type == imgui_ros::msg::Widget::PLOT) {
+    } else if (widget.type == imgui_ros::Widget::PLOT) {
       std::shared_ptr<Sub> sub;
-      if (widget.sub_type == msg::Widget::BOOL) {
-        sub.reset(new PlotSub<std_msgs::msg::Bool>(
+      if (widget.sub_type == Widget::BOOL) {
+        sub.reset(new PlotSub<std_msgs::Bool>(
             widget.name, widget.topic, widget.value,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::FLOAT32) {
-        sub.reset(new PlotSub<std_msgs::msg::Float32>(
+      } else if (widget.sub_type == Widget::FLOAT32) {
+        sub.reset(new PlotSub<std_msgs::Float32>(
             widget.name, widget.topic, widget.value,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::FLOAT64) {
-        sub.reset(new PlotSub<std_msgs::msg::Float64>(
+      } else if (widget.sub_type == Widget::FLOAT64) {
+        sub.reset(new PlotSub<std_msgs::Float64>(
             widget.name, widget.topic, widget.value,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT8) {
-        sub.reset(new PlotSub<std_msgs::msg::Int8>(
+      } else if (widget.sub_type == Widget::INT8) {
+        sub.reset(new PlotSub<std_msgs::Int8>(
             widget.name, widget.topic, widget.value,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT16) {
-        sub.reset(new PlotSub<std_msgs::msg::Int16>(
+      } else if (widget.sub_type == Widget::INT16) {
+        sub.reset(new PlotSub<std_msgs::Int16>(
             widget.name, widget.topic, widget.value,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT32) {
-        sub.reset(new PlotSub<std_msgs::msg::Int32>(
+      } else if (widget.sub_type == Widget::INT32) {
+        sub.reset(new PlotSub<std_msgs::Int32>(
             widget.name, widget.topic, widget.value,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::INT64) {
-        sub.reset(new PlotSub<std_msgs::msg::Int64>(
+      } else if (widget.sub_type == Widget::INT64) {
+        sub.reset(new PlotSub<std_msgs::Int64>(
             widget.name, widget.topic, widget.value,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::UINT8) {
-        sub.reset(new PlotSub<std_msgs::msg::UInt8>(
+      } else if (widget.sub_type == Widget::UINT8) {
+        sub.reset(new PlotSub<std_msgs::UInt8>(
             widget.name, widget.topic, widget.value,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::UINT16) {
-        sub.reset(new PlotSub<std_msgs::msg::UInt16>(
+      } else if (widget.sub_type == Widget::UINT16) {
+        sub.reset(new PlotSub<std_msgs::UInt16>(
             widget.name, widget.topic, widget.value,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::UINT32) {
-        sub.reset(new PlotSub<std_msgs::msg::UInt32>(
+      } else if (widget.sub_type == Widget::UINT32) {
+        sub.reset(new PlotSub<std_msgs::UInt32>(
             widget.name, widget.topic, widget.value,
             shared_from_this()));
-      } else if (widget.sub_type == msg::Widget::UINT64) {
-        sub.reset(new PlotSub<std_msgs::msg::UInt64>(
+      } else if (widget.sub_type == Widget::UINT64) {
+        sub.reset(new PlotSub<std_msgs::UInt64>(
             widget.name, widget.topic, widget.value,
             shared_from_this()));
       } else {
@@ -636,7 +636,7 @@ namespace imgui_ros
       }
       imgui_widget = sub;
     //////////////////////////////////////////////////////////
-    } else if (widget.type == imgui_ros::msg::Widget::PARAM) {
+    } else if (widget.type == imgui_ros::Widget::PARAM) {
       std::shared_ptr<Param> param;
       const std::string node_name = widget.topic;
       if (widget.items.size() < 1) {
@@ -647,32 +647,32 @@ namespace imgui_ros
       }
       // TODO(lucasw) have a better variable for this
       const std::string parameter_name = widget.items[0];
-      if (widget.sub_type == msg::Widget::BOOL) {
+      if (widget.sub_type == Widget::BOOL) {
         param.reset(new Param(widget.name,
             node_name, parameter_name,
-            rcl_interfaces::msg::ParameterType::PARAMETER_BOOL,
+            rcl_interfaces::ParameterType::PARAMETER_BOOL,
             0, 1,
             shared_from_this()));
-      } else if ((widget.sub_type == msg::Widget::FLOAT32) ||
-          (widget.sub_type == msg::Widget::FLOAT64)) {
+      } else if ((widget.sub_type == Widget::FLOAT32) ||
+          (widget.sub_type == Widget::FLOAT64)) {
         param.reset(new Param(widget.name,
             node_name, parameter_name,
-            rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
+            rcl_interfaces::ParameterType::PARAMETER_DOUBLE,
             widget.min, widget.max,
             shared_from_this()));
-      } else if ((widget.sub_type == msg::Widget::INT8) ||
-          (widget.sub_type == msg::Widget::INT16) ||
-          (widget.sub_type == msg::Widget::INT32) ||
-          (widget.sub_type == msg::Widget::INT64)) {
+      } else if ((widget.sub_type == Widget::INT8) ||
+          (widget.sub_type == Widget::INT16) ||
+          (widget.sub_type == Widget::INT32) ||
+          (widget.sub_type == Widget::INT64)) {
         param.reset(new Param(widget.name,
             node_name, parameter_name,
-            rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER,
+            rcl_interfaces::ParameterType::PARAMETER_INTEGER,
             widget.min, widget.max,
             shared_from_this()));
-      } else if ((widget.sub_type == msg::Widget::STRING)) {
+      } else if ((widget.sub_type == Widget::STRING)) {
         param.reset(new Param(widget.name,
             node_name, parameter_name,
-            rcl_interfaces::msg::ParameterType::PARAMETER_STRING,
+            rcl_interfaces::ParameterType::PARAMETER_STRING,
             widget.min, widget.max,
             shared_from_this()));
       } else {
@@ -691,7 +691,7 @@ namespace imgui_ros
       param_widgets_[node_name][widget.name] = param;
       imgui_widget = param;
     ///////////////////////////////////////////////////////////////////////////
-    } else if (widget.type == imgui_ros::msg::Widget::GRAPH) {
+    } else if (widget.type == imgui_ros::Widget::GRAPH) {
       imgui_widget = std::make_shared<Graph>(widget.name, shared_from_this());
     } else {
       std::stringstream ss;
@@ -848,7 +848,7 @@ namespace imgui_ros
     }
 
     // update all tfs
-    tf2_msgs::msg::TFMessage tfs;
+    tf2_msgs::TFMessage tfs;
     for (auto& window : windows_) {
       if (window.second) {
         window.second->addTF(tfs, stamp);
@@ -879,7 +879,7 @@ namespace imgui_ros
   // TODO(lucasw) need to push this up into containing viz3d class,
   // it will have a list of namespaces that it has parameter events for and will
   // receive the event and distribute the values to the proper param
-  void ImguiRos::onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
+  void ImguiRos::onParameterEvent(const rcl_interfaces::ParameterEvent::SharedPtr event)
   {
     // RCLCPP_INFO(get_logger(), "%s", event->node);
     std::cout << event->node << "\n";

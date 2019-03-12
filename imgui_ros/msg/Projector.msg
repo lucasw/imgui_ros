@@ -1,4 +1,4 @@
-bool remove False
+bool remove  # False
 # camera width and height aren't used, the texture in texture_name defines that
 imgui_ros/Camera camera
 # stop projecting beyond this range - TODO(lucasw) redundant with Camera far?

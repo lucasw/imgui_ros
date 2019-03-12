@@ -1,26 +1,26 @@
 string name
-bool remove false
+bool remove  # false
 imgui_ros/Widget[] widgets
 # TODO(lucasw) any number of other window properties
 # these are saved in the imgui.ini file
 # whether to use the settings before, or continue to use
 # what has already been set.
-bool init False
+bool init  # False
 geometry_msgs/Point position
 geometry_msgs/Point size
 # 0 - 1.0 to scroll from min to max
 # doesn't work if it takes some time for all window contents to determin y size
 float32 scroll_x  # not currently supported
 float32 scroll_y
-bool collapsed False
+bool collapsed  # False
 # TODO(lucasw) pass in flags as int just as ImGui expects- but
 # is it hard to give python access to what the flags are?
-bool no_move False  # don't allow dragging on the window to move it (TODO ConfigWindowsMoveFromTitleBarOnly)
-bool no_title_bar False
-bool no_resize False
-bool no_scrollbar False
-bool no_collapse False
-bool no_decoration False  # combines title, resize, scrollbar, collapse
+bool no_move  # False  # don't allow dragging on the window to move it (TODO ConfigWindowsMoveFromTitleBarOnly)
+bool no_title_bar  # False
+bool no_resize  # False
+bool no_scrollbar  # False
+bool no_collapse  # False
+bool no_decoration  # False  # combines title, resize, scrollbar, collapse
 ---
-string message ""
-bool success False
+string message  # ""
+bool success  # False

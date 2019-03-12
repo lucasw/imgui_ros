@@ -17,49 +17,53 @@ endif()
 
 find_package(OpenCV REQUIRED)
 find_package(SDL2 REQUIRED)
-find_package(ament_cmake REQUIRED)
-find_package(class_loader REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(glm REQUIRED)
-find_package(internal_pub_sub REQUIRED)
-# find_package(example_interfaces REQUIRED)
-find_package(pcl_conversions REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rcl_interfaces REQUIRED)
-find_package(rcutils)
-find_package(rmw REQUIRED)
-find_package(rosidl_cmake REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
-# find_package(rosidl_typesupport_cpp REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(shape_msgs REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(tf2_geometry_msgs REQUIRED)
-find_package(tf2_msgs REQUIRED)
-find_package(tf2_ros REQUIRED)
-find_package(visualization_msgs REQUIRED)
-
 find_package(Boost COMPONENTS system REQUIRED)
 find_package(PCL COMPONENTS common REQUIRED)
-# find_package(PCL REQUIRED)
+find_package(glm REQUIRED)
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/Camera.msg"
-  "msg/Projector.msg"
-  "msg/Vertex.msg"
-  "msg/Widget.msg"
-  "msg/TexturedShape.msg"
-  "msg/TfWidget.msg"
-  "srv/AddCamera.srv"
-  "srv/AddCubeCamera.srv"
-  "srv/AddProjector.srv"
-  "srv/AddTf.srv"
-  "srv/AddTexture.srv"
-  "srv/AddWindow.srv"
-  "srv/AddShape.srv"
-  "srv/AddShaders.srv"
+find_package(catkin REQUIRED COMPONENTS
+geometry_msgs
+pcl_conversions
+roscpp
+sensor_msgs
+shape_msgs
+std_msgs
+tf2
+tf2_geometry_msgs
+tf2_msgs
+tf2_ros
+visualization_msgs
+)
+
+add_message_files(
+  FILES
+  Camera.msg
+  Projector.msg
+  Vertex.msg
+  Widget.msg
+  TexturedShape.msg
+  TfWidget.msg
+)
+
+add_service_files(
+  FILES
+  AddCamera.srv
+  AddCubeCamera.srv
+  AddProjector.srv
+  AddTf.srv
+  AddTexture.srv
+  AddWindow.srv
+  AddShape.srv
+  AddShaders.srv
+)
+
+generate_messages(
   DEPENDENCIES geometry_msgs sensor_msgs shape_msgs std_msgs
+)
+
+catkin_package(
+  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS nodelet roscpp sensor_msgs std_msgs
 )
 
 # TODO(lucasw) currently have to symlink imgui in,
@@ -70,6 +74,7 @@ include_directories(
   imgui
   imgui/examples
   imgui/examples/libs/gl3w
+  ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRECTORIES}
   ${SDL2_INCLUDE_DIRS}
 )
@@ -107,74 +112,43 @@ add_library(imguiros SHARED
 )
 set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPILE_FLAGS -Wno-pedantic)
 
-ament_target_dependencies(imguiros
-  "class_loader"
-  "geometry_msgs"
-  "internal_pub_sub"
-  "pcl_conversions"
-  "rcl_interfaces"
-  "rclcpp"
-  "rcutils"
-  "shape_msgs"
-  "sensor_msgs"
-  "std_msgs"
-  "tf2"
-  "tf2_geometry_msgs"
-  "tf2_msgs"
-  "tf2_ros"
-  "visualization_msgs"
-)
-rosidl_target_interfaces(imguiros ${PROJECT_NAME} "rosidl_typesupport_cpp")
+# add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
+add_dependencies(imguiros ${PROJECT_NAME}_gencpp)
+
 target_link_libraries(imguiros
   ${Boost_SYSTEM_LIBRARY}  # pcl_conversions requires this
   ${OpenCV_LIBRARIES}
   ${PCL_LIBRARIES}
   ${SDL2_LIBRARIES}
+  ${catkin_LIBRARIES}
   GL
   dl
 )
-rclcpp_register_node_plugins(imguiros "imgui_ros::ImguiRos")
-rclcpp_register_node_plugins(imguiros "imgui_ros::GeneratePointCloud2")
+
 install(TARGETS imguiros
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-add_executable(imgui_ros_node src/nodes/imgui_ros_node.cpp)
-target_link_libraries(imgui_ros_node imguiros)
-ament_target_dependencies(imgui_ros_node rclcpp imguiros)
-install(TARGETS imgui_ros_node DESTINATION lib/${PROJECT_NAME})
-
-add_executable(executor_imgui_ros_node src/nodes/executor_imgui_ros_node.cpp)
-target_link_libraries(executor_imgui_ros_node imguiros)
-ament_target_dependencies(executor_imgui_ros_node rclcpp imguiros)
-install(TARGETS executor_imgui_ros_node DESTINATION lib/${PROJECT_NAME})
+# add_executable(imgui_ros_node src/nodes/imgui_ros_node.cpp)
+# target_link_libraries(imgui_ros_node imguiros)
+# ament_target_dependencies(imgui_ros_node rclcpp imguiros)
+# install(TARGETS imgui_ros_node DESTINATION lib/${PROJECT_NAME})
 
 # only optionally build usb_cam node, need right version of usb_cam
 # https://github.com/lucasw/usb_cam/tree/internal_pub_sub
-find_package(usb_cam)
-if (usb_cam_FOUND_AMENT_PACKAGE)
-  add_executable(usb_cam_viewer src/nodes/usb_cam_viewer.cpp)
-  target_link_libraries(usb_cam_viewer imguiros)
-  ament_target_dependencies(usb_cam_viewer rclcpp imguiros usb_cam)
-  install(TARGETS usb_cam_viewer DESTINATION lib/${PROJECT_NAME})
-endif()
-
-add_executable(param_to_topic src/param_to_topic.cpp)
-ament_target_dependencies(param_to_topic
-  # "example_interfaces"
-  "rclcpp"
-  "rcutils"
-  "std_msgs"
-)
-install(TARGETS param_to_topic DESTINATION lib/${PROJECT_NAME})
+# find_package(usb_cam)
+# if (usb_cam_FOUND_AMENT_PACKAGE)
+#   add_executable(usb_cam_viewer src/nodes/usb_cam_viewer.cpp)
+#   target_link_libraries(usb_cam_viewer imguiros)
+#   ament_target_dependencies(usb_cam_viewer rclcpp imguiros usb_cam)
+#   install(TARGETS usb_cam_viewer DESTINATION lib/${PROJECT_NAME})
+# endif()
 
 install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
-
-ament_python_install_package(imgui_ros)
 
 install(PROGRAMS
   # TODO(lucasw) is this redundant with install package above, or necessary to run this from ros2 run?
@@ -194,24 +168,6 @@ install(PROGRAMS
   scripts/vertex.glsl
   DESTINATION lib/${PROJECT_NAME})
 
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # remove the line when a copyright and license is present in all source files
-  set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # remove the line when this package is a git repo
-  set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
-endif()
-
-ament_export_include_directories(
-  include
-  # imgui/examples
-  # imgui/examples/libs/gl3w
-)
-ament_export_dependencies(SDL2 sensor_msgs tf2_msgs tf2_ros tf2)
-ament_export_libraries(imguiros)
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY imgui/examples/libs/gl3w/GL/ DESTINATION include/GL)
 install(FILES
@@ -223,5 +179,3 @@ install(FILES
   imgui/imstb_truetype.h
   DESTINATION include
 )
-
-ament_package()

@@ -51,7 +51,7 @@
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
+#include <ros/ros.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_ros/buffer.h>
 
@@ -85,7 +85,6 @@ struct Viz3D : public Window {
     const std::string topic,
     std::shared_ptr<ImGuiImplOpenGL3> renderer,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    std::shared_ptr<rclcpp::Node> node,
     std::shared_ptr<ImageTransfer> image_transfer
     );
   ~Viz3D();
@@ -112,12 +111,12 @@ struct Viz3D : public Window {
   // TODO(lucasw) should this go somewhere else?
   glm::vec3 ambient_ = glm::vec3(0.3, 0.3, 0.3);
 
-  virtual void update(const rclcpp::Time& stamp);
+  virtual void update(const ros::Time& stamp);
   virtual void draw();
   //    const int pos_x, const int pos_y,
   //    const int size_x, const int size_y);
 
-  virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now);
+  virtual void addTF(tf2_msgs::TFMessage& tfm, const ros::Time& now);
 
   // Can exceed this number of projectors but this is the number
   // than can simultaneously be projectored on any surface.
@@ -187,38 +186,38 @@ protected:
 
   std::string glsl_version_string_ = "";
 
-  rclcpp::Service<imgui_ros::srv::AddCamera>::SharedPtr add_camera_;
-  void addCamera(const std::shared_ptr<imgui_ros::srv::AddCamera::Request> req,
-                  std::shared_ptr<imgui_ros::srv::AddCamera::Response> res);
+  ros::Service add_camera_;
+  void addCamera(const std::shared_ptr<imgui_ros::AddCamera::Request> req,
+                  std::shared_ptr<imgui_ros::AddCamera::Response> res);
   std::map<std::string, std::shared_ptr<Camera> > cameras_;
 
-  rclcpp::Service<imgui_ros::srv::AddCubeCamera>::SharedPtr add_cube_camera_;
-  void addCubeCamera(const std::shared_ptr<imgui_ros::srv::AddCubeCamera::Request> req,
-                  std::shared_ptr<imgui_ros::srv::AddCubeCamera::Response> res);
+  ros::ServiceServer add_cube_camera_;
+  void addCubeCamera(const std::shared_ptr<imgui_ros::AddCubeCamera::Request> req,
+                  std::shared_ptr<imgui_ros::AddCubeCamera::Response> res);
   std::map<std::string, std::shared_ptr<CubeCamera> > cube_cameras_;
 
-  rclcpp::Service<imgui_ros::srv::AddProjector>::SharedPtr add_projector_;
-  void addProjector(const std::shared_ptr<imgui_ros::srv::AddProjector::Request> req,
-                  std::shared_ptr<imgui_ros::srv::AddProjector::Response> res);
+  ros::ServiceServer add_projector_;
+  void addProjector(const std::shared_ptr<imgui_ros::AddProjector::Request> req,
+                  std::shared_ptr<imgui_ros::AddProjector::Response> res);
   std::map<std::string, std::shared_ptr<Projector> > projectors_;
 
-  rclcpp::Service<imgui_ros::srv::AddShaders>::SharedPtr add_shaders_;
-  void addShaders(const std::shared_ptr<imgui_ros::srv::AddShaders::Request> req,
-                  std::shared_ptr<imgui_ros::srv::AddShaders::Response> res);
+  ros::ServiceServer add_shaders_;
+  void addShaders(const std::shared_ptr<imgui_ros::AddShaders::Request> req,
+                  std::shared_ptr<imgui_ros::AddShaders::Response> res);
   std::map<std::string, std::shared_ptr<ShaderSet> > shader_sets_;
 
   bool updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_ptr<Shape> shape);
 
-  rclcpp::Service<imgui_ros::srv::AddTexture>::SharedPtr add_texture_;
-  void addTexture(const std::shared_ptr<imgui_ros::srv::AddTexture::Request> req,
-                  std::shared_ptr<imgui_ros::srv::AddTexture::Response> res);
+  ros::ServiceServer add_texture_;
+  void addTexture(const std::shared_ptr<imgui_ros::AddTexture::Request> req,
+                  std::shared_ptr<imgui_ros::AddTexture::Response> res);
 
-  rclcpp::Service<imgui_ros::srv::AddShape>::SharedPtr add_shape_;
-  void addShape(const std::shared_ptr<imgui_ros::srv::AddShape::Request> req,
-                std::shared_ptr<imgui_ros::srv::AddShape::Response> res);
-  void texturedShapeCallback(const imgui_ros::msg::TexturedShape::SharedPtr msg);
-  rclcpp::Subscription<imgui_ros::msg::TexturedShape>::SharedPtr textured_shape_sub_;
-  bool addShape2(const imgui_ros::msg::TexturedShape::SharedPtr msg, std::string& message);
+  ros::ServiceServer add_shape_;
+  void addShape(const imgui_ros::AddShape::Request& req,
+                imgui_ros::AddShape::Response& res);
+  void texturedShapeCallback(const imgui_ros::TexturedShape& msg);
+  rclcpp::Subscription<imgui_ros::TexturedShape>::SharedPtr textured_shape_sub_;
+  bool addShape2(const imgui_ros::TexturedShape::SharedPtr msg, std::string& message);
   // TODO(lucasw) it would be nice if the received TexturedShape
   // could be passed into opengl directly, which it probably could be made
   // to do, but for now interpret it on reception into local class.

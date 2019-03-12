@@ -35,7 +35,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#include <rclcpp/rclcpp.hpp>
+#include <ros/ros.h>
 #include <tf2_msgs/msg/tf_message.hpp>
 #include <vector>
 
@@ -45,14 +45,13 @@ struct Widget {
   Widget(const std::string name, const std::string topic, const std::string topic_prefix = "") :
       name_(name), topic_(topic), topic_prefix_(topic_prefix)
   {
-    clock_ = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
   }
   ~Widget() {}
-  virtual void update(const rclcpp::Time& stamp) {(void)stamp;};
+  virtual void update(const ros::Time& stamp) {(void)stamp;};
   virtual void draw() = 0;
   std::string name_ = "";
 
-  virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now)
+  virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const ros::Time& now)
   {
     (void)tfm;
     (void)now;
@@ -63,8 +62,7 @@ protected:
   std::string topic_ = "";
   std::string topic_prefix_ = "";
   std::mutex mutex_;
-  rclcpp::Duration update_duration_ = rclcpp::Duration(0);
-  rclcpp::Clock::SharedPtr clock_;
+  ros::Duration update_duration_ = ros::Duration(0);
 };
 
 struct Window {
@@ -74,14 +72,14 @@ struct Window {
   virtual void draw();
   void add(std::shared_ptr<Widget> widget, const std::string& tab_name);
   void remove(const std::string& name, const std::string& tab_name);
-  virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now) {
+  virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const ros::Time& now) {
     // for (auto& name : tab_order_) {
     for (auto tab_pair : tab_groups_) {
       tab_pair.second->addTF(tfm, now);
     }
   }
 
-  virtual void update(const rclcpp::Time& stamp)
+  virtual void update(const ros::Time& stamp)
   {
     stamp_ = stamp;
 
@@ -113,7 +111,7 @@ protected:
     std::map<std::string, std::shared_ptr<Widget> > widgets_;
     std::vector<std::string> widget_order_;
 
-    virtual void update(const rclcpp::Time& stamp)
+    virtual void update(const ros::Time& stamp)
     {
       for (auto& name : widget_order_) {
         if (widgets_[name]) {
@@ -125,7 +123,7 @@ protected:
     void add(std::shared_ptr<Widget> widget);
     void remove(const std::string& name);
 
-    void addTF(tf2_msgs::msg::TFMessage& tfm, const rclcpp::Time& now) {
+    void addTF(tf2_msgs::msg::TFMessage& tfm, const ros::Time& now) {
       for (auto& name : widget_order_) {
         if (widgets_[name]) {
           widgets_[name]->addTF(tfm, now);
@@ -145,7 +143,7 @@ protected:
 
   ImGuiWindowFlags window_flags_ = ImGuiWindowFlags_None;
 
-  rclcpp::Time stamp_;
+  ros::Time stamp_;
   bool dirty_ = true;
   std::string name_ = "";
   std::mutex mutex_;

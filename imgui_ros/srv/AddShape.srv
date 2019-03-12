@@ -1,4 +1,4 @@
 imgui_ros/TexturedShape[] shapes
 ---
-string message ""
-bool success False
+string message  # ""
+bool success  # False

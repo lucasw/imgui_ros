@@ -33,7 +33,7 @@
 
 #include <deque>
 #include <imgui.h>
-#include <imgui_ros/srv/add_window.hpp>
+#include <imgui_ros/AddWindow.h>
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>

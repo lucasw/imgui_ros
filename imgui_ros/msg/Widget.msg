@@ -23,17 +23,17 @@ uint8 VIZ2D=14
 uint8 VIZ3D=15
 uint8 POINTCLOUD=16
 # uint8 TODO(lucasw)
-string name ""
+string name  # ""
 # TODO(lucasw) maybe window_name belongs here too?
 # Or get tab name out of here and push up to AddWindow
 # currently Widget is within AddWindow, but could refactor that.
-string tab_name ""
-string topic ""
-uint8 type 1  # PUB
-uint8 sub_type 1  # FLOAT32
-bool remove False
-float64 value 0.0
-float64 min 0.0
-float64 max 1.0
-bool enable_info True  # draw extra misc info, controls
+string tab_name  # ""
+string topic  # ""
+uint8 type  # 1  # PUB
+uint8 sub_type  # 1  # FLOAT32
+bool remove  # False
+float64 value  # 0.0
+float64 min  # 0.0
+float64 max # 1.0
+bool enable_info  # True  # draw extra misc info, controls
 string[] items

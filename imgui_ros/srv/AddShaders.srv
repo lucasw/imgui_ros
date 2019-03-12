@@ -3,7 +3,7 @@ string name
 string vertex
 string geometry
 string fragment
-bool remove false
+bool remove  # false
 ---
-string message ""
-bool success False
+string message  # ""
+bool success  # False

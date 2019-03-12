@@ -5,9 +5,9 @@ uint8 REPEAT=2
 string name
 # TODO(lucasw) make Texture msg
 sensor_msgs/Image image
-uint8 wrap_s 0
-uint8 wrap_t 0
-bool remove false
+uint8 wrap_s  # 0
+uint8 wrap_t  # 0
+bool remove  # false
 ---
-string message ""
-bool success False
+string message  # ""
+bool success  # False

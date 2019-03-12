@@ -34,7 +34,6 @@
 #include <deque>
 #include <imgui.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
-#include <internal_pub_sub/internal_pub_sub.hpp>
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -44,12 +43,12 @@
 namespace imgui_ros
 {
 // TODO(lucasw) get rid of this and restore pub/sub to where needed
-class ImageTransfer : public internal_pub_sub::Node
+class ImageTransfer
 {
 public:
   ImageTransfer();
   ~ImageTransfer();
-  virtual void postInit(std::shared_ptr<internal_pub_sub::Core> core);
+  virtual void postInit();
 
   rclcpp::TimerBase::SharedPtr update_timer_;
 
@@ -74,11 +73,11 @@ private:
   bool show_unused_ = false;
 
   std::map<std::string, sensor_msgs::msg::Image::SharedPtr> from_sub_;
-  std::map<std::string, std::shared_ptr<internal_pub_sub::Subscriber> > subs_;
+  std::map<std::string, ros::Subscriber> subs_;
 
   std::mutex pub_mutex_;
   std::deque<std::pair<std::string, sensor_msgs::msg::Image::SharedPtr> > to_pub_;
-  std::map<std::string, std::shared_ptr<internal_pub_sub::Publisher> > pubs_;
+  std::map<std::string, ros::Publisher> pubs_;
 };
 }  // namespace imgui_ros
 #endif  // IMGUI_ROS_IMAGE_TRANSFER_H

@@ -1,5 +1,5 @@
 # the name needs to be unique, it will overwrite same named textures otherwise.
 imgui_ros/TfWidget tf
 ---
-string message ""
-bool success False
+string message  # ""
+bool success  # False
