@@ -31,11 +31,11 @@
 #include <imgui.h>
 #include <imgui_ros/image_transfer.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
-#include <internal_pub_sub/internal_pub_sub.hpp>
+// #include <internal_pub_sub/internal_pub_sub.hpp>
 #include <imgui_ros/window.h>
 #include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
+#include <ros/ros.h>
+#include <sensor_msgs/Image.h>
 
 using namespace std::chrono_literals;
 
@@ -48,27 +48,26 @@ ImageTransfer::ImageTransfer()
 
 ImageTransfer::~ImageTransfer()
 {
-  RCLCPP_INFO(get_logger(), "shutting down image transfer");
+  ROS_INFO_STREAM("shutting down image transfer");
 }
 
-void ImageTransfer::postInit(std::shared_ptr<internal_pub_sub::Core> core)
+void ImageTransfer::postInit()
 {
-  internal_pub_sub::Node::postInit(core);
-  update_timer_ = this->create_wall_timer(33ms,
-      std::bind(&ImageTransfer::update, this));
-  RCLCPP_INFO(get_logger(), "started image transfer");
+  update_timer_ = nh_.createTimer(ros::Duration(0.033),
+      &ImageTransfer::update, this);
+  ROS_INFO_STREAM("started image transfer");
 }
 
-bool ImageTransfer::getSub(const std::string& topic, sensor_msgs::msg::Image::SharedPtr& image)
+bool ImageTransfer::getSub(const std::string& topic, sensor_msgs::Image::SharedPtr& image)
 {
   std::lock_guard<std::mutex> lock(sub_mutexes_[topic]);
   if (subs_.count(topic) < 1) {
     // TODO(lucasw) is it better to create the publisher here
     // or inside the thread update is running in?
-    std::function<void(std::shared_ptr<sensor_msgs::msg::Image>)> fnc;
+    std::function<void(std::shared_ptr<sensor_msgs::Image>)> fnc;
     fnc = std::bind(&ImageTransfer::imageCallback, this, std::placeholders::_1,
             topic);
-    // subs_[topic] = create_subscription<sensor_msgs::msg::Image>(topic, fnc);
+    // subs_[topic] = create_subscription<sensor_msgs::Image>(topic, fnc);
     // TODO(lucasw) don't use remapping with imgui_ros currently, it will break
     subs_[topic] = create_internal_subscription(topic, fnc);
     // subs_[topic] = nullptr;
@@ -85,10 +84,10 @@ bool ImageTransfer::getSub(const std::string& topic, sensor_msgs::msg::Image::Sh
   return true;
 }
 
-bool ImageTransfer::publish(const std::string& topic, sensor_msgs::msg::Image::SharedPtr image)
+bool ImageTransfer::publish(const std::string& topic, sensor_msgs::Image::SharedPtr image)
 {
   std::lock_guard<std::mutex> lock(pub_mutex_);
-  to_pub_.push_back(std::pair<std::string, sensor_msgs::msg::Image::SharedPtr>(topic, image));
+  to_pub_.push_back(std::pair<std::string, sensor_msgs::Image::SharedPtr>(topic, image));
   return true;
 }
 
@@ -109,7 +108,7 @@ void ImageTransfer::update()
   {
     while (to_pub_.size() > 0) {
       std::string topic;
-      sensor_msgs::msg::Image::SharedPtr image;
+      sensor_msgs::Image::SharedPtr image;
       {
         std::lock_guard<std::mutex> lock(pub_mutex_);
         topic = to_pub_.front().first;
@@ -124,7 +123,7 @@ void ImageTransfer::update()
   }  // publish all queued up messages
 }
 
-void ImageTransfer::draw(rclcpp::Time cur)
+void ImageTransfer::draw(ros::Time cur)
 {
   // auto cur = now();
 
@@ -154,9 +153,9 @@ void ImageTransfer::draw(rclcpp::Time cur)
 
       float rate = 0.0;
       if (pub->stamps_.size() > 2) {
-        rclcpp::Time earliest = pub->stamps_.front();
+        ros::Time earliest = pub->stamps_.front();
         rate = static_cast<float>(pub->stamps_.size()) /
-          ((cur - earliest).nanoseconds() / 1e9);
+          ((cur - earliest).toSec());
       }
       if (!show_unused_ && (topic->subs_.size() == 0) && (rate < 0.05)) {
         continue;
@@ -168,12 +167,12 @@ void ImageTransfer::draw(rclcpp::Time cur)
       ImGui::NextColumn();
       ImGui::Text("%0.2f Hz", rate);
       ImGui::NextColumn();
-      ImGui::Text("%0.5f pub duration", pub->publish_duration_.nanoseconds() / 1e9);
+      ImGui::Text("%0.5f pub duration", pub->publish_duration_.toSec());
       ImGui::NextColumn();
       float time_since_last = 0.0;
       if (pub->stamps_.size() > 0) {
-        rclcpp::Time latest = pub->stamps_.back();
-        time_since_last =  (cur - latest).nanoseconds() / 1e9;
+        ros::Time latest = pub->stamps_.back();
+        time_since_last =  (cur - latest).toSec();
       }
       ImGui::Text("%0.2f since last", time_since_last);
       ImGui::NextColumn();
@@ -183,7 +182,7 @@ void ImageTransfer::draw(rclcpp::Time cur)
   ImGui::Columns(1);
 }
 
-void ImageTransfer::imageCallback(sensor_msgs::msg::Image::SharedPtr msg, const std::string& topic)
+void ImageTransfer::imageCallback(sensor_msgs::Image::SharedPtr msg, const std::string& topic)
 {
   // std::cout << "image transfer " << topic << " msg received " << msg->header.stamp.sec << "\n";
   std::lock_guard<std::mutex> lock(sub_mutexes_[topic]);

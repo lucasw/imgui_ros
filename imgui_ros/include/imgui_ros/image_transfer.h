@@ -37,8 +37,8 @@
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
+#include <ros/ros.h>
+#include <sensor_msgs/Image.h>
 
 namespace imgui_ros
 {
@@ -50,11 +50,11 @@ public:
   ~ImageTransfer();
   virtual void postInit();
 
-  rclcpp::TimerBase::SharedPtr update_timer_;
+  ros::TimerBase::SharedPtr update_timer_;
 
-  bool getSub(const std::string& topic, sensor_msgs::msg::Image::SharedPtr& image);
+  bool getSub(const std::string& topic, sensor_msgs::Image::SharedPtr& image);
 
-  bool publish(const std::string& topic, sensor_msgs::msg::Image::SharedPtr image);
+  bool publish(const std::string& topic, sensor_msgs::Image::SharedPtr image);
 
   void setRosPub(const std::string& topic, const bool ros_pub);
   // TODO(lucasw) need way to remove publisher or subscriber
@@ -63,20 +63,20 @@ public:
 
   void update();
 
-  void draw(rclcpp::Time cur);
+  void draw(ros::Time cur);
 
 private:
   bool initted_ = false;
   std::map<std::string, std::mutex> sub_mutexes_;
-  void imageCallback(sensor_msgs::msg::Image::SharedPtr msg, const std::string& topic);
+  void imageCallback(sensor_msgs::Image::SharedPtr msg, const std::string& topic);
 
   bool show_unused_ = false;
 
-  std::map<std::string, sensor_msgs::msg::Image::SharedPtr> from_sub_;
+  std::map<std::string, sensor_msgs::Image::SharedPtr> from_sub_;
   std::map<std::string, ros::Subscriber> subs_;
 
   std::mutex pub_mutex_;
-  std::deque<std::pair<std::string, sensor_msgs::msg::Image::SharedPtr> > to_pub_;
+  std::deque<std::pair<std::string, sensor_msgs::Image::SharedPtr> > to_pub_;
   std::map<std::string, ros::Publisher> pubs_;
 };
 }  // namespace imgui_ros

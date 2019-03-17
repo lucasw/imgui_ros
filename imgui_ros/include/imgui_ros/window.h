@@ -36,12 +36,13 @@
 #include <memory>
 #include <mutex>
 #include <ros/ros.h>
-#include <tf2_msgs/msg/tf_message.hpp>
+#include <tf2_msgs/TFMessage.h>
 #include <vector>
 
 namespace imgui_ros
 {
-struct Widget {
+struct Widget
+{
   Widget(const std::string name, const std::string topic, const std::string topic_prefix = "") :
       name_(name), topic_(topic), topic_prefix_(topic_prefix)
   {
@@ -51,7 +52,7 @@ struct Widget {
   virtual void draw() = 0;
   std::string name_ = "";
 
-  virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const ros::Time& now)
+  virtual void addTF(tf2_msgs::TFMessage& tfm, const ros::Time& now)
   {
     (void)tfm;
     (void)now;
@@ -72,7 +73,7 @@ struct Window {
   virtual void draw();
   void add(std::shared_ptr<Widget> widget, const std::string& tab_name);
   void remove(const std::string& name, const std::string& tab_name);
-  virtual void addTF(tf2_msgs::msg::TFMessage& tfm, const ros::Time& now) {
+  virtual void addTF(tf2_msgs::TFMessage& tfm, const ros::Time& now) {
     // for (auto& name : tab_order_) {
     for (auto tab_pair : tab_groups_) {
       tab_pair.second->addTF(tfm, now);
@@ -123,7 +124,7 @@ protected:
     void add(std::shared_ptr<Widget> widget);
     void remove(const std::string& name);
 
-    void addTF(tf2_msgs::msg::TFMessage& tfm, const ros::Time& now) {
+    void addTF(tf2_msgs::TFMessage& tfm, const ros::Time& now) {
       for (auto& name : widget_order_) {
         if (widgets_[name]) {
           widgets_[name]->addTF(tfm, now);

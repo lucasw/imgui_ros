@@ -35,11 +35,11 @@
 #include <imgui.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
-// #include <imgui_ros/srv/add_projector.hpp>
+// #include <imgui_ros/AddProjector.h>
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
+#include <ros/ros.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_ros/buffer.h>
 
@@ -74,7 +74,7 @@ struct Projector {
       const double constant_attenuation,
       const double linear_attenuation,
       const double quadratic_attenuation,
-      std::shared_ptr<rclcpp::Node> node);
+      ros::NodeHandle& nh);
   ~Projector();
 
   std::string print();
@@ -108,7 +108,7 @@ struct Projector {
   GLuint shadow_framebuffer_ = 0;
   GLuint shadow_depth_texture_ = 0;
 
-  std::weak_ptr<rclcpp::Node> node_;
+  std::weak_ptr<ros::Node> node_;
 };
 
 }  // namespace imgui_ros

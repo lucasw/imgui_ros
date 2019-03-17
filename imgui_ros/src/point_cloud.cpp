@@ -41,7 +41,7 @@ namespace imgui_ros
 {
 PointCloud::PointCloud(const std::string name, const std::string topic,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    std::shared_ptr<rclcpp::Node> node
+    ros::NodeHandle& nh
     ) :
     Sub(name, topic, node)
 {
@@ -52,11 +52,11 @@ PointCloud::PointCloud(const std::string name, const std::string topic,
   // need an AddPointCloud service that specifies this instead of using Widget
   shape_->emission_texture_ = "white";
 
-  sub_ = node->create_subscription<sensor_msgs::msg::PointCloud2>(topic,
+  sub_ = node->create_subscription<sensor_msgs::PointCloud2>(topic,
       std::bind(&PointCloud::pointCloud2Callback, this, std::placeholders::_1));
 }
 
-void PointCloud::pointCloud2Callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+void PointCloud::pointCloud2Callback(const sensor_msgs::PointCloud2::SharedPtr msg)
 {
   msg_ = msg;
   // std::cout << "new point cloud " << msg_->data.size() << "\n";

@@ -50,7 +50,7 @@ Camera::Camera(const std::string name,
     const std::string header_frame_id,
     const double aov_y,
     const double aov_x,
-    std::shared_ptr<rclcpp::Node> node) :
+    ros::NodeHandle& nh) :
     name_(name),
     frame_id_(frame_id),
     header_frame_id_(header_frame_id),
@@ -67,7 +67,7 @@ Camera::Camera(const std::string name,
 void Camera::init(const size_t width, const size_t height,
     const std::string& texture_name, const std::string& topic,
     const bool ros_pub,
-    std::shared_ptr<rclcpp::Node> node,
+    ros::NodeHandle& nh,
     std::shared_ptr<ImageTransfer> image_transfer)
 {
   RCLCPP_DEBUG(node->get_logger(), "regular camera");
@@ -83,7 +83,7 @@ void Camera::init(const size_t width, const size_t height,
 
     // TODO(lucasw) is this needed here if same thing is being done in RosImage::publish?
     #if 0
-    image_->image_ = std::make_shared<sensor_msgs::msg::Image>();
+    image_->image_ = std::make_shared<sensor_msgs::Image>();
     // Need ability to report a different frame than the sim is using internally-
     // this allows for calibration error simulation
     image_->image_->header.frame_id = header_frame_id_;
@@ -152,7 +152,7 @@ void Camera::init(const size_t width, const size_t height,
     throw std::runtime_error(msg);
   }
 
-  camera_info_pub_ = node->create_publisher<sensor_msgs::msg::CameraInfo>(topic + "/camera_info");
+  camera_info_pub_ = node->create_publisher<sensor_msgs::CameraInfo>(topic + "/camera_info");
 }
 
 Camera::~Camera()
@@ -184,12 +184,12 @@ void Camera::setFrameRate(const float target_frame_rate, const float update_rate
   (void)update_rate;
 }
 
-void Camera::publishCameraInfo(const rclcpp::Time& stamp)
+void Camera::publishCameraInfo(const ros::Time& stamp)
 {
   if (!isReadyToRender()) {
     return;
   }
-  sensor_msgs::msg::CameraInfo camera_info_msg;
+  sensor_msgs::CameraInfo camera_info_msg;
   camera_info_msg.header.frame_id = header_frame_id_;
   camera_info_msg.header.stamp = stamp;
 

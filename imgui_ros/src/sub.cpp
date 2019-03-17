@@ -35,22 +35,22 @@ using std::placeholders::_1;
 namespace imgui_ros
 {
 Sub::Sub(const std::string name, const std::string topic,  // const unsigned type,
-    std::shared_ptr<rclcpp::Node> node) :
+    ros::NodeHandle& nh) :
     Widget(name, topic),
     node_(node) {
 }
 
 BoolSub::BoolSub(const std::string name, const std::string topic,  // const unsigned type,
     const bool value,
-    std::shared_ptr<rclcpp::Node> node) :
+    ros::NodeHandle& nh) :
     Sub(name, topic, node) {
   (void)value;
-  // msg_.reset(new std_msgs::msg::Bool);
-  sub_ = node->create_subscription<std_msgs::msg::Bool>(topic,
+  // msg_.reset(new std_msgs::Bool);
+  sub_ = node->create_subscription<std_msgs::Bool>(topic,
       std::bind(&BoolSub::callback, this, _1));
 }
 
-void BoolSub::callback(const std_msgs::msg::Bool::SharedPtr msg)
+void BoolSub::callback(const std_msgs::Bool::SharedPtr msg)
 {
   std::lock_guard<std::mutex> lock(mutex_);
   msg_ = msg;

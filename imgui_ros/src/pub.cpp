@@ -34,7 +34,7 @@
 namespace imgui_ros
 {
 Pub::Pub(const std::string name, const std::string topic,  // const unsigned type,
-    std::shared_ptr<rclcpp::Node> node) :
+    ros::NodeHandle& nh) :
     Widget(name, topic),
     node_(node) {
 }
@@ -44,10 +44,10 @@ Pub::Pub(const std::string name, const std::string topic,  // const unsigned typ
 
 BoolPub::BoolPub(const std::string name, const std::string topic,  // const unsigned type,
     const bool value,
-    std::shared_ptr<rclcpp::Node> node) :
+    ros::NodeHandle& nh) :
     Pub(name, topic, node), value_(value)  {
-  msg_.reset(new std_msgs::msg::Bool);
-  pub_ = node->create_publisher<std_msgs::msg::Bool>(topic);
+  msg_.reset(new std_msgs::Bool);
+  pub_ = nh.advertise<std_msgs::Bool>(topic, 2);
 }
 
 void BoolPub::draw() {
@@ -72,9 +72,9 @@ void BoolPub::draw() {
 
 StringPub::StringPub(const std::string name, const std::string topic,
     const std::vector<std::string>& items,
-    std::shared_ptr<rclcpp::Node> node) :
+    ros::NodeHandle& nh) :
     Pub(name, topic, node), items_(items) {
-  msg_.reset(new std_msgs::msg::String);
+  msg_.reset(new std_msgs::String);
   if (items.size() > 0) {
     msg_->data = items[0];
   }
@@ -82,7 +82,7 @@ StringPub::StringPub(const std::string name, const std::string topic,
     items_null_ += item + '\0';
   }
   // TODO(lucasw) bring back type for all the int types
-  pub_ = node->create_publisher<std_msgs::msg::String>(topic);
+  pub_ = node->create_publisher<std_msgs::String>(topic);
 }
 
 void StringPub::draw() {
@@ -118,14 +118,14 @@ void StringPub::draw() {
 
 MenuPub::MenuPub(const std::string name, const std::string topic,  // const unsigned type,
     const int value, const std::vector<std::string>& items,
-    std::shared_ptr<rclcpp::Node> node) :
+    ros::NodeHandle& nh) :
     Pub(name, topic, node), value_(value), items_(items) {
-  msg_.reset(new std_msgs::msg::Int32);
+  msg_.reset(new std_msgs::Int32);
   for (auto item : items) {
     items_null_ += item + '\0';
   }
   // TODO(lucasw) bring back type for all the int types
-  pub_ = node->create_publisher<std_msgs::msg::Int32>(topic);
+  pub_ = node->create_publisher<std_msgs::Int32>(topic);
 }
 
 void MenuPub::draw() {

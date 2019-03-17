@@ -32,8 +32,8 @@
 // this brings in a boost system dependency,
 // will get undefined reference to `boost::system::generic_category()
 #include <pcl_conversions/pcl_conversions.h>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <ros/ros.h>
+#include <sensor_msgs/point_cloud2.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 using namespace std::chrono_literals;
 
@@ -41,7 +41,7 @@ using namespace std::chrono_literals;
 namespace imgui_ros
 {
 
-class GeneratePointCloud2 : public rclcpp::Node
+class GeneratePointCloud2 : public ros::Node
 {
 public:
   GeneratePointCloud2()
@@ -51,15 +51,15 @@ public:
   void init(
     const std::string & node_name,
     const std::string & namespace_,
-    rclcpp::Context::SharedPtr context,
+    ros::Context::SharedPtr context,
     const std::vector<std::string> & arguments,
-    const std::vector<rclcpp::Parameter> & initial_parameters,
+    const std::vector<ros::Parameter> & initial_parameters,
     bool use_global_arguments,
     bool use_intra_process_comms,
     bool start_parameter_services)
   {
     // If this is forgotten the node loader will crash
-    rclcpp::Node::init(
+    ros::Node::init(
       node_name,
       namespace_,
       context,
@@ -79,7 +79,7 @@ public:
 
     generatePointCloud2();
 
-    pub_ = create_publisher<sensor_msgs::msg::PointCloud2>("point_cloud");
+    pub_ = create_publisher<sensor_msgs::PointCloud2>("point_cloud");
     timer_ = this->create_wall_timer(1000ms,
         std::bind(&GeneratePointCloud2::update, this));
   }
@@ -120,7 +120,7 @@ private:
       }
     }
 
-    pc2_msg_ = std::make_shared<sensor_msgs::msg::PointCloud2>();
+    pc2_msg_ = std::make_shared<sensor_msgs::PointCloud2>();
     pcl::toROSMsg(cloud_, *pc2_msg_);
 
     // TEMP test
@@ -153,14 +153,14 @@ private:
   std::string frame_id_ = "map";
 
   pcl::PointCloud<pcl::PointXYZRGB> cloud_;
-  sensor_msgs::msg::PointCloud2::SharedPtr pc2_msg_;
+  sensor_msgs::PointCloud2::SharedPtr pc2_msg_;
 
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
-  rclcpp::TimerBase::SharedPtr timer_;
+  ros::Publisher<sensor_msgs::PointCloud2>::SharedPtr pub_;
+  ros::TimerBase::SharedPtr timer_;
 };
 
 }  // namespace imgui_ros
 
 #include <class_loader/register_macro.hpp>
 
-CLASS_LOADER_REGISTER_CLASS(imgui_ros::GeneratePointCloud2, rclcpp::Node)
+CLASS_LOADER_REGISTER_CLASS(imgui_ros::GeneratePointCloud2, ros::Node)

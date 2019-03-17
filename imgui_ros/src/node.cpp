@@ -329,10 +329,11 @@ void FloatPublisher::update(const double& seconds)
 
   // TODO(lucasw) may want an update rate control
   // that won't publish every update.
-  if (pub_) {
-    std_msgs::msg::Float32 msg;
+  // if (pub_) {
+  {
+    std_msgs::Float32 msg;
     msg.data = value;
-    pub_->publish(msg);
+    pub_.publish(msg);
   }
   Node::update(seconds);
 }

@@ -37,11 +37,11 @@ namespace imgui_ros
 {
 static const std::string topic = "";
 Graph::Graph(const std::string name,
-    std::shared_ptr<rclcpp::Node> node) :
+    ros::NodeHandle& nh) :
     Widget(name, topic),
-    node_(node)
+    nh_(nh)
 {
-  start_ = node->now();
+  start_ = ros::Time::now();
 }
 
 // Creating a node graph editor for ImGui
@@ -51,10 +51,10 @@ Graph::Graph(const std::string name,
 // v0.03: fixed grid offset issue, inverted sign of 'scrolling'
 // Animated gif: https://cloud.githubusercontent.com/assets/8225057/9472357/c0263c04-4b4c-11e5-9fdf-2cd4f33f6582.gif
 
-void Graph::update(const rclcpp::Time& stamp)
+void Graph::update(const ros::Time& stamp)
 {
   // std::cout << "update " << stamp.nanoseconds() << "\n";
-  const double seconds = (stamp - start_).nanoseconds() / 1e9;
+  const double seconds = (stamp - start_).toSec();
 
   if ((con_src_ != nullptr) && (con_dst_ != nullptr)) {
     if (con_src_->input_not_output_ != con_dst_->input_not_output_) {
@@ -112,7 +112,7 @@ void Graph::init()
 // Note that we storing links are INDICES (not ID) to make example code shorter, obviously a bad idea for any general purpose code.
 void Graph::draw()
 {
-  const double seconds = (stamp_ - start_).nanoseconds() / 1e9;
+  const double seconds = (stamp_ - start_).toSec();
   // std::cout << "draw " << seconds << "\n";
 
   ImGui::SetNextWindowSize(ImVec2(700, 600), ImGuiSetCond_FirstUseEver);

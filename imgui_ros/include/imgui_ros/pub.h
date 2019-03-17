@@ -32,23 +32,23 @@
 #define IMGUI_ROS_PUB_H
 
 #include <imgui.h>
-#include <imgui_ros/srv/add_window.hpp>
+#include <imgui_ros/AddWindow.h>
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/bool.hpp>
-#include <std_msgs/msg/float32.hpp>
-#include <std_msgs/msg/float64.hpp>
-#include <std_msgs/msg/int8.hpp>
-#include <std_msgs/msg/int16.hpp>
-#include <std_msgs/msg/int32.hpp>
-#include <std_msgs/msg/int64.hpp>
-#include <std_msgs/msg/u_int8.hpp>
-#include <std_msgs/msg/u_int16.hpp>
-#include <std_msgs/msg/u_int32.hpp>
-#include <std_msgs/msg/u_int64.hpp>
-#include <std_msgs/msg/string.hpp>
+#include <ros/ros.h>
+#include <std_msgs/Bool.h>
+#include <std_msgs/Float32.h>
+#include <std_msgs/float64.hpp>
+#include <std_msgs/int8.hpp>
+#include <std_msgs/int16.hpp>
+#include <std_msgs/int32.hpp>
+#include <std_msgs/int64.hpp>
+#include <std_msgs/u_int8.hpp>
+#include <std_msgs/u_int16.hpp>
+#include <std_msgs/u_int32.hpp>
+#include <std_msgs/u_int64.hpp>
+#include <std_msgs/string.hpp>
 
 namespace imgui_ros
 {
@@ -57,19 +57,19 @@ namespace imgui_ros
 // for each?
 struct Pub : public Widget {
   Pub(const std::string name, const std::string topic,  // const unsigned type,
-      std::shared_ptr<rclcpp::Node> node);
+      ros::NodeHandle& nh);
   // ~Pub();
   virtual void draw() = 0;
 protected:
-  // unsigned type_ = imgui_ros::srv::AddWindow::Request::FLOAT32;
-  std::weak_ptr<rclcpp::Node> node_;
+  // unsigned type_ = imgui_ros::AddWindow::Request::FLOAT32;
+  std::weak_ptr<ros::Node> node_;
 };
 
 template <class T>
 struct GenericPub : public Pub {
   GenericPub(const std::string name, const std::string topic, // const unsigned type,
       const float value, const float min, const float max,
-      std::shared_ptr<rclcpp::Node> node) :
+      ros::NodeHandle& nh) :
     Pub(name, topic, node), min_(min), max_(max)
   {
     msg_.reset(new T);
@@ -87,7 +87,7 @@ struct GenericPub : public Pub {
     std::lock_guard<std::mutex> lock(mutex_);
     bool changed = false;
     // switch (decltype(this)) {
-    if (std::is_same<T, std_msgs::msg::Float32>::value) {
+    if (std::is_same<T, std_msgs::Float32>::value) {
       float val = msg_->data;
       float min = min_;
       float max = max_;
@@ -95,7 +95,7 @@ struct GenericPub : public Pub {
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_Float,
         &val, &min, &max, "%f");
       if (changed) msg_->data = val;
-    } else if (std::is_same<T, std_msgs::msg::Float64>::value) {
+    } else if (std::is_same<T, std_msgs::Float64>::value) {
       double val = msg_->data;
       double min = min_;
       double max = max_;
@@ -103,32 +103,32 @@ struct GenericPub : public Pub {
         &val, &min, &max, "%lf");
       if (changed) msg_->data = val;
     // TODO(lucasw) combine 8/16/32
-    } else if ((std::is_same<T, std_msgs::msg::Int8>::value) ||
-              (std::is_same<T, std_msgs::msg::Int16>::value) ||
-              (std::is_same<T, std_msgs::msg::Int32>::value)) {
+    } else if ((std::is_same<T, std_msgs::Int8>::value) ||
+              (std::is_same<T, std_msgs::Int16>::value) ||
+              (std::is_same<T, std_msgs::Int32>::value)) {
       ImS32 val = msg_->data;
       ImS32 min = min_;
       ImS32 max = max_;
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S32,
         &val, &min, &max, "%d");
       if (changed) msg_->data = val;
-    } else if (std::is_same<T, std_msgs::msg::Int64>::value) {
+    } else if (std::is_same<T, std_msgs::Int64>::value) {
       ImS64 val = msg_->data;
       ImS64 min = min_;
       ImS64 max = max_;
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S64,
         &val, &min, &max, "%I64d");
       if (changed) msg_->data = val;
-    } else if ((std::is_same<T, std_msgs::msg::UInt8>::value) ||
-              (std::is_same<T, std_msgs::msg::UInt16>::value) ||
-              (std::is_same<T, std_msgs::msg::UInt32>::value)) {
+    } else if ((std::is_same<T, std_msgs::UInt8>::value) ||
+              (std::is_same<T, std_msgs::UInt16>::value) ||
+              (std::is_same<T, std_msgs::UInt32>::value)) {
       ImU32 val = msg_->data;
       ImU32 min = min_;
       ImU32 max = max_;
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_U32,
         &val, &min, &max, "%d");
       if (changed) msg_->data = val;
-    } else if (std::is_same<T, std_msgs::msg::UInt64>::value) {
+    } else if (std::is_same<T, std_msgs::UInt64>::value) {
       ImU64 val = msg_->data;
       ImU64 min = min_;
       ImU64 max = max_;
@@ -150,39 +150,39 @@ protected:
   double min_ = 0.0;
   double max_ = 1.0;
   std::shared_ptr<T> msg_;
-  typename rclcpp::Publisher<T>::SharedPtr pub_;
+  typename ros::Publisher<T>::SharedPtr pub_;
 };
 
 struct BoolPub : public Pub {
   BoolPub(const std::string name, const std::string topic, // const unsigned type,
       const bool value,
-      std::shared_ptr<rclcpp::Node> node);
+      ros::NodeHandle& nh);
   ~BoolPub() {}
   virtual void draw();
 protected:
   bool value_ = false;
-  std::shared_ptr<std_msgs::msg::Bool> msg_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_;
+  std::shared_ptr<std_msgs::Bool> msg_;
+  ros::Publisher<std_msgs::Bool>::SharedPtr pub_;
 };
 
 struct StringPub : public Pub {
   StringPub(const std::string name, const std::string topic,
       const std::vector<std::string>& items,
-      std::shared_ptr<rclcpp::Node> node);
+      ros::NodeHandle& nh);
   ~StringPub() {}
   virtual void draw();
 protected:
   int value_ = 0;
   std::string items_null_ = "";
   std::vector<std::string> items_;
-  std::shared_ptr<std_msgs::msg::String> msg_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pub_;
+  std::shared_ptr<std_msgs::String> msg_;
+  ros::Publisher<std_msgs::String>::SharedPtr pub_;
 };
 
 struct MenuPub : public Pub {
   MenuPub(const std::string name, const std::string topic, // const unsigned type,
       const int value, const std::vector<std::string>& items,
-      std::shared_ptr<rclcpp::Node> node);
+      ros::NodeHandle& nh);
   ~MenuPub() {}
   virtual void draw();
 protected:
@@ -190,8 +190,8 @@ protected:
   std::vector<std::string> items_;
   // formatted like how imgui Combo expects
   std::string items_null_ = "";
-  std::shared_ptr<std_msgs::msg::Int32> msg_;
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_;
+  std::shared_ptr<std_msgs::Int32> msg_;
+  ros::Publisher<std_msgs::Int32>::SharedPtr pub_;
 };
 
 }  // namespace imgui_ros

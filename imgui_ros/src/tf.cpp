@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <geometry_msgs/msg/quaternion.hpp>
-#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <geometry_msgs/quaternion.hpp>
+#include <geometry_msgs/transform_stamped.hpp>
 #include <imgui_ros/tf.h>
 #include <imgui_ros/utility.h>
 // #include <imgui_internal.h>  // for PushMulti
@@ -41,7 +41,7 @@ namespace imgui_ros
 TfEcho::TfEcho(const std::string name,
     const std::string parent, const std::string child,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    std::shared_ptr<rclcpp::Node> node) :
+    ros::NodeHandle& nh) :
     Sub(name, parent, node),
     parent_(parent),
     child_(child),
@@ -50,7 +50,7 @@ TfEcho::TfEcho(const std::string name,
   RCLCPP_DEBUG(node->get_logger(), "new tf echo %s to %s", parent_.c_str(), child_.c_str());
 }
 
-void rot2RPY(const geometry_msgs::msg::Quaternion rotation,
+void rot2RPY(const geometry_msgs::Quaternion rotation,
     double& roll, double& pitch, double& yaw)
 {
   tf2::Quaternion quat(
@@ -90,7 +90,7 @@ void TfEcho::draw()
   imgui_ros::inputText("parent", parent_);
   imgui_ros::inputText("child", child_);
   try {
-    geometry_msgs::msg::TransformStamped tf;
+    geometry_msgs::TransformStamped tf;
     tf = tf_buffer_->lookupTransform(parent_, child_, tf2::TimePointZero);
 
     std::stringstream ss;
@@ -135,7 +135,7 @@ TfBroadcaster::TfBroadcaster(const std::string name,
     const std::string parent, const std::string child,
     const double min, const double max,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    std::shared_ptr<rclcpp::Node> node) :
+    ros::NodeHandle& nh) :
     Pub(name, parent, node),
     min_(min),
     max_(max),
@@ -151,9 +151,9 @@ TfBroadcaster::TfBroadcaster(const std::string name,
 }
 
 TfBroadcaster::TfBroadcaster(
-    const imgui_ros::msg::TfWidget& tf,
+    const imgui_ros::TfWidget& tf,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    std::shared_ptr<rclcpp::Node> node) :
+    ros::NodeHandle& nh) :
     Pub(tf.name, tf.transform_stamped.header.frame_id, node),
     min_(tf.min),
     max_(tf.max),
@@ -168,7 +168,7 @@ TfBroadcaster::TfBroadcaster(
 }
 
 #if 0
-void TfBroadcaster::update(const rclcpp::Time& stamp)
+void TfBroadcaster::update(const ros::Time& stamp)
 {
   (void)stamp;
   if (ts_.header.frame_id == "")
@@ -183,7 +183,7 @@ void TfBroadcaster::update(const rclcpp::Time& stamp)
   }
 #endif
   // tf_broadcaster_->sendTransform(ts_);
-  // tf2_msgs::msg::TFMessage tfs;
+  // tf2_msgs::TFMessage tfs;
   // tfs.transforms.push_back(ts_);
   // tf_pub_->publish(tfs);
 }

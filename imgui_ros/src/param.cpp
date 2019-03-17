@@ -43,7 +43,7 @@ Param::Param(const std::string name,
       uint8_t type,
       double min,
       double max,
-      std::shared_ptr<rclcpp::Node> node) :
+      ros::NodeHandle& nh) :
       Widget(name, parameter_name, node_name),
       node_name_(node_name),
       parameter_name_(parameter_name),
@@ -56,7 +56,7 @@ Param::Param(const std::string name,
   // TODO(lucasw) can there be more than one of these per node, for a given node_name?
   // or even for distinct node names?  Probably because it is subscribing to the namespace
   // of node_name parameter_events, it has to be one callback per namespace.
-  // parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(node, node_name_);
+  // parameters_client_ = std::make_shared<ros::AsyncParametersClient>(node, node_name_);
   // param_sub_ = parameters_client_->on_parameter_event(
   //     std::bind(&Param::onParameterEvent, this, std::placeholders::_1));
 }
@@ -67,6 +67,7 @@ Param::~Param()
 
 void Param::draw()
 {
+#if 0
   // TODO(lucasw) is this needed anywhere?
   // It would be nice if there was a group of parameters for one node that
   // the topic_prefix_ was shown at the top of the group.
@@ -83,7 +84,7 @@ void Param::draw()
   // auto fnc = std::bind(&Param::responseReceivedCallback, this, std::placeholders::_1);
 
   try {
-    if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_BOOL) {
+    if (value_.type == rcl_interfaces::ParameterType::PARAMETER_BOOL) {
       bool value = value_.bool_value;
       // this doesn't work, the parameter isn't on this node
       // get_parameter_or(parameter_name_, value, value);
@@ -93,11 +94,11 @@ void Param::draw()
         value_.bool_value = value;
         update_ = true;
         // parameters_client_->set_parameters({
-        //     rclcpp::Parameter(parameter_name_, value_.bool_value),
+        //     ros::Parameter(parameter_name_, value_.bool_value),
         //     }, fnc);
       }
       ss << value_.bool_value;
-    } else if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER) {
+    } else if (value_.type == rcl_interfaces::ParameterType::PARAMETER_INTEGER) {
       ImS32 min = min_;
       ImS32 max = max_;
       ImS32 value = value_.integer_value;
@@ -110,11 +111,11 @@ void Param::draw()
         value_.integer_value = value;
         update_ = true;
         // parameters_client_->set_parameters({
-        //     rclcpp::Parameter(parameter_name_, value_.integer_value),
+        //     ros::Parameter(parameter_name_, value_.integer_value),
         //     }, fnc);
       }
       ss << value_.integer_value;
-    } else if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE) {
+    } else if (value_.type == rcl_interfaces::ParameterType::PARAMETER_DOUBLE) {
       double min = min_;
       double max = max_;
       double value = value_.double_value;
@@ -127,11 +128,11 @@ void Param::draw()
         value_.double_value = value;
         update_ = true;
         // parameters_client_->set_parameters({
-        //     rclcpp::Parameter(parameter_name_, value_.double_value),
+        //     ros::Parameter(parameter_name_, value_.double_value),
         //     }, fnc);
       }
       ss << value_.double_value;
-    } else if (value_.type == rcl_interfaces::msg::ParameterType::PARAMETER_STRING) {
+    } else if (value_.type == rcl_interfaces::ParameterType::PARAMETER_STRING) {
       std::string text = value_.string_value;
       // get_parameter_or(parameter_name_, text, text);
       const size_t sz = 64;
@@ -145,28 +146,24 @@ void Param::draw()
         value_.string_value = buf;
         update_ = true;
         // parameters_client_->set_parameters({
-        //     rclcpp::Parameter(parameter_name_, value_.string_value),
+        //     ros::Parameter(parameter_name_, value_.string_value),
         //     }, fnc);
       }
       ss << value_.string_value;
     } else {
       ss << "TODO support this type " << static_cast<int>(value_.type);
     }
-  } catch (rclcpp::ParameterTypeException& ex) {
+  } catch (ros::ParameterTypeException& ex) {
     ImGui::Text("%s", ex.what());
   }
   // ImGui::Text("%s", ss.str().c_str());
+#endif
 }
 
+#if 0
 void Param::responseReceivedCallback(
-    const std::shared_future<std::vector<rcl_interfaces::msg::SetParametersResult>> future)
+    const std::shared_future<std::vector<rcl_interfaces::SetParametersResult>> future)
 {
-  std::shared_ptr<rclcpp::Node> node = node_.lock();
-  if (!node) {
-    std::cerr << "couldn't get node lock\n";
-    return;
-  }
-
   for (auto & result : future.get()) {
     if (!result.successful) {
       RCLCPP_ERROR(node->get_logger(), "Failed to set parameter: %s", result.reason.c_str());
@@ -180,7 +177,7 @@ void Param::responseReceivedCallback(
 // TODO(lucasw) need to push this up into containing viz3d class,
 // it will have a list of namespaces that it has parameter events for and will
 // receive the event and distribute the values to the proper param
-void Param::onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
+void Param::onParameterEvent(const rcl_interfaces::ParameterEvent::SharedPtr event)
 {
   if (event->node != node_name_) {
     return;
@@ -198,9 +195,9 @@ void Param::onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPt
   // TODO(lucasw) do something when the parameter is deleted?
 }
 
-bool Param::updateValue(const rcl_interfaces::msg::ParameterValue& new_value)
+bool Param::updateValue(const rcl_interfaces::ParameterValue& new_value)
 {
-  std::shared_ptr<rclcpp::Node> node = node_.lock();
+  std::shared_ptr<ros::Node> node = node_.lock();
   if (!node) {
     return false;
   }
@@ -213,4 +210,5 @@ bool Param::updateValue(const rcl_interfaces::msg::ParameterValue& new_value)
   value_ = new_value;
   return true;
 }
+#endif
 }  // namespace imgui_ros

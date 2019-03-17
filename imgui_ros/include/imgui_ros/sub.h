@@ -33,12 +33,12 @@
 
 #include <deque>
 #include <imgui.h>
-#include <imgui_ros/srv/add_window.hpp>
+#include <imgui_ros/AddWindow.h>
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/bool.hpp>
+#include <ros/ros.h>
+#include <std_msgs/Bool.h>
 
 namespace imgui_ros
 {
@@ -46,17 +46,17 @@ namespace imgui_ros
 // namespace imgui_ros
 struct Sub : public Widget {
   Sub(const std::string name, const std::string topic,  // const unsigned type,
-      std::shared_ptr<rclcpp::Node> node);
+      ros::NodeHandle& nh);
   // ~Sub();
   virtual void draw() = 0;
 protected:
-  std::weak_ptr<rclcpp::Node> node_;
+  std::weak_ptr<ros::Node> node_;
 };
 
 template <class T>
 struct GenericSub : public Sub {
   GenericSub(const std::string name, const std::string topic,
-      std::shared_ptr<rclcpp::Node> node) : Sub(name, topic, node)
+      ros::NodeHandle& nh) : Sub(name, topic, node)
   {
     sub_ = node->create_subscription<T>(topic,
         std::bind(&GenericSub::callback, this, std::placeholders::_1));
@@ -82,7 +82,7 @@ struct GenericSub : public Sub {
   }
 protected:
   std::shared_ptr<T> msg_;
-  typename rclcpp::Subscription<T>::SharedPtr sub_;
+  typename ros::Subscription<T>::SharedPtr sub_;
   virtual void callback(const typename T::SharedPtr msg)
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -96,7 +96,7 @@ struct PlotSub : public GenericSub<T> {
   // typedef decltype(T::*data) data_type;
   PlotSub(const std::string name, const std::string topic,
       float value,
-      std::shared_ptr<rclcpp::Node> node) :
+      ros::NodeHandle& nh) :
       GenericSub<T>(name, topic, node)
   {
     data_.push_back(value);
@@ -132,13 +132,13 @@ protected:
 struct BoolSub : public Sub {
   BoolSub(const std::string name, const std::string topic, // const unsigned type,
       const bool value,
-      std::shared_ptr<rclcpp::Node> node);
+      ros::NodeHandle& nh);
   ~BoolSub() {}
   virtual void draw();
 protected:
-  std::shared_ptr<std_msgs::msg::Bool> msg_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr sub_;
-  void callback(const std_msgs::msg::Bool::SharedPtr msg);
+  std::shared_ptr<std_msgs::Bool> msg_;
+  ros::Subscription<std_msgs::Bool>::SharedPtr sub_;
+  void callback(const std_msgs::Bool::SharedPtr msg);
 };
 
 }  // namespace imgui_ros

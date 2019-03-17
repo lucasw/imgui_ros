@@ -36,15 +36,14 @@
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/param.h>
 #include <internal_pub_sub/internal_pub_sub.hpp>
-#include <imgui_ros/srv/add_tf.hpp>
-#include <imgui_ros/srv/add_window.hpp>
+#include <imgui_ros/AddTf.hpp>
+#include <imgui_ros/AddWindow.h>
 #include <map>
 #include <mutex>
 #include <opencv2/core.hpp>
-#include <rcl_interfaces/msg/parameter_event.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
-#include <tf2_msgs/msg/tf_message.hpp>
+#include <ros/ros.h>
+#include <sensor_msgs/Image.h>
+#include <tf2_msgs/TFMessage.h>
 #include <tf2_ros/transform_listener.h>
 #include <thread>
 #include <SDL.h>
@@ -57,14 +56,14 @@ public:
   void postInit(std::shared_ptr<internal_pub_sub::Core> core);
 
 private:
-  void runNodeSingleThreaded(rclcpp::Node::SharedPtr node);
-  rclcpp::Service<srv::AddTf>::SharedPtr add_tf_;
-  void addTf(const std::shared_ptr<imgui_ros::srv::AddTf::Request> req,
-             std::shared_ptr<imgui_ros::srv::AddTf::Response> res);
+  void runNodeSingleThreaded(ros::NodeHandle& nh);
+  ros::Service<AddTf>::SharedPtr add_tf_;
+  void addTf(const std::shared_ptr<imgui_ros::AddTf::Request> req,
+             std::shared_ptr<imgui_ros::AddTf::Response> res);
 
-  void addWindow(const std::shared_ptr<imgui_ros::srv::AddWindow::Request> req,
-                 std::shared_ptr<imgui_ros::srv::AddWindow::Response> res);
-  bool addWidget(const imgui_ros::msg::Widget& widget,
+  void addWindow(const std::shared_ptr<imgui_ros::AddWindow::Request> req,
+                 std::shared_ptr<imgui_ros::AddWindow::Response> res);
+  bool addWidget(const imgui_ros::Widget& widget,
       std::string& message, std::shared_ptr<Widget>& imgui_widget);
   void update();
 
@@ -81,30 +80,30 @@ private:
   std::map<std::string, std::shared_ptr<Window> > windows_;
 
   // TODO(lucasw) still need to update even if ros time is paused
-  rclcpp::TimerBase::SharedPtr update_timer_;
+  ros::TimerBase::SharedPtr update_timer_;
 
-  rclcpp::Service<srv::AddWindow>::SharedPtr add_window_;
+  ros::Service<AddWindow>::SharedPtr add_window_;
 
-  rclcpp::Clock::SharedPtr clock_;
-  std::shared_ptr<rclcpp::Node> tf_node_;
+  ros::Clock::SharedPtr clock_;
+  // std::shared_ptr<ros::Node> tf_node_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   // TODO(lucasw) maybe a non shared pointer works better
   // tf2_ros::Buffer buffer_;
 
-  rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr tf_pub_;
+  ros::Publisher<tf2_msgs::TFMessage>::SharedPtr tf_pub_;
 
   std::string name_ = "imgui_ros";
   int width_ = 1280;
   int height_ = 720;
 
   bool stats_window_init_ = true;
-  void drawStats(rclcpp::Time stamp);
+  void drawStats(ros::Time stamp);
 
   std::shared_ptr<ImGuiImplOpenGL3> imgui_impl_opengl3_;
   std::shared_ptr<Viz3D> viz3d;
 
-  std::map<std::string, rclcpp::AsyncParametersClient::SharedPtr> parameters_clients_;
+  std::map<std::string, ros::AsyncParametersClient::SharedPtr> parameters_clients_;
   // node_name, widget_name
   std::map<std::string, std::map<std::string, std::shared_ptr<Param> > > param_widgets_;
 
@@ -114,8 +113,7 @@ private:
 
   // this will get parameter events for all nodes in same namespace (or just root namespace?
   // namespacing seems broken in ros2 currently)
-  rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
-  void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event);
+  // void onParameterEvent(const rcl_interfaces::ParameterEvent::SharedPtr event);
 
   // check to make sure opengl context accesses never happen in different thread
   std::thread::id thread_id_;

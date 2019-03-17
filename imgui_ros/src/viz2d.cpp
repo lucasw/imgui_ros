@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <geometry_msgs/msg/transform_stamped.hpp>
-#include <geometry_msgs/msg/vector3_stamped.hpp>
+#include <geometry_msgs/transform_stamped.hpp>
+#include <geometry_msgs/vector3_stamped.hpp>
 #include <imgui_ros/viz2d.h>
 #include <math.h>
 #include <tf2_ros/buffer_interface.h>
@@ -40,15 +40,15 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wvariadic-macros"
 
-#define LOG(__type__, msg, ...) { if (node_) {std::shared_ptr<rclcpp::Node> node = node_.lock(); if (node) { RCLCPP_##__type__(node->get_logger(), msg, ##__VA_ARGS__) }}}
-#define LOG0(__type__, msg) { std::shared_ptr<rclcpp::Node> node = node_.lock(); if (node) { RCLCPP_##__type__(node->get_logger(), msg) }}
+#define LOG(__type__, msg, ...) { if (node_) {std::shared_ptr<ros::Node> node = node_.lock(); if (node) { RCLCPP_##__type__(node->get_logger(), msg, ##__VA_ARGS__) }}}
+#define LOG0(__type__, msg) { std::shared_ptr<ros::Node> node = node_.lock(); if (node) { RCLCPP_##__type__(node->get_logger(), msg) }}
 
 #define INFO(msg, ...) LOG(INFO, msg, ##__VA_ARGS__)
-// #define INFO(msg, ...) { std::shared_ptr<rclcpp::Node> node = node_.lock(); if (node) { RCLCPP_INFO(node->get_logger(), msg, ##__VA_ARGS__) }}
+// #define INFO(msg, ...) { std::shared_ptr<ros::Node> node = node_.lock(); if (node) { RCLCPP_INFO(node->get_logger(), msg, ##__VA_ARGS__) }}
 
 #define WARN(msg, ...) LOG(WARN, msg, ##__VA_ARGS__)
 #define WARN0(msg) LOG0(WARN, msg)
-// { std::shared_ptr<rclcpp::Node> node = node_.lock(); if (node) { RCLCPP_WARN(node->get_logger(), msg, ##__VA_ARGS__) }}
+// { std::shared_ptr<ros::Node> node = node_.lock(); if (node) { RCLCPP_WARN(node->get_logger(), msg, ##__VA_ARGS__) }}
 
 // #define ERROR(msg, ...) LOG(ERROR, msg, ##__VA_ARGS__)
 // #define DEBUG(msg, ...) LOG(ERROR, msg, ##__VA_ARGS__)
@@ -58,7 +58,7 @@
 namespace imgui_ros
 {
 // TODO(lucasw) overload <<
-std::string printVec(const geometry_msgs::msg::Vector3& vec)
+std::string printVec(const geometry_msgs::Vector3& vec)
 {
   std::stringstream ss;
   ss << vec.x << ", "
@@ -67,7 +67,7 @@ std::string printVec(const geometry_msgs::msg::Vector3& vec)
   return ss.str();
 }
 
-std::string printVec(const geometry_msgs::msg::Vector3Stamped& vec)
+std::string printVec(const geometry_msgs::Vector3Stamped& vec)
 {
   std::stringstream ss;
   ss << vec.header.frame_id << ": " << ": " << printVec(vec.vector);
@@ -82,7 +82,7 @@ Viz2D::Viz2D(const std::string name,
     const std::vector<std::string>& frames,
     const double pixels_per_meter,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    std::shared_ptr<rclcpp::Node> node) :
+    std::shared_ptr<ros::Node> node) :
     Sub(name, frame_id, node),
     frame_id_(frame_id),
     frames_(frames),
@@ -90,29 +90,29 @@ Viz2D::Viz2D(const std::string name,
     pixels_per_meter_(pixels_per_meter)
 {
   // RCLCPP_INFO(node->get_logger(), "new tf echo %s to %s", parent_.c_str(), child_.c_str());
-  marker_sub_ = node->create_subscription<visualization_msgs::msg::Marker>(topic,
+  marker_sub_ = node->create_subscription<visualization_msgs::Marker>(topic,
       std::bind(&Viz2D::markerCallback, this, std::placeholders::_1));
 }
 
-void Viz2D::markerCallback(const visualization_msgs::msg::Marker::SharedPtr msg)
+void Viz2D::markerCallback(const visualization_msgs::Marker::SharedPtr msg)
 {
   std::lock_guard<std::mutex> lock(mutex_);
   // TODO(lucasw) handle DELETE later
-  if ((msg->action == visualization_msgs::msg::Marker::ADD) ||
-     (msg->action == visualization_msgs::msg::Marker::MODIFY)) {
+  if ((msg->action == visualization_msgs::Marker::ADD) ||
+     (msg->action == visualization_msgs::Marker::MODIFY)) {
      // TODO(lucasw) these aren't working, are failing in strange ways
     // INFO("adding/modifying marker %s %d %s", msg->ns, msg->id, msg->header.frame_id);
     std::cout << "viz add/modify " << msg->ns << " " << msg->id << " "
         << msg->header.frame_id << "\n";
     markers_[msg->ns][msg->id] = msg;
-  } else if (msg->action == visualization_msgs::msg::Marker::DELETE) {
+  } else if (msg->action == visualization_msgs::Marker::DELETE) {
     if ((markers_.count(msg->ns) > 0) && (markers_[msg->ns].count(msg->id)) > 0) {
       // WARN("erasing marker %s %d %s", msg->ns, msg->id, msg->header.frame_id);
       std::cout << "viz erasing " << msg->ns << " " << msg->id << " "
           << msg->header.frame_id << "\n";
       markers_[msg->ns].erase(msg->id);
     }
-  } else if (msg->action == visualization_msgs::msg::Marker::DELETEALL) {
+  } else if (msg->action == visualization_msgs::Marker::DELETEALL) {
     // WARN0("clearing markers");
     std::cout << "viz clearing markers" << "\n";
     markers_.clear();
@@ -205,12 +205,12 @@ void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
   const float len = 0.25;
   for (auto frame : frames_) {
     try {
-      geometry_msgs::msg::TransformStamped tf;
+      geometry_msgs::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(frame_id_, frame, tf2::TimePointZero);
       #if 0
       {
-        std::shared_ptr<rclcpp::Node> node = node_.lock();
-        if (node && ((node->now().nanoseconds() / 1e9 - tf.header.stamp.sec) > 4)) {
+        std::shared_ptr<ros::Node> node = node_.lock();
+        if (node && ((node->now().toSec() - tf.header.stamp.sec) > 4)) {
           continue;
         }
       }
@@ -230,7 +230,7 @@ void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
       // TODO(lucasw) need to transform points extended in x and y
       // a short distance away from the frame
       // origin to capture the rotation of the frame.
-      auto tf_pos_origin = geometry_msgs::msg::Vector3Stamped();
+      auto tf_pos_origin = geometry_msgs::Vector3Stamped();
       tf_pos_origin.header.frame_id = frame;
       tf_pos_origin.header.stamp = tf.header.stamp;
       tf_pos_origin.vector.x = 0;
@@ -242,7 +242,7 @@ void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
       tf_pos_y.vector.y = 1.0;
       auto tf_pos_z = tf_pos_origin;
       tf_pos_z.vector.z = 1.0;
-      std::vector<geometry_msgs::msg::Vector3Stamped> vectors;
+      std::vector<geometry_msgs::Vector3Stamped> vectors;
       vectors.push_back(tf_pos_x);
       vectors.push_back(tf_pos_y);
       vectors.push_back(tf_pos_z);
@@ -254,7 +254,7 @@ void Viz2D::drawTf(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
       // std::cout << "o " << printVec(tf_pos_origin) << " -> " << printVec(origin_out) << "\n";
 
       for (size_t i = 0; i < vectors.size() && i < colors.size(); ++i) {
-        geometry_msgs::msg::Vector3Stamped vector_in_viz_frame;
+        geometry_msgs::Vector3Stamped vector_in_viz_frame;
         tf_buffer_->transform(vectors[i], vector_in_viz_frame, frame_id_);
         // std::cout << i << " " << printVec(vector) << " -> "
         //     << printVec(vector_in_viz_frame) << "\n";
@@ -279,13 +279,13 @@ void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
     for (auto marker_pair : marker_ns.second) {
       try {
         auto marker = marker_pair.second;
-        geometry_msgs::msg::TransformStamped tf;
+        geometry_msgs::TransformStamped tf;
         tf = tf_buffer_->lookupTransform(frame_id_, marker->header.frame_id, tf2::TimePointZero);
         {
-          std::shared_ptr<rclcpp::Node> node = node_.lock();
+          std::shared_ptr<ros::Node> node = node_.lock();
           #if 0
           // TODO(lucasw) this doesn't work when the tf is static, the stamp is zero
-          if (node && ((node->now().nanoseconds() / 1e9 - tf.header.stamp.sec) > 4)) {
+          if (node && ((node->now().toSec() - tf.header.stamp.sec) > 4)) {
             RCLCPP_INFO(node->get_logger(), "removing old marker %s",
                 marker->header.frame_id.c_str());
             markers_to_remove.push_back(marker_pair.first);
@@ -293,8 +293,8 @@ void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
           }
           #endif
         }
-        std::vector<geometry_msgs::msg::PointStamped> rect_3d;
-        geometry_msgs::msg::PointStamped pt;
+        std::vector<geometry_msgs::PointStamped> rect_3d;
+        geometry_msgs::PointStamped pt;
         pt.header.frame_id = marker->header.frame_id;
         pt.header.stamp = tf.header.stamp;
 
@@ -319,7 +319,7 @@ void Viz2D::drawMarkers(ImDrawList* draw_list, ImVec2 origin, ImVec2 center,
           pt.point.y += offset.y;
           pt.point.z += offset.z;
 
-          geometry_msgs::msg::PointStamped pt_in_viz_frame;
+          geometry_msgs::PointStamped pt_in_viz_frame;
           tf_buffer_->transform(pt, pt_in_viz_frame, frame_id_);
           rect_2d.push_back(ImVec2(origin.x + pt_in_viz_frame.point.x * sc,
               origin.y + pt_in_viz_frame.point.y * sc));

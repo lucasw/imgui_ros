@@ -32,16 +32,16 @@
 #define IMGUI_ROS_VIZ2D_H
 
 #include <imgui.h>
-#include <imgui_ros/srv/add_window.hpp>
+#include <imgui_ros/AddWindow.h>
 #include <imgui_ros/window.h>
 #include <imgui_ros/sub.h>
 #include <map>
 #include <mutex>
 #include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/bool.hpp>
+#include <ros/ros.h>
+#include <std_msgs/Bool.h>
 #include <tf2_ros/transform_listener.h>
-#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/marker.hpp>
 
 namespace imgui_ros
 {
@@ -54,7 +54,7 @@ struct Viz2D : public Sub {
       const std::vector<std::string>& frames,
       const double pixels_per_meter,
       std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-      std::shared_ptr<rclcpp::Node> node);
+      ros::NodeHandle& nh);
 
   ~Viz2D() {}
 
@@ -63,10 +63,10 @@ protected:
   std::string frame_id_;
   std::vector<std::string> frames_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-  rclcpp::Subscription<visualization_msgs::msg::Marker>::SharedPtr marker_sub_;
+  ros::Subscription<visualization_msgs::Marker>::SharedPtr marker_sub_;
   // TODO(lucasw) make this a service later
-  std::map<std::string, std::map<int, visualization_msgs::msg::Marker::SharedPtr> > markers_;
-  void markerCallback(const visualization_msgs::msg::Marker::SharedPtr msg);
+  std::map<std::string, std::map<int, visualization_msgs::Marker::SharedPtr> > markers_;
+  void markerCallback(const visualization_msgs::Marker::SharedPtr msg);
 
   bool dragging_scale_ = false;
   double pixels_per_meter_ = 10.0;

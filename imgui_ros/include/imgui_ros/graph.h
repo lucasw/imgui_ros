@@ -35,7 +35,7 @@
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <imgui_ros/node.h>
-#include <rclcpp/rclcpp.hpp>
+#include <ros/ros.h>
 
 namespace imgui_ros
 {
@@ -46,14 +46,14 @@ namespace imgui_ros
 // for each?
 struct Graph : public Widget {
   Graph(const std::string name,
-      std::shared_ptr<rclcpp::Node> node);
+      ros::NodeHandle& nh);
   // ~Graph();
   virtual void draw();
-  virtual void update(const rclcpp::Time& stamp);
+  virtual void update(const ros::Time& stamp);
 
 protected:
-  // unsigned type_ = imgui_ros::srv::AddWindow::Request::FLOAT32;
-  std::weak_ptr<rclcpp::Node> node_;
+  // unsigned type_ = imgui_ros::AddWindow::Request::FLOAT32;
+  ros::NodeHandle nh_;
 
   bool opened_;
 
@@ -65,7 +65,7 @@ protected:
   bool linkNodes(
       const std::string& output_node_name, const std::string& output_node_con_name,
       const std::string& input_node_name, const std::string& input_node_con_name);
-  rclcpp::Time start_, stamp_;
+  ros::Time start_, stamp_;
 
   void init();
   bool inited_ = false;

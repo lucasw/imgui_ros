@@ -29,20 +29,20 @@
  */
 
 #include <memory>
-#include <rclcpp/rclcpp.hpp>
+#include <ros/ros.h>
 #include <imgui_ros/imgui_ros.h>
 #include <internal_pub_sub/internal_pub_sub.hpp>
 
 int main(int argc, char * argv[])
 {
   setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-  rclcpp::init(argc, argv);
+  ros::init(argc, argv);
   const bool ros_pub_enable = false;
   auto core = std::make_shared<internal_pub_sub::Core>(ros_pub_enable);
   auto imgui_ros = std::make_shared<imgui_ros::ImguiRos>();
   imgui_ros->init("imgui_ros");
   imgui_ros->postInit(core);
-  rclcpp::spin(imgui_ros);
-  rclcpp::shutdown();
+  ros::spin(imgui_ros);
+  ros::shutdown();
   return 0;
 }

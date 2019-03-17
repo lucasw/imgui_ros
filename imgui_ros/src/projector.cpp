@@ -54,7 +54,7 @@ Projector::Projector(
     const double constant_attenuation,
     const double linear_attenuation,
     const double quadratic_attenuation,
-    std::shared_ptr<rclcpp::Node> node) :
+    std::shared_ptr<ros::Node> node) :
     name_(name),
     texture_name_(texture_name),
     frame_id_(frame_id),

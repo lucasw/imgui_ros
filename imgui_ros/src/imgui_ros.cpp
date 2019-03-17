@@ -29,7 +29,7 @@
  */
 
 #include <chrono>
-// #include <geometry_msgs/msg/pose.hpp>
+// #include <geometry_msgs/pose.hpp>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #include <imgui.h>
@@ -47,18 +47,18 @@
 #include <imgui_ros/tf.h>
 #include <imgui_ros/viz2d.h>
 // #include <opencv2/highgui.hpp>
-#include <std_msgs/msg/bool.hpp>
-#include <std_msgs/msg/float32.hpp>
-#include <std_msgs/msg/float64.hpp>
-#include <std_msgs/msg/int16.hpp>
-#include <std_msgs/msg/int32.hpp>
-#include <std_msgs/msg/int64.hpp>
-#include <std_msgs/msg/int8.hpp>
-#include <std_msgs/msg/string.hpp>
-#include <std_msgs/msg/u_int16.hpp>
-#include <std_msgs/msg/u_int32.hpp>
-#include <std_msgs/msg/u_int64.hpp>
-#include <std_msgs/msg/u_int8.hpp>
+#include <std_msgs/bool.hpp>
+#include <std_msgs/float32.hpp>
+#include <std_msgs/float64.hpp>
+#include <std_msgs/int16.hpp>
+#include <std_msgs/int32.hpp>
+#include <std_msgs/int64.hpp>
+#include <std_msgs/int8.hpp>
+#include <std_msgs/string.hpp>
+#include <std_msgs/u_int16.hpp>
+#include <std_msgs/u_int32.hpp>
+#include <std_msgs/u_int64.hpp>
+#include <std_msgs/u_int8.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 using namespace std::chrono_literals;
@@ -71,14 +71,14 @@ using namespace std::chrono_literals;
 namespace imgui_ros
 {
   ImguiRos::ImguiRos()  // :
-    // clock_(std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME)),
+    // clock_(std::make_shared<ros::Clock>(RCL_SYSTEM_TIME)),
     // buffer_(clock_)
   {
   }
 
   void ImguiRos::postInit(std::shared_ptr<internal_pub_sub::Core> core)
   {
-    RCLCPP_INFO(get_logger(), "imgui ros init");
+    ROS_INFO_STREAM("imgui ros init");
     internal_pub_sub::Node::postInit(core);
     image_transfer_ = std::make_shared<ImageTransfer>();
     image_transfer_->init("image_transfer", get_namespace());
@@ -89,7 +89,7 @@ namespace imgui_ros
     #endif
 
     tf_pub_ = create_publisher<tf2_msgs::TFMessage>("/tf");
-    clock_ = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
+    clock_ = std::make_shared<ros::Clock>(RCL_SYSTEM_TIME);
     #if 1
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(clock_);
     #else
@@ -107,8 +107,8 @@ namespace imgui_ros
     // TODO(lucasw) can't seem to kill tfl_ once it starts,
     // maybe should hold onto tf_node?  Or don't depend on spinning inside TransformListener,
     // make own executor out here?
-    // auto tf_node = rclcpp::Node::make_shared("transform_listener_impl", get_namespace());
-    tf_node_ = rclcpp::Node::make_shared("transform_listener_impl", get_namespace());
+    // auto tf_node = ros::Node::make_shared("transform_listener_impl", get_namespace());
+    tf_node_ = ros::Node::make_shared("transform_listener_impl", get_namespace());
     // auto tf2_buffer = tf2_ros::Buffer(clock_);
     tf_buffer_->setUsingDedicatedThread(true);
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_,  // buffer_,
@@ -124,11 +124,11 @@ namespace imgui_ros
       get_parameter_or("name", name_, name_);
       get_parameter_or("width", width_, width_);
       get_parameter_or("height", height_, height_);
-    } catch (rclcpp::ParameterTypeException& ex) {
-      RCLCPP_ERROR(get_logger(), ex.what());
+    } catch (ros::ParameterTypeException& ex) {
+      ROS_ERROR_STREAM(ex.what());
     }
 
-    // parameters_client_ = std::make_shared<rclcpp::AsyncParametersClient>(this);
+    // parameters_client_ = std::make_shared<ros::AsyncParametersClient>(this);
 
     // building this causes the node to crash only in release mode
     add_tf_ = create_service<AddTf>("add_tf",
@@ -142,7 +142,7 @@ namespace imgui_ros
   }
 
   ImguiRos::~ImguiRos() {
-    RCLCPP_INFO(get_logger(), "shutting down imgui_ros");
+    ROS_INFO_STREAM("shutting down imgui_ros");
     #ifdef RUN_IMAGE_TRANSFER_SEPARATE_THREAD
     ros_io_thread_.join();
     #endif
@@ -159,13 +159,13 @@ namespace imgui_ros
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
-    RCLCPP_INFO(get_logger(), "finished shutting down imgui_ros");
+    ROS_INFO_STREAM("finished shutting down imgui_ros");
   }
 
   void ImguiRos::glInit() {
     thread_id_ = std::this_thread::get_id();
     std::cout << "imgui thread init 0x" << std::hex << thread_id_ << std::dec << std::endl;
-    RCLCPP_INFO(this->get_logger(), "opengl init %d", init_);
+    ROS_INFO_STREAM("opengl init %d", init_);
 
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
@@ -283,17 +283,17 @@ namespace imgui_ros
       get_parameter_or("green", viz3d->clear_color_.y, viz3d->clear_color_.y);
       get_parameter_or("blue", viz3d->clear_color_.z, viz3d->clear_color_.z);
       get_parameter_or("alpha", viz3d->clear_color_.w, viz3d->clear_color_.w);
-    } catch (rclcpp::ParameterTypeException& ex) {
-      RCLCPP_ERROR(get_logger(), ex.what());
+    } catch (ros::ParameterTypeException& ex) {
+      ROS_ERROR_STREAM(ex.what());
     }
     init_ = true;  // viz3d->initialized_;
   }
 
   // TODO(lucasw) could make this take a node as an argument
-  void ImguiRos::runNodeSingleThreaded(rclcpp::Node::SharedPtr node)
+  void ImguiRos::runNodeSingleThreaded(ros::Node::SharedPtr node)
   {
     // TODO(lucasw) make a multi threaded executor version of this function
-    rclcpp::spin(node);
+    ros::spin(node);
   }
 
   void ImguiRos::addTf(const std::shared_ptr<imgui_ros::AddTf::Request> req,
@@ -543,7 +543,7 @@ namespace imgui_ros
             tf_buffer_,
             shared_from_this()));
       } else if (widget.sub_type == Widget::VIZ2D) {
-        RCLCPP_INFO(get_logger(), "new viz 2d");
+        ROS_INFO_STREAM("new viz 2d");
         if (widget.items.size() < 1) {
           std::stringstream ss;
           ss << widget.name << " need two widget items for tf parent and child "
@@ -685,7 +685,7 @@ namespace imgui_ros
       }
       // TODO(lucasw) need to handle deletion
       if (parameters_clients_.count(node_name) < 1) {
-        parameters_clients_[node_name] = std::make_shared<rclcpp::AsyncParametersClient>(this, node_name);
+        parameters_clients_[node_name] = std::make_shared<ros::AsyncParametersClient>(this, node_name);
       }
       // TODO(lucasw) need to handle deletion
       param_widgets_[node_name][widget.name] = param;
@@ -704,7 +704,7 @@ namespace imgui_ros
   }
 
   // TODO(lucasw) move to draw method
-  void ImguiRos::drawStats(rclcpp::Time stamp)
+  void ImguiRos::drawStats(ros::Time stamp)
   {
     if (stats_window_init_) {
       stats_window_init_ = false;
@@ -729,7 +729,7 @@ namespace imgui_ros
       glInit();
     }
     // TODO(lucasw) this should be the stamp at which most of the tf frames were derived from?
-    const rclcpp::Time stamp = now();
+    const ros::Time stamp = now();
 
     // Poll and handle events (inputs, window resize, etc.)
     // You can read the gui_io.WantCaptureMouse, gui_io.WantCaptureKeyboard flags to
@@ -742,17 +742,17 @@ namespace imgui_ros
     // flags.
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      if (!rclcpp::ok())
+      if (!ros::ok())
         return;
       ImGui_ImplSDL2_ProcessEvent(&event);
       if (event.type == SDL_QUIT) {
-        rclcpp::shutdown();
+        ros::shutdown();
         return;
       }
       if (event.type == SDL_WINDOWEVENT &&
           event.window.event == SDL_WINDOWEVENT_CLOSE &&
           event.window.windowID == SDL_GetWindowID(window)) {
-        rclcpp::shutdown();
+        ros::shutdown();
         return;
       }
     }
@@ -773,7 +773,7 @@ namespace imgui_ros
     {
       // TODO(lucasw) make image_transfer into a widget?
       #ifndef RUN_IMAGE_TRANSFER_SEPARATE_THREAD
-      rclcpp::spin_some(image_transfer_);
+      ros::spin_some(image_transfer_);
       image_transfer_->update();
       #endif
 
@@ -861,11 +861,11 @@ namespace imgui_ros
     // update all parameters that need to be updated
     for (auto& param_widgets_pair : param_widgets_) {
       const std::string node_name = param_widgets_pair.first;
-      std::vector<rclcpp::Parameter> parameters;
+      std::vector<ros::Parameter> parameters;
       for (auto& param_widget_pair : param_widgets_pair.second) {
         auto param_widget = param_widget_pair.second;
         if (param_widget->update_) {
-          parameters.push_back(rclcpp::Parameter(
+          parameters.push_back(ros::Parameter(
               param_widget->parameter_name_, param_widget->value_));
           param_widget->update_ = false;
         }
@@ -873,15 +873,16 @@ namespace imgui_ros
       parameters_clients_[node_name]->set_parameters(parameters);
     } // param update
 
-    rclcpp::spin_some(tf_node_);
+    ros::spin_some(tf_node_);
   }
 
+#if 0
   // TODO(lucasw) need to push this up into containing viz3d class,
   // it will have a list of namespaces that it has parameter events for and will
   // receive the event and distribute the values to the proper param
   void ImguiRos::onParameterEvent(const rcl_interfaces::ParameterEvent::SharedPtr event)
   {
-    // RCLCPP_INFO(get_logger(), "%s", event->node);
+    // ROS_INFO_STREAM("%s", event->node);
     std::cout << event->node << "\n";
     for (auto & parameter : event->new_parameters) {
       std::cout << parameter.name << " ";
@@ -908,9 +909,5 @@ namespace imgui_ros
     // TODO(lucasw) do something when the parameter is deleted?
 #endif
   }
-
+#endif
 }  // namespace imgui_ros
-
-#include <class_loader/register_macro.hpp>
-
-CLASS_LOADER_REGISTER_CLASS(imgui_ros::ImguiRos, internal_pub_sub::Node)

@@ -38,10 +38,10 @@
 #include <memory>
 #include <mutex>
 #include <pcl_conversions/pcl_conversions.h>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <ros/ros.h>
+#include <sensor_msgs/point_cloud2.hpp>
 #include <tf2_ros/buffer.h>
-#include <tf2_msgs/msg/tf_message.hpp>
+#include <tf2_msgs/TFMessage.h>
 #include <vector>
 
 
@@ -51,7 +51,7 @@ struct PointCloud : public Sub
 {
   PointCloud(const std::string name, const std::string topic,
       std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-      std::shared_ptr<rclcpp::Node> node);
+      ros::NodeHandle& node);
   ~PointCloud() {}
 
   virtual void draw();
@@ -59,9 +59,9 @@ struct PointCloud : public Sub
   std::shared_ptr<Shape> shape_;
 protected:
   pcl::PointCloud<pcl::PointXYZRGB> cloud_;
-  sensor_msgs::msg::PointCloud2::SharedPtr msg_;
-  void pointCloud2Callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_;
+  sensor_msgs::PointCloud2::SharedPtr msg_;
+  void pointCloud2Callback(const sensor_msgs::PointCloud2::SharedPtr msg);
+  ros::Subscription<sensor_msgs::PointCloud2>::SharedPtr sub_;
 };
 
 }  // namespace imgui_ros

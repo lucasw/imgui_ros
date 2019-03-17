@@ -31,21 +31,21 @@
 #include <memory>
 #include <imgui_ros/imgui_ros.h>
 #include <internal_pub_sub/internal_pub_sub.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp/executors.hpp>
+#include <ros/ros.h>
+#include <ros/executors.hpp>
 
 int main(int argc, char * argv[])
 {
   setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-  rclcpp::init(argc, argv);
+  ros::init(argc, argv);
   auto core = std::make_shared<internal_pub_sub::Core>();
   auto imgui_ros = std::make_shared<imgui_ros::ImguiRos>();
   imgui_ros->init("imgui_ros");
   imgui_ros->postInit(core);
-  rclcpp::executors::SingleThreadedExecutor executor;
+  ros::executors::SingleThreadedExecutor executor;
   executor.add_node(imgui_ros);
   executor.spin();
-  // rclcpp::spin(imgui_ros);
-  rclcpp::shutdown();
+  // ros::spin(imgui_ros);
+  ros::shutdown();
   return 0;
 }

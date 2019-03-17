@@ -34,8 +34,8 @@
 #include <imgui.h>
 #include <imgui_ros/window.h>
 #include <mutex>
-#include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/float32.hpp>
+#include <ros/ros.h>
+#include <std_msgs/Float32.h>
 
 // Adapting from https://gist.github.com/ocornut/7e9b3ec566a333d725d4 by ocornut
 // NB: You can use math functions/operators on ImVec2 if you #define IMGUI_DEFINE_MATH_OPERATORS and #include "imgui_internal.h"
@@ -155,7 +155,7 @@ struct Connector : std::enable_shared_from_this<Connector>
     virtual void draw2(ImDrawList* draw_list);
 
     std::string topic_;
-    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_;
+    ros::Publisher pub_;
   };
 
 }  // namespace imgui_ros

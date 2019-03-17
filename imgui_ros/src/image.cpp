@@ -51,7 +51,7 @@ namespace imgui_ros
 
   RosImage::RosImage(const std::string name, const std::string topic, const bool sub_not_pub,
                      const bool ros_pub,
-                     std::shared_ptr<rclcpp::Node> node,
+                     std::shared_ptr<ros::Node> node,
                      std::shared_ptr<ImageTransfer> image_transfer) :
                      GlImage(name, topic),
                      sub_not_pub_(sub_not_pub),
@@ -77,18 +77,18 @@ namespace imgui_ros
       #if 0
         RCLCPP_DEBUG(node->get_logger(), "%s subscribing to topic '%s'",
             name.c_str(), topic.c_str());
-        sub_ = node->create_subscription<sensor_msgs::msg::Image>(topic,
+        sub_ = node->create_subscription<sensor_msgs::Image>(topic,
             std::bind(&RosImage::imageCallback, this, _1));
       #endif
       } else {
-        // pub_ = node->create_publisher<sensor_msgs::msg::Image>(topic);
+        // pub_ = node->create_publisher<sensor_msgs::Image>(topic);
         image_transfer_->setRosPub(topic_, ros_pub);
       }
     }
   }
 
   RosImage::RosImage(const std::string& name,
-    sensor_msgs::msg::Image::SharedPtr image) :
+    sensor_msgs::Image::SharedPtr image) :
     RosImage(name)
   {
     image_ = image;
@@ -97,7 +97,7 @@ namespace imgui_ros
   }
 
 #if 0
-  void RosImage::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg) {
+  void RosImage::imageCallback(const sensor_msgs::Image::SharedPtr msg) {
 #if 0
     std::cout << "image callback "
         << msg->header.stamp.sec << " "
@@ -122,7 +122,7 @@ namespace imgui_ros
     if (!enable_cpu_to_gpu_) {
       return true;
     }
-    sensor_msgs::msg::Image::SharedPtr image;
+    sensor_msgs::Image::SharedPtr image;
     {
       std::lock_guard<std::mutex> lock(mutex_);
       if (sub_not_pub_) {
@@ -130,7 +130,7 @@ namespace imgui_ros
         bool different_image = (image != image_);
         dirty_ |= different_image;
         if (image_ && image && different_image) {
-          image_gap_ = rclcpp::Time(image->header.stamp) - rclcpp::Time(image_->header.stamp);
+          image_gap_ = ros::Time(image->header.stamp) - ros::Time(image_->header.stamp);
         }
         image_ = image;
       }
@@ -239,7 +239,7 @@ namespace imgui_ros
     return true;
   }
 
-  void RosImage::publish(const rclcpp::Time& stamp) {
+  void RosImage::publish(const ros::Time& stamp) {
     // std::cout << name_ << " " << pub_ << " " << image_ << " " <<  texture_id_ << "\n";
     if (!enable_publish_) {
       return;
@@ -255,7 +255,7 @@ namespace imgui_ros
     }
 
     {
-      image_ = std::make_shared<sensor_msgs::msg::Image>();
+      image_ = std::make_shared<sensor_msgs::Image>();
       // Need ability to report a different frame than the sim is using internally-
       // this allows for calibration error simulation
       image_->header.frame_id = header_frame_id_;
@@ -355,11 +355,11 @@ namespace imgui_ros
               image_->header.stamp.sec,
               image_->header.stamp.nanosec / 1e9);
           ImGui::NextColumn();
-          ImGui::Text("age %0.5f", image_age_.nanoseconds() / 1e9);
+          ImGui::Text("age %0.5f", image_age_.toSec());
           ImGui::NextColumn();
-          ImGui::Text("gap %0.5f", image_gap_.nanoseconds() / 1e9);
+          ImGui::Text("gap %0.5f", image_gap_.toSec() / 1e9);
           ImGui::NextColumn();
-          ImGui::Text("tex update %0.5f", update_duration_.nanoseconds() / 1e9);
+          ImGui::Text("tex update %0.5f", update_duration_.toSec());
               // draw_duration.nanoseconds() / 1e6);
           ImGui::Columns(1);
         }

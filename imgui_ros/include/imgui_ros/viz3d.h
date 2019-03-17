@@ -37,17 +37,17 @@
 #include <imgui_ros/cube_camera.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
-#include <imgui_ros/msg/textured_shape.hpp>
+#include <imgui_ros/TexturedShape.h>
 #include <imgui_ros/projector.h>
 #include <imgui_ros/shaders.h>
 #include <imgui_ros/surface.h>
 #include <imgui_ros/window.h>
-#include <imgui_ros/srv/add_camera.hpp>
-#include <imgui_ros/srv/add_cube_camera.hpp>
-#include <imgui_ros/srv/add_projector.hpp>
-#include <imgui_ros/srv/add_shaders.hpp>
-#include <imgui_ros/srv/add_shape.hpp>
-#include <imgui_ros/srv/add_texture.hpp>
+#include <imgui_ros/AddCamera.h>
+#include <imgui_ros/AddCubeCamera.h>
+#include <imgui_ros/AddProjector.h>
+#include <imgui_ros/AddShaders.h>
+#include <imgui_ros/AddShape.h>
+#include <imgui_ros/AddTexture.h>
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -216,7 +216,7 @@ protected:
   void addShape(const imgui_ros::AddShape::Request& req,
                 imgui_ros::AddShape::Response& res);
   void texturedShapeCallback(const imgui_ros::TexturedShape& msg);
-  rclcpp::Subscription<imgui_ros::TexturedShape>::SharedPtr textured_shape_sub_;
+  ros::Subscription<imgui_ros::TexturedShape>::SharedPtr textured_shape_sub_;
   bool addShape2(const imgui_ros::TexturedShape::SharedPtr msg, std::string& message);
   // TODO(lucasw) it would be nice if the received TexturedShape
   // could be passed into opengl directly, which it probably could be made
@@ -226,7 +226,7 @@ protected:
   std::string name_;
 
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-  std::weak_ptr<rclcpp::Node> node_;
+  std::weak_ptr<ros::Node> node_;
 
   std::shared_ptr<ImageTransfer> image_transfer_;
   std::map<std::string, std::shared_ptr<RosImage> > textures_;

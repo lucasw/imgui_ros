@@ -277,7 +277,7 @@ Viz3D::Viz3D(const std::string name,
     const std::string topic,
     std::shared_ptr<ImGuiImplOpenGL3> renderer,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    std::shared_ptr<rclcpp::Node> node,
+    ros::NodeHandle& nh,
     std::shared_ptr<ImageTransfer> image_transfer) :
     Window(name),
     tf_buffer_(tf_buffer),
@@ -548,7 +548,7 @@ void Viz3D::addShaders(const std::shared_ptr<imgui_ros::AddShaders::Request> req
 // whenever either is replaced
 bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_ptr<Shape> shape)
 {
-  // std::shared_ptr<rclcpp::Node> node = node_.lock();
+  // std::shared_ptr<ros::Node> node = node_.lock();
   // std::stringstream ss;
   if (false) {
     std::cout << "updating shape shader connections '"
@@ -636,7 +636,7 @@ void Viz3D::texturedShapeCallback(const imgui_ros::TexturedShape::SharedPtr msg)
   std::string message;
   addShape2(msg, message);
   // TODO(lucasw) make a macro or function for this
-  // std::shared_ptr<rclcpp::Node> node = node_.lock();
+  // std::shared_ptr<ros::Node> node = node_.lock();
   // RCLCPP_INFO(node->get_logger(), message);
 }
 
@@ -724,7 +724,7 @@ bool Viz3D::addShape2(const imgui_ros::TexturedShape::SharedPtr msg, std::string
   return true;
 }
 
-void Viz3D::update(const rclcpp::Time& stamp)
+void Viz3D::update(const ros::Time& stamp)
 {
   double x_move = 0.0;
   double y_move = 0.0;
@@ -996,7 +996,7 @@ void Viz3D::draw()
   ImGui::End();
 }
 
-void Viz3D::addTF(tf2_msgs::TFMessage& tfm, const rclcpp::Time& now)
+void Viz3D::addTF(tf2_msgs::TFMessage& tfm, const ros::Time& now)
 {
   // convert tf2::Transform to geometry_msgs TransformStamped
   geometry_msgs::TransformStamped ts;

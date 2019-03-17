@@ -32,14 +32,14 @@
 #include <imgui_ros/imgui_ros.h>
 #include <usb_cam/usb_cam.hpp>
 #include <internal_pub_sub/internal_pub_sub.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp/executors.hpp>
+#include <ros/ros.h>
+#include <ros/executors.hpp>
 #include <thread>
 
 void run_usb_cam(std::shared_ptr<internal_pub_sub::Core> core)
 {
-  // rclcpp::executors::MultiThreadedExecutor executor;
-  rclcpp::executors::SingleThreadedExecutor executor;
+  // ros::executors::MultiThreadedExecutor executor;
+  ros::executors::SingleThreadedExecutor executor;
   auto usb_cam = std::make_shared<usb_cam::UsbCam>();
   usb_cam->init("usb_cam");
   usb_cam->postInit(core);
@@ -50,12 +50,12 @@ void run_usb_cam(std::shared_ptr<internal_pub_sub::Core> core)
 int main(int argc, char * argv[])
 {
   setvbuf(stdout, NULL, _IONBF, BUFSIZ);
-  rclcpp::init(argc, argv);
+  ros::init(argc, argv);
 
   const bool ros_pub_enable = false;
   auto core = std::make_shared<internal_pub_sub::Core>(ros_pub_enable);
 
-  rclcpp::executors::SingleThreadedExecutor single_executor;
+  ros::executors::SingleThreadedExecutor single_executor;
   // imgui_ros has to be single threaded for now to avoid context switches with opengl
   auto imgui_ros = std::make_shared<imgui_ros::ImguiRos>();
   imgui_ros->init("imgui_ros");
@@ -63,11 +63,11 @@ int main(int argc, char * argv[])
   single_executor.add_node(imgui_ros);
 
 #if 0
-  rclcpp::WallRate rate(50);
+  ros::WallRate rate(50);
   // This doesn't work even though the execution time out to be in a different thread than
   // this one- need to spawn to different threads to spin each executor in.
-  rclcpp::Clock::SharedPtr clock = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
-  while (rclcpp::ok()) {
+  ros::Clock::SharedPtr clock = std::make_shared<ros::Clock>(RCL_ROS_TIME);
+  while (ros::ok()) {
     single_executor.spin_some();
     multi_executor.spin_some();
     rate.sleep();
@@ -78,6 +78,6 @@ int main(int argc, char * argv[])
   cam_thread.join();
 #endif
 
-  rclcpp::shutdown();
+  ros::shutdown();
   return 0;
 }

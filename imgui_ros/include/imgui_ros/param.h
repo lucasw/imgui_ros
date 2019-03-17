@@ -37,11 +37,13 @@
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
-#include <rcl_interfaces/msg/parameter_event.hpp>
-#include <rcl_interfaces/msg/parameter_type.hpp>
-#include <rcl_interfaces/msg/parameter_value.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/bool.hpp>
+#if 0
+#include <rcl_interfaces/parameter_event.hpp>
+#include <rcl_interfaces/parameter_type.hpp>
+#include <rcl_interfaces/parameter_value.hpp>
+#endif
+#include <ros/ros.h>
+#include <std_msgs/Bool.h>
 
 namespace imgui_ros
 {
@@ -56,7 +58,7 @@ struct Param : public Widget {
       uint8_t type,
       double min,
       double max,
-      std::shared_ptr<rclcpp::Node> node);
+      ros::NodeHandle& nh);
   ~Param();
 
   virtual void draw();
@@ -64,27 +66,28 @@ struct Param : public Widget {
   bool update_ = false;
   std::string node_name_;
   std::string parameter_name_;
-  rcl_interfaces::msg::ParameterValue value_;
-  // rclcpp::ParameterValue value_;
+  // rcl_interfaces::ParameterValue value_;
+  // ros::ParameterValue value_;
 protected:
   // uint8_t type_;
   double min_ = 0.0;
   double max_ = 1.0;
 
-  std::weak_ptr<rclcpp::Node> node_;
+  std::weak_ptr<ros::Node> node_;
 
-
+#if 0
   void responseReceivedCallback(
-      const std::shared_future<std::vector<rcl_interfaces::msg::SetParametersResult>> future);
+      const std::shared_future<std::vector<rcl_interfaces::SetParametersResult>> future);
 
   // TODO(lucasw) need to push this up into containing viz3d class,
   // it will have a list of namespaces that it has parameter events for and will
   // receive the event and distribute the values to the proper param
-  void onParameterEvent(const rcl_interfaces::msg::ParameterEvent::SharedPtr event);
-  bool updateValue(const rcl_interfaces::msg::ParameterValue& new_value);
+  void onParameterEvent(const rcl_interfaces::ParameterEvent::SharedPtr event);
+  bool updateValue(const rcl_interfaces::ParameterValue& new_value);
 
-  rclcpp::AsyncParametersClient::SharedPtr parameters_client_;
-  rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_sub_;
+  ros::AsyncParametersClient::SharedPtr parameters_client_;
+  ros::Subscription<rcl_interfaces::ParameterEvent>::SharedPtr param_sub_;
+#endif
 };
 
 }  // namespace imgui_ros

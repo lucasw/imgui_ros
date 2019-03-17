@@ -60,7 +60,7 @@ CubeCamera::CubeCamera(const std::string& name,
     const std::string& frame_id,
     const std::string& header_frame_id,
     const float aov_y, const float aov_x,
-    std::shared_ptr<rclcpp::Node> node) :
+    ros::NodeHandle& nh) :
     Camera(name, frame_id, header_frame_id, aov_y, aov_x, node)
 {
 }
@@ -75,7 +75,7 @@ void CubeCamera::init(
     const size_t face_width,
     const std::string& texture_name, const std::string& topic,
     const bool ros_pub,
-    std::shared_ptr<rclcpp::Node> node,
+    ros::NodeHandle& nh,
     std::shared_ptr<ImageTransfer> image_transfer)
 {
   const bool sub_not_pub = false;
@@ -152,7 +152,7 @@ void CubeCamera::init(
       image->width_ = face_width;
       image->height_ = face_width;
 
-      image->image_ = std::make_shared<sensor_msgs::msg::Image>();
+      image->image_ = std::make_shared<sensor_msgs::Image>();
       // TODO(lucasw) there need to be frames for all directions of the cube
       image->image_->header.frame_id = frame_id_;
       image->image_->width = face_width;

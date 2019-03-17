@@ -35,12 +35,12 @@
 #include <imgui_ros/camera.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
-#include <imgui_ros/msg/textured_shape.hpp>
-#include <imgui_ros/srv/add_shape.hpp>
+#include <imgui_ros/TexturedShape.h>
+#include <imgui_ros/AddShape.h>
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
+#include <ros/ros.h>
 #include <tf2/LinearMath/Transform.h>
 
 #pragma GCC diagnostic push

@@ -35,12 +35,12 @@
 #include <imgui.h>
 #include <imgui_ros/image_transfer.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
-#include <internal_pub_sub/internal_pub_sub.hpp>
+// #include <internal_pub_sub/internal_pub_sub.hpp>
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
+#include <ros/ros.h>
+#include <sensor_msgs/Image.h>
 
 namespace imgui_ros
 {
@@ -65,12 +65,12 @@ struct RosImage : public GlImage {
   RosImage(const std::string name, const std::string topic = "",
            const bool sub_not_pub = false,
            const bool ros_pub = false,
-           std::shared_ptr<rclcpp::Node> node = nullptr,
+           // ros::NodeHandle& nh = nullptr,
            std::shared_ptr<ImageTransfer> image_transfer = nullptr);
   RosImage(const std::string& name,
-    sensor_msgs::msg::Image::SharedPtr image);
+    sensor_msgs::Image::SharedPtr image);
 
-  // void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
+  // void imageCallback(const sensor_msgs::Image::SharedPtr msg);
 
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
@@ -79,9 +79,9 @@ struct RosImage : public GlImage {
   // TODO(lucasw) factor out common code
   virtual void draw();
 
-  virtual void publish(const rclcpp::Time& stamp);
+  virtual void publish(const ros::Time& stamp);
 
-  sensor_msgs::msg::Image::SharedPtr image_;
+  sensor_msgs::Image::SharedPtr image_;
 
   int wrap_s_ind_ = 0;
   int wrap_t_ind_ = 0;
@@ -97,19 +97,19 @@ struct RosImage : public GlImage {
   bool enable_publish_ = true;
 private:
   const bool sub_not_pub_ = false;
-  std::weak_ptr<rclcpp::Node> node_;
+  std::weak_ptr<ros::Node> node_;
   std::shared_ptr<ImageTransfer> image_transfer_;
 
   // temp until image_transfer supports subs
-  // rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
+  // ros::Subscription<sensor_msgs::Image>::SharedPtr sub_;
 
   std::vector<int> min_filter_modes_;
   std::vector<int> mag_filter_modes_;
   std::vector<int> wrap_modes_;
 
   // TODO(lucasw) Duration(0, 0) may have resulted in crashes?
-  rclcpp::Duration image_gap_ = rclcpp::Duration(0);
-  rclcpp::Duration image_age_ = rclcpp::Duration(0);
+  ros::Duration image_gap_ = ros::Duration(0);
+  ros::Duration image_age_ = ros::Duration(0);
   bool enable_one_to_one_ = false;
 };  // RosImage
 
