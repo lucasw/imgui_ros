@@ -32,12 +32,14 @@
 #define IMGUI_ROS_IMGUI_ROS_H
 
 #include <imgui.h>
-#include <imgui_ros/viz3d.h>
+// #include <imgui_ros/viz3d.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
+#if 0
 #include <imgui_ros/param.h>
 #include <internal_pub_sub/internal_pub_sub.hpp>
 #include <imgui_ros/AddTf.hpp>
 #include <imgui_ros/AddWindow.h>
+#endif
 #include <map>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -49,13 +51,15 @@
 #include <SDL.h>
 
 namespace imgui_ros {
-class ImguiRos : public internal_pub_sub::Node {
+class ImguiRos {
 public:
   ImguiRos();
   ~ImguiRos();
-  void postInit(std::shared_ptr<internal_pub_sub::Core> core);
+  void postInit();
 
 private:
+  ros::NodeHandle nh_;
+#if 0
   void runNodeSingleThreaded(ros::NodeHandle& nh);
   ros::Service<AddTf>::SharedPtr add_tf_;
   void addTf(const std::shared_ptr<imgui_ros::AddTf::Request> req,
@@ -65,7 +69,10 @@ private:
                  std::shared_ptr<imgui_ros::AddWindow::Response> res);
   bool addWidget(const imgui_ros::Widget& widget,
       std::string& message, std::shared_ptr<Widget>& imgui_widget);
-  void update();
+#endif
+  // TODO(lucasw) still need to update even if ros time is paused
+  ros::Timer update_timer_;
+  void update(const ros::TimerEvent& ev);
 
   // Need to init the opengl context in same thread as the update
   // is run in, not necessarily the same thread onInit runs in
@@ -77,10 +84,8 @@ private:
   SDL_GLContext gl_context;
   // ImVec4 clear_color_ = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+#if 0
   std::map<std::string, std::shared_ptr<Window> > windows_;
-
-  // TODO(lucasw) still need to update even if ros time is paused
-  ros::TimerBase::SharedPtr update_timer_;
 
   ros::Service<AddWindow>::SharedPtr add_window_;
 
@@ -92,7 +97,7 @@ private:
   // tf2_ros::Buffer buffer_;
 
   ros::Publisher<tf2_msgs::TFMessage>::SharedPtr tf_pub_;
-
+#endif
   std::string name_ = "imgui_ros";
   int width_ = 1280;
   int height_ = 720;
@@ -101,6 +106,7 @@ private:
   void drawStats(ros::Time stamp);
 
   std::shared_ptr<ImGuiImplOpenGL3> imgui_impl_opengl3_;
+#if 0
   std::shared_ptr<Viz3D> viz3d;
 
   std::map<std::string, ros::AsyncParametersClient::SharedPtr> parameters_clients_;
@@ -114,7 +120,7 @@ private:
   // this will get parameter events for all nodes in same namespace (or just root namespace?
   // namespacing seems broken in ros2 currently)
   // void onParameterEvent(const rcl_interfaces::ParameterEvent::SharedPtr event);
-
+#endif
   // check to make sure opengl context accesses never happen in different thread
   std::thread::id thread_id_;
 };
