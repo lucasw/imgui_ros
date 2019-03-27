@@ -9,12 +9,14 @@ Run a demo:
 
 ```
 cd colcon_ws/src
-git clone https://github.com/lucasw/imgui_ros.git
-git clone https://github.com/lucasw/image_manip.git  # required for the demo
+git clone -b node_init https://github.com/lucasw/imgui_ros.git
+git clone -b node_init https://github.com/lucasw/image_manip.git  # required for the demo
+git clone -b node_init https://github.com/lucasw/usb_cam.git
+git clone -b node_init https://github.com/lucasw/rclcpp.git
 cd imgui_ros/imgui_ros
 git clone https://github.com/ocornut/imgui.git
 cd ../../
-colcon build --packages-select imgui_ros image_manip
+colcon build --packages-select imgui_ros image_manip internal_pub_sub usb_cam rclcpp
 source install/setup.bash
 ros2 launch imgui_ros demo_launch.py
 ```
