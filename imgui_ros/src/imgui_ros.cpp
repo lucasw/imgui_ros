@@ -171,7 +171,7 @@ ImguiRos::~ImguiRos()
 void ImguiRos::glInit()
 {
   thread_id_ = std::this_thread::get_id();
-  std::cout << "imgui thread init 0x" << std::hex << thread_id_ << std::dec << std::endl;
+  ROS_INFO_STREAM("imgui thread init 0x" << std::hex << thread_id_ << std::dec);
   ROS_INFO("opengl init %d", init_);
 
   // Setup SDL
@@ -275,8 +275,8 @@ void ImguiRos::glInit()
   // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f,
   // NULL, io.Fonts->GetGlyphRangesJapanese()); IM_ASSERT(font != NULL);
 
-  const std::string viz3d_name = "main render window";
 #if 0
+  const std::string viz3d_name = "main render window";
   viz3d = std::make_shared<Viz3D>(viz3d_name, "shapes",
       imgui_impl_opengl3_,
       tf_buffer_,
@@ -816,40 +816,43 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   viz3d->render_message_.str("");
   // Need to render these before using them in the regular viz3d render below
   viz3d->renderShadows();
+#endif
 
   SDL_GL_MakeCurrent(window, gl_context);
   checkGLError(__FILE__, __LINE__);
   const int display_size_x = ImGui::GetIO().DisplaySize.x;
   const int display_size_y = ImGui::GetIO().DisplaySize.y;
-  const int fb_width = display_size_x * ImGui::GetIO().DisplayFramebufferScale.x;
-  const int fb_height = display_size_y * ImGui::GetIO().DisplayFramebufferScale.y;
 
 
   glViewport(0, 0, (int)display_size_x, (int)display_size_y);
   checkGLError(__FILE__, __LINE__);
-  // glClearColor(clear_color_.x, clear_color_.y, clear_color_.z, clear_color_.w);
+  glClearColor(0.1, 0.2, 0.3, 1.0);
+#if 0
   glClearColor(
       viz3d->clear_color_.x,
       viz3d->clear_color_.y,
       viz3d->clear_color_.z,
       viz3d->clear_color_.w);
-
+#endif
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   // TODO(lucasw) render anything else into the background here,
   // and the ui will appear over it?
   // bgfx does the 3D render after imgui render
 
   checkGLError(__FILE__, __LINE__);
+#if 0
   if (true) {
+    const int fb_width = display_size_x * ImGui::GetIO().DisplayFramebufferScale.x;
+    const int fb_height = display_size_y * ImGui::GetIO().DisplayFramebufferScale.y;
     viz3d->render(fb_width, fb_height,
         ImGui::GetDrawData()->DisplayPos.x, ImGui::GetDrawData()->DisplayPos.y,
         ImGui::GetDrawData()->DisplaySize.x, ImGui::GetDrawData()->DisplaySize.y
         );
   }
+#endif
   checkGLError(__FILE__, __LINE__);
   imgui_impl_opengl3_->RenderDrawData(ImGui::GetDrawData());
   checkGLError(__FILE__, __LINE__);
-#endif
 
   SDL_GL_SwapWindow(window);
   ////////////////////////////////////////////////////////////////////
