@@ -40,7 +40,7 @@ namespace imgui_ros
 {
 Window::~Window()
 {
-  std::cout << "freeing window " << this << "\n";
+  ROS_INFO_STREAM("freeing window " << this);
 }
 
 void Window::draw() {

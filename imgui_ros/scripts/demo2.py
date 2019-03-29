@@ -21,7 +21,10 @@ class DemoGui:
     def add_misc(self):
         req = AddWindowRequest()
         req.name = 'misc controls'
-
+        req.position.x = 300
+        req.position.y = 0
+        req.size.x = 300
+        req.size.y = 300
         tab_name = 'misc'
 
         # string pub sub test

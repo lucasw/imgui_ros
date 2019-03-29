@@ -742,6 +742,8 @@ void ImguiRos::update(const ros::TimerEvent& ev)
     glInit();
   }
 
+  const auto& stamp = ev.current_real;
+
   // Poll and handle events (inputs, window resize, etc.)
   // You can read the gui_io.WantCaptureMouse, gui_io.WantCaptureKeyboard flags to
   // tell if dear imgui wants to use your inputs.
@@ -789,6 +791,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
     ros::spin_some(image_transfer_);
     image_transfer_->update();
     #endif
+#endif
 
     for (auto& window : windows_) {
       if (window.second) {
@@ -802,8 +805,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
         window.second->draw();
       }
     }
-#endif
-    drawStats(ev.current_real);
+    drawStats(stamp);
   }
 
   //////////////////////////////////////////////////////////////
