@@ -23,6 +23,7 @@ find_package(glm REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
 geometry_msgs
+imgui_ros_msgs
 pcl_conversions
 roscpp
 sensor_msgs
@@ -35,35 +36,10 @@ tf2_ros
 visualization_msgs
 )
 
-add_message_files(
-  FILES
-  Camera.msg
-  Projector.msg
-  Vertex.msg
-  Widget.msg
-  TexturedShape.msg
-  TfWidget.msg
-)
-
-add_service_files(
-  FILES
-  AddCamera.srv
-  AddCubeCamera.srv
-  AddProjector.srv
-  AddTf.srv
-  AddTexture.srv
-  AddWindow.srv
-  AddShape.srv
-  AddShaders.srv
-)
-
-generate_messages(
-  DEPENDENCIES geometry_msgs sensor_msgs shape_msgs std_msgs
-)
-
 catkin_package(
+  INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS nodelet roscpp sensor_msgs std_msgs
+  CATKIN_DEPENDS nodelet roscpp sensor_msgs std_msgs  # imgui_ros_msgs
 )
 
 # TODO(lucasw) currently have to symlink imgui in,
@@ -93,6 +69,7 @@ set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPIL
 
 add_library(imguiros SHARED
   src/imgui_ros.cpp
+  src/window.cpp
 )
 
 if(false)
@@ -118,11 +95,8 @@ add_library(imguiros SHARED
   src/viz2d.cpp
   # src/imgui_impl_opengl3.cpp
   src/viz3d.cpp
-  src/window.cpp
 )
 endif(false)
-# add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
-add_dependencies(imguiros ${PROJECT_NAME}_gencpp)
 
 target_link_libraries(imguiros imgui
   ${Boost_SYSTEM_LIBRARY}  # pcl_conversions requires this

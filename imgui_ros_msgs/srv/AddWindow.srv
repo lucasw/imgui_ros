@@ -1,6 +1,6 @@
 string name
 bool remove  # false
-imgui_ros/Widget[] widgets
+imgui_ros_msgs/Widget[] widgets
 # TODO(lucasw) any number of other window properties
 # these are saved in the imgui.ini file
 # whether to use the settings before, or continue to use

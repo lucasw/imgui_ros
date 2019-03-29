@@ -36,7 +36,6 @@
 #include <imgui_impl_sdl.h>
 #pragma GCC diagnostic pop
 #if 0
-#include <imgui_ros/AddWindow.h>
 #include <imgui_ros/image.h>
 #endif
 #include <imgui_ros/imgui_impl_opengl3.h>
@@ -139,9 +138,9 @@ void ImguiRos::postInit()
   add_tf_ = create_service<AddTf>("add_tf",
       std::bind(&ImguiRos::addTf, this, std::placeholders::_1, std::placeholders::_2));
 
-  add_window_ = create_service<AddWindow>("add_window",
-      std::bind(&ImguiRos::addWindow, this, std::placeholders::_1, std::placeholders::_2));
 #endif
+  add_window_ = nh_.advertiseService("add_window",
+      &ImguiRos::addWindow, this);
   update_timer_ = nh_.createTimer(ros::Duration(0.033), &ImguiRos::update, this);
 }
 
@@ -320,66 +319,72 @@ void ImguiRos::addTf(const std::shared_ptr<imgui_ros::AddTf::Request> req,
   res->message += "added tf pub " + req->tf.name + " to " + req->tf.window;
 }
 
-void ImguiRos::addWindow(const std::shared_ptr<imgui_ros::AddWindow::Request> req,
-    std::shared_ptr<imgui_ros::AddWindow::Response> res)
+#endif
+
+bool ImguiRos::addWindow(imgui_ros_msgs::AddWindow::Request& req,
+    imgui_ros_msgs::AddWindow::Response& res)
 {
   // std::cout << "adding window " << req->name << "\n";
   // TODO(lucasw) there could be a mutex only protecting the windows_
   std::lock_guard<std::mutex> lock(mutex_);
-  res->success = true;
-  if (req->remove) {
-    if (windows_.count(req->name) > 0) {
-      windows_.erase(req->name);
+  res.success = true;
+  if (req.remove) {
+    if (windows_.count(req.name) > 0) {
+      windows_.erase(req.name);
     }
-    return;
+    return true;
   }
 
   std::shared_ptr<Window> window;
-  if (windows_.count(req->name) > 0) {
-    window = windows_[req->name];
+  if (windows_.count(req.name) > 0) {
+    window = windows_[req.name];
   } else {
-    window = std::make_shared<Window>(req->name);
+    window = std::make_shared<Window>(req.name);
   }
 
   ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
 
   // TODO(lucasw) if python can have access to what flags are just pass in an int
-  if (req->no_title_bar) { window_flags |= ImGuiWindowFlags_NoTitleBar; }
-  if (req->no_resize) { window_flags |= ImGuiWindowFlags_NoResize; }
-  if (req->no_move) { window_flags |= ImGuiWindowFlags_NoMove; }
-  if (req->no_scrollbar) { window_flags |= ImGuiWindowFlags_NoScrollbar; }
-  if (req->no_collapse) { window_flags |= ImGuiWindowFlags_NoCollapse; }
-  if (req->no_decoration) { window_flags |= ImGuiWindowFlags_NoDecoration; }
+  if (req.no_title_bar) { window_flags |= ImGuiWindowFlags_NoTitleBar; }
+  if (req.no_resize) { window_flags |= ImGuiWindowFlags_NoResize; }
+  if (req.no_move) { window_flags |= ImGuiWindowFlags_NoMove; }
+  if (req.no_scrollbar) { window_flags |= ImGuiWindowFlags_NoScrollbar; }
+  if (req.no_collapse) { window_flags |= ImGuiWindowFlags_NoCollapse; }
+  if (req.no_decoration) { window_flags |= ImGuiWindowFlags_NoDecoration; }
 
-  if (req->init) {
+  if (req.init) {
     window->setSettings(
-        ImVec2(req->position.x, req->position.y),
-        ImVec2(req->size.x, req->size.y),
-        req->scroll_y,
-        req->collapsed,
+        ImVec2(req.position.x, req.position.y),
+        ImVec2(req.size.x, req.size.y),
+        req.scroll_y,
+        req.collapsed,
         window_flags);
   }
 
-  for (size_t i = 0; i < req->widgets.size(); ++i) {
-    const auto tab_name = req->widgets[i].tab_name;
-    if (req->widgets[i].remove) {
-      window->remove(req->widgets[i].name, tab_name);
+#if 0
+  for (size_t i = 0; i < req.widgets.size(); ++i) {
+    const auto tab_name = req.widgets[i].tab_name;
+    if (req.widgets[i].remove) {
+      window->remove(req.widgets[i].name, tab_name);
       continue;
     }
     std::string message;
     std::shared_ptr<Widget> widget;
-    // std::cout << "new widget " << req->widgets[i].name << "\n";
-    const bool rv = addWidget(req->widgets[i], message, widget);
+    // std::cout << "new widget " << req.widgets[i].name << "\n";
+    const bool rv = addWidget(req.widgets[i], message, widget);
     res->success = res->success && rv && widget;
     res->message += ", " + message;
     if (rv && widget) {
-      widget->enable_info_ = req->widgets[i].enable_info;
+      widget->enable_info_ = req.widgets[i].enable_info;
       window->add(widget, tab_name);
     }
   }
-  windows_[req->name] = window;
+#endif
+  windows_[req.name] = window;
+  return true;
 }
 
+#if 0
 // TODO(lucasw) move into widget.cpp?
 bool ImguiRos::addWidget(const imgui_ros::Widget& widget,
     std::string& message, std::shared_ptr<Widget>& imgui_widget)

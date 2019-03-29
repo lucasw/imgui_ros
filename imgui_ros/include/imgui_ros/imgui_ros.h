@@ -32,13 +32,14 @@
 #define IMGUI_ROS_IMGUI_ROS_H
 
 #include <imgui.h>
+#include <imgui_ros_msgs/AddWindow.h>
 // #include <imgui_ros/viz3d.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
+#include <imgui_ros/window.h>
 #if 0
 #include <imgui_ros/param.h>
 #include <internal_pub_sub/internal_pub_sub.hpp>
 #include <imgui_ros/AddTf.hpp>
-#include <imgui_ros/AddWindow.h>
 #endif
 #include <map>
 #include <mutex>
@@ -51,6 +52,7 @@
 #include <SDL.h>
 
 namespace imgui_ros {
+
 class ImguiRos {
 public:
   ImguiRos();
@@ -64,9 +66,10 @@ private:
   ros::Service<AddTf>::SharedPtr add_tf_;
   void addTf(const std::shared_ptr<imgui_ros::AddTf::Request> req,
              std::shared_ptr<imgui_ros::AddTf::Response> res);
-
-  void addWindow(const std::shared_ptr<imgui_ros::AddWindow::Request> req,
-                 std::shared_ptr<imgui_ros::AddWindow::Response> res);
+#endif
+  bool addWindow(imgui_ros_msgs::AddWindow::Request& req,
+                 imgui_ros_msgs::AddWindow::Response& res);
+#if 0
   bool addWidget(const imgui_ros::Widget& widget,
       std::string& message, std::shared_ptr<Widget>& imgui_widget);
 #endif
@@ -84,11 +87,10 @@ private:
   SDL_GLContext gl_context;
   // ImVec4 clear_color_ = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-#if 0
   std::map<std::string, std::shared_ptr<Window> > windows_;
+  ros::ServiceServer add_window_;
 
-  ros::Service<AddWindow>::SharedPtr add_window_;
-
+#if 0
   ros::Clock::SharedPtr clock_;
   // std::shared_ptr<ros::Node> tf_node_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;

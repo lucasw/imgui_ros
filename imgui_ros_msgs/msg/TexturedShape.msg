@@ -11,7 +11,7 @@ bool enable  # True
 # No should just have the caller figure that out.
 # TODO(lucasw) this belongs in a ShapeInstance.msg, this msg should be
 # just for the geometry to be stored but doesn't actually create an instance to be rendered.
-imgui_ros/Vertex[] vertices
+imgui_ros_msgs/Vertex[] vertices
 # List of triangles; the index values refer to positions in vertices[].
 shape_msgs/MeshTriangle[] triangles
 # the name of the texture, which needs to be stored in the receiver unless

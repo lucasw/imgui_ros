@@ -1,6 +1,6 @@
 bool remove  # False
 # camera width and height aren't used, the texture in texture_name defines that
-imgui_ros/Camera camera
+imgui_ros_msgs/Camera camera
 # stop projecting beyond this range - TODO(lucasw) redundant with Camera far?
 float32 max_range
 float32 constant_attenuation

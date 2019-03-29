@@ -1,4 +1,4 @@
-imgui_ros/Projector projector
+imgui_ros_msgs/Projector projector
 ---
 string message  # ""
 bool success  # False

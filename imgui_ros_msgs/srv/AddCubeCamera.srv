@@ -1,5 +1,5 @@
 # the name needs to be unique, it will overwrite same named textures otherwise.
-imgui_ros/Camera camera
+imgui_ros_msgs/Camera camera
 # this should be about a quarter of the camera width and height if the
 # lens produces a panoramic image, otherwise it should be higher in proportion
 # and approach the camera width as the fov approaches one cube face (though

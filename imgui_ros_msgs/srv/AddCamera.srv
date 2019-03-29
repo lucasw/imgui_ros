@@ -1,5 +1,5 @@
 # the name needs to be unique, it will overwrite same named textures otherwise.
-imgui_ros/Camera camera
+imgui_ros_msgs/Camera camera
 ---
 string message  # ""
 bool success  # False

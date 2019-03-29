@@ -1,36 +1,26 @@
 <?xml version="1.0"?>
 <package format="1">
-  <name>imgui_ros</name>
+  <name>imgui_ros_msgs</name>
   <version>0.0.0</version>
-  <description>imgui user interface for ros</description>
+  <description>imgui user interface msgs for ros</description>
   <maintainer email="wsacul@gmail.com">Lucas Walter</maintainer>
   <license>BSD-3</license>
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>imgui_ros_msgs</build_depend>
-  <build_depend>nodelet</build_depend>
-  <build_depend>pcl_conversions</build_depend>
-  <build_depend>roscpp</build_depend>
+  <build_depend>message_generation</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>shape_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>tf2_geometry_msgs</build_depend>
   <build_depend>tf2_msgs</build_depend>
-  <build_depend>usb_cam</build_depend>
-  <run_depend>imgui_ros_msgs</run_depend>
-  <run_depend>nodelet</run_depend>
-  <run_depend>pcl_conversions</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>rospy</run_depend>
+  <run_depend>message_generation</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>shape_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>tf2_geometry_msgs</run_depend>
   <run_depend>tf2_msgs</run_depend>
-  <run_depend>usb_cam</run_depend>
 
   <export>
-    <!--nodelet plugin="${prefix}/nodelet_imgui_ros.xml" /-->
   </export>
 </package>
