@@ -83,7 +83,7 @@ private:
   std::mutex mutex_;
   bool init_ = false;
   // TODO(lucasw) std::shared_ptr
-  SDL_Window *window;
+  SDL_Window *sdl_window_;
   SDL_GLContext gl_context;
   // ImVec4 clear_color_ = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -103,6 +103,11 @@ private:
   std::string name_ = "imgui_ros";
   int width_ = 1280;
   int height_ = 720;
+  int old_width_ = 0;
+  int old_height_ = 0;
+
+  bool fullscreen_ = false;
+  bool restore_window_size_ = false;
 
   bool stats_window_init_ = true;
   void drawStats(ros::Time stamp);

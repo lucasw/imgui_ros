@@ -64,6 +64,7 @@
 #include <std_msgs/u_int64.hpp>
 #include <std_msgs/u_int8.hpp>
 #endif
+#include <SDL2/SDL_keycode.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 // TODO(lucasw) this may not shut down properly
@@ -163,7 +164,7 @@ ImguiRos::~ImguiRos()
   ImGui::DestroyContext();
 
   SDL_GL_DeleteContext(gl_context);
-  SDL_DestroyWindow(window);
+  SDL_DestroyWindow(sdl_window_);
   SDL_Quit();
   ROS_INFO_STREAM("finished shutting down imgui_ros");
 }
@@ -217,11 +218,11 @@ void ImguiRos::glInit()
   SDL_DisplayMode current;
   SDL_GetCurrentDisplayMode(0, &current);
   // TODO(lucasw) window.reset()
-  window = SDL_CreateWindow(
+  sdl_window_ = SDL_CreateWindow(
       name_.c_str(), SDL_WINDOWPOS_CENTERED,
       SDL_WINDOWPOS_CENTERED, width_, height_,
       SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE); // | SDL_WINDOW_BORDERLESS);
-  gl_context = SDL_GL_CreateContext(window);
+  gl_context = SDL_GL_CreateContext(sdl_window_);
   SDL_GL_SetSwapInterval(1); // Enable vsync
 
   // Initialize OpenGL loader
@@ -243,7 +244,7 @@ void ImguiRos::glInit()
   // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard
   // Controls
 
-  ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+  ImGui_ImplSDL2_InitForOpenGL(sdl_window_, gl_context);
   imgui_impl_opengl3_ = std::make_shared<ImGuiImplOpenGL3>();
   imgui_impl_opengl3_->Init(glsl_version);
 
@@ -744,6 +745,14 @@ void ImguiRos::update(const ros::TimerEvent& ev)
 
   const auto& stamp = ev.current_real;
 
+  if (restore_window_size_) {
+    // this is ineffective - is imgui overriding?
+    ROS_INFO_STREAM("restoring window "
+        << old_width_ << " " << old_height_);
+    SDL_SetWindowSize(sdl_window_, old_width_, old_height_);
+    restore_window_size_ = false;
+  }
+
   // Poll and handle events (inputs, window resize, etc.)
   // You can read the gui_io.WantCaptureMouse, gui_io.WantCaptureKeyboard flags to
   // tell if dear imgui wants to use your inputs.
@@ -758,13 +767,35 @@ void ImguiRos::update(const ros::TimerEvent& ev)
     if (!ros::ok())
       return;
     ImGui_ImplSDL2_ProcessEvent(&event);
-    if (event.type == SDL_QUIT) {
+    if (event.type == SDL_KEYUP) {
+      if (event.key.keysym.sym == SDLK_F11) {
+        ROS_INFO_STREAM("TODO switch to/from fullscreen");
+        if (fullscreen_) {
+          SDL_SetWindowFullscreen(sdl_window_, 0);
+          // this is ineffective - is imgui overriding?
+          // SDL_SetWindowSize(sdl_window_, old_width_, old_height_);
+          restore_window_size_ = true;
+          fullscreen_ = false;
+        } else {
+          SDL_DisplayMode current;
+          // TODO(lucasw) there are potentially multiple displays,
+          // which is the current one?
+          const int rv = SDL_GetCurrentDisplayMode(0, &current);
+          SDL_GetWindowSize(sdl_window_, &old_width_, &old_height_);
+          ROS_INFO_STREAM(current.w << " " << current.h << ", "
+              << old_width_ << " " << old_height_);
+          SDL_SetWindowSize(sdl_window_, current.w, current.h);
+          SDL_SetWindowFullscreen(sdl_window_, SDL_WINDOW_FULLSCREEN);
+          fullscreen_ = true;
+        }
+      }
+    } else if (event.type == SDL_QUIT) {
       ros::shutdown();
       return;
-    }
-    if (event.type == SDL_WINDOWEVENT &&
+    } else if (event.type == SDL_WINDOWEVENT &&
         event.window.event == SDL_WINDOWEVENT_CLOSE &&
-        event.window.windowID == SDL_GetWindowID(window)) {
+        event.window.windowID == SDL_GetWindowID(sdl_window_)) {
+      ROS_INFO_STREAM("window closed - shutting down");
       ros::shutdown();
       return;
     }
@@ -781,7 +812,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
     return;
   }
   imgui_impl_opengl3_->NewFrame();
-  ImGui_ImplSDL2_NewFrame(window);
+  ImGui_ImplSDL2_NewFrame(sdl_window_);
   ImGui::NewFrame();
 
   {
@@ -820,7 +851,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   viz3d->renderShadows();
 #endif
 
-  SDL_GL_MakeCurrent(window, gl_context);
+  SDL_GL_MakeCurrent(sdl_window_, gl_context);
   checkGLError(__FILE__, __LINE__);
   const int display_size_x = ImGui::GetIO().DisplaySize.x;
   const int display_size_y = ImGui::GetIO().DisplaySize.y;
@@ -856,7 +887,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   imgui_impl_opengl3_->RenderDrawData(ImGui::GetDrawData());
   checkGLError(__FILE__, __LINE__);
 
-  SDL_GL_SwapWindow(window);
+  SDL_GL_SwapWindow(sdl_window_);
   ////////////////////////////////////////////////////////////////////
 
 #if 0
