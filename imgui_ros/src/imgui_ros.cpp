@@ -724,6 +724,15 @@ void ImguiRos::drawStats(ros::Time stamp)
     ImGui::SetNextWindowSize(ImVec2(400, 500));
     ImGui::SetNextWindowCollapsed(false);
   }
+
+  // fill the screen -test
+  if (false) {
+    int w, h;
+    SDL_GetWindowSize(sdl_window_, &w, &h);
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(ImVec2(w, h));
+  }
+
   ImGui::Begin("##stats");
   ImGui::Text("%1.4f", stamp.toSec());
   // Make tab, put all viz3d stuff into tab?
@@ -732,6 +741,8 @@ void ImguiRos::drawStats(ros::Time stamp)
   std::stringstream ss;
   ss << std::this_thread::get_id();  // << " " << thread_id_;
   ImGui::Text("Thread %s", ss.str().c_str());
+  ImGui::Text("fullscreen %d, old pos %d %d, wh %d x %d",
+      fullscreen_, old_x_, old_y_, old_width_, old_height_);
   // TODO(lucasw) put this in different tab?
   // image_transfer_->draw(stamp);
   ImGui::End();
@@ -744,14 +755,6 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   }
 
   const auto& stamp = ev.current_real;
-
-  if (restore_window_size_) {
-    // this is ineffective - is imgui overriding?
-    ROS_INFO_STREAM("restoring window "
-        << old_width_ << " " << old_height_);
-    SDL_SetWindowSize(sdl_window_, old_width_, old_height_);
-    restore_window_size_ = false;
-  }
 
   // Poll and handle events (inputs, window resize, etc.)
   // You can read the gui_io.WantCaptureMouse, gui_io.WantCaptureKeyboard flags to
@@ -772,15 +775,18 @@ void ImguiRos::update(const ros::TimerEvent& ev)
         ROS_INFO_STREAM("TODO switch to/from fullscreen");
         if (fullscreen_) {
           SDL_SetWindowFullscreen(sdl_window_, 0);
+          fullscreen_ = false;
           // this is ineffective - is imgui overriding?
           // SDL_SetWindowSize(sdl_window_, old_width_, old_height_);
-          restore_window_size_ = true;
-          fullscreen_ = false;
+          SDL_SetWindowSize(sdl_window_, old_width_, old_height_);
+          SDL_SetWindowPosition(sdl_window_, old_x_, old_y_);
         } else {
           SDL_DisplayMode current;
           // TODO(lucasw) there are potentially multiple displays,
           // which is the current one?
-          const int rv = SDL_GetCurrentDisplayMode(0, &current);
+          // const int rv =
+          SDL_GetCurrentDisplayMode(0, &current);
+          SDL_GetWindowPosition(sdl_window_, &old_x_, &old_y_);
           SDL_GetWindowSize(sdl_window_, &old_width_, &old_height_);
           ROS_INFO_STREAM(current.w << " " << current.h << ", "
               << old_width_ << " " << old_height_);

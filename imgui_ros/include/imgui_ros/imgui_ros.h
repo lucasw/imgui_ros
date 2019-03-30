@@ -105,9 +105,10 @@ private:
   int height_ = 720;
   int old_width_ = 0;
   int old_height_ = 0;
+  int old_x_ = 0;
+  int old_y_ = 0;
 
   bool fullscreen_ = false;
-  bool restore_window_size_ = false;
 
   bool stats_window_init_ = true;
   void drawStats(ros::Time stamp);
