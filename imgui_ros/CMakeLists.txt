@@ -68,6 +68,7 @@ add_library(imgui SHARED
 set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPILE_FLAGS -Wno-pedantic)
 
 add_library(imguiros SHARED
+  src/image_transfer.cpp
   src/imgui_ros.cpp
   src/window.cpp
 )
@@ -79,7 +80,6 @@ add_library(imguiros SHARED
   src/graph.cpp
   src/imgui_ros.cpp
   src/image.cpp
-  src/image_transfer.cpp
   src/node.cpp
   src/param.cpp
   src/pub.cpp

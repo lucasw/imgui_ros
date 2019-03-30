@@ -36,6 +36,7 @@
 #include <opencv2/core.hpp>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
+#include <thread>
 
 using namespace std::chrono_literals;
 
@@ -53,24 +54,29 @@ ImageTransfer::~ImageTransfer()
 
 void ImageTransfer::postInit()
 {
+  // TODO(lucasw) only reason to run this in timer update rather than lockstep in main update
+  // would be to allow running it in separate thread.
   update_timer_ = nh_.createTimer(ros::Duration(0.033),
       &ImageTransfer::update, this);
   ROS_INFO_STREAM("started image transfer");
 }
 
-bool ImageTransfer::getSub(const std::string& topic, sensor_msgs::Image::SharedPtr& image)
+bool ImageTransfer::getSub(const std::string& topic, sensor_msgs::ImageConstPtr& image)
 {
   std::lock_guard<std::mutex> lock(sub_mutexes_[topic]);
   if (subs_.count(topic) < 1) {
     // TODO(lucasw) is it better to create the publisher here
     // or inside the thread update is running in?
-    std::function<void(std::shared_ptr<sensor_msgs::Image>)> fnc;
-    fnc = std::bind(&ImageTransfer::imageCallback, this, std::placeholders::_1,
-            topic);
+    //std::function<void(const sensor_msgs::ImageConstPtr)> fnc;
+    // fnc = std::bind(&ImageTransfer::imageCallback, this, std::placeholders::_1,
+    //        topic);
     // subs_[topic] = create_subscription<sensor_msgs::Image>(topic, fnc);
     // TODO(lucasw) don't use remapping with imgui_ros currently, it will break
-    subs_[topic] = create_internal_subscription(topic, fnc);
+    // subs_[topic] = create_internal_subscription(topic, fnc);
     // subs_[topic] = nullptr;
+
+    subs_[topic] = nh_.subscribe<sensor_msgs::Image>(topic, 4,
+        boost::bind(&ImageTransfer::imageCallback, this, _1, topic));
   }
   // TODO(lucasw) if the sub doesn't exist at all need to create it
   if (from_sub_.count(topic) < 1) {
@@ -84,21 +90,24 @@ bool ImageTransfer::getSub(const std::string& topic, sensor_msgs::Image::SharedP
   return true;
 }
 
-bool ImageTransfer::publish(const std::string& topic, sensor_msgs::Image::SharedPtr image)
+bool ImageTransfer::publish(const std::string& topic, sensor_msgs::ImageConstPtr image)
 {
   std::lock_guard<std::mutex> lock(pub_mutex_);
-  to_pub_.push_back(std::pair<std::string, sensor_msgs::Image::SharedPtr>(topic, image));
+  to_pub_.push_back(std::pair<std::string, sensor_msgs::ImageConstPtr>(topic, image));
   return true;
 }
 
+#if 0
 void ImageTransfer::setRosPub(const std::string& topic, const bool ros_pub)
 {
   pubs_[topic] = create_internal_publisher(topic);
   pubs_[topic]->ros_enable_ = ros_pub;
 }
+#endif
 
-void ImageTransfer::update()
+void ImageTransfer::update(const ros::TimerEvent& e)
 {
+  (void)e;
   // std::lock_guard<std::mutex> lock(sub_mutex_);
   if (!initted_) {
     std::cout << "image transfer 0x" << std::hex << std::this_thread::get_id()
@@ -108,7 +117,7 @@ void ImageTransfer::update()
   {
     while (to_pub_.size() > 0) {
       std::string topic;
-      sensor_msgs::Image::SharedPtr image;
+      sensor_msgs::ImageConstPtr image;
       {
         std::lock_guard<std::mutex> lock(pub_mutex_);
         topic = to_pub_.front().first;
@@ -116,7 +125,7 @@ void ImageTransfer::update()
         to_pub_.pop_front();
       }
       if (pubs_.count(topic) > 0) {
-        pubs_[topic]->publish(image);
+        pubs_[topic].publish(image);
       }
       // TODO(lucasw) else debug error
     }
@@ -125,8 +134,9 @@ void ImageTransfer::update()
 
 void ImageTransfer::draw(ros::Time cur)
 {
+  (void)cur;
   // auto cur = now();
-
+#if 0
   ImGui::Separator();
   ImGui::Text("enable sensor_msgs/Image publishing, otherwise in-process only");
   ImGui::Checkbox("show unused", &show_unused_);
@@ -180,9 +190,10 @@ void ImageTransfer::draw(ros::Time cur)
     }
   }
   ImGui::Columns(1);
+#endif
 }
 
-void ImageTransfer::imageCallback(sensor_msgs::Image::SharedPtr msg, const std::string& topic)
+void ImageTransfer::imageCallback(const sensor_msgs::ImageConstPtr& msg, const std::string& topic)
 {
   // std::cout << "image transfer " << topic << " msg received " << msg->header.stamp.sec << "\n";
   std::lock_guard<std::mutex> lock(sub_mutexes_[topic]);
