@@ -43,11 +43,18 @@ Window::~Window()
   ROS_INFO_STREAM("freeing window " << this);
 }
 
-void Window::draw() {
+void Window::draw(const int outer_window_width, const int outer_window_height) {
 
+  if (fractional_) {
+    ROS_DEBUG_STREAM(pos_.x << " * " << outer_window_width);
+    ImGui::SetNextWindowPos(ImVec2(pos_.x * outer_window_width, pos_.y * outer_window_height));
+    ImGui::SetNextWindowSize(ImVec2(size_.x * outer_window_width, size_.y * outer_window_height));
+  }
   if (init_) {
-    ImGui::SetNextWindowPos(pos_);
-    ImGui::SetNextWindowSize(size_);
+    if (!fractional_) {
+      ImGui::SetNextWindowPos(pos_);
+      ImGui::SetNextWindowSize(size_);
+    }
     ImGui::SetNextWindowCollapsed(collapsed_);
   }
 

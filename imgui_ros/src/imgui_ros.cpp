@@ -357,6 +357,7 @@ bool ImguiRos::addWindow(imgui_ros_msgs::AddWindow::Request& req,
     window->setSettings(
         ImVec2(req.position.x, req.position.y),
         ImVec2(req.size.x, req.size.y),
+        req.fractional,
         req.scroll_y,
         req.collapsed,
         window_flags);
@@ -837,9 +838,12 @@ void ImguiRos::update(const ros::TimerEvent& ev)
     }
 
     // TODO(lucasw) mutex lock just for windows
+    int w, h;
+    SDL_GetWindowSize(sdl_window_, &w, &h);
+
     for (auto& window : windows_) {
       if (window.second) {
-        window.second->draw();
+        window.second->draw(w, h);
       }
     }
     drawStats(stamp);

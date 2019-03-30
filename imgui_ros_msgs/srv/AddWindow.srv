@@ -6,6 +6,7 @@ imgui_ros_msgs/Widget[] widgets
 # whether to use the settings before, or continue to use
 # what has already been set.
 bool init  # False
+bool fractional  # False  # interpret the position and size as 0.0 - 1.0 fractional values
 geometry_msgs/Point position
 geometry_msgs/Point size
 # 0 - 1.0 to scroll from min to max

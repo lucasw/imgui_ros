@@ -70,7 +70,7 @@ struct Window {
   Window(const std::string name) :
       name_(name) {}
   ~Window();
-  virtual void draw();
+  virtual void draw(const int outer_window_width, const int outer_window_height);
   void add(std::shared_ptr<Widget> widget, const std::string& tab_name);
   void remove(const std::string& name, const std::string& tab_name);
   virtual void addTF(tf2_msgs::TFMessage& tfm, const ros::Time& now) {
@@ -91,12 +91,14 @@ struct Window {
 
   // over ride the current settings with these
   void setSettings(const ImVec2 pos, const ImVec2 size,
+      const bool fractional,
       const float scroll_y,
       const bool collapsed,
       const ImGuiWindowFlags window_flags = ImGuiWindowFlags_None)
   {
     pos_ = pos;
     size_ = size;
+    fractional_ = fractional;
     scroll_y_ = scroll_y;
     collapsed_ = collapsed;
     window_flags_ = window_flags;
@@ -138,8 +140,9 @@ protected:
   // initial settings
   ImVec2 pos_;
   ImVec2 size_;
-  float scroll_y_;
-  bool collapsed_;
+  bool fractional_ = false;
+  float scroll_y_ = 0.0;
+  bool collapsed_ = false;
   bool init_ = false;
 
   ImGuiWindowFlags window_flags_ = ImGuiWindowFlags_None;
