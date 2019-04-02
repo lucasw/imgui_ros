@@ -51,13 +51,16 @@ namespace imgui_ros
 
   RosImage::RosImage(const std::string name, const std::string topic, const bool sub_not_pub,
                      const bool ros_pub,
-                     std::shared_ptr<ros::Node> node,
+                     // std::shared_ptr<ros::Node> node,
                      std::shared_ptr<ImageTransfer> image_transfer) :
                      GlImage(name, topic),
                      sub_not_pub_(sub_not_pub),
-                     node_(node),
+                     // node_(node),
                      image_transfer_(image_transfer)
   {
+    if (!image_transfer_) {
+      throw std::runtime_error("uninitialized image transfer");
+    }
     wrap_modes_.push_back(GL_CLAMP_TO_EDGE);
     wrap_modes_.push_back(GL_MIRRORED_REPEAT);
     wrap_modes_.push_back(GL_REPEAT);
@@ -81,14 +84,15 @@ namespace imgui_ros
             std::bind(&RosImage::imageCallback, this, _1));
       #endif
       } else {
+        (void)ros_pub;
         // pub_ = node->create_publisher<sensor_msgs::Image>(topic);
-        image_transfer_->setRosPub(topic_, ros_pub);
+        image_transfer_->setRosPub(topic_);  // , ros_pub);
       }
     }
   }
 
   RosImage::RosImage(const std::string& name,
-    sensor_msgs::Image::SharedPtr image) :
+    sensor_msgs::ImageConstPtr image) :
     RosImage(name)
   {
     image_ = image;
@@ -97,7 +101,7 @@ namespace imgui_ros
   }
 
 #if 0
-  void RosImage::imageCallback(const sensor_msgs::Image::SharedPtr msg) {
+  void RosImage::imageCallback(const sensor_msgs::ImageConstPtr msg) {
 #if 0
     std::cout << "image callback "
         << msg->header.stamp.sec << " "
@@ -118,15 +122,21 @@ namespace imgui_ros
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
   bool RosImage::updateTexture() {
-    auto t0 = clock_->now();
+    auto t0 = ros::Time::now();
     if (!enable_cpu_to_gpu_) {
       return true;
     }
-    sensor_msgs::Image::SharedPtr image;
+    sensor_msgs::ImageConstPtr image;
     {
       std::lock_guard<std::mutex> lock(mutex_);
       if (sub_not_pub_) {
+        if (!image_transfer_) {
+          return false;
+        }
         image_transfer_->getSub(topic_, image);
+        if (!image) {
+          return false;
+        }
         bool different_image = (image != image_);
         dirty_ |= different_image;
         if (image_ && image && different_image) {
@@ -168,6 +178,7 @@ namespace imgui_ros
         << ", ptr " << reinterpret_cast<unsigned long int>(&image->data[0]) << " "
         << static_cast<unsigned int>(image->data[0]) << "\n";
 #endif
+    // TODO(lucasw) put ImageConstPtr to opengl texture into a utility library function
     glBindTexture(GL_TEXTURE_2D, texture_id_);
 
     // TODO(lucasw) only need to do these once (unless altering)
@@ -233,9 +244,10 @@ namespace imgui_ros
     // ROS_INFO_STREAM(texture_id_ << " " << image.size());
     // std::cout << "update texture done " << texture_id_ << "\n";
     glBindTexture(GL_TEXTURE_2D, 0);
-    update_duration_ = clock_->now() - t0;
+    auto cur = ros::Time::now();
+    update_duration_ = cur - t0;
     // The age when updated, not age for every draw after of the same data
-    image_age_ = clock_->now() - image_->header.stamp;
+    image_age_ = cur - image_->header.stamp;
     return true;
   }
 
@@ -254,46 +266,48 @@ namespace imgui_ros
       return;
     }
 
+    auto image = boost::make_shared<sensor_msgs::Image>();
     {
-      image_ = std::make_shared<sensor_msgs::Image>();
+      image = boost::make_shared<sensor_msgs::Image>();
       // Need ability to report a different frame than the sim is using internally-
       // this allows for calibration error simulation
-      image_->header.frame_id = header_frame_id_;
-      image_->width = width_;
-      image_->height = height_;
-      image_->encoding = "bgr8";
-      image_->step = width_ * 3;
+      image->header.frame_id = header_frame_id_;
+      image->width = width_;
+      image->height = height_;
+      image->encoding = "bgr8";
+      image->step = width_ * 3;
       // TODO(lucasw) this step may be expensive
-      image_->data.resize(image_->step * height_);
+      image->data.resize(image->step * height_);
     }
 
     // TODO(lucasw) check to see if there are any subscribers?  If none return.
 
     // Copy image from gpu for sending- but don't do this if the image hasn't changed
-    // TODO(lucasw) lock image_
+    // TODO(lucasw) lock image
     glBindTexture(GL_TEXTURE_2D, texture_id_);
-    if (image_->encoding == "bgr8") {
+    if (image->encoding == "bgr8") {
       // glGetTextureImage, glGetnTexImage not available
       glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR,
                      GL_UNSIGNED_BYTE,
-                     // image_->width * image_->height * 3,
-                     &image_->data[0]);
-    } else if (image_->encoding == "rgb8") {
+                     // image->width * image->height * 3,
+                     &image->data[0]);
+    } else if (image->encoding == "rgb8") {
       glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB,
                      GL_UNSIGNED_BYTE,
-                     // image_->width * image_->height * 3,
-                     &image_->data[0]);
+                     // image->width * image->height * 3,
+                     &image->data[0]);
     } else {
       glBindTexture(GL_TEXTURE_2D, 0);
       // TODO(lucasw) set debug message to this
-      std::cerr << name_ << " unsupported image type: " << image_->encoding << "\n";
+      std::cerr << name_ << " unsupported image type: " << image->encoding << "\n";
       return;
     }
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    image_->header.stamp = stamp;
+    image->header.stamp = stamp;
     // pub_->publish(image_);
-    image_transfer_->publish(topic_, image_);
+    image_transfer_->publish(topic_, image);
+    image_ = image;
   }
 
   // TODO(lucasw) factor out common code
@@ -351,9 +365,8 @@ namespace imgui_ros
         #endif
         if (image_) {
           ImGui::Columns(2);
-          ImGui::Text("%d %0.3f",
-              image_->header.stamp.sec,
-              image_->header.stamp.nanosec / 1e9);
+          ImGui::Text("%0.3f",
+              image_->header.stamp.toSec());
           ImGui::NextColumn();
           ImGui::Text("age %0.5f", image_age_.toSec());
           ImGui::NextColumn();

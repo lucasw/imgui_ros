@@ -97,13 +97,13 @@ bool ImageTransfer::publish(const std::string& topic, sensor_msgs::ImageConstPtr
   return true;
 }
 
-#if 0
-void ImageTransfer::setRosPub(const std::string& topic, const bool ros_pub)
+void ImageTransfer::setRosPub(const std::string& topic)  // , const bool ros_pub)
 {
-  pubs_[topic] = create_internal_publisher(topic);
-  pubs_[topic]->ros_enable_ = ros_pub;
+  // pubs_[topic] = create_internal_publisher(topic);
+  pubs_[topic] = nh_.advertise<sensor_msgs::Image>(topic, 5);
+;
+  // pubs_[topic]->ros_enable_ = ros_pub;
 }
-#endif
 
 void ImageTransfer::update(const ros::TimerEvent& e)
 {

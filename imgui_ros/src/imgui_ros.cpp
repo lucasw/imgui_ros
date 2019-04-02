@@ -35,9 +35,7 @@
 #include <imgui.h>
 #include <imgui_impl_sdl.h>
 #pragma GCC diagnostic pop
-#if 0
 #include <imgui_ros/image.h>
-#endif
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/imgui_ros.h>
 #if 0
@@ -85,9 +83,11 @@ void ImguiRos::postInit()
   ROS_INFO_STREAM("imgui ros init");
 #if 0 
   internal_pub_sub::Node::postInit(core);
+#endif
   image_transfer_ = std::make_shared<ImageTransfer>();
-  image_transfer_->init("image_transfer", get_namespace());
-  image_transfer_->postInit(core);
+  // image_transfer_->init("image_transfer", get_namespace());
+  image_transfer_->postInit();
+#if 0
   #ifdef RUN_IMAGE_TRANSFER_SEPARATE_THREAD
   ros_io_thread_ = std::thread(
       std::bind(&ImguiRos::runNodeSingleThreaded, this, image_transfer_));
@@ -302,22 +302,22 @@ void ImguiRos::glInit()
 void ImguiRos::addTf(const std::shared_ptr<imgui_ros::AddTf::Request> req,
            std::shared_ptr<imgui_ros::AddTf::Response> res)
 {
-  RCLCPP_DEBUG(get_logger(), "new tf pub %s", req->tf.name);
+  RCLCPP_DEBUG(get_logger(), "new tf pub %s", req.tf.name);
   std::shared_ptr<Pub> pub = std::make_shared<TfBroadcaster>(
-      req->tf,
+      req.tf,
       tf_buffer_,
       shared_from_this());
 
   std::shared_ptr<Window> window;
-  if (windows_.count(req->tf.window) > 0) {
-    window = windows_[req->tf.window];
+  if (windows_.count(req.tf.window) > 0) {
+    window = windows_[req.tf.window];
   } else {
-    window = std::make_shared<Window>(req->tf.window);
-    windows_[req->tf.window] = window;
+    window = std::make_shared<Window>(req.tf.window);
+    windows_[req.tf.window] = window;
   }
-  window->add(pub, req->tf.tab_name);
-  res->success = true;
-  res->message += "added tf pub " + req->tf.name + " to " + req->tf.window;
+  window->add(pub, req.tf.tab_name);
+  res.success = true;
+  res.message += "added tf pub " + req.tf.name + " to " + req.tf.window;
 }
 
 #endif
@@ -325,7 +325,7 @@ void ImguiRos::addTf(const std::shared_ptr<imgui_ros::AddTf::Request> req,
 bool ImguiRos::addWindow(imgui_ros_msgs::AddWindow::Request& req,
     imgui_ros_msgs::AddWindow::Response& res)
 {
-  // std::cout << "adding window " << req->name << "\n";
+  // std::cout << "adding window " << req.name << "\n";
   // TODO(lucasw) there could be a mutex only protecting the windows_
   std::lock_guard<std::mutex> lock(mutex_);
   res.success = true;
@@ -363,7 +363,6 @@ bool ImguiRos::addWindow(imgui_ros_msgs::AddWindow::Request& req,
         window_flags);
   }
 
-#if 0
   for (size_t i = 0; i < req.widgets.size(); ++i) {
     const auto tab_name = req.widgets[i].tab_name;
     if (req.widgets[i].remove) {
@@ -374,40 +373,40 @@ bool ImguiRos::addWindow(imgui_ros_msgs::AddWindow::Request& req,
     std::shared_ptr<Widget> widget;
     // std::cout << "new widget " << req.widgets[i].name << "\n";
     const bool rv = addWidget(req.widgets[i], message, widget);
-    res->success = res->success && rv && widget;
-    res->message += ", " + message;
+    res.success = res.success && rv && widget;
+    res.message += ", " + message;
     if (rv && widget) {
       widget->enable_info_ = req.widgets[i].enable_info;
       window->add(widget, tab_name);
     }
   }
-#endif
   windows_[req.name] = window;
   return true;
 }
 
-#if 0
 // TODO(lucasw) move into widget.cpp?
-bool ImguiRos::addWidget(const imgui_ros::Widget& widget,
+bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
     std::string& message, std::shared_ptr<Widget>& imgui_widget)
 {
-  if (widget.type == imgui_ros::Widget::IMAGE) {
-    std::shared_ptr<RosImage> ros_image;
+  if (widget.type == imgui_ros_msgs::Widget::IMAGE) {
+    (void)message;
     const bool sub_not_pub = true;
     // std::cout << "new ros image " << widget.name << "\n";
 
     // TODO(lucasw) if widget.topic already exists somewhere in a RosImage
     // subscriber need to re-use it, can't duplicate subscribers.i
     // viz3d has any number of RosImages also.
-    ros_image.reset(new RosImage(widget.name, widget.topic, sub_not_pub,
-        false, shared_from_this(),
-        image_transfer_));
+    auto ros_image = std::make_shared<RosImage>(widget.name, widget.topic, sub_not_pub,
+        false,
+        image_transfer_);
     ros_image->enable_draw_image_ = true;
     imgui_widget = ros_image;
     return true;
+  }
+#if 0
   ///////////////////////////////////////////////////////////////////////////
   // publisher types
-  } else if (widget.type == imgui_ros::Widget::PUB) {
+  } else if (widget.type == imgui_ros_msgs::Widget::PUB) {
     std::shared_ptr<Pub> pub;
     int64_t value_int = widget.value;
     int64_t min = widget.min;
@@ -494,7 +493,7 @@ bool ImguiRos::addWidget(const imgui_ros::Widget& widget,
     return true;
   ///////////////////////////////////////////////////////////////////////////
   // subscription types
-  } else if (widget.type == imgui_ros::Widget::SUB) {
+  } else if (widget.type == imgui_ros_msgs::Widget::SUB) {
     RCLCPP_DEBUG(get_logger(), "new sub %s %d", widget.name.c_str(), widget.sub_type);
     std::shared_ptr<Sub> sub;
     if (widget.sub_type == Widget::FLOAT32) {
@@ -594,7 +593,7 @@ bool ImguiRos::addWidget(const imgui_ros::Widget& widget,
     }
     imgui_widget = sub;
     return true;
-  } else if (widget.type == imgui_ros::Widget::PLOT) {
+  } else if (widget.type == imgui_ros_msgs::Widget::PLOT) {
     std::shared_ptr<Sub> sub;
     if (widget.sub_type == Widget::BOOL) {
       sub.reset(new PlotSub<std_msgs::Bool>(
@@ -648,7 +647,7 @@ bool ImguiRos::addWidget(const imgui_ros::Widget& widget,
     }
     imgui_widget = sub;
   //////////////////////////////////////////////////////////
-  } else if (widget.type == imgui_ros::Widget::PARAM) {
+  } else if (widget.type == imgui_ros_msgs::Widget::PARAM) {
     std::shared_ptr<Param> param;
     const std::string node_name = widget.topic;
     if (widget.items.size() < 1) {
@@ -703,7 +702,7 @@ bool ImguiRos::addWidget(const imgui_ros::Widget& widget,
     param_widgets_[node_name][widget.name] = param;
     imgui_widget = param;
   ///////////////////////////////////////////////////////////////////////////
-  } else if (widget.type == imgui_ros::Widget::GRAPH) {
+  } else if (widget.type == imgui_ros_msgs::Widget::GRAPH) {
     imgui_widget = std::make_shared<Graph>(widget.name, shared_from_this());
   } else {
     std::stringstream ss;
@@ -712,9 +711,9 @@ bool ImguiRos::addWidget(const imgui_ros::Widget& widget,
     message = ss.str();
     return false;
   }
+#endif
   return true;
 }
-#endif
 
 // TODO(lucasw) move to draw method
 void ImguiRos::drawStats(ros::Time stamp)

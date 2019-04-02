@@ -56,9 +56,7 @@ public:
 
   bool publish(const std::string& topic, sensor_msgs::ImageConstPtr image);
 
-#if 0
-  void setRosPub(const std::string& topic, const bool ros_pub);
-#endif
+  void setRosPub(const std::string& topic);  // , const bool ros_pub);
   // TODO(lucasw) need way to remove publisher or subscriber
 
   // TODO(lucasw) virtual void draw()

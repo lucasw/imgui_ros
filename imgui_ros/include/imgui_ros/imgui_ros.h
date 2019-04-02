@@ -34,6 +34,7 @@
 #include <imgui.h>
 #include <imgui_ros_msgs/AddWindow.h>
 // #include <imgui_ros/viz3d.h>
+#include <imgui_ros/image_transfer.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/window.h>
 #if 0
@@ -69,10 +70,8 @@ private:
 #endif
   bool addWindow(imgui_ros_msgs::AddWindow::Request& req,
                  imgui_ros_msgs::AddWindow::Response& res);
-#if 0
-  bool addWidget(const imgui_ros::Widget& widget,
+  bool addWidget(const imgui_ros_msgs::Widget& widget,
       std::string& message, std::shared_ptr<Widget>& imgui_widget);
-#endif
   // TODO(lucasw) still need to update even if ros time is paused
   ros::Timer update_timer_;
   void update(const ros::TimerEvent& ev);
@@ -123,12 +122,12 @@ private:
 
   // thread dedicate to large ros messages
   std::thread ros_io_thread_;
-  std::shared_ptr<ImageTransfer> image_transfer_;
 
   // this will get parameter events for all nodes in same namespace (or just root namespace?
   // namespacing seems broken in ros2 currently)
   // void onParameterEvent(const rcl_interfaces::ParameterEvent::SharedPtr event);
 #endif
+  std::shared_ptr<ImageTransfer> image_transfer_;
   // check to make sure opengl context accesses never happen in different thread
   std::thread::id thread_id_;
 };

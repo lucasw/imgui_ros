@@ -35,6 +35,14 @@ class DemoGui:
             req.size.y = 400.0
         tab_name = 'misc'
 
+        if True:
+            widget = Widget()
+            widget.name = "image sub"
+            widget.tab_name = tab_name
+            widget.topic = "test_image_pub/image_raw"
+            widget.type = Widget.IMAGE
+            req.widgets.append(widget)
+
         # string pub sub test
         string_topic = "string"
         widget = Widget()
@@ -60,7 +68,6 @@ class DemoGui:
         widget = Widget()
         widget.name = "string sub"
         widget.tab_name = tab_name
-        widget.topic = string_topic
         widget.topic = string_topic
         widget.type = Widget.SUB
         widget.sub_type = Widget.STRING

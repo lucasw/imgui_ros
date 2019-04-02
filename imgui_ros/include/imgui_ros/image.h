@@ -68,9 +68,9 @@ struct RosImage : public GlImage {
            // ros::NodeHandle& nh = nullptr,
            std::shared_ptr<ImageTransfer> image_transfer = nullptr);
   RosImage(const std::string& name,
-    sensor_msgs::Image::SharedPtr image);
+    sensor_msgs::ImageConstPtr image);
 
-  // void imageCallback(const sensor_msgs::Image::SharedPtr msg);
+  // void imageCallback(const sensor_msgs::ImageConstPtr msg);
 
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
@@ -81,7 +81,7 @@ struct RosImage : public GlImage {
 
   virtual void publish(const ros::Time& stamp);
 
-  sensor_msgs::Image::SharedPtr image_;
+  sensor_msgs::ImageConstPtr image_;
 
   int wrap_s_ind_ = 0;
   int wrap_t_ind_ = 0;
@@ -97,7 +97,6 @@ struct RosImage : public GlImage {
   bool enable_publish_ = true;
 private:
   const bool sub_not_pub_ = false;
-  std::weak_ptr<ros::Node> node_;
   std::shared_ptr<ImageTransfer> image_transfer_;
 
   // temp until image_transfer supports subs
