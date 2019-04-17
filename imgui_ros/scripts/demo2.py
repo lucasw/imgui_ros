@@ -22,7 +22,7 @@ class DemoGui:
         req = AddWindowRequest()
         req.name = 'misc controls'
         req.init = True
-        req.fractional = True
+        req.fractional = False
         if req.fractional:
             req.position.x = 0.0
             req.position.y = 0.0

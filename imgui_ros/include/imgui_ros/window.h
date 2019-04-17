@@ -47,7 +47,7 @@ struct Widget
       name_(name), topic_(topic), topic_prefix_(topic_prefix)
   {
   }
-  ~Widget() {}
+  virtual ~Widget() {}
   virtual void update(const ros::Time& stamp) {(void)stamp;};
   virtual void draw() = 0;
   std::string name_ = "";
@@ -69,8 +69,10 @@ protected:
 struct Window {
   Window(const std::string name) :
       name_(name) {}
-  ~Window();
-  virtual void draw(const int outer_window_width, const int outer_window_height);
+  virtual ~Window();
+  virtual void draw(const int outer_window_width,
+                    const int outer_window_height,
+                    const std::string possible_dropped_file="");
   void add(std::shared_ptr<Widget> widget, const std::string& tab_name);
   void remove(const std::string& name, const std::string& tab_name);
   virtual void addTF(tf2_msgs::TFMessage& tfm, const ros::Time& now) {

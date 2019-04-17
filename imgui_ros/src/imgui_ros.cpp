@@ -747,6 +747,13 @@ void ImguiRos::drawStats(ros::Time stamp)
       fullscreen_, old_x_, old_y_, old_width_, old_height_);
   // TODO(lucasw) put this in different tab?
   // image_transfer_->draw(stamp);
+
+  if (ImGui::IsWindowFocused()) {
+    ImGui::Text("Focused");
+  } else {
+    ImGui::Text("Unfocused");
+  }
+
   ImGui::End();
 }
 
@@ -767,6 +774,8 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   // data to your main application. Generally you may always pass all inputs
   // to dear imgui, and hide them from your application based on those two
   // flags.
+  std::string dropped_file = "";
+
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     if (!ros::ok())
@@ -802,7 +811,8 @@ void ImguiRos::update(const ros::TimerEvent& ev)
       }
       case (SDL_DROPFILE): {
         // TODO(lucasw) support drag and drop loading of textures with special widget
-        std::cout << "new dropped file " << event.drop.file << "\n";
+        dropped_file = event.drop.file;
+        std::cout << "new dropped file " << dropped_file << "\n";
         break;
       }
       case (SDL_WINDOWEVENT): {
@@ -855,7 +865,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
 
     for (auto& window : windows_) {
       if (window.second) {
-        window.second->draw(w, h);
+        window.second->draw(w, h, dropped_file);
       }
     }
     drawStats(stamp);
