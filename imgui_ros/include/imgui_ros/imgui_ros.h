@@ -109,6 +109,7 @@ private:
 
   bool fullscreen_ = false;
 
+  ros::Time start_stamp_ = ros::Time::now();
   bool stats_window_init_ = true;
   void drawStats(ros::Time stamp);
 

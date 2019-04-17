@@ -252,6 +252,8 @@ void ImguiRos::glInit()
   ImGui::StyleColorsDark();
   // ImGui::StyleColorsClassic();
 
+  SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
+
   // Load Fonts
   // - If no fonts are loaded, dear imgui will use the default font. You can
   // also load multiple fonts and use ImGui::PushFont()/PopFont() to select
@@ -734,13 +736,13 @@ void ImguiRos::drawStats(ros::Time stamp)
   }
 
   ImGui::Begin("##stats");
-  ImGui::Text("%1.4f", stamp.toSec());
+  ImGui::Text("%1.4f %1.4f", stamp.toSec(), (stamp - start_stamp_).toSec());
   // Make tab, put all viz3d stuff into tab?
   ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
               1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
   std::stringstream ss;
-  ss << std::this_thread::get_id();  // << " " << thread_id_;
-  ImGui::Text("Thread %s", ss.str().c_str());
+  ss << std::hex << std::this_thread::get_id() << std::dec;  // << " " << thread_id_;
+  ImGui::Text("Thread 0x%s", ss.str().c_str());
   ImGui::Text("fullscreen %d, old pos %d %d, wh %d x %d",
       fullscreen_, old_x_, old_y_, old_width_, old_height_);
   // TODO(lucasw) put this in different tab?
@@ -770,43 +772,54 @@ void ImguiRos::update(const ros::TimerEvent& ev)
     if (!ros::ok())
       return;
     ImGui_ImplSDL2_ProcessEvent(&event);
-    if (event.type == SDL_KEYUP) {
-      if (event.key.keysym.sym == SDLK_F11) {
-        ROS_INFO_STREAM("TODO switch to/from fullscreen");
-        if (fullscreen_) {
-          SDL_SetWindowFullscreen(sdl_window_, 0);
-          fullscreen_ = false;
-          // this is ineffective - is imgui overriding?
-          // SDL_SetWindowSize(sdl_window_, old_width_, old_height_);
-          SDL_SetWindowSize(sdl_window_, old_width_, old_height_);
-          SDL_SetWindowPosition(sdl_window_, old_x_, old_y_);
-        } else {
-          SDL_DisplayMode current;
-          // TODO(lucasw) there are potentially multiple displays,
-          // which is the current one?
-          // const int rv =
-          SDL_GetCurrentDisplayMode(0, &current);
-          SDL_GetWindowPosition(sdl_window_, &old_x_, &old_y_);
-          SDL_GetWindowSize(sdl_window_, &old_width_, &old_height_);
-          ROS_INFO_STREAM(current.w << " " << current.h << ", "
-              << old_width_ << " " << old_height_);
-          SDL_SetWindowSize(sdl_window_, current.w, current.h);
-          SDL_SetWindowFullscreen(sdl_window_, SDL_WINDOW_FULLSCREEN);
-          fullscreen_ = true;
+    switch (event.type) {
+      case (SDL_KEYUP): {
+        if (event.key.keysym.sym == SDLK_F11) {
+          ROS_INFO_STREAM("TODO switch to/from fullscreen");
+          if (fullscreen_) {
+            SDL_SetWindowFullscreen(sdl_window_, 0);
+            fullscreen_ = false;
+            // this is ineffective - is imgui overriding?
+            // SDL_SetWindowSize(sdl_window_, old_width_, old_height_);
+            SDL_SetWindowSize(sdl_window_, old_width_, old_height_);
+            SDL_SetWindowPosition(sdl_window_, old_x_, old_y_);
+          } else {
+            SDL_DisplayMode current;
+            // TODO(lucasw) there are potentially multiple displays,
+            // which is the current one?
+            // const int rv =
+            SDL_GetCurrentDisplayMode(0, &current);
+            SDL_GetWindowPosition(sdl_window_, &old_x_, &old_y_);
+            SDL_GetWindowSize(sdl_window_, &old_width_, &old_height_);
+            ROS_INFO_STREAM(current.w << " " << current.h << ", "
+                << old_width_ << " " << old_height_);
+            SDL_SetWindowSize(sdl_window_, current.w, current.h);
+            SDL_SetWindowFullscreen(sdl_window_, SDL_WINDOW_FULLSCREEN);
+            fullscreen_ = true;
+          }
         }
+        break;
       }
-    } else if (event.type == SDL_QUIT) {
-      ros::shutdown();
-      return;
-    } else if (event.type == SDL_WINDOWEVENT &&
-        event.window.event == SDL_WINDOWEVENT_CLOSE &&
-        event.window.windowID == SDL_GetWindowID(sdl_window_)) {
-      ROS_INFO_STREAM("window closed - shutting down");
-      ros::shutdown();
-      return;
-    }
-    // TODO(lucasw) support drag and drop loading of textures with special widget
-  }
+      case (SDL_DROPFILE): {
+        // TODO(lucasw) support drag and drop loading of textures with special widget
+        std::cout << "new dropped file " << event.drop.file << "\n";
+        break;
+      }
+      case (SDL_WINDOWEVENT): {
+        if (event.window.event == SDL_WINDOWEVENT_CLOSE &&
+            event.window.windowID == SDL_GetWindowID(sdl_window_)) {
+          ROS_INFO_STREAM("window closed - shutting down");
+          ros::shutdown();
+          return;
+        }
+        break;
+      }
+      case (SDL_QUIT): {
+        ros::shutdown();
+        return;
+      }
+    }  // switch on event
+  }  // while poll event
 
   {
   std::lock_guard<std::mutex> lock(mutex_);
