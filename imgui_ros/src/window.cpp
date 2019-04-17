@@ -49,6 +49,7 @@ void Window::draw(
     const std::string possible_dropped_file)
 {
   if (fractional_) {
+    // TODO(lucasw) need to handle dragging
     ROS_DEBUG_STREAM(pos_.x << " * " << outer_window_width);
     ImGui::SetNextWindowPos(ImVec2(pos_.x * outer_window_width, pos_.y * outer_window_height));
     ImGui::SetNextWindowSize(ImVec2(size_.x * outer_window_width, size_.y * outer_window_height));
@@ -74,12 +75,15 @@ void Window::draw(
   // std::stringstream ss;
   // ss << tab_groups_.size() << " ";
 
+  ImGui::Text("%d", tab_groups_.size());
+
   ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
   if (tab_groups_.size() > 1) {
     if (ImGui::BeginTabBar(name_.c_str(), tab_bar_flags)) {
-      for (auto tab_pair : tab_groups_) {
-        const auto tab_name = tab_pair.first;
-        const auto tab_group = tab_pair.second;
+      for (auto& tab_pair : tab_groups_) {
+        const auto& tab_name = tab_pair.first;
+        const auto& tab_group = tab_pair.second;
+        ImGui::Text("%s", tab_name.c_str());
         // std::cout << "'" << name_ << "' " << tab_name << "\n";
         // ss << tab_name << " ";
         if (tab_group) {
@@ -92,9 +96,10 @@ void Window::draw(
     }
     ImGui::EndTabBar();
   } else if (tab_groups_.size() == 1) {
-    for (auto tab_pair : tab_groups_) {
-      const auto tab_name = tab_pair.first;
-      const auto tab_group = tab_pair.second;
+    for (auto& tab_pair : tab_groups_) {
+      const auto& tab_name = tab_pair.first;
+      ImGui::Text("%s", tab_name.c_str());
+      const auto& tab_group = tab_pair.second;
       tab_group->draw();
     }
   }
@@ -113,12 +118,13 @@ void Window::draw(
 
 void Window::TabGroup::draw() {
   for (auto& name : widget_order_) {
+    ImGui::Text("%s", name.c_str());
     if (widgets_[name]) {
       // TODO(lucasw) make collapsing header optional
       // if (ImGui::CollapsingHeader((name + "##header").c_str())) {
-      {
-        widgets_[name]->draw();
-      }
+      // {
+      widgets_[name]->draw();
+      // }
     }
   }
 }

@@ -390,22 +390,26 @@ bool ImguiRos::addWindow(imgui_ros_msgs::AddWindow::Request& req,
 bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
     std::string& message, std::shared_ptr<Widget>& imgui_widget)
 {
-  if (widget.type == imgui_ros_msgs::Widget::IMAGE) {
+  if (widget.sub_type == imgui_ros_msgs::Widget::IMAGE) {
     (void)message;
-    const bool sub_not_pub = true;
+    bool sub_not_pub = true;
+    if (widget.type == imgui_ros_msgs::Widget::PUB) {
+      sub_not_pub = false;
+    }
     // std::cout << "new ros image " << widget.name << "\n";
 
     // TODO(lucasw) if widget.topic already exists somewhere in a RosImage
     // subscriber need to re-use it, can't duplicate subscribers.i
     // viz3d has any number of RosImages also.
-    auto ros_image = std::make_shared<RosImage>(widget.name, widget.topic, sub_not_pub,
+    auto ros_image = std::make_shared<RosImage>(widget.name, widget.topic,
+        sub_not_pub,
         false,
         image_transfer_);
     ros_image->enable_draw_image_ = true;
     imgui_widget = ros_image;
     return true;
   }
-#if 0
+  #if 0
   ///////////////////////////////////////////////////////////////////////////
   // publisher types
   } else if (widget.type == imgui_ros_msgs::Widget::PUB) {

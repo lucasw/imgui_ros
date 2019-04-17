@@ -1,4 +1,3 @@
-uint8 IMAGE=0
 uint8 PUB=1
 uint8 SUB=2
 uint8 PLOT=3
@@ -22,6 +21,7 @@ uint8 TF=13
 uint8 VIZ2D=14
 uint8 VIZ3D=15
 uint8 POINTCLOUD=16
+uint8 IMAGE=17
 # uint8 TODO(lucasw)
 string name  # ""
 # TODO(lucasw) maybe window_name belongs here too?

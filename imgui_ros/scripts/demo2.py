@@ -24,6 +24,7 @@ class DemoGui:
         req.init = True
         req.fractional = False
         if req.fractional:
+            # TODO(lucasw) fractional doesn't allow dragging of window around
             req.position.x = 0.0
             req.position.y = 0.0
             req.size.x = 0.5
@@ -37,10 +38,20 @@ class DemoGui:
 
         if True:
             widget = Widget()
+            widget.name = "image pub"
+            widget.tab_name = tab_name
+            widget.topic = "test_image1/image_raw"
+            widget.type = Widget.PUB
+            widget.sub_type = Widget.IMAGE
+            req.widgets.append(widget)
+
+        if True:
+            widget = Widget()
             widget.name = "image sub"
             widget.tab_name = tab_name
-            widget.topic = "test_image_pub/image_raw"
-            widget.type = Widget.IMAGE
+            widget.topic = "test_image2/image_raw"
+            widget.type = Widget.SUB
+            widget.sub_type = Widget.IMAGE
             req.widgets.append(widget)
 
         # string pub sub test

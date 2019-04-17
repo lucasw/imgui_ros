@@ -312,6 +312,7 @@ namespace imgui_ros
 
   // TODO(lucasw) factor out common code
   void RosImage::draw() {
+    ImGui::Text("RosImage %s", name_.c_str());
     // only updates if dirty
     updateTexture();
     {
