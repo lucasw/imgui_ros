@@ -57,6 +57,11 @@ struct GlImage : public Widget {
   size_t height_ = 0;
 };
 
+// TODO(lucasw) RosImage is capable of subscribing a ros image and displaying
+// it, or being used to publish an internally generated image, or publishing
+// an image loaded from disk - maybe should subclass or delineate these
+// modes better.
+
 // TODO(lucasw) move ros specific code out, have not ros code in common
 // location that ros1 and ros2 versions can use.
 // TODO(lucasw) should every window be a node?  Or less overhead to
@@ -70,6 +75,7 @@ struct RosImage : public GlImage {
   RosImage(const std::string& name,
     sensor_msgs::ImageConstPtr image);
 
+  virtual void update(const ros::Time& stamp, const std::string dropped_file="") override;
   // void imageCallback(const sensor_msgs::ImageConstPtr msg);
 
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
@@ -105,6 +111,8 @@ private:
   std::vector<int> min_filter_modes_;
   std::vector<int> mag_filter_modes_;
   std::vector<int> wrap_modes_;
+
+  std::string loaded_file_ = "";
 
   // TODO(lucasw) Duration(0, 0) may have resulted in crashes?
   ros::Duration image_gap_ = ros::Duration(0);

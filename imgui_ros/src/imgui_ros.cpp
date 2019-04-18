@@ -859,7 +859,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
 
     for (auto& window : windows_) {
       if (window.second) {
-        window.second->update(stamp);
+        window.second->update(stamp, dropped_file);
       }
     }
 
@@ -869,7 +869,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
 
     for (auto& window : windows_) {
       if (window.second) {
-        window.second->draw(w, h, dropped_file);
+        window.second->draw(w, h);
       }
     }
     drawStats(stamp);

@@ -43,10 +43,18 @@ Window::~Window()
   ROS_INFO_STREAM("freeing window " << this);
 }
 
+void Window::update(const ros::Time& stamp, const std::string dropped_file)
+{
+  stamp_ = stamp;
+
+  for (auto tab_pair : tab_groups_) {
+    tab_pair.second->update(stamp, dropped_file);
+  }
+}
+
 void Window::draw(
     const int outer_window_width,
-    const int outer_window_height,
-    const std::string possible_dropped_file)
+    const int outer_window_height)
 {
   if (fractional_) {
     // TODO(lucasw) need to handle dragging
@@ -63,19 +71,10 @@ void Window::draw(
   }
 
   ImGui::Begin(name_.c_str(), NULL, window_flags_);
-
-  std::string dropped_file = "";
-  if (ImGui::IsWindowFocused()) {
-    dropped_file = possible_dropped_file;
-    ImGui::Text("dropped file: %s", dropped_file.c_str());
-    if (dropped_file != "") {
-      std::cout << name_ << " dropped file " << dropped_file << "\n";
-    }
-  }
   // std::stringstream ss;
   // ss << tab_groups_.size() << " ";
 
-  ImGui::Text("%d", tab_groups_.size());
+  ImGui::Text("%lu", tab_groups_.size());
 
   ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
   if (tab_groups_.size() > 1) {

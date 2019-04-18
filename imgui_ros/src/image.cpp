@@ -33,11 +33,50 @@
 // #include <imgui_ros/AddWindow.h>
 #include <imgui_ros/image.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
-// #include <opencv2/highgui.hpp>
+#include <opencv2/highgui.hpp>
 using std::placeholders::_1;
 
 namespace imgui_ros
 {
+
+// TODO(lucasw) put into utility file, maybe separate library later, even separate repo
+bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
+{
+  if (image.empty()) {
+    // TODO(lucasw) or make the texture 0x0 or 1x1 gray.
+    return false;
+  }
+
+  glBindTexture(GL_TEXTURE_2D, texture_id);
+
+  // Do these know which texture to use because of the above bind?
+  // TODO(lucasw) make these configurable live
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  // Set texture clamping method - GL_CLAMP isn't defined
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+  // use fast 4-byte alignment (default anyway) if possible
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  // glPixelStorei(GL_UNPACK_ALIGNMENT, (image.step & 3) ? 1 : 4);
+
+  // copy the data to the graphics memory
+  // TODO(lucasw) actually look at the image encoding type and
+  // have a big switch statement here
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+               image.cols, image.rows,
+               0, GL_BGR, GL_UNSIGNED_BYTE, image.ptr());
+
+  // set length of one complete row in data (doesn't need to equal image.cols)
+  // glPixelStorei(GL_UNPACK_ROW_LENGTH, image.step / image_.elemSize());
+
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  return true;
+}
+
   GlImage::GlImage(const std::string name, const std::string topic) :
       Widget(name, topic) {
     glGenTextures(1, &texture_id_);
@@ -117,6 +156,27 @@ namespace imgui_ros
     dirty_ = true;
   }
 #endif
+
+  void RosImage::update(const ros::Time& stamp, const std::string dropped_file)
+  {
+    (void)stamp;
+    // stamp_ = stamp;
+    if (is_focused_ && (dropped_file != "") && !sub_not_pub_) {
+      // ImGui::Text("dropped file: %s", dropped_file.c_str());
+      ROS_INFO_STREAM("'" << name_ << " dropped file " << dropped_file);
+      cv::Mat image = cv::imread(dropped_file, cv::IMREAD_COLOR);
+      if (image.empty()) {
+        ROS_ERROR_STREAM("Could not load image '" + dropped_file + "'");
+      } else {
+        // TODO(lucasw) convert cv::Mat to image msg so it can be published
+        // image_ = image;
+        loaded_file_ = dropped_file;
+        if (glTexFromMat(image, texture_id_)) {
+          ROS_INFO_STREAM();
+        }
+      }
+    }
+  }
 
   // Transfer image data from cpu to gpu
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
@@ -268,7 +328,6 @@ namespace imgui_ros
 
     auto image = boost::make_shared<sensor_msgs::Image>();
     {
-      image = boost::make_shared<sensor_msgs::Image>();
       // Need ability to report a different frame than the sim is using internally-
       // this allows for calibration error simulation
       image->header.frame_id = header_frame_id_;
@@ -313,6 +372,7 @@ namespace imgui_ros
   // TODO(lucasw) factor out common code
   void RosImage::draw() {
     ImGui::Text("RosImage %s", name_.c_str());
+    is_focused_ = ImGui::IsWindowFocused();
     // only updates if dirty
     updateTexture();
     {
@@ -362,7 +422,7 @@ namespace imgui_ros
         #else
         ImGui::Text("%s %d %lu %lu", name_.c_str(), texture_id_,
             width_, height_);
-        ImGui::Text("%s", topic_.c_str());
+        ImGui::Text("topic: '%s', loaded file: '%s'", topic_.c_str(), loaded_file_.c_str());
         #endif
         if (image_) {
           ImGui::Columns(2);

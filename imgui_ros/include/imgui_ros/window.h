@@ -48,7 +48,8 @@ struct Widget
   {
   }
   virtual ~Widget() {}
-  virtual void update(const ros::Time& stamp) {(void)stamp;};
+  virtual void update(const ros::Time& stamp, const std::string dropped_file="")
+  {(void)stamp; (void)dropped_file;}
   virtual void draw() = 0;
   std::string name_ = "";
 
@@ -59,6 +60,7 @@ struct Widget
   }
   bool enable_info_ = true;
 protected:
+  bool is_focused_ = false;
   bool dirty_ = true;
   std::string topic_ = "";
   std::string topic_prefix_ = "";
@@ -71,8 +73,7 @@ struct Window {
       name_(name) {}
   virtual ~Window();
   virtual void draw(const int outer_window_width,
-                    const int outer_window_height,
-                    const std::string possible_dropped_file="");
+                    const int outer_window_height);
   void add(std::shared_ptr<Widget> widget, const std::string& tab_name);
   void remove(const std::string& name, const std::string& tab_name);
   virtual void addTF(tf2_msgs::TFMessage& tfm, const ros::Time& now) {
@@ -82,14 +83,7 @@ struct Window {
     }
   }
 
-  virtual void update(const ros::Time& stamp)
-  {
-    stamp_ = stamp;
-
-    for (auto tab_pair : tab_groups_) {
-      tab_pair.second->update(stamp);
-    }
-  }
+  virtual void update(const ros::Time& stamp, const std::string dropped_file="");
 
   // over ride the current settings with these
   void setSettings(const ImVec2 pos, const ImVec2 size,
@@ -116,11 +110,11 @@ protected:
     std::map<std::string, std::shared_ptr<Widget> > widgets_;
     std::vector<std::string> widget_order_;
 
-    virtual void update(const ros::Time& stamp)
+    virtual void update(const ros::Time& stamp, const std::string dropped_file)
     {
       for (auto& name : widget_order_) {
         if (widgets_[name]) {
-          widgets_[name]->update(stamp);
+          widgets_[name]->update(stamp, dropped_file);
         }
       }
     }
