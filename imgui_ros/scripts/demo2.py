@@ -14,6 +14,7 @@ class DemoGui:
         pass
 
     def run(self, namespace=''):
+        rospy.wait_for_service(namespace + '/add_window')
         self.cli = rospy.ServiceProxy(namespace + '/add_window', AddWindow)
 
         self.add_misc()

@@ -8,6 +8,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <build_depend>cv_bridge</build_depend>
   <build_depend>imgui_ros_msgs</build_depend>
   <build_depend>nodelet</build_depend>
   <build_depend>pcl_conversions</build_depend>
@@ -18,6 +19,7 @@
   <build_depend>tf2_geometry_msgs</build_depend>
   <build_depend>tf2_msgs</build_depend>
   <build_depend>usb_cam</build_depend>
+  <run_depend>cv_bridge</run_depend>
   <run_depend>imgui_ros_msgs</run_depend>
   <run_depend>nodelet</run_depend>
   <run_depend>pcl_conversions</run_depend>

@@ -22,6 +22,7 @@ find_package(PCL COMPONENTS common REQUIRED)
 find_package(glm REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
+cv_bridge
 geometry_msgs
 imgui_ros_msgs
 pcl_conversions

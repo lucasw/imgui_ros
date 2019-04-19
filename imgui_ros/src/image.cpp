@@ -28,6 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cv_bridge/cv_bridge.h>
 #include <imgui.h>
 #include <imgui_impl_sdl.h>
 // #include <imgui_ros/AddWindow.h>
@@ -164,19 +165,29 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
     if (is_focused_ && (dropped_file != "") && !sub_not_pub_) {
       // ImGui::Text("dropped file: %s", dropped_file.c_str());
       ROS_INFO_STREAM("'" << name_ << " dropped file " << dropped_file);
-      cv::Mat image = cv::imread(dropped_file, cv::IMREAD_COLOR);
-      if (image.empty()) {
+      cv_bridge::CvImage cv_image;
+      cv_image.image = cv::imread(dropped_file, cv::IMREAD_COLOR);
+      if (cv_image.image.empty()) {
         ROS_ERROR_STREAM("Could not load image '" + dropped_file + "'");
       } else {
         // TODO(lucasw) convert cv::Mat to image msg so it can be published
         // image_ = image;
         loaded_file_ = dropped_file;
-        if (glTexFromMat(image, texture_id_)) {
-          ROS_INFO_STREAM();
+        if (glTexFromMat(cv_image.image, texture_id_)) {
+          ROS_INFO_STREAM("loaded image " << cv_image.image.cols
+              << " x " << cv_image.image.rows);
+          sensor_msgs::ImagePtr image;
+          image = cv_image.toImageMsg();
+          image->header.frame_id = header_frame_id_;
+          image->header.stamp = ros::Time::now();
+          // TODO(lucasw) why doesn't cv_bridge fill this in?
+          image->encoding = "bgr8";
+          image_ = image;
+          image_transfer_->publish(topic_, image_);
         }
       }
     }
-  }
+  }  // update
 
   // Transfer image data from cpu to gpu
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
