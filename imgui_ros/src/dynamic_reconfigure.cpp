@@ -120,6 +120,30 @@ void DynamicReconfigure::draw() {
       do_reconfigure_ = true;
     }
   }
+  for (size_t i = 0; i < cd.dflt.ints.size(); ++i) {
+    const std::string name = cd.dflt.ints[i].name;
+    if (i >= cd.min.ints.size()) {
+      ROS_ERROR_STREAM("short min " << name << " " << i
+          << " " << cd.min.ints.size());
+      break;
+    }
+    if (i >= cd.max.ints.size()) {
+      ROS_ERROR_STREAM("short min " << name << " " << i
+          << " " << cd.max.ints.size());
+      break;
+    }
+    const int min = cd.min.ints[i].value;
+    const int max = cd.max.ints[i].value;
+    ROS_DEBUG_STREAM(name << " " << i << " int " << min << " " << max);
+    int new_value = cd.dflt.ints[i].value;
+    const bool changed = ImGui::SliderInt(name.c_str(),
+        &new_value, min, max);
+    if (changed) {
+      cd.dflt.ints[i].value = new_value;
+      do_reconfigure_ = true;
+    }
+  }
+
   // ImGui::End();
 }
 
