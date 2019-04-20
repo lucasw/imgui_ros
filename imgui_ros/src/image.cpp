@@ -183,6 +183,8 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
           // TODO(lucasw) why doesn't cv_bridge fill this in?
           image->encoding = "bgr8";
           image_ = image;
+          width_ = image->width;
+          height_ = image->height;
           image_transfer_->publish(topic_, image_);
         }
       }
@@ -382,7 +384,7 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
 
   // TODO(lucasw) factor out common code
   void RosImage::draw() {
-    ImGui::Text("RosImage %s", name_.c_str());
+    // ImGui::Text("RosImage %s", name_.c_str());
     is_focused_ = ImGui::IsWindowFocused();
     // only updates if dirty
     updateTexture();
@@ -421,8 +423,8 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
       }
       // auto draw_duration = clock_->now() - t0;
 
-      // const std::string checkbox_text = "info##" + name;
-      // ImGui::Checkbox(checkbox_text.c_str(), &enable_info_);
+      const std::string checkbox_text = "info##" + name;
+      ImGui::Checkbox(checkbox_text.c_str(), &enable_info_);
       if (enable_info_) {
         #if 0
         std::stringstream ss;
@@ -433,7 +435,7 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
         #else
         ImGui::Text("%s %d %lu %lu", name_.c_str(), texture_id_,
             width_, height_);
-        ImGui::Text("topic: '%s', loaded file: '%s'", topic_.c_str(), loaded_file_.c_str());
+        ImGui::Text("topic: '%s',\nloaded file: '%s'", topic_.c_str(), loaded_file_.c_str());
         #endif
         if (image_) {
           ImGui::Columns(2);

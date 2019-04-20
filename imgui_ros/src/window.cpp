@@ -74,7 +74,7 @@ void Window::draw(
   // std::stringstream ss;
   // ss << tab_groups_.size() << " ";
 
-  ImGui::Text("%lu", tab_groups_.size());
+  // ImGui::Text("%lu", tab_groups_.size());
 
   ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
   if (tab_groups_.size() > 1) {
@@ -82,7 +82,7 @@ void Window::draw(
       for (auto& tab_pair : tab_groups_) {
         const auto& tab_name = tab_pair.first;
         const auto& tab_group = tab_pair.second;
-        ImGui::Text("%s", tab_name.c_str());
+        // ImGui::Text("%s", tab_name.c_str());
         // std::cout << "'" << name_ << "' " << tab_name << "\n";
         // ss << tab_name << " ";
         if (tab_group) {
@@ -97,7 +97,7 @@ void Window::draw(
   } else if (tab_groups_.size() == 1) {
     for (auto& tab_pair : tab_groups_) {
       const auto& tab_name = tab_pair.first;
-      ImGui::Text("%s", tab_name.c_str());
+      // ImGui::Text("%s", tab_name.c_str());
       const auto& tab_group = tab_pair.second;
       tab_group->draw();
     }
@@ -117,7 +117,7 @@ void Window::draw(
 
 void Window::TabGroup::draw() {
   for (auto& name : widget_order_) {
-    ImGui::Text("%s", name.c_str());
+    // ImGui::Text("%s", name.c_str());
     if (widgets_[name]) {
       // TODO(lucasw) make collapsing header optional
       // if (ImGui::CollapsingHeader((name + "##header").c_str())) {
