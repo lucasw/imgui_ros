@@ -35,6 +35,7 @@
 #include <imgui.h>
 #include <imgui_impl_sdl.h>
 #pragma GCC diagnostic pop
+#include <imgui_ros/dynamic_reconfigure.h>
 #include <imgui_ros/image.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/imgui_ros.h>
@@ -390,6 +391,7 @@ bool ImguiRos::addWindow(imgui_ros_msgs::AddWindow::Request& req,
 bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
     std::string& message, std::shared_ptr<Widget>& imgui_widget)
 {
+
   if (widget.sub_type == imgui_ros_msgs::Widget::IMAGE) {
     (void)message;
     bool sub_not_pub = true;
@@ -408,7 +410,12 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
     ros_image->enable_draw_image_ = true;
     imgui_widget = ros_image;
     return true;
+  } else if (widget.type == imgui_ros_msgs::Widget::DYNREC) {
+    auto dr = std::make_shared<DynamicReconfigure>(
+        widget.name, widget.topic, nh_); // getPrivateNodeHandle());
+    imgui_widget = dr;
   }
+
   #if 0
   ///////////////////////////////////////////////////////////////////////////
   // publisher types

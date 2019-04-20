@@ -18,6 +18,42 @@ class DemoGui:
         self.cli = rospy.ServiceProxy(namespace + '/add_window', AddWindow)
 
         self.add_misc()
+        self.add_dr()
+
+    def add_dr(self):
+        req = AddWindowRequest()
+        req.name = 'misc controls'
+        req.init = True
+        req.fractional = False
+        if req.fractional:
+            # TODO(lucasw) fractional doesn't allow dragging of window around
+            req.position.x = 0.0
+            req.position.y = 0.0
+            req.size.x = 0.5
+            req.size.y = 0.5
+        else:
+            req.position.x = 200.0
+            req.position.y = 0.0
+            req.size.x = 300.0
+            req.size.y = 400.0
+
+        tab_name = 'dr'
+
+        if True:
+            widget = Widget()
+            widget.name = "dr"
+            widget.tab_name = tab_name
+            widget.topic = "/example_server_node"
+            widget.type = Widget.DYNREC
+            # widget.sub_type = Widget.IMAGE
+            req.widgets.append(widget)
+
+        try:
+            resp = self.cli(req)
+            rospy.loginfo(resp)
+        except rospy.service.ServiceException as e:
+            rospy.logerr(e)
+
 
     def add_misc(self):
         req = AddWindowRequest()

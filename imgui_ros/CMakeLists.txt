@@ -23,6 +23,7 @@ find_package(glm REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
 cv_bridge
+dynamic_reconfigure
 geometry_msgs
 imgui_ros_msgs
 pcl_conversions
@@ -69,6 +70,7 @@ add_library(imgui SHARED
 set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPILE_FLAGS -Wno-pedantic)
 
 add_library(imguiros SHARED
+  src/dynamic_reconfigure.cpp
   src/image.cpp
   src/image_transfer.cpp
   src/imgui_ros.cpp
