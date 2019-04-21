@@ -77,28 +77,31 @@ void DynamicReconfigure::draw() {
   {
     // std::lock_guard<std::mutex> lock(mutex_);
   }
+  auto& dflt = cd.dflt;
+  auto& bools = dflt.bools;
   ROS_DEBUG_STREAM("bools "
-      << " " << cd.dflt.bools.size()
+      << " " << bools.size()
       << " " << cd.min.bools.size()
       << " " << cd.max.bools.size());
   ROS_DEBUG_STREAM("doubles "
-      << " " << cd.dflt.doubles.size()
+      << " " << dflt.doubles.size()
       << " " << cd.min.doubles.size()
       << " " << cd.max.doubles.size());
 
   // TODO(lucasw) assume config description is properly formed for now
-  for (size_t i = 0; i < cd.dflt.bools.size(); ++i) {
-    const std::string name = cd.dflt.bools[i].name;
+  for (size_t i = 0; i < bools.size(); ++i) {
+    const std::string& name = bools[i].name;
     ROS_DEBUG_STREAM(name << " checkbox");
-    bool new_value = cd.dflt.bools[i].value;
+    bool new_value = bools[i].value;
     const bool changed = ImGui::Checkbox(name.c_str(), &new_value);
-    cd.dflt.bools[i].value = new_value;
+    bools[i].value = new_value;
     if (changed) {
       do_reconfigure_ = true;
     }
   }
-  for (size_t i = 0; i < cd.dflt.doubles.size(); ++i) {
-    const std::string name = cd.dflt.doubles[i].name;
+  auto& doubles = dflt.doubles;
+  for (size_t i = 0; i < doubles.size(); ++i) {
+    const std::string& name = doubles[i].name;
     if (i >= cd.min.doubles.size()) {
       ROS_ERROR_STREAM("short min " << name << " " << i
           << " " << cd.min.doubles.size());
@@ -112,16 +115,17 @@ void DynamicReconfigure::draw() {
     const double min = cd.min.doubles[i].value;
     const double max = cd.max.doubles[i].value;
     ROS_DEBUG_STREAM(name << " " << i << " double " << min << " " << max);
-    double new_value = cd.dflt.doubles[i].value;
+    double new_value = doubles[i].value;
     const bool changed = ImGui::SliderScalar(name.c_str(), ImGuiDataType_Double,
         (void *)&new_value, (void*)&min, (void*)&max, "%f");
     if (changed) {
-      cd.dflt.doubles[i].value = new_value;
+      doubles[i].value = new_value;
       do_reconfigure_ = true;
     }
   }
-  for (size_t i = 0; i < cd.dflt.ints.size(); ++i) {
-    const std::string name = cd.dflt.ints[i].name;
+  auto& ints = dflt.ints;
+  for (size_t i = 0; i < ints.size(); ++i) {
+    const std::string& name = ints[i].name;
     if (i >= cd.min.ints.size()) {
       ROS_ERROR_STREAM("short min " << name << " " << i
           << " " << cd.min.ints.size());
@@ -135,11 +139,25 @@ void DynamicReconfigure::draw() {
     const int min = cd.min.ints[i].value;
     const int max = cd.max.ints[i].value;
     ROS_DEBUG_STREAM(name << " " << i << " int " << min << " " << max);
-    int new_value = cd.dflt.ints[i].value;
+    int new_value = ints[i].value;
     const bool changed = ImGui::SliderInt(name.c_str(),
         &new_value, min, max);
     if (changed) {
-      cd.dflt.ints[i].value = new_value;
+      ints[i].value = new_value;
+      do_reconfigure_ = true;
+    }
+  }
+  auto& strs = dflt.strs;
+  for (size_t i = 0; i < strs.size(); ++i) {
+    const auto& str = strs[i];
+    ROS_DEBUG_STREAM(str.name << " " << str.value);
+    const size_t max_string_size = 128;
+    char new_value[max_string_size];
+    sprintf(new_value, str.value.substr(0, max_string_size - 1).c_str());
+    const bool changed = ImGui::InputText(str.name.c_str(),
+        &new_value[0], IM_ARRAYSIZE(new_value), ImGuiInputTextFlags_EnterReturnsTrue);
+    if (changed) {
+      strs[i].value = new_value;
       do_reconfigure_ = true;
     }
   }
