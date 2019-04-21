@@ -20,6 +20,7 @@ find_package(SDL2 REQUIRED)
 find_package(Boost COMPONENTS system REQUIRED)
 find_package(PCL COMPONENTS common REQUIRED)
 find_package(glm REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
 cv_bridge
@@ -109,6 +110,7 @@ target_link_libraries(imguiros imgui
   ${catkin_LIBRARIES}
   GL
   dl
+  yaml-cpp
 )
 
 install(TARGETS imguiros

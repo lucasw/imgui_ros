@@ -20,6 +20,7 @@
   <build_depend>tf2_geometry_msgs</build_depend>
   <build_depend>tf2_msgs</build_depend>
   <build_depend>usb_cam</build_depend>
+  <!--build_depend>yaml-cpp</build_depend-->
   <run_depend>cv_bridge</run_depend>
   <run_depend>dynamic_reconfigure</run_depend>
   <run_depend>imgui_ros_msgs</run_depend>
@@ -33,6 +34,7 @@
   <run_depend>tf2_geometry_msgs</run_depend>
   <run_depend>tf2_msgs</run_depend>
   <run_depend>usb_cam</run_depend>
+  <!--run_depend>yaml-cpp</run_depend-->
 
   <export>
     <!--nodelet plugin="${prefix}/nodelet_imgui_ros.xml" /-->

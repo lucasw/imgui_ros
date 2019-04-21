@@ -57,6 +57,16 @@ private:
   dynamic_reconfigure::ConfigConstPtr config_;
   ros::ServiceClient client_;
 
+  struct DrEnum
+  {
+    std::string name_;
+    std::string value_;
+    std::string type_;
+    std::string description_;
+  };
+  std::map<std::string, std::vector<DrEnum> > dr_enums_;
+  std::map<std::string, std::string> dr_enums_combo_text_;
+
   bool do_reconfigure_ = false;
   ros::Timer timer_;
   void updateParameters(const ros::TimerEvent& e);

@@ -36,6 +36,7 @@
 // #include <dynamic_reconfigure/GroupState.h>
 #include <imgui.h>
 #include <imgui_ros/dynamic_reconfigure.h>
+#include <yaml-cpp/yaml.h>
 
 namespace imgui_ros
 {
@@ -56,6 +57,71 @@ void DynamicReconfigure::descriptionCallback(
     const dynamic_reconfigure::ConfigDescriptionConstPtr& msg) {
   std::lock_guard<std::mutex> lock(mutex_);
   config_description_ = *msg;
+
+
+  // Temp debug to look for enum edit_method
+  // it looks like the edit method is a yaml string that is not broken out
+  // into a class member, will have to parse it.
+  // ImGui::Text("groups size %lu", cd.groups.size());
+  dr_enums_.clear();
+  dr_enums_combo_text_.clear();
+  dynamic_reconfigure::ConfigDescription& cd = config_description_;
+  for (size_t i = 0; i < cd.groups.size(); ++i) {
+    const auto& group = cd.groups[i];
+    // ImGui::Text("%lu '%s' '%s' %lu",
+    //     i, group.name.c_str(), group.type.c_str(),
+    //     group.parameters.size());
+    for (size_t j = 0; j < group.parameters.size(); ++j) {
+      const auto& parameter = group.parameters[j];
+      if (parameter.edit_method == "") {
+        continue;
+      }
+
+/**
+{
+  'enum_description': 'An enum to set size',
+  'enum': [
+    {
+      'srcline': 17,
+      'description':
+      'A small constant',
+      'srcfile': '/home/lucasw/catkin_ws/src/dynamic_reconfigure_tools/dynamic_reconfigure_example/cfg/Example.cfg',
+      'cconsttype': 'const int',
+      'value': 0,
+      'ctype': 'int',
+      'type': 'int',
+      'name': 'Small'
+    },
+*/
+      YAML::Node node = YAML::Load(parameter.edit_method);
+      auto enum_list = node["enum"];
+      // for (auto& item : enum_list) {
+      if (enum_list.IsSequence()) {
+        ROS_INFO_STREAM("parameter with enum " << parameter.name);
+        dr_enums_[parameter.name].clear();
+        dr_enums_combo_text_[parameter.name] = "";
+        for (auto it = enum_list.begin(); it != enum_list.end(); ++it) {
+          DrEnum dr_enum;
+          dr_enum.name_ = (*it)["name"].as<std::string>();
+          dr_enum.value_ = (*it)["value"].as<std::string>();
+          dr_enum.type_ = (*it)["type"].as<std::string>();
+          dr_enum.description_ = (*it)["description"].as<std::string>();
+          dr_enums_combo_text_[parameter.name] += dr_enum.name_ +
+              " (" + dr_enum.value_ + ")" + '\0';
+          ROS_INFO_STREAM(dr_enum.name_ << " "
+              << dr_enum.value_ << " "
+              << dr_enum.type_ << " "
+              << dr_enum.description_);
+          dr_enums_[parameter.name].push_back(dr_enum);
+        }
+      }
+      // ImGui::Text("%lu '%s' '%s' '%s' '%s'", j,
+      //     parameter.name.c_str(),
+      //     parameter.type.c_str(),
+      //     parameter.description.c_str(),
+      //    parameter.edit_method.c_str());
+    }
+  }
 }
 
 void DynamicReconfigure::updatesCallback(
@@ -136,13 +202,21 @@ void DynamicReconfigure::draw() {
           << " " << cd.max.ints.size());
       break;
     }
-    // TODO(lucasw) need to check cd Default for edit_method set to enum
-    const int min = cd.min.ints[i].value;
-    const int max = cd.max.ints[i].value;
-    ROS_DEBUG_STREAM(name << " " << i << " int " << min << " " << max);
     int new_value = ints[i].value;
-    const bool changed = ImGui::SliderInt(name.c_str(),
-        &new_value, min, max);
+    bool changed = false;
+    // check if enum
+    if (dr_enums_.count(name) < 1) {
+      const int min = cd.min.ints[i].value;
+      const int max = cd.max.ints[i].value;
+      ROS_DEBUG_STREAM(name << " " << i << " int " << min << " " << max);
+      changed = ImGui::SliderInt(name.c_str(),
+          &new_value, min, max);
+    } else {
+      // TODO(lucasw) if enums don't start at 0 and go to n-1 for n items
+      // in the combo box this is going to fail
+      changed = ImGui::Combo(name.c_str(), &new_value,
+          dr_enums_combo_text_[name].c_str());
+    }
     if (changed) {
       ints[i].value = new_value;
       do_reconfigure_ = true;
@@ -161,39 +235,6 @@ void DynamicReconfigure::draw() {
     if (changed) {
       strs[i].value = new_value;
       do_reconfigure_ = true;
-    }
-  }
-
-  // Temp debug to look for enum edit_method
-  // it looks like the edit method is a yaml string that is not broken out
-  // into a class member, will have to parse it.
-/**
-        edit_method: "{'enum_description': 'An enum to set size', 'enum': [{'srcline': 17, 'description':\
-  \ 'A small constant', 'srcfile': '/home/lucasw/catkin_ws/src/dynamic_reconfigure_tools/dynamic_reconfigure_example/cfg/Example.cfg',\
-  \ 'cconsttype': 'const int', 'value': 0, 'ctype': 'int', 'type': 'int', 'name':\
-  \ 'Small'}, {'srcline': 18, 'description': 'A medium constant', 'srcfile': '/home/lucasw/catkin_ws/src/dynamic_reconfigure_tools/dynamic_reconfigure_example/cfg/Example.cfg',\
-  \ 'cconsttype': 'const int', 'value': 1, 'ctype': 'int', 'type': 'int', 'name':\
-  \ 'Medium'}, {'srcline': 19, 'description': 'A large constant', 'srcfile': '/home/lucasw/catkin_ws/src/dynamic_reconfigure_tools/dynamic_reconfigure_example/cfg/Example.cfg',\
-  \ 'cconsttype': 'const int', 'value': 2, 'ctype': 'int', 'type': 'int', 'name':\
-  \ 'Large'}, {'srcline': 20, 'description': 'An extra large constant', 'srcfile':\
-  \ '/home/lucasw/catkin_ws/src/dynamic_reconfigure_tools/dynamic_reconfigure_example/cfg/Example.cfg',\
-  \ 'cconsttype': 'const int', 'value': 3, 'ctype': 'int', 'type': 'int', 'name':\
-  \ 'ExtraLarge'}]}"
-*/
-  ImGui::Text("groups size %lu", cd.groups.size());
-  for (size_t i = 0; i < cd.groups.size(); ++i) {
-    const auto& group = cd.groups[i];
-    ImGui::Text("%lu '%s' '%s' %lu",
-        i, group.name.c_str(), group.type.c_str(),
-        group.parameters.size());
-    for (size_t j = 0; j < group.parameters.size(); ++j) {
-      const auto& parameter = group.parameters[j];
-      ImGui::Text("%lu '%s' '%s' '%s' '%s'", j,
-          parameter.name.c_str(),
-          parameter.type.c_str(),
-          parameter.description.c_str(),
-          parameter.edit_method.c_str());
-
     }
   }
 
