@@ -136,6 +136,7 @@ void DynamicReconfigure::draw() {
           << " " << cd.max.ints.size());
       break;
     }
+    // TODO(lucasw) need to check cd Default for edit_method set to enum
     const int min = cd.min.ints[i].value;
     const int max = cd.max.ints[i].value;
     ROS_DEBUG_STREAM(name << " " << i << " int " << min << " " << max);
@@ -151,14 +152,48 @@ void DynamicReconfigure::draw() {
   for (size_t i = 0; i < strs.size(); ++i) {
     const auto& str = strs[i];
     ROS_DEBUG_STREAM(str.name << " " << str.value);
+    // ImGui::Text("parameters size %d", cd.parameters.size());
     const size_t max_string_size = 128;
     char new_value[max_string_size];
-    sprintf(new_value, str.value.substr(0, max_string_size - 1).c_str());
+    sprintf(new_value, "%s", str.value.substr(0, max_string_size - 1).c_str());
     const bool changed = ImGui::InputText(str.name.c_str(),
         &new_value[0], IM_ARRAYSIZE(new_value), ImGuiInputTextFlags_EnterReturnsTrue);
     if (changed) {
       strs[i].value = new_value;
       do_reconfigure_ = true;
+    }
+  }
+
+  // Temp debug to look for enum edit_method
+  // it looks like the edit method is a yaml string that is not broken out
+  // into a class member, will have to parse it.
+/**
+        edit_method: "{'enum_description': 'An enum to set size', 'enum': [{'srcline': 17, 'description':\
+  \ 'A small constant', 'srcfile': '/home/lucasw/catkin_ws/src/dynamic_reconfigure_tools/dynamic_reconfigure_example/cfg/Example.cfg',\
+  \ 'cconsttype': 'const int', 'value': 0, 'ctype': 'int', 'type': 'int', 'name':\
+  \ 'Small'}, {'srcline': 18, 'description': 'A medium constant', 'srcfile': '/home/lucasw/catkin_ws/src/dynamic_reconfigure_tools/dynamic_reconfigure_example/cfg/Example.cfg',\
+  \ 'cconsttype': 'const int', 'value': 1, 'ctype': 'int', 'type': 'int', 'name':\
+  \ 'Medium'}, {'srcline': 19, 'description': 'A large constant', 'srcfile': '/home/lucasw/catkin_ws/src/dynamic_reconfigure_tools/dynamic_reconfigure_example/cfg/Example.cfg',\
+  \ 'cconsttype': 'const int', 'value': 2, 'ctype': 'int', 'type': 'int', 'name':\
+  \ 'Large'}, {'srcline': 20, 'description': 'An extra large constant', 'srcfile':\
+  \ '/home/lucasw/catkin_ws/src/dynamic_reconfigure_tools/dynamic_reconfigure_example/cfg/Example.cfg',\
+  \ 'cconsttype': 'const int', 'value': 3, 'ctype': 'int', 'type': 'int', 'name':\
+  \ 'ExtraLarge'}]}"
+*/
+  ImGui::Text("groups size %lu", cd.groups.size());
+  for (size_t i = 0; i < cd.groups.size(); ++i) {
+    const auto& group = cd.groups[i];
+    ImGui::Text("%lu '%s' '%s' %lu",
+        i, group.name.c_str(), group.type.c_str(),
+        group.parameters.size());
+    for (size_t j = 0; j < group.parameters.size(); ++j) {
+      const auto& parameter = group.parameters[j];
+      ImGui::Text("%lu '%s' '%s' '%s' '%s'", j,
+          parameter.name.c_str(),
+          parameter.type.c_str(),
+          parameter.description.c_str(),
+          parameter.edit_method.c_str());
+
     }
   }
 
