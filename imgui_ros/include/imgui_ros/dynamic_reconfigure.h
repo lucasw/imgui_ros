@@ -67,6 +67,11 @@ private:
   std::map<std::string, std::vector<DrEnum> > dr_enums_;
   std::map<std::string, std::string> dr_enums_combo_text_;
 
+  // preserve the order in the vectors, will be the same order as in the cfg,
+  // but the order of the groups will be alphabetical
+  std::map<std::string, std::vector<std::string> > groups_of_parameters_;
+  std::map<std::string, std::string> parameters_to_groups_;
+
   bool do_reconfigure_ = false;
   ros::Timer timer_;
   void updateParameters(const ros::TimerEvent& e);

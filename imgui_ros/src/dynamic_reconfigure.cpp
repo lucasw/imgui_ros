@@ -58,21 +58,29 @@ void DynamicReconfigure::descriptionCallback(
   std::lock_guard<std::mutex> lock(mutex_);
   config_description_ = *msg;
 
-
-  // Temp debug to look for enum edit_method
-  // it looks like the edit method is a yaml string that is not broken out
-  // into a class member, will have to parse it.
+  // Tthe edit method is a yaml string that is not broken out
+  // into a class member, have to parse it.
   // ImGui::Text("groups size %lu", cd.groups.size());
   dr_enums_.clear();
   dr_enums_combo_text_.clear();
+  groups_of_parameters_.clear();
+  parameters_to_groups_.clear();
   dynamic_reconfigure::ConfigDescription& cd = config_description_;
   for (size_t i = 0; i < cd.groups.size(); ++i) {
     const auto& group = cd.groups[i];
     // ImGui::Text("%lu '%s' '%s' %lu",
     //     i, group.name.c_str(), group.type.c_str(),
     //     group.parameters.size());
+
+    // TODO(lucasw) need to store which parameter names go in which groups using group.name-
+    // maybe want both directions, a map of groups with lists of names,
+    // and a map of names with which group they are in.
+
     for (size_t j = 0; j < group.parameters.size(); ++j) {
       const auto& parameter = group.parameters[j];
+      // bi-directional maps
+      groups_of_parameters_[group.name].push_back(parameter.name);
+      parameters_to_groups_[parameter.name] = group.name;
       if (parameter.edit_method == "") {
         continue;
       }
@@ -144,7 +152,8 @@ void DynamicReconfigure::draw() {
     // std::lock_guard<std::mutex> lock(mutex_);
   }
   auto& dflt = cd.dflt;
-  auto& bools = dflt.bools;
+
+/**
   ROS_DEBUG_STREAM("bools "
       << " " << bools.size()
       << " " << cd.min.bools.size()
@@ -153,90 +162,133 @@ void DynamicReconfigure::draw() {
       << " " << dflt.doubles.size()
       << " " << cd.min.doubles.size()
       << " " << cd.max.doubles.size());
+*/
 
-  // TODO(lucasw) assume config description is properly formed for now
+  // need to organize all the parameters into their proper groups
+  std::map<std::string, std::map<std::string, std::pair<std::string, size_t>>>
+      group_parameter_type_ind;
+
+  auto& bools = dflt.bools;
   for (size_t i = 0; i < bools.size(); ++i) {
     const std::string& name = bools[i].name;
-    ROS_DEBUG_STREAM(name << " checkbox");
-    bool new_value = bools[i].value;
-    const bool changed = ImGui::Checkbox(name.c_str(), &new_value);
-    bools[i].value = new_value;
-    if (changed) {
-      do_reconfigure_ = true;
-    }
+    const std::string& group = parameters_to_groups_[name];
+    group_parameter_type_ind[group][name] = std::make_pair("bool", i);
   }
   auto& doubles = dflt.doubles;
   for (size_t i = 0; i < doubles.size(); ++i) {
     const std::string& name = doubles[i].name;
-    if (i >= cd.min.doubles.size()) {
-      ROS_ERROR_STREAM("short min " << name << " " << i
-          << " " << cd.min.doubles.size());
-      break;
-    }
-    if (i >= cd.max.doubles.size()) {
-      ROS_ERROR_STREAM("short min " << name << " " << i
-          << " " << cd.max.doubles.size());
-      break;
-    }
-    const double min = cd.min.doubles[i].value;
-    const double max = cd.max.doubles[i].value;
-    ROS_DEBUG_STREAM(name << " " << i << " double " << min << " " << max);
-    double new_value = doubles[i].value;
-    const bool changed = ImGui::SliderScalar(name.c_str(), ImGuiDataType_Double,
-        (void *)&new_value, (void*)&min, (void*)&max, "%f");
-    if (changed) {
-      doubles[i].value = new_value;
-      do_reconfigure_ = true;
-    }
+    const std::string& group = parameters_to_groups_[name];
+    group_parameter_type_ind[group][name] = std::make_pair("double", i);
   }
   auto& ints = dflt.ints;
   for (size_t i = 0; i < ints.size(); ++i) {
     const std::string& name = ints[i].name;
-    if (i >= cd.min.ints.size()) {
-      ROS_ERROR_STREAM("short min " << name << " " << i
-          << " " << cd.min.ints.size());
-      break;
-    }
-    if (i >= cd.max.ints.size()) {
-      ROS_ERROR_STREAM("short min " << name << " " << i
-          << " " << cd.max.ints.size());
-      break;
-    }
-    int new_value = ints[i].value;
-    bool changed = false;
-    // check if enum
-    if (dr_enums_.count(name) < 1) {
-      const int min = cd.min.ints[i].value;
-      const int max = cd.max.ints[i].value;
-      ROS_DEBUG_STREAM(name << " " << i << " int " << min << " " << max);
-      changed = ImGui::SliderInt(name.c_str(),
-          &new_value, min, max);
-    } else {
-      // TODO(lucasw) if enums don't start at 0 and go to n-1 for n items
-      // in the combo box this is going to fail
-      changed = ImGui::Combo(name.c_str(), &new_value,
-          dr_enums_combo_text_[name].c_str());
-    }
-    if (changed) {
-      ints[i].value = new_value;
-      do_reconfigure_ = true;
-    }
+    const std::string& group = parameters_to_groups_[name];
+    group_parameter_type_ind[group][name] = std::make_pair("int", i);
   }
   auto& strs = dflt.strs;
   for (size_t i = 0; i < strs.size(); ++i) {
-    const auto& str = strs[i];
-    ROS_DEBUG_STREAM(str.name << " " << str.value);
-    // ImGui::Text("parameters size %d", cd.parameters.size());
-    const size_t max_string_size = 128;
-    char new_value[max_string_size];
-    sprintf(new_value, "%s", str.value.substr(0, max_string_size - 1).c_str());
-    const bool changed = ImGui::InputText(str.name.c_str(),
-        &new_value[0], IM_ARRAYSIZE(new_value), ImGuiInputTextFlags_EnterReturnsTrue);
-    if (changed) {
-      strs[i].value = new_value;
-      do_reconfigure_ = true;
-    }
+    const std::string& name = strs[i].name;
+    const std::string& group = parameters_to_groups_[name];
+    group_parameter_type_ind[group][name] = std::make_pair("string", i);
   }
+
+  ImGui::Text("%s", topic_.c_str());
+  // TODO(lucasw) assume config description is properly formed for now
+  for (const auto& group_pair : groups_of_parameters_) {  // group_parameter_type_ind) {
+    const std::string& group_name = group_pair.first;
+    // TODO(lucasw) maybe make the groups expandable, or indent them?
+    if (group_name != "Default") {
+      ImGui::Text("%s", group_name.c_str());
+    }
+    const auto& parameters = group_pair.second;
+    for (const std::string& parameter_name : parameters) {
+      const auto& type_ind_pair = group_parameter_type_ind[group_name][parameter_name];
+      const std::string& dr_type = type_ind_pair.first;
+      const size_t ind = type_ind_pair.second;
+
+      if (dr_type == "bool") {
+        // could match this name against parameter_name
+        const std::string& name = bools[ind].name;
+        ROS_DEBUG_STREAM(name << " checkbox");
+        bool new_value = bools[ind].value;
+        const bool changed = ImGui::Checkbox(name.c_str(), &new_value);
+        bools[ind].value = new_value;
+        if (changed) {
+          do_reconfigure_ = true;
+        }
+      } else if (dr_type == "double") {
+        const std::string& name = doubles[ind].name;
+        if (ind >= cd.min.doubles.size()) {
+          ROS_ERROR_STREAM("short min " << name << " " << ind
+              << " " << cd.min.doubles.size());
+          break;
+        }
+        if (ind >= cd.max.doubles.size()) {
+          ROS_ERROR_STREAM("short min " << name << " " << ind
+              << " " << cd.max.doubles.size());
+          break;
+        }
+        const double min = cd.min.doubles[ind].value;
+        const double max = cd.max.doubles[ind].value;
+        ROS_DEBUG_STREAM(name << " " << ind << " double " << min << " " << max);
+        double new_value = doubles[ind].value;
+        const bool changed = ImGui::SliderScalar(name.c_str(), ImGuiDataType_Double,
+            (void *)&new_value, (void*)&min, (void*)&max, "%f");
+        if (changed) {
+          doubles[ind].value = new_value;
+          do_reconfigure_ = true;
+        }
+      } else if (dr_type == "int") {
+        const std::string& name = ints[ind].name;
+        if (ind >= cd.min.ints.size()) {
+          ROS_ERROR_STREAM("short min " << name << " " << ind
+              << " " << cd.min.ints.size());
+          break;
+        }
+        if (ind >= cd.max.ints.size()) {
+          ROS_ERROR_STREAM("short min " << name << " " << ind
+              << " " << cd.max.ints.size());
+          break;
+        }
+        int new_value = ints[ind].value;
+        bool changed = false;
+        // check if enum
+        if (dr_enums_.count(name) < 1) {
+          const int min = cd.min.ints[ind].value;
+          const int max = cd.max.ints[ind].value;
+          ROS_DEBUG_STREAM(name << " " << ind << " int " << min << " " << max);
+          changed = ImGui::SliderInt(name.c_str(),
+              &new_value, min, max);
+        } else {
+          // TODO(lucasw) if enums don't start at 0 and go to n-1 for n items
+          // in the combo box this is going to fail
+          changed = ImGui::Combo(name.c_str(), &new_value,
+              dr_enums_combo_text_[name].c_str());
+        }
+        if (changed) {
+          ints[ind].value = new_value;
+          do_reconfigure_ = true;
+        }
+      } else if (dr_type == "string") {
+        const auto& str = strs[ind];
+        ROS_DEBUG_STREAM(str.name << " " << str.value);
+        // ImGui::Text("parameters size %d", cd.parameters.size());
+        const size_t max_string_size = 128;
+        char new_value[max_string_size];
+        sprintf(new_value, "%s", str.value.substr(0, max_string_size - 1).c_str());
+        const bool changed = ImGui::InputText(str.name.c_str(),
+            &new_value[0], IM_ARRAYSIZE(new_value), ImGuiInputTextFlags_EnterReturnsTrue);
+        if (changed) {
+          strs[ind].value = new_value;
+          do_reconfigure_ = true;
+        }
+      } else {
+        ROS_ERROR_STREAM("unknown parameter type '" << dr_type << "' '"
+            << parameter_name << "'");
+      } // switch
+    }  // loop through parameters in this group
+  }  // loop through groups
 
   // ImGui::End();
 }
