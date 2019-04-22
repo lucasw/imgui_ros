@@ -58,7 +58,11 @@ void DynamicReconfigure::descriptionCallback(
   std::lock_guard<std::mutex> lock(mutex_);
   config_description_ = *msg;
 
-  // Tthe edit method is a yaml string that is not broken out
+  // TODO(lucasw) Need to populate group https://github.com/lucasw/imgui_ros/issues/9#issuecomment-485308307
+  // for min, max, and dflt when dealing with a rospy server- look to see if the group fields
+  // are empty, then populate them with the group information from config_description_.groups
+
+  // The edit method is a yaml string that is not broken out
   // into a class member, have to parse it.
   // ImGui::Text("groups size %lu", cd.groups.size());
   dr_enums_.clear();
@@ -147,46 +151,43 @@ void DynamicReconfigure::draw() {
   const std::string text = topic_;
   // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
   std::lock_guard<std::mutex> lock(mutex_);
-  dynamic_reconfigure::ConfigDescription& cd = config_description_;
-  {
-    // std::lock_guard<std::mutex> lock(mutex_);
-  }
-  auto& dflt = cd.dflt;
+  const auto& cd_min = config_description_.min;
+  const auto& cd_max = config_description_.max;
 
 /**
   ROS_DEBUG_STREAM("bools "
       << " " << bools.size()
-      << " " << cd.min.bools.size()
-      << " " << cd.max.bools.size());
+      << " " << cd_min.bools.size()
+      << " " << cd_max.bools.size());
   ROS_DEBUG_STREAM("doubles "
       << " " << dflt.doubles.size()
-      << " " << cd.min.doubles.size()
-      << " " << cd.max.doubles.size());
+      << " " << cd_min.doubles.size()
+      << " " << cd_max.doubles.size());
 */
 
   // need to organize all the parameters into their proper groups
   std::map<std::string, std::map<std::string, std::pair<std::string, size_t>>>
       group_parameter_type_ind;
 
-  auto& bools = dflt.bools;
+  auto& bools = config_description_.dflt.bools;
   for (size_t i = 0; i < bools.size(); ++i) {
     const std::string& name = bools[i].name;
     const std::string& group = parameters_to_groups_[name];
     group_parameter_type_ind[group][name] = std::make_pair("bool", i);
   }
-  auto& doubles = dflt.doubles;
+  auto& doubles = config_description_.dflt.doubles;
   for (size_t i = 0; i < doubles.size(); ++i) {
     const std::string& name = doubles[i].name;
     const std::string& group = parameters_to_groups_[name];
     group_parameter_type_ind[group][name] = std::make_pair("double", i);
   }
-  auto& ints = dflt.ints;
+  auto& ints = config_description_.dflt.ints;
   for (size_t i = 0; i < ints.size(); ++i) {
     const std::string& name = ints[i].name;
     const std::string& group = parameters_to_groups_[name];
     group_parameter_type_ind[group][name] = std::make_pair("int", i);
   }
-  auto& strs = dflt.strs;
+  auto& strs = config_description_.dflt.strs;
   for (size_t i = 0; i < strs.size(); ++i) {
     const std::string& name = strs[i].name;
     const std::string& group = parameters_to_groups_[name];
@@ -219,18 +220,18 @@ void DynamicReconfigure::draw() {
         }
       } else if (dr_type == "double") {
         const std::string& name = doubles[ind].name;
-        if (ind >= cd.min.doubles.size()) {
+        if (ind >= cd_min.doubles.size()) {
           ROS_ERROR_STREAM("short min " << name << " " << ind
-              << " " << cd.min.doubles.size());
-          break;
+              << " " << cd_min.doubles.size());
+          continue;
         }
-        if (ind >= cd.max.doubles.size()) {
+        if (ind >= cd_max.doubles.size()) {
           ROS_ERROR_STREAM("short min " << name << " " << ind
-              << " " << cd.max.doubles.size());
-          break;
+              << " " << cd_max.doubles.size());
+          continue;
         }
-        const double min = cd.min.doubles[ind].value;
-        const double max = cd.max.doubles[ind].value;
+        const double min = cd_min.doubles[ind].value;
+        const double max = cd_max.doubles[ind].value;
         ROS_DEBUG_STREAM(name << " " << ind << " double " << min << " " << max);
         double new_value = doubles[ind].value;
         const bool changed = ImGui::SliderScalar(name.c_str(), ImGuiDataType_Double,
@@ -241,22 +242,22 @@ void DynamicReconfigure::draw() {
         }
       } else if (dr_type == "int") {
         const std::string& name = ints[ind].name;
-        if (ind >= cd.min.ints.size()) {
+        if (ind >= cd_min.ints.size()) {
           ROS_ERROR_STREAM("short min " << name << " " << ind
-              << " " << cd.min.ints.size());
-          break;
+              << " " << cd_min.ints.size());
+          continue;
         }
-        if (ind >= cd.max.ints.size()) {
+        if (ind >= cd_max.ints.size()) {
           ROS_ERROR_STREAM("short min " << name << " " << ind
-              << " " << cd.max.ints.size());
-          break;
+              << " " << cd_max.ints.size());
+          continue;
         }
         int new_value = ints[ind].value;
         bool changed = false;
         // check if enum
         if (dr_enums_.count(name) < 1) {
-          const int min = cd.min.ints[ind].value;
-          const int max = cd.max.ints[ind].value;
+          const int min = cd_min.ints[ind].value;
+          const int max = cd_max.ints[ind].value;
           ROS_DEBUG_STREAM(name << " " << ind << " int " << min << " " << max);
           changed = ImGui::SliderInt(name.c_str(),
               &new_value, min, max);
@@ -271,6 +272,11 @@ void DynamicReconfigure::draw() {
           do_reconfigure_ = true;
         }
       } else if (dr_type == "string") {
+        if (ind >= strs.size()) {
+          ROS_ERROR_STREAM("bad ind " << group_name << " " << parameter_name << " " << ind
+              << " " << strs.size());
+          continue;
+        }
         const auto& str = strs[ind];
         ROS_DEBUG_STREAM(str.name << " " << str.value);
         // ImGui::Text("parameters size %d", cd.parameters.size());
@@ -299,6 +305,7 @@ void DynamicReconfigure::updateParameters(const ros::TimerEvent& e)
   dynamic_reconfigure::Reconfigure rec;
   {
     std::lock_guard<std::mutex> lock(mutex_);
+    // TODO(lucasw) request changes only to the values that actually changed, don't send all of dflt
     rec.request.config = config_description_.dflt;
     if (!do_reconfigure_)
       return;
