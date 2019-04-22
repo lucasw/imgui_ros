@@ -58,10 +58,6 @@ void DynamicReconfigure::descriptionCallback(
   std::lock_guard<std::mutex> lock(mutex_);
   config_description_ = *msg;
 
-  // TODO(lucasw) Need to populate group https://github.com/lucasw/imgui_ros/issues/9#issuecomment-485308307
-  // for min, max, and dflt when dealing with a rospy server- look to see if the group fields
-  // are empty, then populate them with the group information from config_description_.groups
-
   // The edit method is a yaml string that is not broken out
   // into a class member, have to parse it.
   // ImGui::Text("groups size %lu", cd.groups.size());
@@ -79,7 +75,6 @@ void DynamicReconfigure::descriptionCallback(
     // TODO(lucasw) need to store which parameter names go in which groups using group.name-
     // maybe want both directions, a map of groups with lists of names,
     // and a map of names with which group they are in.
-
     for (size_t j = 0; j < group.parameters.size(); ++j) {
       const auto& parameter = group.parameters[j];
       // bi-directional maps
@@ -305,10 +300,37 @@ void DynamicReconfigure::updateParameters(const ros::TimerEvent& e)
   dynamic_reconfigure::Reconfigure rec;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    // TODO(lucasw) request changes only to the values that actually changed, don't send all of dflt
-    rec.request.config = config_description_.dflt;
+
     if (!do_reconfigure_)
       return;
+
+    // TODO(lucasw) Need to populate group https://github.com/lucasw/imgui_ros/issues/9#issuecomment-485308307
+    // for min, max, and dflt when dealing with a rospy server- look to see if the group fields
+    // are empty, then populate them with the group information from config_description_.groups
+    // TODO(lucasw), the problem is likely in the rospy server code,
+    // doesn't matter if this is set here
+    for (const auto& group : config_description_.groups) {
+      bool found_group = false;
+      for (const auto& dflt_group : config_description_.dflt.groups) {
+        if (dflt_group.name == group.name) {
+          found_group = true;
+          break;
+        }
+      }
+      if (!found_group) {
+        ROS_INFO_STREAM("adding missing group state " << group.name << " "
+            << group.id << " " << group.parent);
+        dynamic_reconfigure::GroupState group_state;
+        group_state.name = group.name;
+        group_state.state = true;
+        group_state.id = group.id;
+        group_state.parent = group.parent;
+        config_description_.dflt.groups.push_back(group_state);
+      }
+    }
+
+    // TODO(lucasw) request changes only to the values that actually changed, don't send all of dflt
+    rec.request.config = config_description_.dflt;
     do_reconfigure_ = false;
   }
   // TODO(lucasw) it's possible there are multiples of the same name in reconfigure_
