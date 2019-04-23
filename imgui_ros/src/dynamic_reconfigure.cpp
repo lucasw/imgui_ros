@@ -211,9 +211,10 @@ void DynamicReconfigure::draw() {
         const std::string& name = bools[ind].name;
         ROS_DEBUG_STREAM(name << " checkbox");
         bool new_value = bools[ind].value;
-        const bool changed = ImGui::Checkbox(name.c_str(), &new_value);
-        bools[ind].value = new_value;
+        const bool changed = ImGui::Checkbox((name + "##" + name_).c_str(), &new_value);
         if (changed) {
+          bools[ind].value = new_value;
+          rec_.request.config.bools.push_back(bools[ind]);
           do_reconfigure_ = true;
         }
       } else if (dr_type == "double") {
@@ -232,10 +233,11 @@ void DynamicReconfigure::draw() {
         const double max = cd_max.doubles[ind].value;
         ROS_DEBUG_STREAM(name << " " << ind << " double " << min << " " << max);
         double new_value = doubles[ind].value;
-        const bool changed = ImGui::SliderScalar(name.c_str(), ImGuiDataType_Double,
+        const bool changed = ImGui::SliderScalar((name + "##" + name_).c_str(), ImGuiDataType_Double,
             (void *)&new_value, (void*)&min, (void*)&max, "%f");
         if (changed) {
           doubles[ind].value = new_value;
+          rec_.request.config.doubles.push_back(doubles[ind]);
           do_reconfigure_ = true;
         }
       } else if (dr_type == "int") {
@@ -257,16 +259,17 @@ void DynamicReconfigure::draw() {
           const int min = cd_min.ints[ind].value;
           const int max = cd_max.ints[ind].value;
           ROS_DEBUG_STREAM(name << " " << ind << " int " << min << " " << max);
-          changed = ImGui::SliderInt(name.c_str(),
+          changed = ImGui::SliderInt((name + "##" + name_).c_str(),
               &new_value, min, max);
         } else {
           // TODO(lucasw) if enums don't start at 0 and go to n-1 for n items
           // in the combo box this is going to fail
-          changed = ImGui::Combo(name.c_str(), &new_value,
+          changed = ImGui::Combo((name + "##" + name_).c_str(), &new_value,
               dr_enums_combo_text_[name].c_str());
         }
         if (changed) {
           ints[ind].value = new_value;
+          rec_.request.config.ints.push_back(ints[ind]);
           do_reconfigure_ = true;
         }
       } else if (dr_type == "string") {
@@ -281,10 +284,11 @@ void DynamicReconfigure::draw() {
         const size_t max_string_size = 128;
         char new_value[max_string_size];
         sprintf(new_value, "%s", str.value.substr(0, max_string_size - 1).c_str());
-        const bool changed = ImGui::InputText(str.name.c_str(),
+        const bool changed = ImGui::InputText((str.name + "##" + name_).c_str(),
             &new_value[0], IM_ARRAYSIZE(new_value), ImGuiInputTextFlags_EnterReturnsTrue);
         if (changed) {
           strs[ind].value = new_value;
+          rec_.request.config.strs.push_back(strs[ind]);
           do_reconfigure_ = true;
         }
       } else {
@@ -300,7 +304,6 @@ void DynamicReconfigure::draw() {
 void DynamicReconfigure::updateParameters(const ros::TimerEvent& e)
 {
   (void)e;
-  dynamic_reconfigure::Reconfigure rec;
   {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -312,6 +315,7 @@ void DynamicReconfigure::updateParameters(const ros::TimerEvent& e)
     // are empty, then populate them with the group information from config_description_.groups
     // TODO(lucasw), the problem is likely in the rospy server code,
     // doesn't matter if this is set here
+    if (false) {
     for (const auto& group : config_description_.groups) {
       bool found_group = false;
       for (const auto& dflt_group : config_description_.dflt.groups) {
@@ -331,15 +335,21 @@ void DynamicReconfigure::updateParameters(const ros::TimerEvent& e)
         config_description_.dflt.groups.push_back(group_state);
       }
     }
+    }
 
     // TODO(lucasw) request changes only to the values that actually changed, don't send all of dflt
-    rec.request.config = config_description_.dflt;
+    // rec.request.config = config_description_.dflt;
     do_reconfigure_ = false;
   }
   // TODO(lucasw) it's possible there are multiples of the same name in reconfigure_
   // which one will take precedence- the last one?
   // would be better to use a map then only fill out a Reconfigure here.
-  if (!client_.call(rec)) {
+  if (!client_.call(rec_)) {
   }
+
+  rec_.request.config.bools.clear();
+  rec_.request.config.ints.clear();
+  rec_.request.config.strs.clear();
+  rec_.request.config.doubles.clear();
 }
 }  // namespace imgui_ros
