@@ -136,6 +136,9 @@ void DynamicReconfigure::updatesCallback(
   // TODO(lucasw) if this arrives before the updateParameters has run with changes those will
   // get overwritten- is that good or bad?
   std::lock_guard<std::mutex> lock(mutex_);
+  // TODO(lucasw) instead of assuming the update has every value,
+  // maybe loop through everything in the msg and find what it needs
+  // to update in dflt.
   config_description_.dflt = *msg;
 }
 

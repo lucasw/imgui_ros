@@ -43,7 +43,7 @@ class DemoGui:
             widget = Widget()
             widget.name = "dr"
             widget.tab_name = tab_name
-            widget.topic = "/example_server_node2"
+            widget.topic = '/example_server_manual_py'
             widget.type = Widget.DYNREC
             # widget.sub_type = Widget.IMAGE
             req.widgets.append(widget)
