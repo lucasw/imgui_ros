@@ -5,6 +5,11 @@ and parameters using imgui (https://github.com/ocornut/imgui).
 
 ## Instructions
 
+
+```
+sudo apt install libglm-dev ros-melodic-pcl-ros
+```
+
 Run a demo:
 
 ```
