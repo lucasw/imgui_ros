@@ -44,6 +44,8 @@ catkin_package(
   CATKIN_DEPENDS message_generation sensor_msgs std_msgs
 )
 
-install(DIRECTORY include/std_msgs/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  PATTERN "*.h")
+# TODO(lucasw) I think this was trying to install an include directory that is empty but
+# is populated later?
+# install(DIRECTORY include/${PROJECT_NAME}/
+#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#   PATTERN ".svn" EXCLUDE)
