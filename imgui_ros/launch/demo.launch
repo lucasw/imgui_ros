@@ -5,7 +5,7 @@
     v4l2-ctl \-\-list-formats
     v4l2-ctl -d /dev/video0 \-\-list-framesizes=YUYV
     -->
-  <arg name="use_image_publisher" default="true"/>
+  <arg name="use_image_publisher" default="false"/>
 
   <arg name="use_usb_cam" default="false"/>
   <arg name="device" default="0"/>
@@ -46,7 +46,7 @@
     </rosparam>
   </group>
 
-  <node pkg="image_publisher" type="image_publisher"
+  <node pkg="image_manip" type="image_publisher"
     name="test_image_pub"
     args="$(find vimjay)/data/clouds.png"
     if="$(arg use_image_publisher)">

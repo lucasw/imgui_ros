@@ -96,7 +96,7 @@ void Window::draw(
     ImGui::EndTabBar();
   } else if (tab_groups_.size() == 1) {
     for (auto& tab_pair : tab_groups_) {
-      const auto& tab_name = tab_pair.first;
+      // const auto& tab_name = tab_pair.first;
       // ImGui::Text("%s", tab_name.c_str());
       const auto& tab_group = tab_pair.second;
       tab_group->draw();
