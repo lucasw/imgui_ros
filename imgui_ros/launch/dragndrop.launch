@@ -5,6 +5,10 @@
     name="imgui_ros" output="screen" >
   </node>
 
+  <include file="$(find dynamic_reconfigure_example)/launch/example_server_node.launch" >
+    <arg name="use_rqt" value="false" />
+  </include>
+
   <node pkg="imgui_ros" type="demo2.py" name="demo2" output="screen">
   </node>
 

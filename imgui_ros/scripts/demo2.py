@@ -54,7 +54,6 @@ class DemoGui:
             widget.tab_name = tab_name
             widget.topic = '/example_server_node'
             widget.type = Widget.DYNREC
-            # widget.sub_type = Widget.IMAGE
             req.widgets.append(widget)
 
         if True:
@@ -63,7 +62,6 @@ class DemoGui:
             widget.tab_name = tab_name
             widget.topic = '/example_server_node2'
             widget.type = Widget.DYNREC
-            # widget.sub_type = Widget.IMAGE
             req.widgets.append(widget)
 
         try:
