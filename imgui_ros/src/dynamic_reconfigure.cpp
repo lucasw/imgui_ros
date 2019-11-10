@@ -206,6 +206,7 @@ void DynamicReconfigure::draw() {
       const std::string& dr_type = type_ind_pair.first;
       const size_t ind = type_ind_pair.second;
 
+      // TODO(lucasw) replace with switch, enum for type
       if (dr_type == "bool") {
         // could match this name against parameter_name
         const std::string& name = bools[ind].name;
@@ -214,7 +215,7 @@ void DynamicReconfigure::draw() {
         const bool changed = ImGui::Checkbox((name + "##" + name_).c_str(), &new_value);
         if (changed) {
           bools[ind].value = new_value;
-          rec_.request.config.bools.push_back(bools[ind]);
+          bools_[name] = bools[ind];
           do_reconfigure_ = true;
         }
       } else if (dr_type == "double") {
@@ -237,7 +238,7 @@ void DynamicReconfigure::draw() {
             (void *)&new_value, (void*)&min, (void*)&max, "%f");
         if (changed) {
           doubles[ind].value = new_value;
-          rec_.request.config.doubles.push_back(doubles[ind]);
+          doubles_[name] = doubles[ind];
           do_reconfigure_ = true;
         }
       } else if (dr_type == "int") {
@@ -269,7 +270,7 @@ void DynamicReconfigure::draw() {
         }
         if (changed) {
           ints[ind].value = new_value;
-          rec_.request.config.ints.push_back(ints[ind]);
+          ints_[name] = ints[ind];
           do_reconfigure_ = true;
         }
       } else if (dr_type == "string") {
@@ -288,7 +289,7 @@ void DynamicReconfigure::draw() {
             &new_value[0], IM_ARRAYSIZE(new_value), ImGuiInputTextFlags_EnterReturnsTrue);
         if (changed) {
           strs[ind].value = new_value;
-          rec_.request.config.strs.push_back(strs[ind]);
+          strs_[str.name] = strs[ind];
           do_reconfigure_ = true;
         }
       } else {
@@ -341,15 +342,27 @@ void DynamicReconfigure::updateParameters(const ros::TimerEvent& e)
     // rec.request.config = config_description_.dflt;
     do_reconfigure_ = false;
   }
-  // TODO(lucasw) it's possible there are multiples of the same name in reconfigure_
-  // which one will take precedence- the last one?
-  // would be better to use a map then only fill out a Reconfigure here.
-  if (!client_.call(rec_)) {
-  }
 
-  rec_.request.config.bools.clear();
-  rec_.request.config.ints.clear();
-  rec_.request.config.strs.clear();
-  rec_.request.config.doubles.clear();
+  dynamic_reconfigure::Reconfigure rec;
+  for (const auto& pair : bools_) {
+    rec.request.config.bools.push_back(pair.second);
+  }
+  bools_.clear();
+  for (const auto& pair : ints_) {
+    rec.request.config.ints.push_back(pair.second);
+  }
+  ints_.clear();
+  for (const auto& pair : strs_) {
+    rec.request.config.strs.push_back(pair.second);
+  }
+  strs_.clear();
+  for (const auto& pair : doubles_) {
+    rec.request.config.doubles.push_back(pair.second);
+  }
+  doubles_.clear();
+
+  if (!client_.call(rec)) {
+    ROS_ERROR("bad reconfigure");
+  }
 }
 }  // namespace imgui_ros

@@ -55,7 +55,12 @@ private:
   dynamic_reconfigure::ConfigDescription config_description_;
   ros::Subscriber updates_sub_;
   dynamic_reconfigure::ConfigConstPtr config_;
-  dynamic_reconfigure::Reconfigure rec_;
+
+  std::map<std::string, dynamic_reconfigure::BoolParameter> bools_;
+  std::map<std::string, dynamic_reconfigure::IntParameter> ints_;
+  std::map<std::string, dynamic_reconfigure::StrParameter> strs_;
+  std::map<std::string, dynamic_reconfigure::DoubleParameter> doubles_;
+
   ros::ServiceClient client_;
 
   struct DrEnum
