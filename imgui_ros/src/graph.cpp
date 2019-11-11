@@ -115,7 +115,7 @@ void Graph::draw()
   const double seconds = (stamp_ - start_).toSec();
   // std::cout << "draw " << seconds << "\n";
 
-  ImGui::SetNextWindowSize(ImVec2(700, 600), ImGuiSetCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(700, 600), ImGuiCond_FirstUseEver);
 
   if (!inited_)
   {
@@ -252,7 +252,7 @@ void Graph::draw()
   draw_list->ChannelsMerge();
 
   // Open context menu
-  if (!ImGui::IsAnyItemHovered() && ImGui::IsMouseHoveringWindow() && ImGui::IsMouseClicked(1))
+  if (!ImGui::IsAnyItemHovered() && ImGui::IsWindowHovered() && ImGui::IsMouseClicked(1))
   {
     node_selected_ = node_hovered_in_list = node_hovered_in_scene = nullptr;
     open_context_menu = true;

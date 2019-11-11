@@ -72,9 +72,11 @@ set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPIL
 
 add_library(imguiros SHARED
   src/dynamic_reconfigure.cpp
+  src/graph.cpp
   src/image.cpp
   src/image_transfer.cpp
   src/imgui_ros.cpp
+  src/node.cpp
   src/window.cpp
 )
 
@@ -82,9 +84,7 @@ if(false)
 add_library(imguiros SHARED
   src/camera.cpp
   src/cube_camera.cpp
-  src/graph.cpp
   src/imgui_ros.cpp
-  src/node.cpp
   src/param.cpp
   src/pub.cpp
   src/projector.cpp

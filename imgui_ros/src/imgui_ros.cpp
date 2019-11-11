@@ -39,8 +39,8 @@
 #include <imgui_ros/image.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/imgui_ros.h>
-#if 0
 #include <imgui_ros/graph.h>
+#if 0
 #include <imgui_ros/param.h>
 #include <imgui_ros/point_cloud.h>
 #include <imgui_ros/pub.h>
@@ -387,11 +387,28 @@ bool ImguiRos::addWindow(imgui_ros_msgs::AddWindow::Request& req,
   return true;
 }
 
+std::string widgetTypeToString(const auto widget_type)
+{
+  switch (widget_type) {
+    case imgui_ros_msgs::Widget::IMAGE:
+      return "image";
+    case imgui_ros_msgs::Widget::DYNREC:
+      return "dynrec";
+    case imgui_ros_msgs::Widget::GRAPH:
+      return "graph";
+    default: {
+      std::stringstream ss;
+      ss << static_cast<unsigned int>(widget_type);
+      return ss.str();
+    }
+  }
+}
+
+// More accurately 'makeWidget'
 // TODO(lucasw) move into widget.cpp?
 bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
     std::string& message, std::shared_ptr<Widget>& imgui_widget)
 {
-
   if (widget.sub_type == imgui_ros_msgs::Widget::IMAGE) {
     (void)message;
     bool sub_not_pub = true;
@@ -410,12 +427,26 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
     ros_image->enable_draw_image_ = true;
     imgui_widget = ros_image;
     return true;
-  } else if (widget.type == imgui_ros_msgs::Widget::DYNREC) {
-    auto dr = std::make_shared<DynamicReconfigure>(
-        widget.name, widget.topic, nh_); // getPrivateNodeHandle());
-    imgui_widget = dr;
   }
 
+  switch (widget.type) {
+    case imgui_ros_msgs::Widget::DYNREC: {
+      auto dr = std::make_shared<DynamicReconfigure>(
+          widget.name, widget.topic, nh_); // getPrivateNodeHandle());
+      imgui_widget = dr;
+      break;
+    }
+    case imgui_ros_msgs::Widget::GRAPH: {
+      imgui_widget = std::make_shared<Graph>(widget.name, nh_);
+      break;
+    }
+    default: {
+      ROS_WARN_STREAM("unsupported type: " << widgetTypeToString(widget.sub_type)
+          << " " << widget.name);
+      return true;
+    }
+  }
+  return true;
   #if 0
   ///////////////////////////////////////////////////////////////////////////
   // publisher types
@@ -715,8 +746,6 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
     param_widgets_[node_name][widget.name] = param;
     imgui_widget = param;
   ///////////////////////////////////////////////////////////////////////////
-  } else if (widget.type == imgui_ros_msgs::Widget::GRAPH) {
-    imgui_widget = std::make_shared<Graph>(widget.name, shared_from_this());
   } else {
     std::stringstream ss;
     // TODO(lucasw) typeToString()
