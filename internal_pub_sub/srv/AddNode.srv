@@ -1,6 +1,0 @@
-internal_pub_sub/NodeSettings[] node_settings
-# TODO(lucasw) if only some nodes load correctly, should they all be unloaded,
-# or handled differently?
----
-string message ""
-bool success False
