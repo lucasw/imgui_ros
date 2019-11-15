@@ -117,8 +117,8 @@ void DynamicReconfigure::descriptionCallback(
               " (" + dr_enum.value_ + ")" + '\0';
           ROS_INFO_STREAM(dr_enum.name_ << " "
               << dr_enum.value_ << " "
-              << dr_enum.type_ << " "
-              << dr_enum.description_);
+              << dr_enum.type_ << " '"
+              << dr_enum.description_ << "'");
           dr_enums_[parameter.name].push_back(dr_enum);
         }
       }
@@ -197,6 +197,8 @@ void DynamicReconfigure::draw() {
   for (const auto& group_pair : groups_of_parameters_) {  // group_parameter_type_ind) {
     const std::string& group_name = group_pair.first;
     // TODO(lucasw) maybe make the groups expandable, or indent them?
+
+
     if (group_name != "Default") {
       ImGui::Text("%s", group_name.c_str());
     }
@@ -212,6 +214,9 @@ void DynamicReconfigure::draw() {
         const std::string& name = bools[ind].name;
         ROS_DEBUG_STREAM(name << " checkbox");
         bool new_value = bools[ind].value;
+        // This doesn't work
+        // const char* widget_name = (name + "##" + name_).c_str();
+        // const bool changed = ImGui::Checkbox(widget_name, &new_value);
         const bool changed = ImGui::Checkbox((name + "##" + name_).c_str(), &new_value);
         if (changed) {
           bools[ind].value = new_value;
@@ -234,7 +239,11 @@ void DynamicReconfigure::draw() {
         const double max = cd_max.doubles[ind].value;
         ROS_DEBUG_STREAM(name << " " << ind << " double " << min << " " << max);
         double new_value = doubles[ind].value;
-        const bool changed = ImGui::SliderScalar((name + "##" + name_).c_str(), ImGuiDataType_Double,
+        const bool changed = ImGui::SliderScalar((name + "##" + name_).c_str(),
+        // this is producing garbage text
+        // const auto widget_name = (name + "##" + name_).c_str();
+        // const bool changed = ImGui::SliderScalar(widget_name,
+            ImGuiDataType_Double,
             (void *)&new_value, (void*)&min, (void*)&max, "%f");
         if (changed) {
           doubles[ind].value = new_value;
@@ -243,6 +252,7 @@ void DynamicReconfigure::draw() {
         }
       } else if (dr_type == "int") {
         const std::string& name = ints[ind].name;
+        const auto widget_name = (name + "##" + name_).c_str();
         if (ind >= cd_min.ints.size()) {
           ROS_ERROR_STREAM("short min " << name << " " << ind
               << " " << cd_min.ints.size());
@@ -260,12 +270,13 @@ void DynamicReconfigure::draw() {
           const int min = cd_min.ints[ind].value;
           const int max = cd_max.ints[ind].value;
           ROS_DEBUG_STREAM(name << " " << ind << " int " << min << " " << max);
-          changed = ImGui::SliderInt((name + "##" + name_).c_str(),
+          changed = ImGui::SliderInt(widget_name,
               &new_value, min, max);
         } else {
           // TODO(lucasw) if enums don't start at 0 and go to n-1 for n items
           // in the combo box this is going to fail
-          changed = ImGui::Combo((name + "##" + name_).c_str(), &new_value,
+          // ROS_INFO_STREAM_THROTTLE(4.0, dr_enums_combo_text_[name]);
+          changed = ImGui::Combo(widget_name, &new_value,
               dr_enums_combo_text_[name].c_str());
         }
         if (changed) {
@@ -274,23 +285,47 @@ void DynamicReconfigure::draw() {
           do_reconfigure_ = true;
         }
       } else if (dr_type == "string") {
+        const std::string& name = strs[ind].name;
+        const auto widget_name = (name + "##" + name_).c_str();
         if (ind >= strs.size()) {
           ROS_ERROR_STREAM("bad ind " << group_name << " " << parameter_name << " " << ind
               << " " << strs.size());
           continue;
         }
         const auto& str = strs[ind];
-        ROS_DEBUG_STREAM(str.name << " " << str.value);
+        ROS_DEBUG_STREAM(str.name << " " << str.value << " " << ind << " " << strs.size());
         // ImGui::Text("parameters size %d", cd.parameters.size());
-        const size_t max_string_size = 128;
-        char new_value[max_string_size];
-        sprintf(new_value, "%s", str.value.substr(0, max_string_size - 1).c_str());
-        const bool changed = ImGui::InputText((str.name + "##" + name_).c_str(),
-            &new_value[0], IM_ARRAYSIZE(new_value), ImGuiInputTextFlags_EnterReturnsTrue);
-        if (changed) {
-          strs[ind].value = new_value;
-          strs_[str.name] = strs[ind];
-          do_reconfigure_ = true;
+        if ((dr_enums_.count(name) < 1) || (dr_enums_[name].size() < 1)) {
+          const size_t max_string_size = 128;
+          char new_value[max_string_size];
+          sprintf(new_value, "%s", str.value.substr(0, max_string_size - 1).c_str());
+          const bool changed = ImGui::InputText(widget_name,
+              &new_value[0], IM_ARRAYSIZE(new_value), ImGuiInputTextFlags_EnterReturnsTrue);
+
+          if (changed) {
+            ROS_INFO_STREAM(new_value);
+            strs[ind].value = new_value;
+            strs_[str.name] = strs[ind];
+            do_reconfigure_ = true;
+          }
+        } else {
+          ImGuiComboFlags flags = 0;
+          auto& item_current = dr_enums_[name][0];
+#if 0
+          if (ImGui::BeginCombo(widget_name, item_current.name_.c_str(), flags)) {
+            for (const auto& dr_enum : dr_enums_[name]) {
+              bool is_selected = (item_current.name_ == dr_enum.name_);
+              if (ImGui::Selectable(dr_enum.name_.c_str(), is_selected)) {
+                item_current = dr_enum;
+              }
+              if (is_selected) {
+                ROS_INFO_STREAM(dr_enum.name_);
+                ImGui::SetItemDefaultFocus();
+              }
+            }
+            ImGui::EndCombo();
+          }
+#endif
         }
       } else {
         ROS_ERROR_STREAM("unknown parameter type '" << dr_type << "' '"
