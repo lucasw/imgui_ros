@@ -294,13 +294,12 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
                    image->width, image->height,
                    0, GL_RGB, GL_UNSIGNED_BYTE, &image->data[0]);
-    // TODO(lucasw) these don't work, come out all black:
     } else if (image->encoding == "bgra8") {
-       glTexImage2D(GL_TEXTURE_2D, 0, GL_BGRA,
+       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
                    image->width, image->height,
                    0, GL_BGRA, GL_UNSIGNED_BYTE, &image->data[0]);
     } else if (image->encoding == "rgba8") {
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
           image->width, image->height,
           0, GL_RGBA, GL_UNSIGNED_BYTE, &image->data[0]);
     } else {
