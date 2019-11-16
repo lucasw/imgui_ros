@@ -252,7 +252,7 @@ void DynamicReconfigure::draw() {
         }
       } else if (dr_type == "int") {
         const std::string& name = ints[ind].name;
-        const auto widget_name = (name + "##" + name_).c_str();
+        // const auto widget_name = (name + "##" + name_).c_str();
         if (ind >= cd_min.ints.size()) {
           ROS_ERROR_STREAM("short min " << name << " " << ind
               << " " << cd_min.ints.size());
@@ -270,13 +270,13 @@ void DynamicReconfigure::draw() {
           const int min = cd_min.ints[ind].value;
           const int max = cd_max.ints[ind].value;
           ROS_DEBUG_STREAM(name << " " << ind << " int " << min << " " << max);
-          changed = ImGui::SliderInt(widget_name,
+          changed = ImGui::SliderInt((name + "##" + name_).c_str(),
               &new_value, min, max);
         } else {
           // TODO(lucasw) if enums don't start at 0 and go to n-1 for n items
           // in the combo box this is going to fail
           // ROS_INFO_STREAM_THROTTLE(4.0, dr_enums_combo_text_[name]);
-          changed = ImGui::Combo(widget_name, &new_value,
+          changed = ImGui::Combo((name + "##" + name_).c_str(), &new_value,
               dr_enums_combo_text_[name].c_str());
         }
         if (changed) {
@@ -286,7 +286,7 @@ void DynamicReconfigure::draw() {
         }
       } else if (dr_type == "string") {
         const std::string& name = strs[ind].name;
-        const auto widget_name = (name + "##" + name_).c_str();
+        // const auto widget_name = (name + "##" + name_).c_str();
         if (ind >= strs.size()) {
           ROS_ERROR_STREAM("bad ind " << group_name << " " << parameter_name << " " << ind
               << " " << strs.size());
@@ -299,7 +299,7 @@ void DynamicReconfigure::draw() {
           const size_t max_string_size = 128;
           char new_value[max_string_size];
           sprintf(new_value, "%s", str.value.substr(0, max_string_size - 1).c_str());
-          const bool changed = ImGui::InputText(widget_name,
+          const bool changed = ImGui::InputText((name + "##" + name_).c_str(),
               &new_value[0], IM_ARRAYSIZE(new_value), ImGuiInputTextFlags_EnterReturnsTrue);
 
           if (changed) {
