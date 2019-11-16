@@ -311,21 +311,25 @@ void DynamicReconfigure::draw() {
         } else {
           ImGuiComboFlags flags = 0;
           auto& item_current = dr_enums_[name][0];
-#if 0
-          if (ImGui::BeginCombo(widget_name, item_current.name_.c_str(), flags)) {
+          if (ImGui::BeginCombo((name + "##" + name_).c_str(), item_current.name_.c_str(), flags)) {
             for (const auto& dr_enum : dr_enums_[name]) {
               bool is_selected = (item_current.name_ == dr_enum.name_);
               if (ImGui::Selectable(dr_enum.name_.c_str(), is_selected)) {
                 item_current = dr_enum;
+                // if (dr_enum.name_ != strs[ind].value)
+                {
+                  ROS_INFO_STREAM(dr_enum.name_ << " " << strs[ind].value);
+                  strs[ind].value = dr_enum.value_;
+                  strs_[dr_enum.name_] = strs[ind];
+                  do_reconfigure_ = true;
+                }
               }
               if (is_selected) {
-                ROS_INFO_STREAM(dr_enum.name_);
                 ImGui::SetItemDefaultFocus();
               }
             }
             ImGui::EndCombo();
           }
-#endif
         }
       } else {
         ROS_ERROR_STREAM("unknown parameter type '" << dr_type << "' '"
