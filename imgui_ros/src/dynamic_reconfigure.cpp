@@ -115,7 +115,7 @@ void DynamicReconfigure::descriptionCallback(
           dr_enum.description_ = (*it)["description"].as<std::string>();
           dr_enums_combo_text_[parameter.name] += dr_enum.name_ +
               " (" + dr_enum.value_ + ")" + '\0';
-          ROS_INFO_STREAM(dr_enum.name_ << " "
+          ROS_DEBUG_STREAM(dr_enum.name_ << " "
               << dr_enum.value_ << " "
               << dr_enum.type_ << " '"
               << dr_enum.description_ << "'");
@@ -238,13 +238,13 @@ void DynamicReconfigure::draw() {
         const double min = cd_min.doubles[ind].value;
         const double max = cd_max.doubles[ind].value;
         ROS_DEBUG_STREAM(name << " " << ind << " double " << min << " " << max);
-        double new_value = doubles[ind].value;
-        const bool changed = ImGui::SliderScalar((name + "##" + name_).c_str(),
+        float new_value = doubles[ind].value;
         // this is producing garbage text
         // const auto widget_name = (name + "##" + name_).c_str();
         // const bool changed = ImGui::SliderScalar(widget_name,
-            ImGuiDataType_Double,
-            (void *)&new_value, (void*)&min, (void*)&max, "%f");
+        const bool changed = ImGui::SliderFloat((name + "##" + name_).c_str(),
+            // (void *)&new_value, (void*)&min, (void*)&max, "%f", 3.0);
+            &new_value, min, max, "%f", 2.0);
         if (changed) {
           doubles[ind].value = new_value;
           doubles_[name] = doubles[ind];
