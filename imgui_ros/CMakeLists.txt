@@ -139,19 +139,19 @@ install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 install(PROGRAMS
   # TODO(lucasw) is this redundant with install package above, or necessary to run this from ros2 run?
-  imgui_ros/add_shaders.py
-  imgui_ros/cameras.py
-  imgui_ros/demo_imgui_ros.py
-  imgui_ros/demo_gui.py
-  imgui_ros/pub_shape.py
+  # imgui_ros/add_shaders.py
+  # imgui_ros/cameras.py
+  # imgui_ros/demo_imgui_ros.py
+  # imgui_ros/demo_gui.py
+  # imgui_ros/pub_shape.py
   scripts/cube_camera_fragment.glsl
   scripts/cube_camera_vertex.glsl
-  scripts/demo.sh
+  scripts/demo2.py
   scripts/depth_fragment.glsl
   scripts/depth_vertex.glsl
   scripts/fragment.glsl
-  scripts/graph.py
-  scripts/usb_cam_viewer.py
+  # scripts/graph.py
+  # scripts/usb_cam_viewer.py
   scripts/vertex.glsl
   DESTINATION lib/${PROJECT_NAME})
 
