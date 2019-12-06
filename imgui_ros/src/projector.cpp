@@ -54,7 +54,8 @@ Projector::Projector(
     const double constant_attenuation,
     const double linear_attenuation,
     const double quadratic_attenuation,
-    std::shared_ptr<ros::Node> node) :
+    // std::shared_ptr<ros::Node> node
+    ) :
     name_(name),
     texture_name_(texture_name),
     frame_id_(frame_id),
@@ -64,7 +65,7 @@ Projector::Projector(
     constant_attenuation_(constant_attenuation),
     linear_attenuation_(linear_attenuation),
     quadratic_attenuation_(quadratic_attenuation),
-    node_(node)
+    // node_(node)
 {
   std::cout << "creating projector " << print() << std::endl;
 
@@ -104,7 +105,7 @@ Projector::Projector(
         << " " << shadow_depth_texture_ << ", fb status: " << fb_status  << " " << glGetError();
     throw std::runtime_error(ss.str());
   } else {
-    RCLCPP_INFO(node->get_logger(),
+    ROS_INFO(
         "projector '%s' depth framebuffer setup complete, fb %d, tex id %d",
         name_.c_str(), shadow_framebuffer_, shadow_depth_texture_);
   }

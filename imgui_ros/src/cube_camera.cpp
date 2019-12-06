@@ -56,12 +56,16 @@ void drawGrid(cv::Mat& image, const size_t spacing=32)
 }
 
 // TODO(lucasw) 'CubeCamera' -> 'TextureCubeCamera'
+// Similar to a regular texture Camera, this renders from a given tf frame
+// onto six faces of a cube, and then complex projections can be done
+// for panoramic or omnidirectional cameras, or arbitrary lense maps
+// with a grid of normals facing in any direction.
 CubeCamera::CubeCamera(const std::string& name,
     const std::string& frame_id,
     const std::string& header_frame_id,
     const float aov_y, const float aov_x,
-    ros::NodeHandle& nh) :
-    Camera(name, frame_id, header_frame_id, aov_y, aov_x, node)
+    ros::NodeHandle* nh) :
+    Camera(name, frame_id, header_frame_id, aov_y, aov_x, nh)
 {
 }
 
@@ -75,17 +79,17 @@ void CubeCamera::init(
     const size_t face_width,
     const std::string& texture_name, const std::string& topic,
     const bool ros_pub,
-    ros::NodeHandle& nh,
+    ros::NodeHandle* nh,
     std::shared_ptr<ImageTransfer> image_transfer)
 {
   const bool sub_not_pub = false;
 
-  RCLCPP_INFO(node->get_logger(),
+  ROS_INFO(
       "init cube camera '%s', texture '%s', topic '%s', faces %d, %d x %d, %d",
       name_.c_str(), texture_name.c_str(), topic.c_str(),
       faces_.size(), width, height, face_width);
 
-  Camera::init(width, height, texture_name, topic, ros_pub, node, image_transfer);
+  Camera::init(width, height, texture_name, topic, ros_pub, nh, image_transfer);
 
   glGenTextures(1, &cube_texture_id_);
   glBindTexture(GL_TEXTURE_CUBE_MAP, cube_texture_id_);
@@ -148,7 +152,7 @@ void CubeCamera::init(
     // TODO(lucasw) move into image class
     {
       // node from weak_ptr is bad?
-      // RCLCPP_INFO(node->get_logger(), "creating camera %s %d %d", name, width, height);
+      // ROS_INFO("creating camera %s %d %d", name, width, height);
       image->width_ = face_width;
       image->height_ = face_width;
 
@@ -216,7 +220,7 @@ void CubeCamera::init(
 
       auto fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
       if (fb_status != GL_FRAMEBUFFER_COMPLETE) {
-        RCLCPP_ERROR(node->get_logger(),
+        ROS_ERROR(
             "framebuffer incomplete '%s', face dir %d, fb %d, db %d, cube tex id %d, fb status %d, gl error %X",
             name_.c_str(),
             face->dir_, face->frame_buffer_, face->depth_buffer_,
@@ -225,7 +229,7 @@ void CubeCamera::init(
         // TODO(lucasw) put above text into throw message
         throw std::runtime_error("incomplete frame buffer");
       } else {
-        RCLCPP_INFO(node->get_logger(), "cube camera '%s' dir %d framebuffer setup complete, fb %d, depth %d, tex id %d",
+        ROS_INFO("cube camera '%s' dir %d framebuffer setup complete, fb %d, depth %d, tex id %d",
             name_.c_str(), face->dir_,
             face->frame_buffer_, face->depth_buffer_, cube_texture_id_);
       }
@@ -284,7 +288,7 @@ void CubeCamera::draw()
 
   // this does nothing if the image doesn't have a publisher set up
   for (auto face : faces_) {
-    // TODO(lucasw) how to publish the 
+    // TODO(lucasw) how to publish the
     // image->publish();
   }
 }

@@ -37,17 +37,17 @@
 #include <imgui_ros/cube_camera.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
-#include <imgui_ros/TexturedShape.h>
 #include <imgui_ros/projector.h>
 #include <imgui_ros/shaders.h>
 #include <imgui_ros/surface.h>
 #include <imgui_ros/window.h>
-#include <imgui_ros/AddCamera.h>
-#include <imgui_ros/AddCubeCamera.h>
-#include <imgui_ros/AddProjector.h>
-#include <imgui_ros/AddShaders.h>
-#include <imgui_ros/AddShape.h>
-#include <imgui_ros/AddTexture.h>
+#include <imgui_ros_msgs/AddCamera.h>
+#include <imgui_ros_msgs/AddCubeCamera.h>
+#include <imgui_ros_msgs/AddProjector.h>
+#include <imgui_ros_msgs/AddShaders.h>
+#include <imgui_ros_msgs/AddShape.h>
+#include <imgui_ros_msgs/AddTexture.h>
+#include <imgui_ros_msgs/TexturedShape.h>
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -85,6 +85,7 @@ struct Viz3D : public Window {
     const std::string topic,
     std::shared_ptr<ImGuiImplOpenGL3> renderer,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
+    ros::NodeHandle* nh,
     std::shared_ptr<ImageTransfer> image_transfer
     );
   ~Viz3D();
@@ -186,38 +187,38 @@ protected:
 
   std::string glsl_version_string_ = "";
 
-  ros::Service add_camera_;
-  void addCamera(const std::shared_ptr<imgui_ros::AddCamera::Request> req,
-                  std::shared_ptr<imgui_ros::AddCamera::Response> res);
+  ros::ServiceServer add_camera_;
+  void addCamera(imgui_ros_msgs::AddCamera::Request& req,
+                 imgui_ros_msgs::AddCamera::Response& res);
   std::map<std::string, std::shared_ptr<Camera> > cameras_;
 
   ros::ServiceServer add_cube_camera_;
-  void addCubeCamera(const std::shared_ptr<imgui_ros::AddCubeCamera::Request> req,
-                  std::shared_ptr<imgui_ros::AddCubeCamera::Response> res);
+  void addCubeCamera(imgui_ros_msgs::AddCubeCamera::Request& req,
+                     imgui_ros_msgs::AddCubeCamera::Response& res);
   std::map<std::string, std::shared_ptr<CubeCamera> > cube_cameras_;
 
   ros::ServiceServer add_projector_;
-  void addProjector(const std::shared_ptr<imgui_ros::AddProjector::Request> req,
-                  std::shared_ptr<imgui_ros::AddProjector::Response> res);
+  void addProjector(imgui_ros_msgs::AddProjector::Request& req,
+                    imgui_ros_msgs::AddProjector::Response& res);
   std::map<std::string, std::shared_ptr<Projector> > projectors_;
 
   ros::ServiceServer add_shaders_;
-  void addShaders(const std::shared_ptr<imgui_ros::AddShaders::Request> req,
-                  std::shared_ptr<imgui_ros::AddShaders::Response> res);
+  void addShaders(imgui_ros_msgs::AddShaders::Request& req,
+                  imgui_ros_msgs::AddShaders::Response& res);
   std::map<std::string, std::shared_ptr<ShaderSet> > shader_sets_;
 
   bool updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_ptr<Shape> shape);
 
   ros::ServiceServer add_texture_;
-  void addTexture(const std::shared_ptr<imgui_ros::AddTexture::Request> req,
-                  std::shared_ptr<imgui_ros::AddTexture::Response> res);
+  void addTexture(const std::shared_ptr<imgui_ros_msgs::AddTexture::Request> req,
+                  std::shared_ptr<imgui_ros_msgs::AddTexture::Response> res);
 
   ros::ServiceServer add_shape_;
-  void addShape(const imgui_ros::AddShape::Request& req,
-                imgui_ros::AddShape::Response& res);
-  void texturedShapeCallback(const imgui_ros::TexturedShape& msg);
-  ros::Subscription<imgui_ros::TexturedShape>::SharedPtr textured_shape_sub_;
-  bool addShape2(const imgui_ros::TexturedShape::SharedPtr msg, std::string& message);
+  void addShape(const imgui_ros_msgs::AddShape::Request& req,
+                imgui_ros_msgs::AddShape::Response& res);
+  void texturedShapeCallback(const imgui_ros_msgs::TexturedShape::ConstPtr& msg);
+  ros::Subscriber textured_shape_sub_;
+  bool addShape2(const imgui_ros_msgs::TexturedShape::ConstPtr& msg, std::string& message);
   // TODO(lucasw) it would be nice if the received TexturedShape
   // could be passed into opengl directly, which it probably could be made
   // to do, but for now interpret it on reception into local class.
@@ -226,7 +227,8 @@ protected:
   std::string name_;
 
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-  std::weak_ptr<ros::Node> node_;
+  // std::weak_ptr<ros::NodeHandle> nh_;
+  ros::NodeHandle* nh_ = nullptr;
 
   std::shared_ptr<ImageTransfer> image_transfer_;
   std::map<std::string, std::shared_ptr<RosImage> > textures_;

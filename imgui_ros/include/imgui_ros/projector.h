@@ -108,7 +108,8 @@ struct Projector {
   GLuint shadow_framebuffer_ = 0;
   GLuint shadow_depth_texture_ = 0;
 
-  std::weak_ptr<ros::Node> node_;
+  // is a NodeHandle needed?
+  // std::weak_ptr<ros::Node> node_;
 };
 
 }  // namespace imgui_ros

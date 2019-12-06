@@ -48,7 +48,9 @@ using std::placeholders::_2;
 namespace imgui_ros
 {
 constexpr std::array<GLuint, 3> Shape::draw_modes_;
-
+// A 3D shape with textures
+// For more textures a more complex object would need to be a composite
+// of multiple Shapes.
 Shape::Shape(const std::string& name, const std::string& frame_id,
     const std::string& texture_name,
     const std::string& shininess_texture_name,

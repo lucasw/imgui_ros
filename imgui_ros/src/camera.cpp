@@ -45,12 +45,15 @@ using std::placeholders::_2;
 namespace imgui_ros
 {
 // TODO(lucasw) 'Camera' -> 'TextureCamera'
+// This renders a view from a given tf frame in the viz3d world
+// a copies it to a texture (which then can be separately published as a
+// ROS Image, or used as a texture on 3d objects.
 Camera::Camera(const std::string name,
     const std::string frame_id,
     const std::string header_frame_id,
     const double aov_y,
     const double aov_x,
-    ros::NodeHandle& nh) :
+    ros::NodeHandle* nh) :
     name_(name),
     frame_id_(frame_id),
     header_frame_id_(header_frame_id),
@@ -60,23 +63,23 @@ Camera::Camera(const std::string name,
   if (header_frame_id_ == "") {
     header_frame_id_ = frame_id_;
   }
-  RCLCPP_INFO(node->get_logger(), "creating camera %s, frame %s, aov y %0.1f, x %0.1f",
+  ROS_INFO("creating camera %s, frame %s, aov y %0.1f, x %0.1f",
       name.c_str(), frame_id_.c_str(), aov_y, aov_x);
 }
 
 void Camera::init(const size_t width, const size_t height,
     const std::string& texture_name, const std::string& topic,
     const bool ros_pub,
-    ros::NodeHandle& nh,
+    ros::NodeHandle* nh,
     std::shared_ptr<ImageTransfer> image_transfer)
 {
-  RCLCPP_DEBUG(node->get_logger(), "regular camera");
+  ROS_DEBUG("regular camera");
   const bool sub_not_pub = false;
   image_ = std::make_shared<RosImage>(texture_name, topic, sub_not_pub, ros_pub,
       node, image_transfer);
   {
     // node is bad
-    // RCLCPP_INFO(node->get_logger(), "creating camera %s %d %d", name, width, height);
+    // ROS_INFO("creating camera %s %d %d", name, width, height);
     image_->width_ = width;
     image_->height_ = height;
     image_->header_frame_id_ = header_frame_id_;
@@ -138,7 +141,7 @@ void Camera::init(const size_t width, const size_t height,
       ss << name_ << " framebuffer is not complete " << glGetError();
       throw std::runtime_error(ss.str());
     } else {
-      RCLCPP_INFO(node->get_logger(), "camera '%s' framebuffer setup complete, fb %d, depth %d, tex id %d",
+      ROS_INFO("camera '%s' framebuffer setup complete, fb %d, depth %d, tex id %d",
           name_.c_str(), frame_buffer_, depth_buffer_, image_->texture_id_);
     }
 
@@ -152,7 +155,7 @@ void Camera::init(const size_t width, const size_t height,
     throw std::runtime_error(msg);
   }
 
-  camera_info_pub_ = node->create_publisher<sensor_msgs::CameraInfo>(topic + "/camera_info");
+  camera_info_pub_ = nh->advertise<sensor_msgs::CameraInfo>(topic + "/camera_info", 3);
 }
 
 Camera::~Camera()

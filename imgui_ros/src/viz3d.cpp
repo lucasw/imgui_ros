@@ -277,11 +277,11 @@ Viz3D::Viz3D(const std::string name,
     const std::string topic,
     std::shared_ptr<ImGuiImplOpenGL3> renderer,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    ros::NodeHandle& nh,
+    ros::NodeHandle* nh,
     std::shared_ptr<ImageTransfer> image_transfer) :
     Window(name),
     tf_buffer_(tf_buffer),
-    node_(node),
+    nh_(nh),
     image_transfer_(image_transfer)
 {
   setSettings(ImVec2(0, 200), ImVec2(400, 400), 0.0, false);
@@ -308,8 +308,7 @@ Viz3D::Viz3D(const std::string name,
   //     "map", "viewer_camera",
   //     0.0, 0.0, tf_buffer_, node);
 
-  textured_shape_sub_ = node->create_subscription<imgui_ros::TexturedShape>(topic,
-        std::bind(&Viz3D::texturedShapeCallback, this, _1));
+  textured_shape_sub_ = nh_->subscribe(topic, &Viz3D::texturedShapeCallback, this);
 
   texture_unit_["Texture"] = 0;
   texture_unit_["shininess_texture"] = 1;
@@ -320,18 +319,18 @@ Viz3D::Viz3D(const std::string name,
     shadow_texture_unit_[i] = base_tex_ind + MAX_PROJECTORS + i;
   }
 
-  add_camera_ = node->create_service<imgui_ros::AddCamera>("add_camera",
-      std::bind(&Viz3D::addCamera, this, _1, _2));
-  add_cube_camera_ = node->create_service<imgui_ros::AddCubeCamera>("add_cube_camera",
-      std::bind(&Viz3D::addCubeCamera, this, _1, _2));
-  add_projector_ = node->create_service<imgui_ros::AddProjector>("add_projector",
-      std::bind(&Viz3D::addProjector, this, _1, _2));
-  add_shaders_ = node->create_service<imgui_ros::AddShaders>("add_shaders",
-      std::bind(&Viz3D::addShaders, this, _1, _2));
-  add_texture_ = node->create_service<imgui_ros::AddTexture>("add_texture",
-      std::bind(&Viz3D::addTexture, this, _1, _2));
-  add_shape_ = node->create_service<imgui_ros::AddShape>("add_shape",
-      std::bind(&Viz3D::addShape, this, _1, _2));
+  add_camera_ = nh_->advertiseService<imgui_ros_msgs::AddCamera>("add_camera",
+      &Viz3D::addCamera, this);
+  add_cube_camera_ = nh_->advertiseService<imgui_ros_msgs::AddCubeCamera>("add_cube_camera",
+      &Viz3D::addCubeCamera, this);
+  add_projector_ = nh_->advertiseService<imgui_ros_msgs::AddProjector>("add_projector",
+      &Viz3D::addProjector, this);
+  add_shaders_ = nh_->advertiseService<imgui_ros_msgs::AddShaders>("add_shaders",
+      &Viz3D::addShaders, this);
+  add_texture_ = nh_->advertiseService<imgui_ros_msgs::AddTexture>("add_texture",
+      &Viz3D::addTexture, this);
+  add_shape_ = nh_->advertiseService<imgui_ros_msgs::AddShape>("add_shape",
+      &Viz3D::addShape, this);
   #if 0
   test_shape_ = std::make_shared<Shape>();
   makeTestShape(test_shape_);
@@ -347,57 +346,61 @@ Viz3D::~Viz3D()
   image_transfer_ = nullptr;
 }
 
-void Viz3D::addCamera(const std::shared_ptr<imgui_ros::AddCamera::Request> req,
-                      std::shared_ptr<imgui_ros::AddCamera::Response> res)
+void Viz3D::addCamera(imgui_ros_msgs::AddCamera::Request& req,
+                      imgui_ros_msgs::AddCamera::Response& res)
 {
+#if 0
   auto node = node_.lock();
   if (!node) {
-    res->message = "couldn't get node for camera '" + req->camera.name + "' '" +
-        req->camera.texture_name + "'";
-    res->success = false;
+    res.message = "couldn't get node for camera '" + req.camera.name + "' '" +
+        req.camera.texture_name + "'";
+    res.success = false;
     return;
   }
+#endif
   try {
-    auto render_texture = std::make_shared<Camera>(req->camera.name,
-        req->camera.header.frame_id,
-        req->camera.header_frame_id,
-        req->camera.aov_y,
-        req->camera.aov_x,
-        node);
-    render_texture->skip_max_ = req->camera.skip;
+    auto render_texture = std::make_shared<Camera>(req.camera.name,
+        req.camera.header.frame_id,
+        req.camera.header_frame_id,
+        req.camera.aov_y,
+        req.camera.aov_x,
+        nh_);
+    render_texture->skip_max_ = req.camera.skip;
     render_texture->init(
-        req->camera.width, req->camera.height,
-        req->camera.texture_name,
-        req->camera.topic,
-        req->camera.ros_pub,
-        node,
+        req.camera.width, req.camera.height,
+        req.camera.texture_name,
+        req.camera.topic,
+        req.camera.ros_pub,
+        nh_,
         image_transfer_);
-    render_texture->near_ = req->camera.near;
-    render_texture->far_ = req->camera.far;
+    render_texture->near_ = req.camera.near;
+    render_texture->far_ = req.camera.far;
 
 
-    textures_[req->camera.texture_name] = render_texture->image_;
-    cameras_[req->camera.name] = render_texture;
+    textures_[req.camera.texture_name] = render_texture->image_;
+    cameras_[req.camera.name] = render_texture;
 
   } catch (std::runtime_error& ex) {
-    res->message = ex.what();
-    res->success = false;
+    res.message = ex.what();
+    res.success = false;
     return;
   }
-  res->message = "added camera '" + req->camera.name + "' '" + req->camera.texture_name + "'";
-  res->success = true;
+  res.message = "added camera '" + req.camera.name + "' '" + req.camera.texture_name + "'";
+  res.success = true;
 }
 
-void Viz3D::addCubeCamera(const std::shared_ptr<imgui_ros::AddCubeCamera::Request> req,
-                      std::shared_ptr<imgui_ros::AddCubeCamera::Response> res)
+void Viz3D::addCubeCamera(imgui_ros_msgs::AddCubeCamera::Request& req,
+                          imgui_ros_msgs::AddCubeCamera::Response& res)
 {
+#if 0
   auto node = node_.lock();
   if (!node) {
-    res->message = "couldn't get node for camera '" + req->camera.name + "' '" +
-        req->camera.texture_name + "'";
-    res->success = false;
+    res.message = "couldn't get node for camera '" + req.camera.name + "' '" +
+        req.camera.texture_name + "'";
+    res.success = false;
     return;
   }
+#endif
   try {
 
   #if 0
@@ -415,68 +418,70 @@ void Viz3D::addCubeCamera(const std::shared_ptr<imgui_ros::AddCubeCamera::Reques
   #endif
 
     auto cube_camera = std::make_shared<CubeCamera>(
-        req->camera.name,
-        req->camera.header.frame_id,
-        req->camera.header_frame_id,
-        req->camera.aov_y,
-        req->camera.aov_x,
-        node);
+        req.camera.name,
+        req.camera.header.frame_id,
+        req.camera.header_frame_id,
+        req.camera.aov_y,
+        req.camera.aov_x,
+        nh_);
     cube_camera->init(
-        req->camera.width, req->camera.height,
-        req->face_width,
-        req->camera.texture_name,
-        req->camera.topic,
-        req->camera.ros_pub,
-        node,
+        req.camera.width, req.camera.height,
+        req.face_width,
+        req.camera.texture_name,
+        req.camera.topic,
+        req.camera.ros_pub,
+        nh_,
         image_transfer_);
-    cube_camera->near_ = req->camera.near;
-    cube_camera->far_ = req->camera.far;
-    textures_[req->camera.texture_name] = cube_camera->image_;
-    cube_cameras_[req->camera.name] = cube_camera;
+    cube_camera->near_ = req.camera.near;
+    cube_camera->far_ = req.camera.far;
+    textures_[req.camera.texture_name] = cube_camera->image_;
+    cube_cameras_[req.camera.name] = cube_camera;
   } catch (std::runtime_error& ex) {
-    res->message = ex.what();
-    res->success = false;
+    res.message = ex.what();
+    res.success = false;
     return;
   }
-  res->message = "added camera '" + req->camera.name + "' '" + req->camera.texture_name + "'";
-  res->success = true;
+  res.message = "added camera '" + req.camera.name + "' '" + req.camera.texture_name + "'";
+  res.success = true;
 }
 
 
-void Viz3D::addProjector(const std::shared_ptr<imgui_ros::AddProjector::Request> req,
-                         std::shared_ptr<imgui_ros::AddProjector::Response> res)
+void Viz3D::addProjector(imgui_ros_msgs::AddProjector::Request& req,
+                         imgui_ros_msgs::AddProjector::Response& res)
 {
-  const std::string name = req->projector.camera.name;
+  const std::string name = req.projector.camera.name;
   // const std::string texture_name = texture_name; -> std::bad_alloc - why compile at all?
-  const std::string texture_name = req->projector.camera.texture_name;
+  const std::string texture_name = req.projector.camera.texture_name;
+#if 0
   auto node = node_.lock();
   if (!node) {
-    res->message = "couldn't get node for projector '" + name + "' '" +
+    res.message = "couldn't get node for projector '" + name + "' '" +
         texture_name + "'";
-    res->success = false;
+    res.success = false;
     return;
   }
+#endif
 
-  if (req->projector.remove) {
+  if (req.projector.remove) {
     if (projectors_.count(name) < 1) {
-      res->message = "projector doesn't exist to be removed: '" + name + "'";
-      res->success = true;
+      res.message = "projector doesn't exist to be removed: '" + name + "'";
+      res.success = true;
       return;
     }
     projectors_.erase(name);
-    res->message = "projector removed: '" + name + "'";
-    res->success = true;
+    res.message = "projector removed: '" + name + "'";
+    res.success = true;
     return;
   }
 
   if ((projectors_.count(name) < 1) &&
       (projectors_.size() >= MAX_PROJECTORS)) {
-    res->message = "only supporting " + std::to_string(MAX_PROJECTORS)
+    res.message = "only supporting " + std::to_string(MAX_PROJECTORS)
         + " currently, need to remove any existing: ";
     for (auto projector_pair : projectors_) {
-      res->message += projector_pair.second->name_ + ", ";
+      res.message += projector_pair.second->name_ + ", ";
     }
-    res->success = false;
+    res.success = false;
     return;
   }
 
@@ -484,64 +489,64 @@ void Viz3D::addProjector(const std::shared_ptr<imgui_ros::AddProjector::Request>
     auto projector = std::make_shared<Projector>(
         name,
         texture_name,
-        req->projector.camera.header.frame_id,
-        req->projector.camera.aov_y,
-        req->projector.camera.aov_x,
-        req->projector.max_range,
-        req->projector.constant_attenuation,
-        req->projector.linear_attenuation,
-        req->projector.quadratic_attenuation,
-        node);
-    projector->near_ = req->projector.camera.near;
-    projector->far_ = req->projector.camera.far;
+        req.projector.camera.header.frame_id,
+        req.projector.camera.aov_y,
+        req.projector.camera.aov_x,
+        req.projector.max_range,
+        req.projector.constant_attenuation,
+        req.projector.linear_attenuation,
+        req.projector.quadratic_attenuation,
+        nh_);
+    projector->near_ = req.projector.camera.near;
+    projector->far_ = req.projector.camera.far;
     projectors_[name] = projector;
   } catch (std::runtime_error& ex) {
-    res->message = ex.what();
-    res->success = false;
+    res.message = ex.what();
+    res.success = false;
     return;
   }
-  res->message = "added projector '" + name + "', texture '" + texture_name + "'";
-  res->success = true;
+  res.message = "added projector '" + name + "', texture '" + texture_name + "'";
+  res.success = true;
 }
 
-void Viz3D::addShaders(const std::shared_ptr<imgui_ros::AddShaders::Request> req,
-                       std::shared_ptr<imgui_ros::AddShaders::Response> res)
+void Viz3D::addShaders(imgui_ros_msgs::AddShaders::Request& req,
+                       imgui_ros_msgs::AddShaders::Response& res)
 {
-  res->success = true;
-  if (req->remove) {
-    if (shader_sets_.count(req->name) > 0) {
-      shader_sets_.erase(req->name);
+  res.success = true;
+  if (req.remove) {
+    if (shader_sets_.count(req.name) > 0) {
+      shader_sets_.erase(req.name);
       return;
     }
     return;
   }
 
-  auto shaders = std::make_shared<ShaderSet>(req->name, req->vertex,
-      req->geometry, req->fragment);
+  auto shaders = std::make_shared<ShaderSet>(req.name, req.vertex,
+      req.geometry, req.fragment);
 
   std::lock_guard<std::mutex> lock(mutex_);
-  if (!shaders->init(glsl_version_string_, res->message)) {
-    res->success = false;
+  if (!shaders->init(glsl_version_string_, res.message)) {
+    res.success = false;
     return;
   }
 
   for (auto shape_pair : shapes_) {
     auto shape = shape_pair.second;
     if (!shape) {
-      res->message = "bad shape " + shape_pair.first;
-      res->success = false;
+      res.message = "bad shape " + shape_pair.first;
+      res.success = false;
       continue;
     }
     if (!updateShaderShapes(shaders, shape)) {
-      res->message = "couldn't update shape " + shape->name_ + " vaos with new shaders ";
-      res->success = false;
+      res.message = "couldn't update shape " + shape->name_ + " vaos with new shaders ";
+      res.success = false;
       return;
     }
   }
 
-  res->message = "successfully added shaders `" + shaders->name_ + "'";
+  res.message = "successfully added shaders `" + shaders->name_ + "'";
 
-  shader_sets_[req->name] = shaders;
+  shader_sets_[req.name] = shaders;
 }
 
 // need to update the connnection between the shader and the shape
@@ -594,53 +599,53 @@ bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_p
   return true;
 }
 
-void Viz3D::addTexture(const std::shared_ptr<imgui_ros::AddTexture::Request> req,
-                       std::shared_ptr<imgui_ros::AddTexture::Response> res)
+void Viz3D::addTexture(imgui_ros_msgs::AddTexture::Request& req,
+                       imgui_ros_msgs::AddTexture::Response& res)
 {
-  res->success = true;
-  if (req->remove) {
-    if (textures_.count(req->name) > 0) {
-      textures_.erase(req->name);
+  res.success = true;
+  if (req.remove) {
+    if (textures_.count(req.name) > 0) {
+      textures_.erase(req.name);
       return;
     }
     return;
   }
 
-  auto texture = std::make_shared<RosImage>(req->name,
-    std::make_shared<sensor_msgs::Image>(req->image));
+  auto texture = std::make_shared<RosImage>(req.name,
+    std::make_shared<sensor_msgs::Image>(req.image));
   texture->draw_texture_controls_ = true;
-  // texture->imageCallback(std::make_shared<sensor_msgs::Image>(req->image));
-  texture->wrap_s_ind_ = req->wrap_s;
-  texture->wrap_t_ind_ = req->wrap_t;
+  // texture->imageCallback(std::make_shared<sensor_msgs::Image>(req.image));
+  texture->wrap_s_ind_ = req.wrap_s;
+  texture->wrap_t_ind_ = req.wrap_t;
   texture->updateTexture();
-  textures_[req->name] = texture;
+  textures_[req.name] = texture;
 }
 
-void Viz3D::addShape(const std::shared_ptr<imgui_ros::AddShape::Request> req,
-                std::shared_ptr<imgui_ros::AddShape::Response> res)
+void Viz3D::addShape(imgui_ros_msgs::AddShape::Request& req,
+                     imgui_ros_msgs::AddShape::Response& res)
 {
-  res->success = true;
-  for (auto textured_shape : req->shapes) {
-    auto shape = std::make_shared<imgui_ros::TexturedShape>(textured_shape);
-    if (!addShape2(shape, res->message)) {
-      res->success = false;
+  res.success = true;
+  for (auto textured_shape : req.shapes) {
+    auto shape = std::make_shared<imgui_ros_msgs::TexturedShape>(textured_shape);
+    if (!addShape2(shape, res.message)) {
+      res.success = false;
     }
-    res->message += " " + shape->name;
+    res.message += " " + shape->name;
   }
   return;
 }
 
 // TODO(lucasw) Shape -> Mesh?
-void Viz3D::texturedShapeCallback(const imgui_ros::TexturedShape::SharedPtr msg)
+void Viz3D::texturedShapeCallback(const imgui_ros_msgs::TexturedShape::ConstPtr msg)
 {
   std::string message;
   addShape2(msg, message);
   // TODO(lucasw) make a macro or function for this
   // std::shared_ptr<ros::Node> node = node_.lock();
-  // RCLCPP_INFO(node->get_logger(), message);
+  // ROS_INFO(message);
 }
 
-bool Viz3D::addShape2(const imgui_ros::TexturedShape::SharedPtr msg, std::string& message)
+bool Viz3D::addShape2(const imgui_ros_msgs::TexturedShape::ConstPtr& msg, std::string& message)
 {
   if (msg->name == "") {
     message += "mesh needs name";
@@ -704,10 +709,12 @@ bool Viz3D::addShape2(const imgui_ros::TexturedShape::SharedPtr msg, std::string
   // TODO(lucasw) doesn't 'depth' need this update also?
   if (shader_sets_.size() < 1) {
     // this isn't a failure, just a race condition probably
+#if 0
     auto node = node_.lock();
     if (node) {
-      RCLCPP_WARN(node->get_logger(), "no shaders yet, will retry when one is set");
+      ROS_WARN("no shaders yet, will retry when one is set");
     }
+#endif
   } else {
     // TODO(lucasw) for now just use the last shader set
     for (auto shader_pair : shader_sets_) {

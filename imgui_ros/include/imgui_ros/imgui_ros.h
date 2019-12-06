@@ -33,7 +33,7 @@
 
 #include <imgui.h>
 #include <imgui_ros_msgs/AddWindow.h>
-// #include <imgui_ros/viz3d.h>
+#include <imgui_ros/viz3d.h>
 #include <imgui_ros/image_transfer.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/window.h>
@@ -92,13 +92,13 @@ private:
 #if 0
   ros::Clock::SharedPtr clock_;
   // std::shared_ptr<ros::Node> tf_node_;
-  std::shared_ptr<tf2_ros::TransformListener> tfl_;
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+#endif
+  tf2_ros::TransformListener tfl_;
+  tf2_ros::Buffer tf_buffer_;
   // TODO(lucasw) maybe a non shared pointer works better
   // tf2_ros::Buffer buffer_;
 
-  ros::Publisher<tf2_msgs::TFMessage>::SharedPtr tf_pub_;
-#endif
+  ros::Publisher tf_pub_;
   std::string name_ = "imgui_ros";
   int width_ = 1280;
   int height_ = 720;
@@ -114,9 +114,9 @@ private:
   void drawStats(ros::Time stamp);
 
   std::shared_ptr<ImGuiImplOpenGL3> imgui_impl_opengl3_;
-#if 0
   std::shared_ptr<Viz3D> viz3d;
 
+#if 0
   std::map<std::string, ros::AsyncParametersClient::SharedPtr> parameters_clients_;
   // node_name, widget_name
   std::map<std::string, std::map<std::string, std::shared_ptr<Param> > > param_widgets_;

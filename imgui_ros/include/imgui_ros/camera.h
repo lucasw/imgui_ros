@@ -35,7 +35,7 @@
 #include <imgui.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
-#include <imgui_ros/AddCamera.h>
+#include <imgui_ros_msgs/AddCamera.h>
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -69,12 +69,14 @@ struct Camera {
       const std::string frame_id,
       const std::string header_frame_id,
       const double aov_y,
-      const double aov_x);
+      const double aov_x,
+      ros::NodeHandle* nh);
   ~Camera();
 
   void init(const size_t width, const size_t height,
       const std::string& texture_name, const std::string& topic,
       const bool ros_pub,
+      ros::NodeHandle* nh,
       std::shared_ptr<ImageTransfer> image_transfer);
   virtual void draw();
   // void render();
@@ -89,7 +91,7 @@ struct Camera {
   tf2::Stamped<tf2::Transform> stamped_transform_;
   std::shared_ptr<RosImage> image_;
 
-  ros::Publisher<sensor_msgs::CameraInfo>::SharedPtr camera_info_pub_;
+  ros::Publisher camera_info_pub_;
   void publishCameraInfo(const ros::Time& stamp);
 
   ImVec4 clear_color_ = ImVec4(0.5, 0.5, 0.5, 1.0);

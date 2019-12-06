@@ -71,6 +71,13 @@ add_library(imgui SHARED
 set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPILE_FLAGS -Wno-pedantic)
 
 add_library(imguiros SHARED
+  src/camera.cpp
+  src/cube_camera.cpp
+  src/projector.cpp
+  src/shaders.cpp
+  src/surface.cpp
+  src/viz3d.cpp
+
   src/dynamic_reconfigure.cpp
   src/graph.cpp
   src/image.cpp
@@ -82,23 +89,16 @@ add_library(imguiros SHARED
 
 if(false)
 add_library(imguiros SHARED
-  src/camera.cpp
-  src/cube_camera.cpp
-  src/imgui_ros.cpp
   src/param.cpp
   src/pub.cpp
-  src/projector.cpp
   src/point_cloud.cpp
-  src/shaders.cpp
   src/sub.cpp
-  src/surface.cpp
   # TODO(lucasw) maybe there should be a separate test library?
   src/test/generate_pointcloud2.cpp
   src/tf.cpp
   src/utility.cpp
   src/viz2d.cpp
   # src/imgui_impl_opengl3.cpp
-  src/viz3d.cpp
 )
 endif(false)
 

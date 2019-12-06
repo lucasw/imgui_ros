@@ -72,7 +72,8 @@
 namespace imgui_ros
 {
 
-ImguiRos::ImguiRos()  // :
+ImguiRos::ImguiRos() :
+  tf_listener_(tf_buffer_)
   // clock_(std::make_shared<ros::Clock>(RCL_SYSTEM_TIME)),
   // buffer_(clock_)
 {
@@ -82,19 +83,20 @@ ImguiRos::ImguiRos()  // :
 void ImguiRos::postInit()
 {
   ROS_INFO_STREAM("imgui ros init");
-#if 0 
+#if 0
   internal_pub_sub::Node::postInit(core);
 #endif
   image_transfer_ = std::make_shared<ImageTransfer>();
   // image_transfer_->init("image_transfer", get_namespace());
   image_transfer_->postInit();
+
+  tf_pub_ = nh_.advertise<tf2_msgs::TFMessage>("/tf", 10);
 #if 0
   #ifdef RUN_IMAGE_TRANSFER_SEPARATE_THREAD
   ros_io_thread_ = std::thread(
       std::bind(&ImguiRos::runNodeSingleThreaded, this, image_transfer_));
   #endif
 
-  tf_pub_ = create_publisher<tf2_msgs::TFMessage>("/tf");
   clock_ = std::make_shared<ros::Clock>(RCL_SYSTEM_TIME);
   #if 1
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(clock_);
@@ -149,7 +151,7 @@ void ImguiRos::postInit()
 ImguiRos::~ImguiRos()
 {
   ROS_INFO_STREAM("shutting down imgui_ros");
-#if 0
+#if 1
   #ifdef RUN_IMAGE_TRANSFER_SEPARATE_THREAD
   ros_io_thread_.join();
   #endif
@@ -279,16 +281,17 @@ void ImguiRos::glInit()
   // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f,
   // NULL, io.Fonts->GetGlyphRangesJapanese()); IM_ASSERT(font != NULL);
 
-#if 0
+#if 1
   const std::string viz3d_name = "main render window";
   viz3d = std::make_shared<Viz3D>(viz3d_name, "shapes",
       imgui_impl_opengl3_,
       tf_buffer_,
-      shared_from_this(),
+      &nh_,
       image_transfer_);
 
   windows_[viz3d_name] = viz3d;
 
+#if 0
   try {
     get_parameter_or("red", viz3d->clear_color_.x, viz3d->clear_color_.x);
     get_parameter_or("green", viz3d->clear_color_.y, viz3d->clear_color_.y);
@@ -297,6 +300,7 @@ void ImguiRos::glInit()
   } catch (ros::ParameterTypeException& ex) {
     ROS_ERROR_STREAM(ex.what());
   }
+#endif
 #endif
   init_ = true;  // viz3d->initialized_;
 }
@@ -917,7 +921,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   // TODO(lucasw) or wait until after GetDrawData() to unlock?
   }
 
-#if 0
+#if 1
   viz3d->render_message_.str("");
   // Need to render these before using them in the regular viz3d render below
   viz3d->renderShadows();
@@ -932,7 +936,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   glViewport(0, 0, (int)display_size_x, (int)display_size_y);
   checkGLError(__FILE__, __LINE__);
   glClearColor(0.1, 0.2, 0.3, 1.0);
-#if 0
+#if 1
   glClearColor(
       viz3d->clear_color_.x,
       viz3d->clear_color_.y,
@@ -945,7 +949,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   // bgfx does the 3D render after imgui render
 
   checkGLError(__FILE__, __LINE__);
-#if 0
+#if 1
   if (true) {
     const int fb_width = display_size_x * ImGui::GetIO().DisplayFramebufferScale.x;
     const int fb_height = display_size_y * ImGui::GetIO().DisplayFramebufferScale.y;
@@ -962,7 +966,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   SDL_GL_SwapWindow(sdl_window_);
   ////////////////////////////////////////////////////////////////////
 
-#if 0
+#if 1
   {
     // need to do this out of the main rendering above
     viz3d->renderCubeCameras();
@@ -980,6 +984,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
     tf_pub_->publish(tfs);
   }
 
+#if 0
   // update all parameters that need to be updated
   for (auto& param_widgets_pair : param_widgets_) {
     const std::string node_name = param_widgets_pair.first;

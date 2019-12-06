@@ -36,14 +36,14 @@
 #include <imgui_ros/camera.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
-#include <imgui_ros/TexturedShape.h>
 #include <imgui_ros/projector.h>
 #include <imgui_ros/surface.h>
-#include <imgui_ros/AddCamera.h>
-#include <imgui_ros/AddProjector.h>
-#include <imgui_ros/AddShaders.hpp>
-#include <imgui_ros/AddShape.h>
-#include <imgui_ros/AddTexture.hpp>
+#include <imgui_ros_msgs/AddCamera.h>
+#include <imgui_ros_msgs/AddProjector.h>
+#include <imgui_ros_msgs/AddShaders.h>
+#include <imgui_ros_msgs/AddShape.h>
+#include <imgui_ros_msgs/AddTexture.h>
+#include <imgui_ros_msgs/TexturedShape.h>
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>

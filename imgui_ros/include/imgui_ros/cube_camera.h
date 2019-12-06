@@ -36,7 +36,7 @@
 #include <imgui_ros/camera.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/image.h>
-#include <imgui_ros/AddCamera.h>
+#include <imgui_ros_msgs/AddCamera.h>
 // #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -90,14 +90,14 @@ struct CubeCamera : public Camera {
       const std::string& frame_id,
       const std::string& header_frame_id,
       const float aox_y, const float aov_x,
-      ros::NodeHandle& nh);
+      ros::NodeHandle* nh);
   ~CubeCamera();
   void init(
       const size_t width, const size_t height,
       const size_t face_width,
       const std::string& texture_name, const std::string& topic,
       const bool ros_pub,
-      ros::NodeHandle& nh,
+      ros::NodeHandle* nh,
       std::shared_ptr<ImageTransfer> image_transfer);
   virtual void draw();
   // void render();
