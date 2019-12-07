@@ -188,33 +188,33 @@ protected:
   std::string glsl_version_string_ = "";
 
   ros::ServiceServer add_camera_;
-  void addCamera(imgui_ros_msgs::AddCamera::Request& req,
+  bool addCamera(imgui_ros_msgs::AddCamera::Request& req,
                  imgui_ros_msgs::AddCamera::Response& res);
   std::map<std::string, std::shared_ptr<Camera> > cameras_;
 
   ros::ServiceServer add_cube_camera_;
-  void addCubeCamera(imgui_ros_msgs::AddCubeCamera::Request& req,
+  bool addCubeCamera(imgui_ros_msgs::AddCubeCamera::Request& req,
                      imgui_ros_msgs::AddCubeCamera::Response& res);
   std::map<std::string, std::shared_ptr<CubeCamera> > cube_cameras_;
 
   ros::ServiceServer add_projector_;
-  void addProjector(imgui_ros_msgs::AddProjector::Request& req,
+  bool addProjector(imgui_ros_msgs::AddProjector::Request& req,
                     imgui_ros_msgs::AddProjector::Response& res);
   std::map<std::string, std::shared_ptr<Projector> > projectors_;
 
   ros::ServiceServer add_shaders_;
-  void addShaders(imgui_ros_msgs::AddShaders::Request& req,
+  bool addShaders(imgui_ros_msgs::AddShaders::Request& req,
                   imgui_ros_msgs::AddShaders::Response& res);
   std::map<std::string, std::shared_ptr<ShaderSet> > shader_sets_;
 
   bool updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_ptr<Shape> shape);
 
   ros::ServiceServer add_texture_;
-  void addTexture(const std::shared_ptr<imgui_ros_msgs::AddTexture::Request> req,
-                  std::shared_ptr<imgui_ros_msgs::AddTexture::Response> res);
+  bool addTexture(imgui_ros_msgs::AddTexture::Request& req,
+                  imgui_ros_msgs::AddTexture::Response& res);
 
   ros::ServiceServer add_shape_;
-  void addShape(const imgui_ros_msgs::AddShape::Request& req,
+  bool addShape(imgui_ros_msgs::AddShape::Request& req,
                 imgui_ros_msgs::AddShape::Response& res);
   void texturedShapeCallback(const imgui_ros_msgs::TexturedShape::ConstPtr& msg);
   ros::Subscriber textured_shape_sub_;

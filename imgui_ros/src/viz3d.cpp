@@ -284,7 +284,7 @@ Viz3D::Viz3D(const std::string name,
     nh_(nh),
     image_transfer_(image_transfer)
 {
-  setSettings(ImVec2(0, 200), ImVec2(400, 400), 0.0, false);
+  setSettings(ImVec2(0, 200), ImVec2(400, 400), false, 0.0, false);
   // render_message_.precision(2);
   // render_message_.fill('0');
 
@@ -325,7 +325,7 @@ Viz3D::Viz3D(const std::string name,
       &Viz3D::addCubeCamera, this);
   add_projector_ = nh_->advertiseService<imgui_ros_msgs::AddProjector>("add_projector",
       &Viz3D::addProjector, this);
-  add_shaders_ = nh_->advertiseService<imgui_ros_msgs::AddShaders>("add_shaders",
+  add_shaders_ = nh_->advertiseService("add_shaders",
       &Viz3D::addShaders, this);
   add_texture_ = nh_->advertiseService<imgui_ros_msgs::AddTexture>("add_texture",
       &Viz3D::addTexture, this);
@@ -346,7 +346,7 @@ Viz3D::~Viz3D()
   image_transfer_ = nullptr;
 }
 
-void Viz3D::addCamera(imgui_ros_msgs::AddCamera::Request& req,
+bool Viz3D::addCamera(imgui_ros_msgs::AddCamera::Request& req,
                       imgui_ros_msgs::AddCamera::Response& res)
 {
 #if 0
@@ -387,9 +387,11 @@ void Viz3D::addCamera(imgui_ros_msgs::AddCamera::Request& req,
   }
   res.message = "added camera '" + req.camera.name + "' '" + req.camera.texture_name + "'";
   res.success = true;
+
+  return true;
 }
 
-void Viz3D::addCubeCamera(imgui_ros_msgs::AddCubeCamera::Request& req,
+bool Viz3D::addCubeCamera(imgui_ros_msgs::AddCubeCamera::Request& req,
                           imgui_ros_msgs::AddCubeCamera::Response& res)
 {
 #if 0
@@ -443,10 +445,12 @@ void Viz3D::addCubeCamera(imgui_ros_msgs::AddCubeCamera::Request& req,
   }
   res.message = "added camera '" + req.camera.name + "' '" + req.camera.texture_name + "'";
   res.success = true;
+
+  return true;
 }
 
 
-void Viz3D::addProjector(imgui_ros_msgs::AddProjector::Request& req,
+bool Viz3D::addProjector(imgui_ros_msgs::AddProjector::Request& req,
                          imgui_ros_msgs::AddProjector::Response& res)
 {
   const std::string name = req.projector.camera.name;
@@ -507,9 +511,10 @@ void Viz3D::addProjector(imgui_ros_msgs::AddProjector::Request& req,
   }
   res.message = "added projector '" + name + "', texture '" + texture_name + "'";
   res.success = true;
+  return true;
 }
 
-void Viz3D::addShaders(imgui_ros_msgs::AddShaders::Request& req,
+bool Viz3D::addShaders(imgui_ros_msgs::AddShaders::Request& req,
                        imgui_ros_msgs::AddShaders::Response& res)
 {
   res.success = true;
@@ -547,6 +552,8 @@ void Viz3D::addShaders(imgui_ros_msgs::AddShaders::Request& req,
   res.message = "successfully added shaders `" + shaders->name_ + "'";
 
   shader_sets_[req.name] = shaders;
+
+  return true;
 }
 
 // need to update the connnection between the shader and the shape
@@ -599,16 +606,16 @@ bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_p
   return true;
 }
 
-void Viz3D::addTexture(imgui_ros_msgs::AddTexture::Request& req,
+bool Viz3D::addTexture(imgui_ros_msgs::AddTexture::Request& req,
                        imgui_ros_msgs::AddTexture::Response& res)
 {
   res.success = true;
   if (req.remove) {
     if (textures_.count(req.name) > 0) {
       textures_.erase(req.name);
-      return;
+      return true;
     }
-    return;
+    return true;
   }
 
   auto texture = std::make_shared<RosImage>(req.name,
@@ -621,7 +628,7 @@ void Viz3D::addTexture(imgui_ros_msgs::AddTexture::Request& req,
   textures_[req.name] = texture;
 }
 
-void Viz3D::addShape(imgui_ros_msgs::AddShape::Request& req,
+bool Viz3D::addShape(imgui_ros_msgs::AddShape::Request& req,
                      imgui_ros_msgs::AddShape::Response& res)
 {
   res.success = true;
@@ -632,11 +639,11 @@ void Viz3D::addShape(imgui_ros_msgs::AddShape::Request& req,
     }
     res.message += " " + shape->name;
   }
-  return;
+  return true;
 }
 
 // TODO(lucasw) Shape -> Mesh?
-void Viz3D::texturedShapeCallback(const imgui_ros_msgs::TexturedShape::ConstPtr msg)
+void Viz3D::texturedShapeCallback(const imgui_ros_msgs::TexturedShape::ConstPtr& msg)
 {
   std::string message;
   addShape2(msg, message);
@@ -1069,14 +1076,14 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
   model_matrix = glm::mat4(1.0f);
   try {
     geometry_msgs::TransformStamped model_tf;
-    model_tf = tf_buffer_->lookupTransform(frame_id, child_frame_id, tf2::TimePointZero);
+    model_tf = tf_buffer_->lookupTransform(frame_id, child_frame_id, ros::Time(0));
     tf2::Stamped<tf2::Transform> model_stamped_transform;
     tf2::fromMsg(model_tf, model_stamped_transform);
     #if 0
     tf2::TimePoint time_out;
     // this is private, so doesn't work
     tf_buffer_->lookupTransformImpl(frame_id, child_frame_id,
-        tf2::TimePointZero, transform, time_out);
+        ros::Time(0), transform, time_out);
     #endif
     // render_message_ << ", frames: " << frame_id_ << " -> " << child_frame_id << "\n";
     glm::dmat4 model_matrix_double;
@@ -1230,13 +1237,13 @@ void Viz3D::renderShadows()
     try {
       geometry_msgs::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(frame_id_,
-          projector->frame_id_, tf2::TimePointZero);
+          projector->frame_id_, ros::Time(0));
       tf2::fromMsg(tf, projector->stamped_transform_);
       #if 0
       tf2::TimePoint time_out;
       // this is private, so doesn't work
       tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
-          tf2::TimePointZero, transform, time_out);
+          ros::Time(0), transform, time_out);
       #endif
       // render_message_ << ", frames: " << frame_id_ << " -> "
       //     << projector->frame_id_ << "\n";
@@ -1291,13 +1298,13 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
     try {
       geometry_msgs::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(frame_id_,
-          cube_camera->frame_id_, tf2::TimePointZero);
+          cube_camera->frame_id_, ros::Time(0));
       tf2::fromMsg(tf, cube_camera->stamped_transform_);
       #if 0
       tf2::TimePoint time_out;
       // this is private, so doesn't work
       tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
-          tf2::TimePointZero, transform, time_out);
+          ros::Time(0), transform, time_out);
       #endif
       // render_message_ << ", frames: " << frame_id_ << " -> "
       //     << cube_camera->frame_id_ << "\n";
@@ -1530,13 +1537,13 @@ void Viz3D::renderToTexture()
     try {
       geometry_msgs::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(frame_id_,
-          camera->frame_id_, tf2::TimePointZero);
+          camera->frame_id_, ros::Time(0));
       tf2::fromMsg(tf, camera->stamped_transform_);
       #if 0
       tf2::TimePoint time_out;
       // this is private, so doesn't work
       tf_buffer_->lookupTransformImpl(frame_id_, child_frame_id,
-          tf2::TimePointZero, transform, time_out);
+          ros::Time(0), transform, time_out);
       #endif
       // render_message_ << ", frames: " << frame_id_ << " -> "
       //    << camera->frame_id_ << "\n";

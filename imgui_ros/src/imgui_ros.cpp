@@ -981,7 +981,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
     }
   }
   if (tfs.transforms.size() > 0) {
-    tf_pub_->publish(tfs);
+    tf_pub_.publish(tfs);
   }
 #endif
 

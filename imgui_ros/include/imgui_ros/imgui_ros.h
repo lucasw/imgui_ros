@@ -93,7 +93,7 @@ private:
   ros::Clock::SharedPtr clock_;
   // std::shared_ptr<ros::Node> tf_node_;
 #endif
-  tf2_ros::TransformListener tfl_;
+  tf2_ros::TransformListener tf_listener_;
   tf2_ros::Buffer tf_buffer_;
   // TODO(lucasw) maybe a non shared pointer works better
   // tf2_ros::Buffer buffer_;

@@ -142,7 +142,7 @@ void CubeCamera::init(
     // TODO(lucasw) texture_name + std::to_string(face->dir_);
     std::shared_ptr<RosImage> image = std::make_shared<RosImage>(
         texture_name + "_face" + std::to_string(ind),
-        "", sub_not_pub, false, node);
+        "", sub_not_pub, false);
     image->min_filter_ind_ = 0;
     image->mag_filter_ind_ = 0;
     face->image_ = image;
@@ -151,12 +151,11 @@ void CubeCamera::init(
     // image->texture_id_ = cube_texture_id_;
     // TODO(lucasw) move into image class
     {
-      // node from weak_ptr is bad?
       // ROS_INFO("creating camera %s %d %d", name, width, height);
       image->width_ = face_width;
       image->height_ = face_width;
 
-      image->image_ = std::make_shared<sensor_msgs::Image>();
+      image->image_ = boost::make_shared<sensor_msgs::Image>();
       // TODO(lucasw) there need to be frames for all directions of the cube
       image->image_->header.frame_id = frame_id_;
       image->image_->width = face_width;

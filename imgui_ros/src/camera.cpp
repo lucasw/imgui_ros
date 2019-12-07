@@ -78,7 +78,6 @@ void Camera::init(const size_t width, const size_t height,
   image_ = std::make_shared<RosImage>(texture_name, topic, sub_not_pub, ros_pub,
       image_transfer);
   {
-    // node is bad
     // ROS_INFO("creating camera %s %d %d", name, width, height);
     image_->width_ = width;
     image_->height_ = height;
@@ -213,14 +212,14 @@ void Camera::publishCameraInfo(const ros::Time& stamp)
   camera_info_msg.K[4] = fy;
   camera_info_msg.K[5] = height * 0.5;
   camera_info_msg.K[8] = 1.0;
-  camera_info_msg.r = {1.0, 0.0, 0.0,
+  camera_info_msg.K = {1.0, 0.0, 0.0,
                          0.0, 1.0, 0.0,
                          0.0, 0.0, 1.0};
-  camera_info_msg.p = {fx, 0.0, width * 0.5, 0.0,
+  camera_info_msg.P = {fx, 0.0, width * 0.5, 0.0,
                          0.0, fy, height * 0.5, 0.0,
                          0.0, 0.0, 1.0, 0.0};
 
-  camera_info_pub_->publish(camera_info_msg);
+  camera_info_pub_.publish(camera_info_msg);
 }
 
 void Camera::draw()
