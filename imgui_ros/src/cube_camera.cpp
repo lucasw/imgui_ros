@@ -85,7 +85,7 @@ void CubeCamera::init(
   const bool sub_not_pub = false;
 
   ROS_INFO(
-      "init cube camera '%s', texture '%s', topic '%s', faces %d, %d x %d, %d",
+      "init cube camera '%s', texture '%s', topic '%s', faces %zu, %zu x %zu, %zu",
       name_.c_str(), texture_name.c_str(), topic.c_str(),
       faces_.size(), width, height, face_width);
 

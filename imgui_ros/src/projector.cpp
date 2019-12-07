@@ -53,8 +53,8 @@ Projector::Projector(
     const double max_range,
     const double constant_attenuation,
     const double linear_attenuation,
-    const double quadratic_attenuation,
-    // std::shared_ptr<ros::Node> node
+    const double quadratic_attenuation
+    // ros::NodeHandle& nh
     ) :
     name_(name),
     texture_name_(texture_name),
@@ -64,8 +64,7 @@ Projector::Projector(
     max_range_(max_range),
     constant_attenuation_(constant_attenuation),
     linear_attenuation_(linear_attenuation),
-    quadratic_attenuation_(quadratic_attenuation),
-    // node_(node)
+    quadratic_attenuation_(quadratic_attenuation)
 {
   std::cout << "creating projector " << print() << std::endl;
 

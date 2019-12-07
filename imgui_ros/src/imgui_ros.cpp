@@ -983,6 +983,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   if (tfs.transforms.size() > 0) {
     tf_pub_->publish(tfs);
   }
+#endif
 
 #if 0
   // update all parameters that need to be updated

@@ -73,8 +73,8 @@ struct Projector {
       const double max_range,
       const double constant_attenuation,
       const double linear_attenuation,
-      const double quadratic_attenuation,
-      ros::NodeHandle& nh);
+      const double quadratic_attenuation);
+      // ros::NodeHandle* nh);
   ~Projector();
 
   std::string print();

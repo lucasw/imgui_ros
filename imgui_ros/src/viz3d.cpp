@@ -199,7 +199,7 @@ bool Viz3D::setupProjectorsWithShape(
     try {
       geometry_msgs::TransformStamped tf;
       tf = tf_buffer_->lookupTransform(main_frame_id,
-          projector->frame_id_, tf2::TimePointZero);
+          projector->frame_id_, ros::Time(0));
       tf2::fromMsg(tf, stamped_transform);
       // render_message_ << "projected texture transform "
       //     << main_frame_id << " " << projector->frame_id_ << " "
@@ -495,8 +495,8 @@ void Viz3D::addProjector(imgui_ros_msgs::AddProjector::Request& req,
         req.projector.max_range,
         req.projector.constant_attenuation,
         req.projector.linear_attenuation,
-        req.projector.quadratic_attenuation,
-        nh_);
+        req.projector.quadratic_attenuation);
+        // nh_);
     projector->near_ = req.projector.camera.near;
     projector->far_ = req.projector.camera.far;
     projectors_[name] = projector;
