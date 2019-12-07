@@ -132,7 +132,7 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
   }
 
   RosImage::RosImage(const std::string& name,
-    sensor_msgs::ImageConstPtr image) :
+    sensor_msgs::ImagePtr image) :
     RosImage(name)
   {
     image_ = image;
@@ -141,7 +141,7 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
   }
 
 #if 0
-  void RosImage::imageCallback(const sensor_msgs::ImageConstPtr msg) {
+  void RosImage::imageCallback(const sensor_msgs::ImagePtr msg) {
 #if 0
     std::cout << "image callback "
         << msg->header.stamp.sec << " "
@@ -182,10 +182,10 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
           image->header.stamp = ros::Time::now();
           // TODO(lucasw) why doesn't cv_bridge fill this in?
           image->encoding = "bgr8";
-          image_ = image;
+          image_msg_ = image;
           width_ = image->width;
           height_ = image->height;
-          image_transfer_->publish(topic_, image_);
+          image_transfer_->publish(topic_, image__msg_);
         }
       }
     }
@@ -199,7 +199,7 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
     if (!enable_cpu_to_gpu_) {
       return true;
     }
-    sensor_msgs::ImageConstPtr image;
+    sensor_msgs::ImagePtr image;
     {
       std::lock_guard<std::mutex> lock(mutex_);
       if (sub_not_pub_) {
@@ -210,12 +210,12 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
         if (!image) {
           return false;
         }
-        bool different_image = (image != image_);
+        bool different_image = (image != image_msg_);
         dirty_ |= different_image;
-        if (image_ && image && different_image) {
-          image_gap_ = ros::Time(image->header.stamp) - ros::Time(image_->header.stamp);
+        if (image_msg_ && image && different_image) {
+          image_gap_ = ros::Time(image->header.stamp) - ros::Time(image_msg_->header.stamp);
         }
-        image_ = image;
+        image_msg_ = image;
       }
       // TODO(lucasw) updateTexture does nothing if this isn't a subscriber,
       // except the first time it is run?
@@ -251,7 +251,7 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
         << ", ptr " << reinterpret_cast<unsigned long int>(&image->data[0]) << " "
         << static_cast<unsigned int>(image->data[0]) << "\n";
 #endif
-    // TODO(lucasw) put ImageConstPtr to opengl texture into a utility library function
+    // TODO(lucasw) put ImagePtr to opengl texture into a utility library function
     glBindTexture(GL_TEXTURE_2D, texture_id_);
 
     // TODO(lucasw) only need to do these once (unless altering)
@@ -319,7 +319,7 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
     auto cur = ros::Time::now();
     update_duration_ = cur - t0;
     // The age when updated, not age for every draw after of the same data
-    image_age_ = cur - image_->header.stamp;
+    image_age_ = cur - image_msg_->header.stamp;
     return true;
   }
 
@@ -378,7 +378,7 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
     image->header.stamp = stamp;
     // pub_->publish(image_);
     image_transfer_->publish(topic_, image);
-    image_ = image;
+    image_msg_ = image;
   }
 
   // TODO(lucasw) factor out common code
@@ -436,10 +436,10 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
             width_, height_);
         ImGui::Text("topic: '%s',\nloaded file: '%s'", topic_.c_str(), loaded_file_.c_str());
         #endif
-        if (image_) {
+        if (image_msg_) {
           ImGui::Columns(2);
           ImGui::Text("%0.3f",
-              image_->header.stamp.toSec());
+              image_msg_->header.stamp.toSec());
           ImGui::NextColumn();
           ImGui::Text("age %0.5f", image_age_.toSec());
           ImGui::NextColumn();

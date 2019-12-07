@@ -61,13 +61,13 @@ void ImageTransfer::postInit()
   ROS_INFO_STREAM("started image transfer");
 }
 
-bool ImageTransfer::getSub(const std::string& topic, sensor_msgs::ImageConstPtr& image)
+bool ImageTransfer::getSub(const std::string& topic, sensor_msgs::ImagePtr& image)
 {
   std::lock_guard<std::mutex> lock(sub_mutexes_[topic]);
   if (subs_.count(topic) < 1) {
     // TODO(lucasw) is it better to create the publisher here
     // or inside the thread update is running in?
-    //std::function<void(const sensor_msgs::ImageConstPtr)> fnc;
+    //std::function<void(const sensor_msgs::ImagePtr)> fnc;
     // fnc = std::bind(&ImageTransfer::imageCallback, this, std::placeholders::_1,
     //        topic);
     // subs_[topic] = create_subscription<sensor_msgs::Image>(topic, fnc);
@@ -90,10 +90,11 @@ bool ImageTransfer::getSub(const std::string& topic, sensor_msgs::ImageConstPtr&
   return true;
 }
 
-bool ImageTransfer::publish(const std::string& topic, sensor_msgs::ImageConstPtr image)
+bool ImageTransfer::publish(const std::string& topic, sensor_msgs::ImagePtr& image)
 {
   std::lock_guard<std::mutex> lock(pub_mutex_);
-  to_pub_.push_back(std::pair<std::string, sensor_msgs::ImageConstPtr>(topic, image));
+  // TODO(lucasw) another image copy, need to go back to pointers once this is working
+  to_pub_.push_back(std::pair<std::string, sensor_msgs::Image>(topic, image));
   return true;
 }
 
@@ -117,7 +118,7 @@ void ImageTransfer::update(const ros::TimerEvent& e)
   {
     while (to_pub_.size() > 0) {
       std::string topic;
-      sensor_msgs::ImageConstPtr image;
+      sensor_msgs::ImagePtr image;
       {
         std::lock_guard<std::mutex> lock(pub_mutex_);
         topic = to_pub_.front().first;
@@ -193,7 +194,7 @@ void ImageTransfer::draw(ros::Time cur)
 #endif
 }
 
-void ImageTransfer::imageCallback(const sensor_msgs::ImageConstPtr& msg, const std::string& topic)
+void ImageTransfer::imageCallback(const sensor_msgs::ImagePtr& msg, const std::string& topic)
 {
   // std::cout << "image transfer " << topic << " msg received " << msg->header.stamp.sec << "\n";
   std::lock_guard<std::mutex> lock(sub_mutexes_[topic]);

@@ -52,9 +52,9 @@ public:
 
   ros::Timer update_timer_;
 
-  bool getSub(const std::string& topic, sensor_msgs::ImageConstPtr& image);
+  bool getSub(const std::string& topic, sensor_msgs::Image& image);
 
-  bool publish(const std::string& topic, sensor_msgs::ImageConstPtr image);
+  bool publish(const std::string& topic, sensor_msgs::Image& image);
 
   void setRosPub(const std::string& topic);  // , const bool ros_pub);
   // TODO(lucasw) need way to remove publisher or subscriber
@@ -70,15 +70,15 @@ private:
 
   bool initted_ = false;
   std::map<std::string, std::mutex> sub_mutexes_;
-  void imageCallback(const sensor_msgs::ImageConstPtr& msg, const std::string& topic);
+  void imageCallback(const sensor_msgs::ImagePtr& msg, const std::string& topic);
 
   bool show_unused_ = false;
 
-  std::map<std::string, sensor_msgs::ImageConstPtr> from_sub_;
+  std::map<std::string, sensor_msgs::ImagePtr> from_sub_;
   std::map<std::string, ros::Subscriber> subs_;
 
   std::mutex pub_mutex_;
-  std::deque<std::pair<std::string, sensor_msgs::ImageConstPtr> > to_pub_;
+  std::deque<std::pair<std::string, sensor_msgs::Image> > to_pub_;
   std::map<std::string, ros::Publisher> pubs_;
 };
 }  // namespace imgui_ros

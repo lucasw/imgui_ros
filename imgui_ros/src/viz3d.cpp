@@ -188,7 +188,7 @@ bool Viz3D::setupProjectorsWithShape(
       //    << projector->texture_name_ << "', ";
       continue;
     }
-    if (!texture->image_) {
+    if (!texture->image_msg_) {
       // render_message_ << projector->name_ << " no texture image "
       //    << projector->texture_name_ << ", ";
       continue;
@@ -211,8 +211,8 @@ bool Viz3D::setupProjectorsWithShape(
       continue;
     }
 
-    const int width = texture->image_->width;
-    const int height = texture->image_->height;
+    const int width = texture->image_msg_->width;
+    const int height = texture->image_msg_->height;
     // TODO(lucasw) it is redundant to setup model repeatedly,
     // refactor to do that just once
     glm::mat4 model;
@@ -288,25 +288,25 @@ Viz3D::Viz3D(const std::string name,
   // render_message_.precision(2);
   // render_message_.fill('0');
 
-  node->get_parameter_or("frame_id", frame_id_, frame_id_);
-  node->get_parameter_or("viewer_frame_id", main_window_frame_id_, main_window_frame_id_);
+  nh->getParam("frame_id", frame_id_);
+  nh->getParam("viewer_frame_id", main_window_frame_id_);
 
   glsl_version_string_ = renderer->GlslVersionString;
 
   // TODO(lucasw) set via service all
-  node->get_parameter_or("ambient_red", ambient_[0], ambient_[0]);
-  node->get_parameter_or("ambient_green", ambient_[1], ambient_[1]);
-  node->get_parameter_or("ambient_blue", ambient_[2], ambient_[2]);
+  nh->getParam("ambient_red", ambient_[0]);
+  nh->getParam("ambient_green", ambient_[1]);
+  nh->getParam("ambient_blue", ambient_[2]);
 
   const bool sub_not_pub = true;
   textures_["default"] = std::make_shared<RosImage>("default", "default_texture", sub_not_pub,
-      false, node, image_transfer_);
+      false, nh, image_transfer_);
 
   transform_.setIdentity();
 
   // tf_broadcaster_ = TfBroadcaster("viewer_camera",
   //     "map", "viewer_camera",
-  //     0.0, 0.0, tf_buffer_, node);
+  //     0.0, 0.0, tf_buffer_, nh);
 
   textured_shape_sub_ = nh_->subscribe(topic, &Viz3D::texturedShapeCallback, this);
 
@@ -319,17 +319,17 @@ Viz3D::Viz3D(const std::string name,
     shadow_texture_unit_[i] = base_tex_ind + MAX_PROJECTORS + i;
   }
 
-  add_camera_ = nh_->advertiseService<imgui_ros_msgs::AddCamera>("add_camera",
+  add_camera_ = nh_->advertiseService("add_camera",
       &Viz3D::addCamera, this);
-  add_cube_camera_ = nh_->advertiseService<imgui_ros_msgs::AddCubeCamera>("add_cube_camera",
+  add_cube_camera_ = nh_->advertiseService("add_cube_camera",
       &Viz3D::addCubeCamera, this);
-  add_projector_ = nh_->advertiseService<imgui_ros_msgs::AddProjector>("add_projector",
+  add_projector_ = nh_->advertiseService("add_projector",
       &Viz3D::addProjector, this);
   add_shaders_ = nh_->advertiseService("add_shaders",
       &Viz3D::addShaders, this);
-  add_texture_ = nh_->advertiseService<imgui_ros_msgs::AddTexture>("add_texture",
+  add_texture_ = nh_->advertiseService("add_texture",
       &Viz3D::addTexture, this);
-  add_shape_ = nh_->advertiseService<imgui_ros_msgs::AddShape>("add_shape",
+  add_shape_ = nh_->advertiseService("add_shape",
       &Viz3D::addShape, this);
   #if 0
   test_shape_ = std::make_shared<Shape>();
@@ -383,7 +383,7 @@ bool Viz3D::addCamera(imgui_ros_msgs::AddCamera::Request& req,
   } catch (std::runtime_error& ex) {
     res.message = ex.what();
     res.success = false;
-    return;
+    return true;
   }
   res.message = "added camera '" + req.camera.name + "' '" + req.camera.texture_name + "'";
   res.success = true;
@@ -441,14 +441,13 @@ bool Viz3D::addCubeCamera(imgui_ros_msgs::AddCubeCamera::Request& req,
   } catch (std::runtime_error& ex) {
     res.message = ex.what();
     res.success = false;
-    return;
+    return true;
   }
   res.message = "added camera '" + req.camera.name + "' '" + req.camera.texture_name + "'";
   res.success = true;
 
   return true;
 }
-
 
 bool Viz3D::addProjector(imgui_ros_msgs::AddProjector::Request& req,
                          imgui_ros_msgs::AddProjector::Response& res)
@@ -470,12 +469,12 @@ bool Viz3D::addProjector(imgui_ros_msgs::AddProjector::Request& req,
     if (projectors_.count(name) < 1) {
       res.message = "projector doesn't exist to be removed: '" + name + "'";
       res.success = true;
-      return;
+      return true;
     }
     projectors_.erase(name);
     res.message = "projector removed: '" + name + "'";
     res.success = true;
-    return;
+    return true;
   }
 
   if ((projectors_.count(name) < 1) &&
@@ -486,7 +485,7 @@ bool Viz3D::addProjector(imgui_ros_msgs::AddProjector::Request& req,
       res.message += projector_pair.second->name_ + ", ";
     }
     res.success = false;
-    return;
+    return true;
   }
 
   try {
@@ -507,7 +506,7 @@ bool Viz3D::addProjector(imgui_ros_msgs::AddProjector::Request& req,
   } catch (std::runtime_error& ex) {
     res.message = ex.what();
     res.success = false;
-    return;
+    return true;
   }
   res.message = "added projector '" + name + "', texture '" + texture_name + "'";
   res.success = true;
@@ -521,9 +520,9 @@ bool Viz3D::addShaders(imgui_ros_msgs::AddShaders::Request& req,
   if (req.remove) {
     if (shader_sets_.count(req.name) > 0) {
       shader_sets_.erase(req.name);
-      return;
+      return true;
     }
-    return;
+    return true;
   }
 
   auto shaders = std::make_shared<ShaderSet>(req.name, req.vertex,
@@ -532,7 +531,7 @@ bool Viz3D::addShaders(imgui_ros_msgs::AddShaders::Request& req,
   std::lock_guard<std::mutex> lock(mutex_);
   if (!shaders->init(glsl_version_string_, res.message)) {
     res.success = false;
-    return;
+    return true;
   }
 
   for (auto shape_pair : shapes_) {
@@ -545,14 +544,12 @@ bool Viz3D::addShaders(imgui_ros_msgs::AddShaders::Request& req,
     if (!updateShaderShapes(shaders, shape)) {
       res.message = "couldn't update shape " + shape->name_ + " vaos with new shaders ";
       res.success = false;
-      return;
+      return true;
     }
   }
 
   res.message = "successfully added shaders `" + shaders->name_ + "'";
-
   shader_sets_[req.name] = shaders;
-
   return true;
 }
 
@@ -633,7 +630,7 @@ bool Viz3D::addShape(imgui_ros_msgs::AddShape::Request& req,
 {
   res.success = true;
   for (auto textured_shape : req.shapes) {
-    auto shape = std::make_shared<imgui_ros_msgs::TexturedShape>(textured_shape);
+    auto shape = boost::make_shared<imgui_ros_msgs::TexturedShape>(textured_shape);
     if (!addShape2(shape, res.message)) {
       res.success = false;
     }

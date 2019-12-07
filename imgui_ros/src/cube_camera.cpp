@@ -155,14 +155,16 @@ void CubeCamera::init(
       image->width_ = face_width;
       image->height_ = face_width;
 
-      image->image_ = boost::make_shared<sensor_msgs::Image>();
       // TODO(lucasw) there need to be frames for all directions of the cube
-      image->image_->header.frame_id = frame_id_;
-      image->image_->width = face_width;
-      image->image_->height = face_width;
-      image->image_->encoding = "bgr8";
-      image->image_->step = face_width * 3;
-      image->image_->data.resize(image->image_->height * image->image_->step);
+      if (!image->image_msg_) {
+        image->image_msg_ = boost::make_shared<sensor_msgs::Image>();
+      }
+      image->image_msg_->header.frame_id = frame_id_;
+      image->image_msg_->width = face_width;
+      image->image_msg_->height = face_width;
+      image->image_msg_->encoding = "bgr8";
+      image->image_msg_->step = face_width * 3;
+      image->image_msg_->data.resize(image->image_msg_->height * image->image_msg_->step);
 
       // allocate the image for later copying out of the cubemap
       glBindTexture(GL_TEXTURE_2D, image->texture_id_);
@@ -171,7 +173,7 @@ void CubeCamera::init(
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, face_width, face_width,
           0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
       glGenerateMipmap(GL_TEXTURE_2D);
-      std::cout << "data size " << image->image_->data.size() << "\n";
+      std::cout << "data size " << image->image_msg_->data.size() << "\n";
     }
 
     checkGLError(__FILE__, __LINE__);
