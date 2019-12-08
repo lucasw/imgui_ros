@@ -72,8 +72,8 @@
 namespace imgui_ros
 {
 
-ImguiRos::ImguiRos() :
-  tf_listener_(tf_buffer_)
+ImguiRos::ImguiRos()  // :
+  // tf_listener_(tf_buffer_)
   // clock_(std::make_shared<ros::Clock>(RCL_SYSTEM_TIME)),
   // buffer_(clock_)
 {
@@ -82,6 +82,8 @@ ImguiRos::ImguiRos() :
 
 void ImguiRos::postInit()
 {
+  tf_buffer_ = std::make_shared<tf2_ros::Buffer>();
+  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
   ROS_INFO_STREAM("imgui ros init");
 #if 0
   internal_pub_sub::Node::postInit(core);
@@ -391,7 +393,7 @@ bool ImguiRos::addWindow(imgui_ros_msgs::AddWindow::Request& req,
   return true;
 }
 
-std::string widgetTypeToString(const auto widget_type)
+std::string widgetTypeToString(const uint8_t widget_type)
 {
   switch (widget_type) {
     case imgui_ros_msgs::Widget::IMAGE:

@@ -94,7 +94,7 @@ bool ImageTransfer::publish(const std::string& topic, sensor_msgs::ImagePtr& ima
 {
   std::lock_guard<std::mutex> lock(pub_mutex_);
   // TODO(lucasw) another image copy, need to go back to pointers once this is working
-  to_pub_.push_back(std::pair<std::string, sensor_msgs::Image>(topic, image));
+  to_pub_.push_back(std::pair<std::string, sensor_msgs::ImagePtr>(topic, image));
   return true;
 }
 
@@ -194,7 +194,7 @@ void ImageTransfer::draw(ros::Time cur)
 #endif
 }
 
-void ImageTransfer::imageCallback(const sensor_msgs::ImagePtr& msg, const std::string& topic)
+void ImageTransfer::imageCallback(const sensor_msgs::ImagePtr msg, const std::string topic)
 {
   // std::cout << "image transfer " << topic << " msg received " << msg->header.stamp.sec << "\n";
   std::lock_guard<std::mutex> lock(sub_mutexes_[topic]);

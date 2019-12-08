@@ -300,7 +300,7 @@ Viz3D::Viz3D(const std::string name,
 
   const bool sub_not_pub = true;
   textures_["default"] = std::make_shared<RosImage>("default", "default_texture", sub_not_pub,
-      false, nh, image_transfer_);
+      false, image_transfer_);
 
   transform_.setIdentity();
 
@@ -308,7 +308,7 @@ Viz3D::Viz3D(const std::string name,
   //     "map", "viewer_camera",
   //     0.0, 0.0, tf_buffer_, nh);
 
-  textured_shape_sub_ = nh_->subscribe(topic, &Viz3D::texturedShapeCallback, this);
+  textured_shape_sub_ = nh_->subscribe(topic, 3, &Viz3D::texturedShapeCallback, this);
 
   texture_unit_["Texture"] = 0;
   texture_unit_["shininess_texture"] = 1;
@@ -616,13 +616,14 @@ bool Viz3D::addTexture(imgui_ros_msgs::AddTexture::Request& req,
   }
 
   auto texture = std::make_shared<RosImage>(req.name,
-    std::make_shared<sensor_msgs::Image>(req.image));
+    boost::make_shared<sensor_msgs::Image>(req.image));
   texture->draw_texture_controls_ = true;
   // texture->imageCallback(std::make_shared<sensor_msgs::Image>(req.image));
   texture->wrap_s_ind_ = req.wrap_s;
   texture->wrap_t_ind_ = req.wrap_t;
   texture->updateTexture();
   textures_[req.name] = texture;
+  return true;
 }
 
 bool Viz3D::addShape(imgui_ros_msgs::AddShape::Request& req,

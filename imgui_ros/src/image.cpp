@@ -135,7 +135,7 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
     sensor_msgs::ImagePtr image) :
     RosImage(name)
   {
-    image_ = image;
+    image_msg_ = image;
     dirty_ = true;
     pub_dirty_ = true;
   }
@@ -185,7 +185,7 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
           image_msg_ = image;
           width_ = image->width;
           height_ = image->height;
-          image_transfer_->publish(topic_, image__msg_);
+          image_transfer_->publish(topic_, image_msg_);
         }
       }
     }
@@ -223,12 +223,12 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
         return true;
       dirty_ = false;
 
-      if (!image_) {
+      if (!image_msg_) {
         // TODO(lucasw) or make the texture 0x0 or 1x1 gray.
         return false;
       }
 
-      image = image_;
+      image = image_msg_;
       width_ = image->width;
       height_ = image->height;
     }
