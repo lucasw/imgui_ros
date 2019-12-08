@@ -60,6 +60,8 @@ Camera::Camera(const std::string name,
     aov_y_(aov_y),
     aov_x_(aov_x)
 {
+  // TODO(lucasw) don't pass in the nh at all?
+  (void)nh;
   if (header_frame_id_ == "") {
     header_frame_id_ = frame_id_;
   }

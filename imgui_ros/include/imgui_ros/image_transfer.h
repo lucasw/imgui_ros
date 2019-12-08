@@ -70,7 +70,7 @@ private:
 
   bool initted_ = false;
   std::map<std::string, std::mutex> sub_mutexes_;
-  void imageCallback(const sensor_msgs::ImagePtr msg, const std::string topic);
+  void imageCallback(const sensor_msgs::Image::ConstPtr msg, const std::string topic);
 
   bool show_unused_ = false;
 

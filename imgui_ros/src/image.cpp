@@ -176,15 +176,15 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
         if (glTexFromMat(cv_image.image, texture_id_)) {
           ROS_INFO_STREAM("loaded image " << cv_image.image.cols
               << " x " << cv_image.image.rows);
-          sensor_msgs::ImagePtr image;
-          image = cv_image.toImageMsg();
-          image->header.frame_id = header_frame_id_;
-          image->header.stamp = ros::Time::now();
+          sensor_msgs::ImagePtr image_msg;
+          image_msg = cv_image.toImageMsg();
+          image_msg->header.frame_id = header_frame_id_;
+          image_msg->header.stamp = ros::Time::now();
           // TODO(lucasw) why doesn't cv_bridge fill this in?
-          image->encoding = "bgr8";
-          image_msg_ = image;
-          width_ = image->width;
-          height_ = image->height;
+          image_msg->encoding = "bgr8";
+          image_msg_ = image_msg;
+          width_ = image_msg->width;
+          height_ = image_msg->height;
           image_transfer_->publish(topic_, image_msg_);
         }
       }
@@ -199,23 +199,23 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
     if (!enable_cpu_to_gpu_) {
       return true;
     }
-    sensor_msgs::ImagePtr image;
+    sensor_msgs::ImagePtr image_msg;
     {
       std::lock_guard<std::mutex> lock(mutex_);
       if (sub_not_pub_) {
         if (!image_transfer_) {
           return false;
         }
-        image_transfer_->getSub(topic_, image);
-        if (!image) {
+        image_transfer_->getSub(topic_, image_msg);
+        if (!image_msg) {
           return false;
         }
-        bool different_image = (image != image_msg_);
+        bool different_image = (image_msg != image_msg_);
         dirty_ |= different_image;
-        if (image_msg_ && image && different_image) {
-          image_gap_ = ros::Time(image->header.stamp) - ros::Time(image_msg_->header.stamp);
+        if (image_msg_ && image_msg && different_image) {
+          image_gap_ = ros::Time(image_msg->header.stamp) - ros::Time(image_msg_->header.stamp);
         }
-        image_msg_ = image;
+        image_msg_ = image_msg;
       }
       // TODO(lucasw) updateTexture does nothing if this isn't a subscriber,
       // except the first time it is run?
@@ -228,9 +228,9 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
         return false;
       }
 
-      image = image_msg_;
-      width_ = image->width;
-      height_ = image->height;
+      image_msg = image_msg_;
+      width_ = image_msg->width;
+      height_ = image_msg->height;
     }
 
     #if 0
@@ -279,29 +279,29 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
     // have a big switch statement here
     // TODO(lucasw) if the old texture is the same width and height and number of channels
     // (and color format?) as the old one, use glTexSubImage2D
-    if (image->encoding == "mono8") {
+    if (image_msg->encoding == "mono8") {
       // TODO(lucasw) need to use a fragment shader to copy the red channel
       // to the blue and green - there is no longer a GL_LUMINANCE
       // https://stackoverflow.com/questions/680125/can-i-use-a-grayscale-image-with-the-opengl-glteximage2d-function
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,
-                   image->width, image->height,
-                   0, GL_RED, GL_UNSIGNED_BYTE, &image->data[0]);
-    } else if (image->encoding == "bgr8") {
+                   image_msg->width, image_msg->height,
+                   0, GL_RED, GL_UNSIGNED_BYTE, &image_msg->data[0]);
+    } else if (image_msg->encoding == "bgr8") {
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                   image->width, image->height,
-                   0, GL_BGR, GL_UNSIGNED_BYTE, &image->data[0]);
-    } else if (image->encoding == "rgb8") {
+                   image_msg->width, image_msg->height,
+                   0, GL_BGR, GL_UNSIGNED_BYTE, &image_msg->data[0]);
+    } else if (image_msg->encoding == "rgb8") {
        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                   image->width, image->height,
-                   0, GL_RGB, GL_UNSIGNED_BYTE, &image->data[0]);
-    } else if (image->encoding == "bgra8") {
+                   image_msg->width, image_msg->height,
+                   0, GL_RGB, GL_UNSIGNED_BYTE, &image_msg->data[0]);
+    } else if (image_msg->encoding == "bgra8") {
        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-                   image->width, image->height,
-                   0, GL_BGRA, GL_UNSIGNED_BYTE, &image->data[0]);
-    } else if (image->encoding == "rgba8") {
+                   image_msg->width, image_msg->height,
+                   0, GL_BGRA, GL_UNSIGNED_BYTE, &image_msg->data[0]);
+    } else if (image_msg->encoding == "rgba8") {
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-          image->width, image->height,
-          0, GL_RGBA, GL_UNSIGNED_BYTE, &image->data[0]);
+          image_msg->width, image_msg->height,
+          0, GL_RGBA, GL_UNSIGNED_BYTE, &image_msg->data[0]);
     } else {
       // TODO(lucasw) throw
     }
@@ -338,17 +338,17 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
       return;
     }
 
-    auto image = boost::make_shared<sensor_msgs::Image>();
+    auto image_msg = boost::make_shared<sensor_msgs::Image>();
     {
       // Need ability to report a different frame than the sim is using internally-
       // this allows for calibration error simulation
-      image->header.frame_id = header_frame_id_;
-      image->width = width_;
-      image->height = height_;
-      image->encoding = "bgr8";
-      image->step = width_ * 3;
+      image_msg->header.frame_id = header_frame_id_;
+      image_msg->width = width_;
+      image_msg->height = height_;
+      image_msg->encoding = "bgr8";
+      image_msg->step = width_ * 3;
       // TODO(lucasw) this step may be expensive
-      image->data.resize(image->step * height_);
+      image_msg->data.resize(image_msg->step * height_);
     }
 
     // TODO(lucasw) check to see if there are any subscribers?  If none return.
@@ -356,29 +356,29 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
     // Copy image from gpu for sending- but don't do this if the image hasn't changed
     // TODO(lucasw) lock image
     glBindTexture(GL_TEXTURE_2D, texture_id_);
-    if (image->encoding == "bgr8") {
+    if (image_msg->encoding == "bgr8") {
       // glGetTextureImage, glGetnTexImage not available
       glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR,
                      GL_UNSIGNED_BYTE,
-                     // image->width * image->height * 3,
-                     &image->data[0]);
-    } else if (image->encoding == "rgb8") {
+                     // image_msg->width * image_msg->height * 3,
+                     &image_msg->data[0]);
+    } else if (image_msg->encoding == "rgb8") {
       glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB,
                      GL_UNSIGNED_BYTE,
-                     // image->width * image->height * 3,
-                     &image->data[0]);
+                     // image_msg->width * image_msg->height * 3,
+                     &image_msg->data[0]);
     } else {
       glBindTexture(GL_TEXTURE_2D, 0);
       // TODO(lucasw) set debug message to this
-      std::cerr << name_ << " unsupported image type: " << image->encoding << "\n";
+      std::cerr << name_ << " unsupported image type: " << image_msg->encoding << "\n";
       return;
     }
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    image->header.stamp = stamp;
+    image_msg->header.stamp = stamp;
     // pub_->publish(image_);
-    image_transfer_->publish(topic_, image);
-    image_msg_ = image;
+    image_transfer_->publish(topic_, image_msg);
+    image_msg_ = image_msg;
   }
 
   // TODO(lucasw) factor out common code

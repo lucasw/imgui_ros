@@ -93,7 +93,6 @@ bool ImageTransfer::getSub(const std::string& topic, sensor_msgs::ImagePtr& imag
 bool ImageTransfer::publish(const std::string& topic, sensor_msgs::ImagePtr& image)
 {
   std::lock_guard<std::mutex> lock(pub_mutex_);
-  // TODO(lucasw) another image copy, need to go back to pointers once this is working
   to_pub_.push_back(std::pair<std::string, sensor_msgs::ImagePtr>(topic, image));
   return true;
 }
@@ -194,10 +193,14 @@ void ImageTransfer::draw(ros::Time cur)
 #endif
 }
 
-void ImageTransfer::imageCallback(const sensor_msgs::ImagePtr msg, const std::string topic)
+void ImageTransfer::imageCallback(const sensor_msgs::Image::ConstPtr msg, const std::string topic)
 {
   // std::cout << "image transfer " << topic << " msg received " << msg->header.stamp.sec << "\n";
   std::lock_guard<std::mutex> lock(sub_mutexes_[topic]);
-  from_sub_[topic] = msg;
+  // TODO(lucasw) image copy here, but can't boost::bind with a non ConstPtr
+  // - but that would have resulted in a copy upstream.
+  // Maybe can dis-entangle storage that is const from non-const to
+  // avoid copies
+  from_sub_[topic] = boost::make_shared<sensor_msgs::Image>(*msg);
 }
 }  // namespace imgui_ros
