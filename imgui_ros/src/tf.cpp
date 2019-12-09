@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <geometry_msgs/quaternion.hpp>
-#include <geometry_msgs/transform_stamped.hpp>
+#include <geometry_msgs/Quaternion.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <imgui_ros/tf.h>
 #include <imgui_ros/utility.h>
 // #include <imgui_internal.h>  // for PushMulti
@@ -42,12 +42,12 @@ TfEcho::TfEcho(const std::string name,
     const std::string parent, const std::string child,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
     ros::NodeHandle& nh) :
-    Sub(name, parent, node),
+    Sub(name, parent, nh),
     parent_(parent),
     child_(child),
     tf_buffer_(tf_buffer)
 {
-  RCLCPP_DEBUG(node->get_logger(), "new tf echo %s to %s", parent_.c_str(), child_.c_str());
+  ROS_DEBUG("new tf echo %s to %s", parent_.c_str(), child_.c_str());
 }
 
 void rot2RPY(const geometry_msgs::Quaternion rotation,
@@ -91,12 +91,12 @@ void TfEcho::draw()
   imgui_ros::inputText("child", child_);
   try {
     geometry_msgs::TransformStamped tf;
-    tf = tf_buffer_->lookupTransform(parent_, child_, tf2::TimePointZero);
+    tf = tf_buffer_->lookupTransform(parent_, child_, ros::Time(0));
 
     std::stringstream ss;
     ss << name_ << " " << "\n" << "time: "
     //    << std::setprecision(3) << std::setw(4) << std::setfill('0') << std::internal
-        << tf.header.stamp.sec << "." << tf.header.stamp.nanosec;
+        << tf.header.stamp.toSec();   // .sec << "." << tf.header.stamp.nanosec;
     ImGui::Text("%s", ss.str().c_str());
 
     // ImGui::BeginChild("xyz");
@@ -136,12 +136,12 @@ TfBroadcaster::TfBroadcaster(const std::string name,
     const double min, const double max,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
     ros::NodeHandle& nh) :
-    Pub(name, parent, node),
+    Pub(name, parent, nh),
     min_(min),
     max_(max),
     tf_buffer_(tf_buffer)
 {
-  RCLCPP_DEBUG(node->get_logger(), "new tf echo %s to %s", parent.c_str(), child.c_str());
+  ROS_DEBUG("new tf echo %s to %s", parent.c_str(), child.c_str());
 
   ts_.header.frame_id = parent;
   ts_.child_frame_id = child;
@@ -151,17 +151,17 @@ TfBroadcaster::TfBroadcaster(const std::string name,
 }
 
 TfBroadcaster::TfBroadcaster(
-    const imgui_ros::TfWidget& tf,
+    const imgui_ros_msgs::TfWidget& tf,
     std::shared_ptr<tf2_ros::Buffer> tf_buffer,
     ros::NodeHandle& nh) :
-    Pub(tf.name, tf.transform_stamped.header.frame_id, node),
+    Pub(tf.name, tf.transform_stamped.header.frame_id, nh),
     min_(tf.min),
     max_(tf.max),
     ts_(tf.transform_stamped),
     default_ts_(tf.transform_stamped),
     tf_buffer_(tf_buffer)
 {
-  RCLCPP_INFO(node->get_logger(), "new tf echo %s to %s, %f",
+  ROS_INFO("new tf echo %s to %s, %f",
       ts_.header.frame_id.c_str(),
       ts_.child_frame_id.c_str(),
       default_ts_.transform.translation.x);

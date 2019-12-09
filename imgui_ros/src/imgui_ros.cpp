@@ -40,12 +40,12 @@
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/imgui_ros.h>
 #include <imgui_ros/graph.h>
+#include <imgui_ros/tf.h>
 #if 0
 #include <imgui_ros/param.h>
 #include <imgui_ros/point_cloud.h>
 #include <imgui_ros/pub.h>
 #include <imgui_ros/sub.h>
-#include <imgui_ros/tf.h>
 #include <imgui_ros/viz2d.h>
 #endif
 // #include <opencv2/highgui.hpp>
@@ -140,11 +140,9 @@ void ImguiRos::postInit()
 
   // parameters_client_ = std::make_shared<ros::AsyncParametersClient>(this);
 
-  // building this causes the node to crash only in release mode
-  add_tf_ = create_service<AddTf>("add_tf",
-      std::bind(&ImguiRos::addTf, this, std::placeholders::_1, std::placeholders::_2));
-
 #endif
+  add_tf_ = nh_.advertiseService("add_tf", &ImguiRos::addTf, this);
+
   add_window_ = nh_.advertiseService("add_window",
       &ImguiRos::addWindow, this);
   update_timer_ = nh_.createTimer(ros::Duration(0.033), &ImguiRos::update, this);
@@ -307,15 +305,14 @@ void ImguiRos::glInit()
   init_ = true;  // viz3d->initialized_;
 }
 
-#if 0
-void ImguiRos::addTf(const std::shared_ptr<imgui_ros::AddTf::Request> req,
-           std::shared_ptr<imgui_ros::AddTf::Response> res)
+bool ImguiRos::addTf(imgui_ros_msgs::AddTf::Request& req,
+                     imgui_ros_msgs::AddTf::Response& res)
 {
-  RCLCPP_DEBUG(get_logger(), "new tf pub %s", req.tf.name);
+  ROS_INFO_STREAM("new tf pub " << req.tf.name);
   std::shared_ptr<Pub> pub = std::make_shared<TfBroadcaster>(
       req.tf,
       tf_buffer_,
-      shared_from_this());
+      nh_);
 
   std::shared_ptr<Window> window;
   if (windows_.count(req.tf.window) > 0) {
@@ -327,9 +324,8 @@ void ImguiRos::addTf(const std::shared_ptr<imgui_ros::AddTf::Request> req,
   window->add(pub, req.tf.tab_name);
   res.success = true;
   res.message += "added tf pub " + req.tf.name + " to " + req.tf.window;
+  return true;
 }
-
-#endif
 
 bool ImguiRos::addWindow(imgui_ros_msgs::AddWindow::Request& req,
     imgui_ros_msgs::AddWindow::Response& res)

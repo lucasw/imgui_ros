@@ -74,8 +74,11 @@ add_library(imguiros SHARED
   src/camera.cpp
   src/cube_camera.cpp
   src/projector.cpp
+  src/pub.cpp
   src/shaders.cpp
+  src/sub.cpp
   src/surface.cpp
+  src/tf.cpp
   src/utility.cpp
   src/viz3d.cpp
 
@@ -91,12 +94,9 @@ add_library(imguiros SHARED
 if(false)
 add_library(imguiros SHARED
   src/param.cpp
-  src/pub.cpp
   src/point_cloud.cpp
-  src/sub.cpp
   # TODO(lucasw) maybe there should be a separate test library?
   src/test/generate_pointcloud2.cpp
-  src/tf.cpp
   src/viz2d.cpp
   # src/imgui_impl_opengl3.cpp
 )

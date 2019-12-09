@@ -35,8 +35,8 @@ namespace imgui_ros
 {
 Pub::Pub(const std::string name, const std::string topic,  // const unsigned type,
     ros::NodeHandle& nh) :
-    Widget(name, topic),
-    node_(node) {
+    Widget(name, topic) {
+  (void)nh;
 }
 
 // Pub::~Pub()  {
@@ -45,8 +45,8 @@ Pub::Pub(const std::string name, const std::string topic,  // const unsigned typ
 BoolPub::BoolPub(const std::string name, const std::string topic,  // const unsigned type,
     const bool value,
     ros::NodeHandle& nh) :
-    Pub(name, topic, node), value_(value)  {
-  msg_.reset(new std_msgs::Bool);
+    Pub(name, topic, nh), value_(value)  {
+  msg_.data = false;
   pub_ = nh.advertise<std_msgs::Bool>(topic, 2);
 }
 
@@ -63,8 +63,8 @@ void BoolPub::draw() {
       if (changed) {
         // TODO(lucasw) optionall keep this checked, or uncheck immediately
         // value_ = new_value;
-        msg_->data = new_value;
-        pub_->publish(msg_);
+        msg_.data = new_value;
+        pub_.publish(msg_);
       }
     }
   }
@@ -73,16 +73,15 @@ void BoolPub::draw() {
 StringPub::StringPub(const std::string name, const std::string topic,
     const std::vector<std::string>& items,
     ros::NodeHandle& nh) :
-    Pub(name, topic, node), items_(items) {
-  msg_.reset(new std_msgs::String);
+    Pub(name, topic, nh), items_(items) {
   if (items.size() > 0) {
-    msg_->data = items[0];
+    msg_.data = items[0];
   }
   for (auto item : items) {
     items_null_ += item + '\0';
   }
   // TODO(lucasw) bring back type for all the int types
-  pub_ = node->create_publisher<std_msgs::String>(topic);
+  pub_ = nh.advertise<std_msgs::String>(topic, 3);
 }
 
 void StringPub::draw() {
@@ -98,20 +97,20 @@ void StringPub::draw() {
     const bool changed = ImGui::Combo(name_.c_str(), &new_value, items_null_.c_str());
     if (changed) {
       value_ = new_value;
-      msg_->data = items_[value_];
-      pub_->publish(msg_);
+      msg_.data = items_[value_];
+      pub_.publish(msg_);
     }
   } else {
     const size_t sz = 64;
     char buf[sz];
-    const size_t sz2 = (msg_->data.size() > (sz - 1)) ? (sz - 1) : msg_->data.size();
-    strncpy(buf, msg_->data.c_str(), sz2);
+    const size_t sz2 = (msg_.data.size() > (sz - 1)) ? (sz - 1) : msg_.data.size();
+    strncpy(buf, msg_.data.c_str(), sz2);
     buf[sz2 + 1] = '\0';
     const bool changed = ImGui::InputText(name_.c_str(), buf, sz,
         ImGuiInputTextFlags_EnterReturnsTrue);
     if (changed) {
-      msg_->data = buf;
-      pub_->publish(msg_);
+      msg_.data = buf;
+      pub_.publish(msg_);
     }
   }
 }
@@ -119,13 +118,12 @@ void StringPub::draw() {
 MenuPub::MenuPub(const std::string name, const std::string topic,  // const unsigned type,
     const int value, const std::vector<std::string>& items,
     ros::NodeHandle& nh) :
-    Pub(name, topic, node), value_(value), items_(items) {
-  msg_.reset(new std_msgs::Int32);
+    Pub(name, topic, nh), value_(value), items_(items) {
   for (auto item : items) {
     items_null_ += item + '\0';
   }
   // TODO(lucasw) bring back type for all the int types
-  pub_ = node->create_publisher<std_msgs::Int32>(topic);
+  pub_ = nh.advertise<std_msgs::Int32>(topic, 3);
 }
 
 void MenuPub::draw() {
@@ -138,8 +136,8 @@ void MenuPub::draw() {
   const bool changed = ImGui::Combo(name_.c_str(), &new_value, items_null_.c_str());
   if (changed) {
     value_ = new_value;
-    msg_->data = value_;
-    pub_->publish(msg_);
+    msg_.data = value_;
+    pub_.publish(msg_);
   }
 }
 }  // namespace imgui_ros

@@ -32,23 +32,23 @@
 #define IMGUI_ROS_PUB_H
 
 #include <imgui.h>
-#include <imgui_ros/AddWindow.h>
+#include <imgui_ros_msgs/AddWindow.h>
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32.h>
-#include <std_msgs/float64.hpp>
-#include <std_msgs/int8.hpp>
-#include <std_msgs/int16.hpp>
-#include <std_msgs/int32.hpp>
-#include <std_msgs/int64.hpp>
-#include <std_msgs/u_int8.hpp>
-#include <std_msgs/u_int16.hpp>
-#include <std_msgs/u_int32.hpp>
-#include <std_msgs/u_int64.hpp>
-#include <std_msgs/string.hpp>
+#include <std_msgs/Float64.h>
+#include <std_msgs/Int8.h>
+#include <std_msgs/Int16.h>
+#include <std_msgs/Int32.h>
+#include <std_msgs/Int64.h>
+#include <std_msgs/UInt8.h>
+#include <std_msgs/UInt16.h>
+#include <std_msgs/UInt32.h>
+#include <std_msgs/UInt64.h>
+#include <std_msgs/String.h>
 
 namespace imgui_ros
 {
@@ -62,7 +62,6 @@ struct Pub : public Widget {
   virtual void draw() = 0;
 protected:
   // unsigned type_ = imgui_ros::AddWindow::Request::FLOAT32;
-  std::weak_ptr<ros::Node> node_;
 };
 
 template <class T>
@@ -70,12 +69,12 @@ struct GenericPub : public Pub {
   GenericPub(const std::string name, const std::string topic, // const unsigned type,
       const float value, const float min, const float max,
       ros::NodeHandle& nh) :
-    Pub(name, topic, node), min_(min), max_(max)
+    Pub(name, topic, nh), min_(min), max_(max)
   {
     msg_.reset(new T);
     msg_->data = value;
     // TODO(lucasw) bring back type for all the float types
-    pub_ = node->create_publisher<T>(topic);
+    pub_ = nh.advertise<T>(topic, 3);
   }
 
   ~GenericPub() {}
@@ -141,7 +140,7 @@ struct GenericPub : public Pub {
       ImGui::Text("unsupported %.*s", static_cast<int>(name_.size()), name_.data());
     }
     if (changed) {
-      pub_->publish(msg_);
+      pub_.publish(msg_);
     }
   }
 
@@ -149,8 +148,8 @@ protected:
   // TODO(lucasw) Fixed at double for now
   double min_ = 0.0;
   double max_ = 1.0;
-  std::shared_ptr<T> msg_;
-  typename ros::Publisher<T>::SharedPtr pub_;
+  T msg_;
+  typename ros::Publisher pub_;
 };
 
 struct BoolPub : public Pub {
@@ -161,8 +160,8 @@ struct BoolPub : public Pub {
   virtual void draw();
 protected:
   bool value_ = false;
-  std::shared_ptr<std_msgs::Bool> msg_;
-  ros::Publisher<std_msgs::Bool>::SharedPtr pub_;
+  std_msgs::Bool msg_;
+  ros::Publisher pub_;
 };
 
 struct StringPub : public Pub {
@@ -175,8 +174,8 @@ protected:
   int value_ = 0;
   std::string items_null_ = "";
   std::vector<std::string> items_;
-  std::shared_ptr<std_msgs::String> msg_;
-  ros::Publisher<std_msgs::String>::SharedPtr pub_;
+  std_msgs::String msg_;
+  ros::Publisher pub_;
 };
 
 struct MenuPub : public Pub {
@@ -190,8 +189,8 @@ protected:
   std::vector<std::string> items_;
   // formatted like how imgui Combo expects
   std::string items_null_ = "";
-  std::shared_ptr<std_msgs::Int32> msg_;
-  ros::Publisher<std_msgs::Int32>::SharedPtr pub_;
+  std_msgs::Int32 msg_;
+  ros::Publisher pub_;
 };
 
 }  // namespace imgui_ros

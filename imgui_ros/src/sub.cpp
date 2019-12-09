@@ -36,21 +36,20 @@ namespace imgui_ros
 {
 Sub::Sub(const std::string name, const std::string topic,  // const unsigned type,
     ros::NodeHandle& nh) :
-    Widget(name, topic),
-    node_(node) {
+    Widget(name, topic) {
+  (void)nh;
 }
 
 BoolSub::BoolSub(const std::string name, const std::string topic,  // const unsigned type,
     const bool value,
     ros::NodeHandle& nh) :
-    Sub(name, topic, node) {
+    Sub(name, topic, nh) {
   (void)value;
   // msg_.reset(new std_msgs::Bool);
-  sub_ = node->create_subscription<std_msgs::Bool>(topic,
-      std::bind(&BoolSub::callback, this, _1));
+  sub_ = nh.subscribe(topic, 3, &BoolSub::callback, this);
 }
 
-void BoolSub::callback(const std_msgs::Bool::SharedPtr msg)
+void BoolSub::callback(const std_msgs::Bool::ConstPtr msg)
 {
   std::lock_guard<std::mutex> lock(mutex_);
   msg_ = msg;

@@ -32,6 +32,7 @@
 #define IMGUI_ROS_IMGUI_ROS_H
 
 #include <imgui.h>
+#include <imgui_ros_msgs/AddTf.h>
 #include <imgui_ros_msgs/AddWindow.h>
 #include <imgui_ros/viz3d.h>
 #include <imgui_ros/image_transfer.h>
@@ -64,10 +65,10 @@ private:
   ros::NodeHandle nh_;
 #if 0
   void runNodeSingleThreaded(ros::NodeHandle& nh);
-  ros::Service<AddTf>::SharedPtr add_tf_;
-  void addTf(const std::shared_ptr<imgui_ros::AddTf::Request> req,
-             std::shared_ptr<imgui_ros::AddTf::Response> res);
 #endif
+  ros::ServiceServer add_tf_;
+  bool addTf(imgui_ros_msgs::AddTf::Request& req,
+             imgui_ros_msgs::AddTf::Response& res);
   bool addWindow(imgui_ros_msgs::AddWindow::Request& req,
                  imgui_ros_msgs::AddWindow::Response& res);
   bool addWidget(const imgui_ros_msgs::Widget& widget,

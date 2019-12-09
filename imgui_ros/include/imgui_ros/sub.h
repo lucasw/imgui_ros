@@ -33,7 +33,7 @@
 
 #include <deque>
 #include <imgui.h>
-#include <imgui_ros/AddWindow.h>
+#include <imgui_ros_msgs/AddWindow.h>
 #include <imgui_ros/window.h>
 #include <mutex>
 #include <opencv2/core.hpp>
@@ -50,16 +50,14 @@ struct Sub : public Widget {
   // ~Sub();
   virtual void draw() = 0;
 protected:
-  std::weak_ptr<ros::Node> node_;
 };
 
 template <class T>
 struct GenericSub : public Sub {
   GenericSub(const std::string name, const std::string topic,
-      ros::NodeHandle& nh) : Sub(name, topic, node)
+      ros::NodeHandle& nh) : Sub(name, topic, nh)
   {
-    sub_ = node->create_subscription<T>(topic,
-        std::bind(&GenericSub::callback, this, std::placeholders::_1));
+    sub_ = nh.subscribe(topic, &GenericSub::callback, this);
   }
   ~GenericSub() {}
   virtual void draw()
@@ -81,9 +79,10 @@ struct GenericSub : public Sub {
     ImGui::Text("%s", ss.str().c_str());
   }
 protected:
-  std::shared_ptr<T> msg_;
-  typename ros::Subscription<T>::SharedPtr sub_;
-  virtual void callback(const typename T::SharedPtr msg)
+  typename T::ConstPtr msg_;
+  // typename
+  ros::Subscriber sub_;
+  virtual void callback(const typename T::ConstPtr msg)
   {
     std::lock_guard<std::mutex> lock(mutex_);
     msg_ = msg;
@@ -97,7 +96,7 @@ struct PlotSub : public GenericSub<T> {
   PlotSub(const std::string name, const std::string topic,
       float value,
       ros::NodeHandle& nh) :
-      GenericSub<T>(name, topic, node)
+      GenericSub<T>(name, topic, nh)
   {
     data_.push_back(value);
     data_.push_back(value);
@@ -118,7 +117,7 @@ protected:
   std::vector<float> data_;
   // float min_;
   // float max_;
-  virtual void callback(const typename T::SharedPtr msg)
+  virtual void callback(const typename T::ConstPtr msg)
   {
     GenericSub<T>::callback(msg);
     std::lock_guard<std::mutex> lock(GenericSub<T>::mutex_);
@@ -136,9 +135,9 @@ struct BoolSub : public Sub {
   ~BoolSub() {}
   virtual void draw();
 protected:
-  std::shared_ptr<std_msgs::Bool> msg_;
-  ros::Subscription<std_msgs::Bool>::SharedPtr sub_;
-  void callback(const std_msgs::Bool::SharedPtr msg);
+  std_msgs::Bool::ConstPtr msg_;
+  ros::Subscriber sub_;
+  void callback(const std_msgs::Bool::ConstPtr msg);
 };
 
 }  // namespace imgui_ros

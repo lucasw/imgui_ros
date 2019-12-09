@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node pkg="imgui_ros" type="imgui_ros_node"
+    name="imgui_ros" output="screen" >
+    <param name="name" value="imgui viz3d demo" />
+    <param name="width" value="1440" />
+    <param name="height" value="800" />
+    <param name="red" value="0.5" />
+    <param name="green" value="0.5" />
+    <param name="blue" value="0.52" />
+  </node>
+
+  <node pkg="imgui_ros" type="demo_viz3d.py" name="demo2" output="screen">
+  </node>
+
+</launch>

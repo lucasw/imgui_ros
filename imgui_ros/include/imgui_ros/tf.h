@@ -32,8 +32,8 @@
 #define IMGUI_ROS_TF_H
 
 #include <imgui.h>
-#include <imgui_ros/tf_widget.hpp>
-#include <imgui_ros/AddWindow.h>
+#include <imgui_ros_msgs/TfWidget.h>
+#include <imgui_ros_msgs/AddWindow.h>
 #include <imgui_ros/window.h>
 #include <imgui_ros/sub.h>
 #include <imgui_ros/pub.h>
@@ -72,7 +72,7 @@ struct TfBroadcaster : public Pub {
       ros::NodeHandle& nh);
 
   TfBroadcaster(
-      const imgui_ros::TfWidget& tf,
+      const imgui_ros_msgs::TfWidget& tf,
       std::shared_ptr<tf2_ros::Buffer> tf_buffer,
       ros::NodeHandle& nh);
 
@@ -96,7 +96,7 @@ protected:
   geometry_msgs::TransformStamped default_ts_;
   // TODO(lucasw) may weak_ptr would work
   // std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
-  // ros::Publisher<tf2_msgs::TFMessage>::SharedPtr tf_pub_;
+  // ros::Publisher tf_pub_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
 };
 
