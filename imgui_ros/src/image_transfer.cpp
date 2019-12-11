@@ -110,8 +110,8 @@ void ImageTransfer::update(const ros::TimerEvent& e)
   (void)e;
   // std::lock_guard<std::mutex> lock(sub_mutex_);
   if (!initted_) {
-    std::cout << "image transfer 0x" << std::hex << std::this_thread::get_id()
-        << std::dec << "\n";
+    ROS_INFO_STREAM("image transfer 0x" << std::hex << std::this_thread::get_id()
+        << std::dec);
     initted_ = true;
   }
   {
