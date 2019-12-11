@@ -188,7 +188,7 @@ void Graph::draw()
   ImGui::Checkbox("Show grid", &show_grid_);
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-  ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, IM_COL32(60, 60, 70, 200));
+  ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(60, 60, 70, 200));
   ImGui::BeginChild("scrolling_region", ImVec2(0, 0), true,
       ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
   ImGui::PushItemWidth(120.0f);
