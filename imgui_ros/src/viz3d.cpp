@@ -284,6 +284,9 @@ Viz3D::Viz3D(const std::string name,
     nh_(nh),
     image_transfer_(image_transfer)
 {
+  if (!image_transfer) {
+    throw std::runtime_error("uninitialized image transfer");
+  }
   ROS_INFO_STREAM(__FUNCTION__);
   setSettings(ImVec2(0, 200), ImVec2(400, 400), false, 0.0, false);
   // render_message_.precision(2);

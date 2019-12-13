@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # Copyright 2018 Lucas Walter
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,21 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
-import cv2
-import cv_bridge
 import math
-# TODO(lucasW) this doesn't exist in python yet?
+# TODO(lucasw) this doesn't exist in python yet?
 # import tf2_ros
-import rclpy
-import sys
+import rospy
 
-from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Point, TransformStamped, Vector3
-from imgui_ros.msg import TexturedShape, TfWidget, Vertex, Widget
-from imgui_ros.srv import AddCamera, AddCubeCamera, AddProjector, AddShaders
-from imgui_ros.srv import AddShape, AddTexture, AddTf, AddWindow
-from rclpy.node import Node
+from imgui_ros_msgs.msg import TexturedShape, TfWidget, Vertex
+from imgui_ros_msgs.srv import AddCamera, AddCameraRequest, AddCubeCamera, AddCubeCameraRequest
+from imgui_ros_msgs.srv import AddShape, AddShapeRequest, AddTf, AddTfRequest
 from shape_msgs.msg import MeshTriangle, Mesh
 from std_msgs.msg import ColorRGBA
 from time import sleep
@@ -38,47 +32,24 @@ from visualization_msgs.msg import Marker
 def vector3_len(vec):
     return math.sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z)
 
-class Cameras(Node):
-
+class Cameras:
     def __init__(self):
-        super().__init__('add_shape')
-        # self.marker_pub = self.create_publisher(Marker, 'marker')
-        # self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
+        self.add_cameras()
+        self.add_cube_cameras()
+        self.add_gui()
 
-        self.bridge = cv_bridge.CvBridge()
-
-    # TODO(lucasw) can't this be a callback instead?
-    def wait_for_response(self):
-        while rclpy.ok():
-            rclpy.spin_once(self)
-            if self.future.done():
-                if self.future.result() is not None:
-                    response = self.future.result()
-                    self.get_logger().info(
-                        'Result %s' % (str(response)))
-                else:
-                    self.get_logger().info(
-                        'Service call failed %r' % (self.future.exception(),))
-                break
-
-    def run(self, namespace=''):
-        self.add_cameras(namespace)
-        self.add_cube_cameras(namespace)
-        self.add_gui(namespace)
-
-    def add_gui(self, namespace):
-        self.tf_cli = self.create_client(AddTf, namespace + '/add_tf')
-        while not self.tf_cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info('service not available, waiting again...')
+    def add_gui(self):
+        rospy.wait_for_service('add_tf')
+        self.tf_cli = rospy.ServiceProxy('add_tf', AddTf)
 
         # TODO(lucasw) what if this window doesn't exist yet?
-        req = AddWindow.Request()
-        req.name = "misc controls"
+        # Should be added automatically.
+        req_name = "misc controls"
         tab_name = 'tf'
 
         tf_widget = TfWidget()
         tf_widget.name = "cube camera tf"
-        tf_widget.window = req.name
+        tf_widget.window = req_name
         tf_widget.tab_name = tab_name
         tf_widget.min = -2.0
         tf_widget.max = 2.0
@@ -97,15 +68,19 @@ class Cameras(Node):
         ts.transform.rotation.y = rot[2]
         ts.transform.rotation.z = rot[3]
         tf_widget.transform_stamped = ts
-        tf_req = AddTf.Request()
+        tf_req = AddTfRequest()
         tf_req.tf = tf_widget
-        self.future = self.tf_cli.call_async(tf_req)
-        self.wait_for_response()
+
+        try:
+            resp = self.tf_cli(tf_req)
+            rospy.loginfo(resp)
+        except rospy.service.ServiceException as e:
+            rospy.logerr(e)
 
         tf_widget = TfWidget()
         tf_widget.name = "cube camera lens pub"
         tf_widget.tab_name = tab_name
-        tf_widget.window = req.name
+        tf_widget.window = req_name
         tf_widget.min = -2.0
         tf_widget.max = 2.0
         ts = TransformStamped()
@@ -123,18 +98,22 @@ class Cameras(Node):
         ts.transform.rotation.y = rot[2]
         ts.transform.rotation.z = rot[3]
         tf_widget.transform_stamped = ts
-        tf_req = AddTf.Request()
+        tf_req = AddTfRequest()
         tf_req.tf = tf_widget
-        self.future = self.tf_cli.call_async(tf_req)
-        self.wait_for_response()
 
-    def add_cameras(self, namespace):
-        self.camera_cli = self.create_client(AddCamera, namespace + '/add_camera')
-        while not self.camera_cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info('camera service not available, waiting again...')
+        try:
+            resp = self.tf_cli(tf_req)
+            rospy.loginfo(resp)
+        except rospy.service.ServiceException as e:
+            rospy.logerr(e)
+
+    def add_cameras(self):
+        rospy.wait_for_service('add_camera')
+        self.camera_cli = rospy.ServiceProxy('add_camera', AddCamera)
 
         if True:
-            req = AddCamera.Request()
+            req = AddCameraRequest()
+            req.camera.add = True
             req.camera.header.frame_id = 'camera1'
             # req.camera.header_frame_id = 'camera1'
             req.camera.name = 'camera1'
@@ -145,20 +124,23 @@ class Cameras(Node):
             req.camera.aov_y = 120.0
             req.camera.skip = 2
             req.camera.ros_pub = True
-            self.future = self.camera_cli.call_async(req)
-            self.wait_for_response()
 
-    def add_cube_cameras(self, namespace):
-        self.cube_camera_cli = self.create_client(AddCubeCamera, namespace + '/add_cube_camera')
-        while not self.cube_camera_cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info('cube camera service not available, waiting again...')
-            sleep(1.0)
+            try:
+                resp = self.camera_cli(req)
+                rospy.loginfo(resp)
+            except rospy.service.ServiceException as e:
+                rospy.logerr(e)
+
+    def add_cube_cameras(self):
+        rospy.wait_for_service('add_cube_camera')
+        self.cube_camera_cli = rospy.ServiceProxy('add_cube_camera', AddCubeCamera)
 
         aspect = 1.0  # 4.0 / 2.0
         height = 768
 
         if True:
-            req = AddCubeCamera.Request()
+            req = AddCubeCameraRequest()
+            req.camera.add = True
             req.camera.header.frame_id = 'cube_camera'
             req.camera.name = 'cube_camera1'
             req.camera.texture_name = 'cube_camera1'
@@ -166,34 +148,37 @@ class Cameras(Node):
             req.camera.width = int(height * aspect)
             req.camera.height = height
             req.camera.aov_y = 90.0
-            self.future = self.cube_camera_cli.call_async(req)
-            self.wait_for_response()
+
+            resp = self.cube_camera_cli(req)
+            rospy.loginfo(resp)
+
         self.make_lenses(aspect=aspect)
 
     def make_lenses(self, aspect=1.0):
-        req = AddShape.Request()
-        self.shape_cli = self.create_client(AddShape, 'add_shape')
-        while not self.shape_cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info('shape service not available, waiting again...')
+        rospy.wait_for_service('add_shape')
+        self.shape_cli = rospy.ServiceProxy('add_shape', AddShape)
 
+        req = AddShapeRequest()
         if False:
             shape = self.make_360_lens(name='cube_camera_lens',
                                        cols=32, rows=32, aspect=aspect)
         else:
             shape = self.make_polar_omnidirectional_lens(name='cube_camera_lens',
-                                       # segs_lat=64, segs_long=64, aspect=aspect)
-                                       segs_lat=12, segs_long=12, aspect=aspect)
+                                                         # segs_lat=64, segs_long=64, aspect=aspect)
+                                                         segs_lat=12, segs_long=12, aspect=aspect)
         shape.header.frame_id = 'cube_camera_lens'
         req.shapes.append(shape)
 
-        self.future = self.shape_cli.call_async(req)
-        self.wait_for_response()
+        resp = self.shape_cli(req)
+        rospy.loginfo(resp)
         sleep(1.0)
 
     def make_polar_omnidirectional_lens(self, name,
             segs_lat=16, segs_long=16,
             flip_normals=False, aspect=1.0):
         shape = TexturedShape()
+        shape.add = True
+        shape.enable = True
         shape.name = name
         # TODO(lucasw) laster support normal maps
         shape.header.frame_id = 'cube_camera_lens'
@@ -242,6 +227,8 @@ class Cameras(Node):
 
     def make_360_lens(self, name, cols, rows, aspect=1.0, flip_normals=False):
         shape = TexturedShape()
+        shape.add = True
+        shape.enable = True
         shape.name = name
         # TODO(lucasw) laster support normal maps
         shape.header.frame_id = 'cube_camera_lens'
@@ -325,22 +312,6 @@ class Cameras(Node):
         shape.triangles.append(triangle)
         return shape
 
-def main(args=None):
-    rclpy.init(args=args)
-
-    parser = argparse.ArgumentParser(description='imgui_ros demo')
-    # parser.add_argument('-nt', '--no-textures', dest='no_textures',  # type=bool,
-    #         help='enable textures', action='store_true')  # , default=True)
-    # parser.add_argument('-ns', '--no-shapes', dest='no_shapes',  # type=bool,
-    #         help='enable shapes', action='store_true')  # , default=True)
-    args, unknown = parser.parse_known_args(sys.argv)
-
-    try:
-        demo = Cameras()
-        demo.run()
-    finally:
-        demo.destroy_node()
-        rclpy.shutdown()
-
 if __name__ == '__main__':
-    main()
+    rospy.init_node('imgui_cameras')
+    camera = Cameras()

@@ -82,6 +82,9 @@ void CubeCamera::init(
     ros::NodeHandle* nh,
     std::shared_ptr<ImageTransfer> image_transfer)
 {
+  if (!image_transfer) {
+    throw std::runtime_error("uninitialized image transfer");
+  }
   const bool sub_not_pub = false;
 
   ROS_INFO(
@@ -142,7 +145,7 @@ void CubeCamera::init(
     // TODO(lucasw) texture_name + std::to_string(face->dir_);
     std::shared_ptr<RosImage> image = std::make_shared<RosImage>(
         texture_name + "_face" + std::to_string(ind),
-        "", sub_not_pub, false);
+        "", sub_not_pub, false, image_transfer);
     image->min_filter_ind_ = 0;
     image->mag_filter_ind_ = 0;
     face->image_ = image;
@@ -219,14 +222,14 @@ void CubeCamera::init(
 
       checkGLError(__FILE__, __LINE__);
 
-      auto fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+      const auto fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
       if (fb_status != GL_FRAMEBUFFER_COMPLETE) {
         ROS_ERROR(
-            "framebuffer incomplete '%s', face dir %d, fb %d, db %d, cube tex id %d, fb status %d, gl error %X",
+            "framebuffer incomplete '%s', face dir %d, fb %d, db %d, cube tex id %d, fb status %X!=%X, gl error %X",
             name_.c_str(),
             face->dir_, face->frame_buffer_, face->depth_buffer_,
             cube_texture_id_,
-            fb_status, glGetError());
+            fb_status, GL_FRAMEBUFFER_COMPLETE, glGetError());
         // TODO(lucasw) put above text into throw message
         throw std::runtime_error("incomplete frame buffer");
       } else {

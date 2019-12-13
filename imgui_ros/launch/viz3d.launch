@@ -11,7 +11,9 @@
     <param name="blue" value="0.52" />
   </node>
 
-  <node pkg="imgui_ros" type="demo_viz3d.py" name="demo_viz3d_setup" output="screen">
+  <!--node pkg="imgui_ros" type="demo_viz3d.py" name="demo_viz3d_setup" output="screen">
+  </node-->
+  <node pkg="imgui_ros" type="cameras.py" name="cameras_setup" output="screen">
   </node>
   <node pkg="imgui_ros" type="add_shaders_utility.py" name="shaders_setup" output="screen">
   </node>
