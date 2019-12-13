@@ -548,7 +548,7 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
 
     // set length of one complete row in data (doesn't need to equal image.cols)
     glPixelStorei(GL_UNPACK_ROW_LENGTH, image_.step / image_.elemSize());
-    std::cout << texture_id_ << " " << image_.size() << "\n";
+    ROS_INFO_STREAM(texture_id_ << " " << image_.size());
     return true;
   }
 

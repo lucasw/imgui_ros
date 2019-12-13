@@ -75,6 +75,12 @@ void Camera::init(const size_t width, const size_t height,
     ros::NodeHandle* nh,
     std::shared_ptr<ImageTransfer> image_transfer)
 {
+  if (width == 0) {
+    throw std::runtime_error("width is zero");
+  }
+  if (height == 0) {
+    throw std::runtime_error("height is zero");
+  }
   ROS_DEBUG("regular camera");
   const bool sub_not_pub = false;
   image_ = std::make_shared<RosImage>(texture_name, topic, sub_not_pub, ros_pub,

@@ -140,6 +140,7 @@ class Cameras:
 
         if True:
             req = AddCubeCameraRequest()
+            req.face_width = 512
             req.camera.add = True
             req.camera.header.frame_id = 'cube_camera'
             req.camera.name = 'cube_camera1'

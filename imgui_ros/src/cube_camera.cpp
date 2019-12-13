@@ -85,6 +85,9 @@ void CubeCamera::init(
   if (!image_transfer) {
     throw std::runtime_error("uninitialized image transfer");
   }
+  if (face_width == 0) {
+    throw std::runtime_error("face_width is zero");
+  }
   const bool sub_not_pub = false;
 
   ROS_INFO(
@@ -106,7 +109,7 @@ void CubeCamera::init(
 
   checkGLError(__FILE__, __LINE__);
 
-  std::cout << "cube texture id: " << cube_texture_id_ << "\n";
+  ROS_INFO_STREAM("cube texture id: " << cube_texture_id_);
 
   // TODO(lucasw) maybe a cube camera should be 6 regular camera
   // or at least factor out common code.
@@ -139,7 +142,7 @@ void CubeCamera::init(
 
   int ind = 0;
   for (auto face : faces_) {
-    std::cout << "face dir " << face->dir_ << "\n";
+    ROS_INFO_STREAM("face dir " << face->dir_);
 
     ind += 1;
     // TODO(lucasw) texture_name + std::to_string(face->dir_);
@@ -176,7 +179,7 @@ void CubeCamera::init(
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, face_width, face_width,
           0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
       glGenerateMipmap(GL_TEXTURE_2D);
-      std::cout << "data size " << image->image_msg_->data.size() << "\n";
+      ROS_INFO_STREAM("data size " << image->image_msg_->data.size());
     }
 
     checkGLError(__FILE__, __LINE__);
@@ -223,6 +226,7 @@ void CubeCamera::init(
       checkGLError(__FILE__, __LINE__);
 
       const auto fb_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+      // look here for defines for error codes /usr/include/GL/glext.h
       if (fb_status != GL_FRAMEBUFFER_COMPLETE) {
         ROS_ERROR(
             "framebuffer incomplete '%s', face dir %d, fb %d, db %d, cube tex id %d, fb status %X!=%X, gl error %X",
