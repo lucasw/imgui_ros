@@ -14,6 +14,8 @@
   <!--node pkg="imgui_ros" type="demo_viz3d.py" name="demo_viz3d_setup" output="screen">
   </node-->
   <group if="true">
+    <node pkg="imgui_ros" type="demo_gui.py" name="tf_setup" output="screen">
+    </node>
     <node pkg="imgui_ros" type="cameras.py" name="cameras_setup" output="screen">
     </node>
     <node pkg="imgui_ros" type="pub_shape.py" name="add_shapes" output="screen">

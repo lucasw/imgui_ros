@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # Copyright 2018 Lucas Walter
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,55 +16,33 @@
 # TODO(lucasW) this doesn't exist in python yet?
 # import tf2_ros
 import math
-import rclpy
+import rospy
 
 from geometry_msgs.msg import Point, TransformStamped
-from imgui_ros.msg import TexturedShape, TfWidget, Widget
-from imgui_ros.srv import AddTf, AddWindow
-from rclpy.node import Node
+from imgui_ros_msgs.msg import TexturedShape, TfWidget, Widget
+from imgui_ros_msgs.srv import AddTf, AddTfRequest, AddWindow, AddWindowRequest
 from shape_msgs.msg import MeshTriangle, Mesh
-from time import sleep
 from transforms3d import _gohlketransforms as tg
 from visualization_msgs.msg import Marker
 
 
-class DemoGui(Node):
-
+class DemoGui:
     def __init__(self):
-        super().__init__('demo')
+        rospy.wait_for_service('add_window')
+        self.cli = rospy.ServiceProxy('add_window', AddWindow)
 
-    # TODO(lucasw) can't this be a callback instead?
-    def wait_for_response(self):
-        while rclpy.ok():
-            rclpy.spin_once(self)
-            if self.future.done():
-                if self.future.result() is not None:
-                    response = self.future.result()
-                    self.get_logger().info(
-                        'Result %s' % (str(response)))
-                else:
-                    self.get_logger().info(
-                        'Service call failed %r' % (self.future.exception(),))
-                break
-
-    def run(self, namespace=''):
-        self.cli = self.create_client(AddWindow, namespace + '/add_window')
-        while not self.cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info(namespace + ' service not available, waiting again...')
-
-        self.tf_cli = self.create_client(AddTf, namespace + '/add_tf')
-        while not self.tf_cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info(namespace + ' service not available, waiting again...')
+        rospy.wait_for_service('add_tf')
+        self.tf_cli = rospy.ServiceProxy('add_tf', AddTf)
 
         self.add_images()
         self.add_roto_controls()
         self.add_misc()
         self.add_viz()
-        self.add_markers(namespace)
-        # self.add_shapes(namespace)
+        self.add_markers()
+        # self.add_shapes()
 
     def add_images(self):
-        req = AddWindow.Request()
+        req = AddWindowRequest()
         req.name = "misc controls"
         tab_name = 'images'
         widget = Widget()
@@ -80,11 +58,10 @@ class DemoGui(Node):
         widget.topic = "cube_camera1"
         widget.type = Widget.IMAGE
         req.widgets.append(widget)
-        self.future = self.cli.call_async(req)
-        self.wait_for_response()
+        self.cli(req)
 
     def add_roto_controls(self):
-        req = AddWindow.Request()
+        req = AddWindowRequest()
         req.name = "misc controls"
         tab_name = 'roto'
 
@@ -180,11 +157,10 @@ class DemoGui(Node):
             widget.sub_type = widget_type
             req.widgets.append(widget)
 
-        self.future = self.cli.call_async(req)
-        self.wait_for_response()
+        self.cli(req)
 
     def add_misc(self):
-        req = AddWindow.Request()
+        req = AddWindowRequest()
         req.name = 'misc controls'
 
         tab_name = 'misc'
@@ -229,12 +205,11 @@ class DemoGui(Node):
         widget.sub_type = Widget.STRING
         req.widgets.append(widget)
 
-        self.future = self.cli.call_async(req)
-        self.wait_for_response()
+        self.cli(req)
 
     def add_viz(self):
         # dedicate 'radar' for tf
-        req = AddWindow.Request()
+        req = AddWindowRequest()
         req.name = "tf viz"
 
         tab_name = 'viz2d'
@@ -253,11 +228,10 @@ class DemoGui(Node):
         widget.items.append("cube_camera1")
         req.widgets.append(widget)
 
-        self.future = self.cli.call_async(req)
-        self.wait_for_response()
+        self.cli(req)
 
         # TF control widgets
-        req = AddWindow.Request()
+        req = AddWindowRequest()
         req.name = "misc controls"
         tab_name = 'tf'
 
@@ -306,8 +280,7 @@ class DemoGui(Node):
             req.widgets.append(widget)
 
         # All the above take up about 10% cpu
-        self.future = self.cli.call_async(req)
-        self.wait_for_response()
+        self.cli(req)
 
         # dedicated tf add service with more configurability
 
@@ -332,10 +305,9 @@ class DemoGui(Node):
         ts.transform.rotation.y = rot[2]
         ts.transform.rotation.z = rot[3]
         tf_widget.transform_stamped = ts
-        tf_req = AddTf.Request()
+        tf_req = AddTfRequest()
         tf_req.tf = tf_widget
-        self.future = self.tf_cli.call_async(tf_req)
-        self.wait_for_response()
+        self.tf_cli(tf_req)
 
         tf_widget = TfWidget()
         tf_widget.name = "sky tf"
@@ -358,10 +330,9 @@ class DemoGui(Node):
         ts.transform.rotation.y = rot[2]
         ts.transform.rotation.z = rot[3]
         tf_widget.transform_stamped = ts
-        tf_req = AddTf.Request()
+        tf_req = AddTfRequest()
         tf_req.tf = tf_widget
-        self.future = self.tf_cli.call_async(tf_req)
-        self.wait_for_response()
+        self.tf_cli(tf_req)
 
         tf_widget = TfWidget()
         tf_widget.name = "projector1 pub"
@@ -384,10 +355,9 @@ class DemoGui(Node):
         ts.transform.rotation.y = rot[2]
         ts.transform.rotation.z = rot[3]
         tf_widget.transform_stamped = ts
-        tf_req = AddTf.Request()
+        tf_req = AddTfRequest()
         tf_req.tf = tf_widget
-        self.future = self.tf_cli.call_async(tf_req)
-        self.wait_for_response()
+        self.tf_cli(tf_req)
 
         tf_widget = TfWidget()
         tf_widget.name = "map pub tf 2"
@@ -410,10 +380,9 @@ class DemoGui(Node):
         ts.transform.rotation.y = rot[2]
         ts.transform.rotation.z = rot[3]
         tf_widget.transform_stamped = ts
-        tf_req = AddTf.Request()
+        tf_req = AddTfRequest()
         tf_req.tf = tf_widget
-        self.future = self.tf_cli.call_async(tf_req)
-        self.wait_for_response()
+        self.tf_cli(tf_req)
 
         # TODO(lucasw) move the tf broadcasting into standalone node
         if False:
@@ -422,9 +391,9 @@ class DemoGui(Node):
             self.br = tf2_ros.TransformBroadcaster()
             self.timer = self.create_timer(self.period, self.update)
 
-    def add_markers(self, namespace):
-        self.marker_pub = self.create_publisher(Marker, namespace + '/marker')
-        sleep(1.0)
+    def add_markers(self):
+        self.marker_pub = rospy.Publisher('marker', Marker, queue_size=3)
+        rospy.sleep(1.0)
 
         # now publish some markers for the Viz2D
         marker = Marker()
@@ -440,7 +409,7 @@ class DemoGui(Node):
         marker.pose.position.y = 0.25
         marker.text = "bar marker"
         self.marker_pub.publish(marker)
-        sleep(1.0)
+        rospy.sleep(1.0)
 
         marker = Marker()
         marker.ns = "test"
@@ -454,11 +423,11 @@ class DemoGui(Node):
         marker.color.a = 1.0
         marker.text = "bar2 marker"
         self.marker_pub.publish(marker)
-        sleep(1.0)
+        rospy.sleep(1.0)
 
-    def add_shapes(self, namespace):
-        self.shape_pub = self.create_publisher(TexturedShape, namespace + '/shapes')
-        sleep(1.0)
+    def add_shapes(self):
+        self.shape_pub = rospy.Publisher('shapes', TexturedShape, queue_size=3)
+        rospy.sleep(1.0)
 
         shape = TexturedShape()
         shape.name = "foo"
@@ -492,8 +461,9 @@ class DemoGui(Node):
         print("shape {} {} {}".format(shape.name, len(shape.mesh.vertices),
               len(shape.mesh.triangles) * 3))
         self.shape_pub.publish(shape)
-        sleep(1.0)
+        rospy.sleep(1.0)
 
+    # TODO(lucasw) this isn't used
     def update(self):
         ts = TransformStamped()
         ts.header.stamp = self.now()
@@ -505,17 +475,7 @@ class DemoGui(Node):
         self.br.sendTransform(ts)
         self.elapsed += 0.05
 
-def main(args=None):
-    rclpy.init(args=args)
-
-    try:
-        demo = DemoGui()
-        demo.run()
-        # don't need to spin if not publishing tf
-        # rclpy.spin(demo)
-    finally:
-        demo.destroy_node()
-        rclpy.shutdown()
 
 if __name__ == '__main__':
-    main()
+    rospy.init_node('demo_gui')
+    demo = DemoGui()
