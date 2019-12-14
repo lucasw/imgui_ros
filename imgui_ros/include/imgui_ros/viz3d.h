@@ -112,8 +112,8 @@ struct Viz3D : public Window {
   // TODO(lucasw) should this go somewhere else?
   glm::vec3 ambient_ = glm::vec3(0.3, 0.3, 0.3);
 
-  virtual void update(const ros::Time& stamp);
-  virtual void draw();
+  virtual void update(const ros::Time& stamp, const std::string dropped_file);
+  virtual void draw(const int outer_window_width, const int outer_window_height);
   //    const int pos_x, const int pos_y,
   //    const int size_x, const int size_y);
 

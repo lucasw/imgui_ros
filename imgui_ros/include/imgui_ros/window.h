@@ -72,6 +72,8 @@ struct Window {
   Window(const std::string name) :
       name_(name) {}
   virtual ~Window();
+  // TODO(lucasw) can draw and upate be pure virtual, if not here then
+  // one class up?
   virtual void draw(const int outer_window_width,
                     const int outer_window_height);
   void add(std::shared_ptr<Widget> widget, const std::string& tab_name);

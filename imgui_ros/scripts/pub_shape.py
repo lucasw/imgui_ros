@@ -362,6 +362,7 @@ class PubShape:
         req = AddShapeRequest()
         if True:
             shape = self.make_plane(off_y=-3.0)
+            shape.enable = True
             shape.add = True
             req.shapes.append(shape)
         if True:
@@ -377,6 +378,7 @@ class PubShape:
                 color_b=1.0,
                 flip_normals=True,
                 )
+            shape.enable = True
             shape.add = True
             shape.texture = 'gradient'
             shape.shininess_texture = 'gradient'
@@ -387,6 +389,7 @@ class PubShape:
             shape = self.make_cylinder(name='cylinder2', radius=0.1, length=0.1,
                 segs=20,
                 off_y=0.0)
+            shape.enable = True
             shape.add = True
             shape.texture = 'gradient_radial'
             shape.shininess_texture = 'gradient_radial'
@@ -396,6 +399,7 @@ class PubShape:
             radius = 0.5
             shape = self.make_cylinder(name='cylinder3', length=2.0,
                                        radius=radius, segs=24)
+            shape.enable = True
             shape.add = True
             shape.texture = 'diffract'  # 'camera1'
             shape.shininess_texture = 'gradient_radial'
@@ -405,6 +409,7 @@ class PubShape:
             shape = self.make_cylinder(name='cylinder3_inside', length=2.0,
                                        radius=radius * 0.95, segs=12,
                                        flip_normals=True)
+            shape.enable = True
             shape.add = True
             shape.texture = 'diffract'  # 'camera1'
             shape.shininess_texture = 'gradient_radial'

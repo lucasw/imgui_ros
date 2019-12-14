@@ -61,7 +61,7 @@ public:
 
   // TODO(lucasw) virtual void draw()
 
-  void update(const ros::TimerEvent& e);
+  void update(const ros::TimerEvent& event);
 
   void draw(ros::Time cur);
 

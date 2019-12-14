@@ -887,13 +887,10 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   ImGui::NewFrame();
 
   {
-#if 0
     // TODO(lucasw) make image_transfer into a widget?
     #ifndef RUN_IMAGE_TRANSFER_SEPARATE_THREAD
-    ros::spin_some(image_transfer_);
-    image_transfer_->update();
+    image_transfer_->update(ev);
     #endif
-#endif
 
     for (auto& window : windows_) {
       if (window.second) {

@@ -740,7 +740,7 @@ bool Viz3D::addShape2(const imgui_ros_msgs::TexturedShape::ConstPtr& msg, std::s
   return true;
 }
 
-void Viz3D::update(const ros::Time& stamp)
+void Viz3D::update(const ros::Time& stamp, const std::string dropped_file)
 {
   double x_move = 0.0;
   double y_move = 0.0;
@@ -929,8 +929,10 @@ void Viz3D::drawMain()
   }
 }
 
-void Viz3D::draw()
+void Viz3D::draw(const int outer_window_width, const int outer_window_height)
 {
+  (void)outer_window_width;
+  (void)outer_window_height;
   ImGui::Begin("viz3d");
 
   // TODO(lucasw) show render time, update time, draw time
