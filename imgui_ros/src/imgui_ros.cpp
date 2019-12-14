@@ -422,10 +422,10 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
     // TODO(lucasw) if widget.topic already exists somewhere in a RosImage
     // subscriber need to re-use it, can't duplicate subscribers.i
     // viz3d has any number of RosImages also.
-    auto ros_image = std::make_shared<RosImage>(widget.name, widget.topic,
+    auto ros_image = std::make_shared<RosImage>(widget.name, image_transfer_,
+        widget.topic,
         sub_not_pub,
-        false,
-        image_transfer_);
+        false);
     ros_image->enable_draw_image_ = true;
     imgui_widget = ros_image;
     return true;

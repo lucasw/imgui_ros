@@ -303,8 +303,8 @@ Viz3D::Viz3D(const std::string name,
   nh->getParam("ambient_blue", ambient_[2]);
 
   const bool sub_not_pub = true;
-  textures_["default"] = std::make_shared<RosImage>("default", "default_texture", sub_not_pub,
-      false, image_transfer_);
+  textures_["default"] = std::make_shared<RosImage>("default", image_transfer_,
+      "default_texture", sub_not_pub, false);
 
   transform_.setIdentity();
 
@@ -619,8 +619,8 @@ bool Viz3D::addTexture(imgui_ros_msgs::AddTexture::Request& req,
     return true;
   }
 
-  auto texture = std::make_shared<RosImage>(req.name,
-    boost::make_shared<sensor_msgs::Image>(req.image));
+  auto texture = std::make_shared<RosImage>(req.name, image_transfer_,
+      boost::make_shared<sensor_msgs::Image>(req.image));
   texture->draw_texture_controls_ = true;
   // texture->imageCallback(std::make_shared<sensor_msgs::Image>(req.image));
   texture->wrap_s_ind_ = req.wrap_s;

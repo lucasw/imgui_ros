@@ -67,13 +67,15 @@ struct GlImage : public Widget {
 // TODO(lucasw) should every window be a node?  Or less overhead to
 // have a single node in the imgui parent?
 struct RosImage : public GlImage {
-  RosImage(const std::string name, const std::string topic = "",
+  // TODO(lucasw) image_transfer is required, can't be nullptr
+  RosImage(const std::string name,
+           std::shared_ptr<ImageTransfer> image_transfer,
+           const std::string topic = "",
            const bool sub_not_pub = false,
-           const bool ros_pub = false,
-           // ros::NodeHandle& nh = nullptr,
-           std::shared_ptr<ImageTransfer> image_transfer = nullptr);
+           const bool ros_pub = false);
   RosImage(const std::string& name,
-    sensor_msgs::ImagePtr image);
+           std::shared_ptr<ImageTransfer> image_transfer,
+           sensor_msgs::ImagePtr image);
 
   virtual void update(const ros::Time& stamp, const std::string dropped_file="") override;
   // void imageCallback(const sensor_msgs::ImagePtr msg);

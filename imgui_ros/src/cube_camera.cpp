@@ -148,7 +148,8 @@ void CubeCamera::init(
     // TODO(lucasw) texture_name + std::to_string(face->dir_);
     std::shared_ptr<RosImage> image = std::make_shared<RosImage>(
         texture_name + "_face" + std::to_string(ind),
-        "", sub_not_pub, false, image_transfer);
+        image_transfer,
+        "", sub_not_pub, false);
     image->min_filter_ind_ = 0;
     image->mag_filter_ind_ = 0;
     face->image_ = image;

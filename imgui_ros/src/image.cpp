@@ -81,21 +81,20 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
   GlImage::GlImage(const std::string name, const std::string topic) :
       Widget(name, topic) {
     glGenTextures(1, &texture_id_);
-    std::cout << "generating texture " << texture_id_ << " '" << name_ << "'\n";
+    ROS_INFO_STREAM("generating texture " << texture_id_ << " '" << name_);
   }
 
   GlImage::~GlImage() {
-    std::cout << "freeing texture " << texture_id_ << " '" << name_ << "'\n";
+    ROS_INFO_STREAM("freeing texture " << texture_id_ << " '" << name_ << "'");
     glDeleteTextures(1, &texture_id_);
   }
 
-  RosImage::RosImage(const std::string name, const std::string topic, const bool sub_not_pub,
-                     const bool ros_pub,
-                     // std::shared_ptr<ros::Node> node,
-                     std::shared_ptr<ImageTransfer> image_transfer) :
+  RosImage::RosImage(const std::string name,
+                     std::shared_ptr<ImageTransfer> image_transfer,
+                     const std::string topic, const bool sub_not_pub,
+                     const bool ros_pub) :
                      GlImage(name, topic),
                      sub_not_pub_(sub_not_pub),
-                     // node_(node),
                      image_transfer_(image_transfer)
   {
     if (!image_transfer_) {
@@ -132,8 +131,9 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
   }
 
   RosImage::RosImage(const std::string& name,
+    std::shared_ptr<ImageTransfer> image_transfer,
     sensor_msgs::ImagePtr image) :
-    RosImage(name)
+    RosImage(name, image_transfer)
   {
     image_msg_ = image;
     dirty_ = true;

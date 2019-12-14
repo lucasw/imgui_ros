@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # Copyright 2018 Lucas Walter
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,56 +13,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
 import cv2
 import cv_bridge
 import math
-# TODO(lucasW) this doesn't exist in python yet?
-# import tf2_ros
-import rclpy
-import sys
+import rospkg
+import rospy
 
-from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Point, TransformStamped, Vector3
-from imgui_ros.msg import TexturedShape, Vertex, Widget
-from imgui_ros.srv import AddCamera, AddProjector, AddShaders, AddShape, AddTexture, AddWindow
-from rclpy.node import Node
+from imgui_ros_msgs.msg import TexturedShape, Vertex, Widget
+from imgui_ros_msgs.srv import AddProjector, AddProjectorRequest
+from imgui_ros_msgs.srv import AddShape, AddShapeRequest, AddTexture, AddTextureRequest
 from shape_msgs.msg import MeshTriangle, Mesh
-from std_msgs.msg import ColorRGBA
-from time import sleep
 from visualization_msgs.msg import Marker
 
 
 def vector3_len(vec):
     return math.sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z)
 
-class PubShape(Node):
-
+class PubShape:
     def __init__(self):
-        super().__init__('add_shape')
+        no_textures = rospy.get_param('~no_textures', False)
+        no_shapes = rospy.get_param('~no_shapes', False)
+        self.rospack = rospkg.RosPack()
+        self.run(no_textures, no_shapes)
 
-    # TODO(lucasw) can't this be a callback instead?
-    def wait_for_response(self):
-        while rclpy.ok():
-            rclpy.spin_once(self)
-            if self.future.done():
-                if self.future.result() is not None:
-                    response = self.future.result()
-                    self.get_logger().info(
-                        'Result %s' % (str(response)))
-                else:
-                    self.get_logger().info(
-                        'Service call failed %r' % (self.future.exception(),))
-                break
+    def run(self, no_textures=False, no_shapes=False):
+        rospy.wait_for_service('add_shape')
+        self.cli = rospy.ServiceProxy('add_shape', AddShape)
 
-    def run(self, namespace='', no_textures=False, no_shapes=False):
-        # self.marker_pub = self.create_publisher(Marker, 'marker')
-        # self.shape_pub = self.create_publisher(TexturedShape, 'shapes')
-
-        self.cli = self.create_client(AddShape, namespace + '/add_shape')
-        while not self.cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info('shape service not available, waiting again...')
-            sleep(1.0)
+        rospy.wait_for_service('add_texture')
+        self.texture_cli = rospy.ServiceProxy('add_texture', AddTexture)
 
         self.bridge = cv_bridge.CvBridge()
 
@@ -73,10 +53,10 @@ class PubShape(Node):
             self.add_texture('white', 'imgui_ros', 'white.png')
             self.add_texture('gradient', 'imgui_ros', 'gradient.png')
             self.add_texture('square', 'imgui_ros', 'square.png')
-            self.add_texture('diffract', 'image_manip', 'diffract1.png')
-            self.add_texture('chess', 'image_manip', 'chess.png')
-            self.add_texture('gradient_radial', 'image_manip', 'gradient_radial.png')
-            # self.add_texture('projected_texture', 'image_manip', 'plasma.png')
+            self.add_texture('diffract', 'vimjay', 'diffract1.png')
+            self.add_texture('chess', 'vimjay', 'chess.png')
+            self.add_texture('gradient_radial', 'vimjay', 'gradient_radial.png')
+            # self.add_texture('projected_texture', 'vimjay', 'plasma.png')
         if not no_shapes:
             # TODO(lucasw) there is something wrong with storing new shapes
             # on top of old ones, all the shapes disappear until
@@ -85,11 +65,10 @@ class PubShape(Node):
         self.add_projectors()
 
     def add_projectors(self):
-        self.projector_cli = self.create_client(AddProjector, 'add_projector')
-        while not self.projector_cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info('projector service not available, waiting again...')
+        rospy.wait_for_service('add_projector')
+        self.projector_cli = rospy.ServiceProxy('add_projector', AddProjector)
 
-        req = AddProjector.Request()
+        req = AddProjectorRequest()
         req.projector.camera.header.frame_id = 'projector1'
         req.projector.camera.name = 'projector1'
         req.projector.camera.texture_name = 'gradient_radial'
@@ -97,40 +76,38 @@ class PubShape(Node):
         req.projector.camera.aov_x = 130.0
         req.projector.constant_attenuation = 0.2
         req.projector.quadratic_attenuation = 0.004
-        self.future = self.projector_cli.call_async(req)
-        self.wait_for_response()
+        self.projector_cli(req)
 
         if True:
-            req = AddProjector.Request()
+            req = AddProjectorRequest()
             # req.projector.remove = False
             req.projector.camera.header.frame_id = 'bar2'
             req.projector.camera.name = 'projector2'
             req.projector.camera.texture_name = 'chess'
             req.projector.camera.aov_y = 130.0
             req.projector.camera.aov_x = 100.0
-            self.future = self.projector_cli.call_async(req)
-            self.wait_for_response()
+            self.projector_cli(req)
 
     def add_texture(self, name='diffract', pkg_name='image_manip', image_name='diffract1.png'):
-        self.texture_cli = self.create_client(AddTexture, 'add_texture')
-        while not self.texture_cli.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info('service not available, waiting again...')
-
         # imread an image
-        image_dir = get_package_share_directory(pkg_name)
+        image_dir = self.rospack.get_path(pkg_name)
         # print('image dir ' + image_dir)
-        image = cv2.imread(image_dir + "/data/" + image_name, 1)
+        full_path = image_dir + "/data/" + image_name
+        image = cv2.imread(full_path, 1)
+        if image is None:
+            rospy.logerr("Couldn't read image '{}'".format(full_path))
+            return
+        rospy.loginfo(type(image))
         # cv2.imshow("image", image)
         # cv2.waitKey(0)
         image = self.bridge.cv2_to_imgmsg(image, encoding="bgr8")
-        req = AddTexture.Request()
+        req = AddTextureRequest()
         req.name = name
         req.image = image
-        req.wrap_s = AddTexture.Request.REPEAT
-        req.wrap_t = AddTexture.Request.REPEAT
+        req.wrap_s = AddTextureRequest.REPEAT
+        req.wrap_t = AddTextureRequest.REPEAT
 
-        self.future = self.texture_cli.call_async(req)
-        self.wait_for_response()
+        self.texture_cli(req)
 
     # TODO(lucasw) later bring in icosphere code from bullet_server
     def make_sphere(self, name='sphere',
@@ -375,14 +352,14 @@ class PubShape(Node):
                 vertex.color.a = 1.0
                 shape.vertices.append(vertex)
 
-        self.get_logger().info("shape {} {} {}".format(shape.name, len(shape.vertices),
-              len(shape.triangles) * 3))
+        rospy.loginfo("shape {} {} {}".format(shape.name, len(shape.vertices),
+                                              len(shape.triangles) * 3))
         # self.shape_pub.publish(shape)
         shape.add = True
         return shape
 
     def add_shapes(self):
-        req = AddShape.Request()
+        req = AddShapeRequest()
         if True:
             shape = self.make_plane(off_y=-3.0)
             shape.add = True
@@ -435,26 +412,8 @@ class PubShape(Node):
             shape.header.frame_id = 'bar2'
             req.shapes.append(shape)
 
-        self.future = self.cli.call_async(req)
-        self.wait_for_response()
-        sleep(1.0)
-
-def main(args=None):
-    rclpy.init(args=args)
-
-    parser = argparse.ArgumentParser(description='imgui_ros demo')
-    parser.add_argument('-nt', '--no-textures', dest='no_textures',  # type=bool,
-            help='enable textures', action='store_true')  # , default=True)
-    parser.add_argument('-ns', '--no-shapes', dest='no_shapes',  # type=bool,
-            help='enable shapes', action='store_true')  # , default=True)
-    args, unknown = parser.parse_known_args(sys.argv)
-
-    try:
-        demo = PubShape()
-        demo.run('', args.no_textures, args.no_shapes)
-    finally:
-        demo.destroy_node()
-        rclpy.shutdown()
+        self.cli(req)
 
 if __name__ == '__main__':
-    main()
+    rospy.init_node('pub_shape')
+    pub_shape = PubShape()

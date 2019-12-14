@@ -83,8 +83,8 @@ void Camera::init(const size_t width, const size_t height,
   }
   ROS_DEBUG("regular camera");
   const bool sub_not_pub = false;
-  image_ = std::make_shared<RosImage>(texture_name, topic, sub_not_pub, ros_pub,
-      image_transfer);
+  image_ = std::make_shared<RosImage>(texture_name, image_transfer,
+      topic, sub_not_pub, ros_pub);
   {
     // ROS_INFO("creating camera %s %d %d", name, width, height);
     image_->width_ = width;
