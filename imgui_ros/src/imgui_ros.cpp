@@ -180,7 +180,7 @@ void ImguiRos::glInit()
 
   // Setup SDL
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
-    // RCLCPP_ERROR(this->get_logger(), "Error: %s", SDL_GetError());
+    // ROS_ERROR("Error: %s", SDL_GetError());
     // TODO(lucasw) throw
     throw std::runtime_error("SDL Error: " + std::string(SDL_GetError()));
   }
@@ -449,7 +449,6 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
     }
   }
   return true;
-  #if 0
   ///////////////////////////////////////////////////////////////////////////
   // publisher types
   } else if (widget.type == imgui_ros_msgs::Widget::PUB) {
@@ -516,7 +515,7 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
       pub.reset(new MenuPub(widget.name, widget.topic,
           value, widget.items, shared_from_this()));
     } else if (widget.sub_type == Widget::TF) {
-      RCLCPP_DEBUG(get_logger(), "new tf pub");
+      ROS_DEBUG("new tf pub");
       if (widget.items.size() < 2) {
         std::stringstream ss;
         ss << widget.name << " need two widget items for tf parent and child "
@@ -537,10 +536,11 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
     }
     imgui_widget = pub;
     return true;
+  #if 0
   ///////////////////////////////////////////////////////////////////////////
   // subscription types
   } else if (widget.type == imgui_ros_msgs::Widget::SUB) {
-    RCLCPP_DEBUG(get_logger(), "new sub %s %d", widget.name.c_str(), widget.sub_type);
+    ROS_DEBUG("new sub %s %d", widget.name.c_str(), widget.sub_type);
     std::shared_ptr<Sub> sub;
     if (widget.sub_type == Widget::FLOAT32) {
       sub.reset(new GenericSub<std_msgs::Float32>(
@@ -587,7 +587,7 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
           widget.name, widget.topic,
           shared_from_this()));
     } else if (widget.sub_type == Widget::TF) {
-      RCLCPP_DEBUG(get_logger(), "new tf echo");
+      ROS_DEBUG("new tf echo");
       if (widget.items.size() < 2) {
         std::stringstream ss;
         ss << widget.name << " need two widget items for tf parent and child "

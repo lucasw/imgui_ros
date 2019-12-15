@@ -97,7 +97,6 @@ class PubShape:
         if image is None:
             rospy.logerr("Couldn't read image '{}'".format(full_path))
             return
-        rospy.loginfo(type(image))
         # cv2.imshow("image", image)
         # cv2.waitKey(0)
         image = self.bridge.cv2_to_imgmsg(image, encoding="bgr8")
