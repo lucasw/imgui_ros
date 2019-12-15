@@ -71,8 +71,7 @@ struct GenericPub : public Pub {
       ros::NodeHandle& nh) :
     Pub(name, topic, nh), min_(min), max_(max)
   {
-    msg_.reset(new T);
-    msg_->data = value;
+    msg_.data = value;
     // TODO(lucasw) bring back type for all the float types
     pub_ = nh.advertise<T>(topic, 3);
   }
@@ -87,53 +86,53 @@ struct GenericPub : public Pub {
     bool changed = false;
     // switch (decltype(this)) {
     if (std::is_same<T, std_msgs::Float32>::value) {
-      float val = msg_->data;
+      float val = msg_.data;
       float min = min_;
       float max = max_;
       // std::cout << name_ << " " << val << " " << min << " " << max << "\n";
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_Float,
         &val, &min, &max, "%f");
-      if (changed) msg_->data = val;
+      if (changed) msg_.data = val;
     } else if (std::is_same<T, std_msgs::Float64>::value) {
-      double val = msg_->data;
+      double val = msg_.data;
       double min = min_;
       double max = max_;
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_Double,
         &val, &min, &max, "%lf");
-      if (changed) msg_->data = val;
+      if (changed) msg_.data = val;
     // TODO(lucasw) combine 8/16/32
     } else if ((std::is_same<T, std_msgs::Int8>::value) ||
               (std::is_same<T, std_msgs::Int16>::value) ||
               (std::is_same<T, std_msgs::Int32>::value)) {
-      ImS32 val = msg_->data;
+      ImS32 val = msg_.data;
       ImS32 min = min_;
       ImS32 max = max_;
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S32,
         &val, &min, &max, "%d");
-      if (changed) msg_->data = val;
+      if (changed) msg_.data = val;
     } else if (std::is_same<T, std_msgs::Int64>::value) {
-      ImS64 val = msg_->data;
+      ImS64 val = msg_.data;
       ImS64 min = min_;
       ImS64 max = max_;
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_S64,
         &val, &min, &max, "%I64d");
-      if (changed) msg_->data = val;
+      if (changed) msg_.data = val;
     } else if ((std::is_same<T, std_msgs::UInt8>::value) ||
               (std::is_same<T, std_msgs::UInt16>::value) ||
               (std::is_same<T, std_msgs::UInt32>::value)) {
-      ImU32 val = msg_->data;
+      ImU32 val = msg_.data;
       ImU32 min = min_;
       ImU32 max = max_;
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_U32,
         &val, &min, &max, "%d");
-      if (changed) msg_->data = val;
+      if (changed) msg_.data = val;
     } else if (std::is_same<T, std_msgs::UInt64>::value) {
-      ImU64 val = msg_->data;
+      ImU64 val = msg_.data;
       ImU64 min = min_;
       ImU64 max = max_;
       changed = ImGui::SliderScalar(name_.c_str(), ImGuiDataType_U64,
         &val, &min, &max, "%I64u");
-      if (changed) msg_->data = val;
+      if (changed) msg_.data = val;
 
     } else {
       // ImGui::Text(name_.c_str());
