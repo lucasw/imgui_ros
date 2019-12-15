@@ -559,11 +559,8 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
     default: {
       ROS_WARN_STREAM("unsupported type: " << widgetTypeToString(widget.type)
           << " " << widget.name);
-      std::stringstream ss;
-      ss << "unsupported window type " << std::dec << widget.type;
-      message = ss.str();
-      return false;
-    }  // switch on widget type
+      return true;
+    }
   }
 #if 0
   ///////////////////////////////////////////////////////////////////////////
