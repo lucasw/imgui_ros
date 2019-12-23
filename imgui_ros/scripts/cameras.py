@@ -35,7 +35,7 @@ def vector3_len(vec):
 class Cameras:
     def __init__(self):
         self.add_cameras()
-        self.add_cube_cameras()
+        # self.add_cube_cameras()
         self.add_gui()
 
     def add_gui(self):
@@ -119,10 +119,10 @@ class Cameras:
             req.camera.name = 'camera1'
             req.camera.texture_name = 'camera1'
             req.camera.topic = 'camera1'
-            req.camera.width = 1024
-            req.camera.height = 1024
+            req.camera.width = 256
+            req.camera.height = 256
             req.camera.aov_y = 120.0
-            req.camera.skip = 2
+            req.camera.skip = 0
             req.camera.ros_pub = True
 
             try:

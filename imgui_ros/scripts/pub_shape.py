@@ -364,7 +364,7 @@ class PubShape:
             shape.enable = True
             shape.add = True
             req.shapes.append(shape)
-        if True:
+        if False:
             shape = self.make_sphere(name='big_sphere',
                 radius_x=60.0, radius_y=60.0, radius_z=60.0,
                 segs_long=24,
@@ -394,7 +394,7 @@ class PubShape:
             shape.shininess_texture = 'gradient_radial'
             shape.header.frame_id = 'projector1'
             req.shapes.append(shape)
-        if True:
+        if False:
             radius = 0.5
             shape = self.make_cylinder(name='cylinder3', length=2.0,
                                        radius=radius, segs=24)
