@@ -825,6 +825,13 @@ void ImguiRos::drawStats(ros::Time stamp)
   ImGui::End();
 }
 
+void ImguiRos::newFrame()
+{
+  imgui_impl_opengl3_->NewFrame();
+  ImGui_ImplSDL2_NewFrame(sdl_window_);
+  ImGui::NewFrame();
+}
+
 void ImguiRos::update(const ros::TimerEvent& ev)
 {
   if (!init_) {
@@ -908,9 +915,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
     // TODO(lucasw) throw
     return;
   }
-  imgui_impl_opengl3_->NewFrame();
-  ImGui_ImplSDL2_NewFrame(sdl_window_);
-  ImGui::NewFrame();
+  newFrame();
 
   {
     // TODO(lucasw) make image_transfer into a widget?

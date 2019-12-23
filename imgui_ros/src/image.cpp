@@ -195,19 +195,25 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
   // TODO(lucasw) factor this into a generic opengl function to put in parent class
   // if the image changes need to call this
   bool RosImage::updateTexture() {
+    ImGui::Separator();
     auto t0 = ros::Time::now();
+    ImGui::Text("%s:", name_.c_str());
     if (!enable_cpu_to_gpu_) {
+      ImGui::Text(" no cpu to gpu");
       return true;
     }
     sensor_msgs::ImagePtr image_msg;
     {
       std::lock_guard<std::mutex> lock(mutex_);
       if (sub_not_pub_) {
+        ImGui::Text(" sub not pub");
         if (!image_transfer_) {
+          ImGui::Text("  no image transfer");
           return false;
         }
         image_transfer_->getSub(topic_, image_msg);
         if (!image_msg) {
+          ImGui::Text("  no image msg");
           return false;
         }
         bool different_image = (image_msg != image_msg_);
@@ -219,12 +225,15 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
       }
       // TODO(lucasw) updateTexture does nothing if this isn't a subscriber,
       // except the first time it is run?
-      if (!dirty_)
+      if (!dirty_) {
+        ImGui::Text(" not dirty");
         return true;
+      }
       dirty_ = false;
 
       if (!image_msg_) {
         // TODO(lucasw) or make the texture 0x0 or 1x1 gray.
+        ImGui::Text("no image msg");
         return false;
       }
 
@@ -253,6 +262,7 @@ bool glTexFromMat(cv::Mat& image, GLuint& texture_id)
 #endif
     // TODO(lucasw) put ImagePtr to opengl texture into a utility library function
     glBindTexture(GL_TEXTURE_2D, texture_id_);
+    ImGui::Text("%d %s", texture_id_, image_msg->encoding.c_str());
 
     // TODO(lucasw) only need to do these once (unless altering)
     // TODO(lucasw) make these configurable live

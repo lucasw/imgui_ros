@@ -66,7 +66,7 @@ Projector::Projector(
     linear_attenuation_(linear_attenuation),
     quadratic_attenuation_(quadratic_attenuation)
 {
-  std::cout << "creating projector " << print() << std::endl;
+  ROS_INFO_STREAM("creating projector " << print());
 
   glGenFramebuffers(1, &shadow_framebuffer_);
   glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffer_);

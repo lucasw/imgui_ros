@@ -43,6 +43,9 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
+#define IMGUI_DEBUG(msg) (render_message_ << __LINE__ << " " << msg)
+#define IMGUI_DEBUG_DISABLE(msg)
+
 namespace imgui_ros
 {
 // TODO(lucasw) move to utility file
@@ -104,7 +107,7 @@ std::string printTransform(tf2::Transform& tf)
 void makeTestShape(std::shared_ptr<Shape> shape)
 {
   if (!shape) {
-    std::cerr << "shape needs to be already created\n";
+    ROS_ERROR_STREAM("shape needs to be already created");
     return;
   }
 
@@ -175,22 +178,21 @@ bool Viz3D::setupProjectorsWithShape(
     // TODO(lucasw) select from all projectors the ones
     // closest to the current shape and exclude the rest.
 
-    std::shared_ptr<RosImage> texture;
 
     if (textures_.count(projector->texture_name_) < 1) {
-      // render_message_ << projector->name_ << " no texture in textures "
-      //    << projector->texture_name_ << ", ";
+      IMGUI_DEBUG(projector->name_ << " no texture in textures "
+          << projector->texture_name_ << ", ");
       continue;
     }
-    texture = textures_[projector->texture_name_];
+    auto texture = textures_[projector->texture_name_];
     if (!texture) {
-      // render_message_ << " '" << projector->name_ << "' has no texture '"
-      //    << projector->texture_name_ << "', ";
+      IMGUI_DEBUG(" '" << projector->name_ << "' has no texture '"
+          << projector->texture_name_ << "', ");
       continue;
     }
     if (!texture->image_msg_) {
-      // render_message_ << projector->name_ << " no texture image "
-      //    << projector->texture_name_ << ", ";
+      IMGUI_DEBUG(projector->name_ << " no texture image "
+          << projector->texture_name_ << ", ");
       continue;
     }
 
@@ -201,13 +203,13 @@ bool Viz3D::setupProjectorsWithShape(
       tf = tf_buffer_->lookupTransform(main_frame_id,
           projector->frame_id_, ros::Time(0));
       tf2::fromMsg(tf, stamped_transform);
-      // render_message_ << "projected texture transform "
-      //     << main_frame_id << " " << projector->frame_id_ << " "
-      //     << printTransform(stamped_transform);
+      IMGUI_DEBUG_DISABLE(projector->name_ << "projected texture transform "
+          << main_frame_id << " " << projector->frame_id_ << " "
+          << printTransform(stamped_transform));
     } catch (tf2::TransformException& ex) {
       // TODO(lucasw) display exception on gui, but this isn't currently the correct
       // time.
-      // render_message_ << projector->name_ << "\n" << ex.what();
+      IMGUI_DEBUG(projector->name_ << "\n" << ex.what());
       continue;
     }
 
@@ -229,6 +231,8 @@ bool Viz3D::setupProjectorsWithShape(
         projection[ind],
         false
         )) {
+      IMGUI_DEBUG(projector->name_ << "couldn't setup camera " << frame_id_
+          << " " << shape_frame_id);
       continue;
     }
 
@@ -625,7 +629,9 @@ bool Viz3D::addTexture(imgui_ros_msgs::AddTexture::Request& req,
   // texture->imageCallback(std::make_shared<sensor_msgs::Image>(req.image));
   texture->wrap_s_ind_ = req.wrap_s;
   texture->wrap_t_ind_ = req.wrap_t;
+  ImGui::Begin("debug_texture");
   texture->updateTexture();
+  ImGui::End();
   textures_[req.name] = texture;
   return true;
 }
@@ -742,6 +748,7 @@ bool Viz3D::addShape2(const imgui_ros_msgs::TexturedShape::ConstPtr& msg, std::s
 
 void Viz3D::update(const ros::Time& stamp, const std::string dropped_file)
 {
+  (void)dropped_file;
   double x_move = 0.0;
   double y_move = 0.0;
   double z_move = 0.0;
@@ -816,10 +823,14 @@ void Viz3D::update(const ros::Time& stamp, const std::string dropped_file)
   }
 
   // update
+  ImGui::Begin("debug_texture");
+  ImGui::Separator();
+  ImGui::Text("cameras");
   for (auto camera_pair : cameras_) {
     auto camera = camera_pair.second;
     // TODO(lucasw) the cameras shouldn't need to updateTexture, that is for
-    // transfering data to the gpu not from it.
+    // transfering data to the gpu not from it- but the dirty_ flag
+    // is currently preventing the update from running anyhow.
     // TODO(lucasw) are all these textures also in the texture list below?
     camera->image_->updateTexture();
     // these will do nothing if pub_dirty_ isn't set,
@@ -827,6 +838,8 @@ void Viz3D::update(const ros::Time& stamp, const std::string dropped_file)
     camera->image_->publish(stamp);
     camera->publishCameraInfo(stamp);
   }
+  ImGui::Separator();
+  ImGui::Text("cube cameras:");
   for (auto camera_pair : cube_cameras_) {
     auto cube_camera = camera_pair.second;
     // TODO(lucasw) are all these textures also in the texture list below?
@@ -834,10 +847,12 @@ void Viz3D::update(const ros::Time& stamp, const std::string dropped_file)
     cube_camera->image_->publish(stamp);
     cube_camera->publishCameraInfo(stamp);
   }
-
+  ImGui::Separator();
+  ImGui::Text("regular:");
   for (auto texture_pair : textures_) {
     texture_pair.second->updateTexture();
   }
+  ImGui::End();
 }
 
 void Viz3D::drawMain()
@@ -1128,13 +1143,13 @@ bool Viz3D::bindTexture(const std::string& name, const int active_ind)
   GLuint tex_id = 0;
   if ((name != "") && (textures_.count(name) > 0)) {
     tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
-    // render_message_ << "texture '" << name << "' " << tex_id;
+    IMGUI_DEBUG(" texture '" << name << "' " << tex_id << "\n");
   } else if (textures_.count("default") > 0) {
     tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
-    // render_message_ << ", 'default' texture " << tex_id;
+    IMGUI_DEBUG(" 'default' texture " << tex_id << "\n");
   } else {
     // TODO(lucasw) else stop rendering?
-    // render_message_ << ", no texture to use";
+    IMGUI_DEBUG("no texture to use\n");
   }
   // render_message_ << ", active texture ind " << active_ind << " -> "
   //    << GL_TEXTURE0 + active_ind << "\n";
@@ -1152,30 +1167,33 @@ void Viz3D::render(const int fb_width, const int fb_height,
   const int display_pos_x, const int display_pos_y,
   const int display_size_x, const int display_size_y)
 {
-  // render_message_ << "\n############# rendering main\n";
+  IMGUI_DEBUG("\n############# rendering main\n");
   (void)display_pos_x;
   (void)display_pos_y;
   (void)display_size_x;
   (void)display_size_y;
 
   if (shapes_.size() == 0) {
-    // render_message_ << "no shapes to render";
+    IMGUI_DEBUG("no shapes to render");
     return;
   }
 
   if (fb_width <= 0 || fb_height <= 0) {
-    // render_message_ << "bad width height " << fb_width << " " << fb_height << "\n";
+    IMGUI_DEBUG("bad width height " << fb_width << " " << fb_height << "\n");
     return;
   }
 
   checkGLError(__FILE__, __LINE__);
 
-  // render_message_ << "textures " << textures_.size();
-
+  IMGUI_DEBUG("textures " << textures_.size() << "\n");
+#if 0
+  ImGui::Begin("debug_texture");  // This isn't going to work
+  // This is redundant
   for (auto texture_pair : textures_) {
     texture_pair.second->updateTexture();
   }
-
+  ImGui::End();
+#endif
     GLState gl_state;
     gl_state.backup();
 
@@ -1216,7 +1234,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
 
 void Viz3D::renderShadows()
 {
-  // render_message_ << "\n############# rendering " << projectors_.size() << " shadows\n";
+  IMGUI_DEBUG("\n############# rendering shadows- " << projectors_.size() << " projector lights\n");
   if (projectors_.size() == 0) {
     // no need for shadows without directional light
     return;
@@ -1291,6 +1309,14 @@ void Viz3D::renderCubeCameras()
   // render_message_ << "\n---------- end render cube camera --------------\n";
 }
 
+void clear(const auto& color)
+{
+  glClearColor(color.x, color.y, color.z, color.w);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  // TODO(lucasw) later enable or make optional, for now want to see back of geometry
+  glDisable(GL_CULL_FACE);
+}
+
 bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
 {
   if (!cube_camera->enable_) {
@@ -1330,14 +1356,7 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
           face->dir_, cube_camera->cube_texture_id_, 0);
       glDrawBuffer(GL_COLOR_ATTACHMENT0);
-      glClearColor(
-          cube_camera->clear_color_.x,
-          cube_camera->clear_color_.y,
-          cube_camera->clear_color_.z,
-          cube_camera->clear_color_.w);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-      glDisable(GL_CULL_FACE);
+      clear(cube_camera->clear_color_);
 
       // TODO(lucasw) need to generate 5 transforms beyond
       // the one returned by lookup, to point in all six directions.
@@ -1384,12 +1403,7 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
   // instead of mostly redundant code?
 
   glBindFramebuffer(GL_FRAMEBUFFER, cube_camera->frame_buffer_);
-  glClearColor(
-        cube_camera->clear_color_.x,
-        cube_camera->clear_color_.y,
-        cube_camera->clear_color_.z,
-        cube_camera->clear_color_.w);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  clear(cube_camera->clear_color_);
 
   auto lens_shader = shader_sets_["cube_map"];
   int texture_unit = 0;
@@ -1405,8 +1419,6 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
   // enabling blending really fouls up the graphics- maybe alpha
   // is getting mishandled somewhere.
   glDisable(GL_BLEND);
-  // TODO(lucasw) later enable
-  glDisable(GL_CULL_FACE);
   // TODO(lucasw) try disabling this
   glEnable(GL_DEPTH_TEST);
   // Want to draw to whole window
@@ -1515,27 +1527,24 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
 // don't interleave this with regular 3d rendering imgui rendering
 void Viz3D::renderToTexture()
 {
+  IMGUI_DEBUG("\n############ render " << cameras_.size() << " cameras to texture:\n");
   if (cameras_.size() == 0)
     return;
 
   GLState gl_state;
   gl_state.backup();
   for (auto camera_pair : cameras_) {
+    IMGUI_DEBUG("camera: '" << camera_pair.first << "':\n");
     auto camera = camera_pair.second;
     camera->skip_count_++;
     if (!camera->isReadyToRender()) {
+      IMGUI_DEBUG(" not ready to render");
       continue;
     }
-    // render_message_ << "\nrender to texture " << camera->name_ << "\n";
 
+    IMGUI_DEBUG("fb " << camera->frame_buffer_);
     glBindFramebuffer(GL_FRAMEBUFFER, camera->frame_buffer_);
-    glClearColor(
-        camera->clear_color_.x,
-        camera->clear_color_.y,
-        camera->clear_color_.z,
-        camera->clear_color_.w);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDisable(GL_CULL_FACE);
+    clear(camera->clear_color_);
     // TODO(lucasw) if render width/height change need to update rendered_texture
 
     try {
@@ -1552,7 +1561,7 @@ void Viz3D::renderToTexture()
       // render_message_ << ", frames: " << frame_id_ << " -> "
       //    << camera->frame_id_ << "\n";
     } catch (tf2::TransformException& ex) {
-      // render_message_ << "\n" << ex.what();
+      IMGUI_DEBUG(ex.what());
       continue;
     }
 
@@ -1573,6 +1582,7 @@ void Viz3D::renderToTexture()
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   gl_state.restore();
+  IMGUI_DEBUG("done render cameras to texture\n");
 }
 
 void Viz3D::render2(
@@ -1586,13 +1596,14 @@ void Viz3D::render2(
     const bool vert_flip,
     const bool use_projectors)
 {
+  IMGUI_DEBUG(shaders_name << " " << fb_width << " " << fb_height << "\n");
 
   if (shader_sets_.size() == 0) {
-    // render_message_ << "no shaders\n";
+    IMGUI_DEBUG("no shaders\n");
     return;
   }
   if (shader_sets_.count(shaders_name) < 1) {
-    // render_message_ << "no shader '" << shaders_name << "'\n";
+    IMGUI_DEBUG("no shader '" << shaders_name << "'\n");
     return;
   }
   // TODO(lucasw) for now just use the last shader set
@@ -1637,7 +1648,7 @@ void Viz3D::render2(
       continue;
     }
 
-    // render_message_ << "shape: " << shape->name_;
+    IMGUI_DEBUG("--- shape: " << shape->name_ << "\n");
     if (!shape->enable_) {
       // render_message_ << " disabled\n";
       continue;
@@ -1660,8 +1671,10 @@ void Viz3D::render2(
           far,
           fb_width, fb_height,
           model, view, view_inverse, projection,
-          vert_flip))
+          vert_flip)) {
+        IMGUI_DEBUG("couldn't setup camera\n");
         continue;
+      }
       // TODO(lucasw) use double in the future?
       // glUniformMatrix4dv(shape->attrib_location.proj_mtx_, 1, GL_FALSE, &mvp[0][0]);
 
@@ -1725,6 +1738,7 @@ void Viz3D::render2(
     // for now use use_projectors = false as meaning doing depth only render
     if (use_projectors) {
       // Bind texture- if it is null then the color is black
+      IMGUI_DEBUG("textures regular, shininess, emission:\n");
       bindTexture(shape->texture_, texture_unit_["Texture"]);
       // render_message_ << "shininess ";
       bindTexture(shape->shininess_texture_, texture_unit_["shininess_texture"]);
@@ -1732,6 +1746,7 @@ void Viz3D::render2(
     }
 
     if (use_projectors) {
+      IMGUI_DEBUG("using " << projectors.size() << " (max " << MAX_PROJECTORS << ") projectors:\n");
       const int num_projectors = projectors.size();
 
       float max_range[MAX_PROJECTORS];
@@ -1749,6 +1764,8 @@ void Viz3D::render2(
         // render_message_ << "bind projector texture ";
         // glUniform with ProjectedTexture needs to have been set already
         bindTexture(projectors[i]->texture_name_, projector_texture_unit_[i]);
+        IMGUI_DEBUG("projector '" << projectors[i]->name_ << "' using texture '"
+            << projectors[i]->texture_name_ << "'\n");
 
         // shadows
         {
@@ -1788,6 +1805,7 @@ void Viz3D::render2(
 
     if ((shape->draw_mode_ >= 0) &&
         (static_cast<size_t>(shape->draw_mode_) < Shape::draw_modes_.size())) {
+      IMGUI_DEBUG("draw mode " << shape->draw_mode_ << " " << shape->indices_.Size << "\n");
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape->elements_handle_);
       const ImDrawIdx* idx_buffer_offset = 0;
       glDrawElements(Shape::draw_modes_[shape->draw_mode_],
@@ -1804,6 +1822,7 @@ void Viz3D::render2(
     // glBindVertexArray(0);
   }  // loop through shapes to draw
 
+  IMGUI_DEBUG("done render2\n");
   return;
 }
 }  // namespace imgui_ros

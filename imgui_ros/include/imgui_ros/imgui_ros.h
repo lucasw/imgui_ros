@@ -75,6 +75,7 @@ private:
       std::string& message, std::shared_ptr<Widget>& imgui_widget);
   // TODO(lucasw) still need to update even if ros time is paused
   ros::Timer update_timer_;
+  void newFrame();
   void update(const ros::TimerEvent& ev);
 
   // Need to init the opengl context in same thread as the update
