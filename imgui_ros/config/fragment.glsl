@@ -225,7 +225,7 @@ void main()
    Out_Color.rgb += (FraColor * texture(emission_texture, FraUV.st)).rgb;
    // TEMP debug
    // Out_Color.rgb = texture(ProjectedTexture[0], uv[0].st).rgb;
-   // Out_Color.rgb = vec3(1.0, 1.0, 1.0) * shininess;
+   // Out_Color.r = (vec3(1.0, 1.0, 1.0) * shininess).r;
    // Out_Color.rgb = vec3(1.0, 1.0, 1.0) * total_luminosity;
   // Out_Color.rgb = abs(eye_pos) * 1.0;
   // Out_Color.rgb = texture(Texture, FraNormal.xy).rgb;

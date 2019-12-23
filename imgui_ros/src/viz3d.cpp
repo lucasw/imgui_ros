@@ -95,12 +95,12 @@ std::string printVec(glm::vec4& vec)
   return ss.str();
 }
 
-std::string printTransform(tf2::Transform& tf)
+std::string printTransform(const tf2::Transform& tf)
 {
   std::stringstream ss;
-  ss << std::setw(5) << tf.getOrigin().x() << " "
-    << std::setw(5) << tf.getOrigin().y() << " "
-    << std::setw(5) << tf.getOrigin().z() << "\n";
+  ss << "[" << std::setw(4) << tf.getOrigin().x() << " "
+    << std::setw(4) << tf.getOrigin().y() << " "
+    << std::setw(4) << tf.getOrigin().z() << "]";
   return ss.str();
 }
 
@@ -1138,20 +1138,19 @@ bool Viz3D::setupCamera(const tf2::Transform& view_transform,
   return true;
 }
 
-bool Viz3D::bindTexture(const std::string& name, const int active_ind)
+bool Viz3D::bindTexture(const std::string& pre_name, const int active_ind)
 {
-  GLuint tex_id = 0;
-  if ((name != "") && (textures_.count(name) > 0)) {
-    tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
-    IMGUI_DEBUG(" texture '" << name << "' " << tex_id << "\n");
-  } else if (textures_.count("default") > 0) {
-    tex_id = (GLuint)(intptr_t)textures_["default"]->texture_id_;
-    IMGUI_DEBUG(" 'default' texture " << tex_id << "\n");
-  } else {
+  const std::string name = (pre_name != "") ? pre_name : "default";
+  if (textures_.count(name) == 0) {
     // TODO(lucasw) else stop rendering?
-    IMGUI_DEBUG("no texture to use\n");
+    IMGUI_DEBUG("no texture " << name << " to bind\n");
+    return false;
   }
-  // render_message_ << ", active texture ind " << active_ind << " -> "
+
+  const GLuint tex_id = (GLuint)(intptr_t)textures_[name]->texture_id_;
+  IMGUI_DEBUG(" bind texture '" << name << "', texture id: " << tex_id
+      << ", texture unit " << active_ind << "\n");
+    // render_message_ << ", active texture ind " << active_ind << " -> "
   //    << GL_TEXTURE0 + active_ind << "\n";
   glActiveTexture(GL_TEXTURE0 + active_ind);
   // Bind texture- if it is null then the color is black
@@ -1234,7 +1233,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
 
 void Viz3D::renderShadows()
 {
-  IMGUI_DEBUG("\n############# rendering shadows- " << projectors_.size() << " projector lights\n");
+  IMGUI_DEBUG("\n############# rendering shadows with " << projectors_.size() << " projector lights\n");
   if (projectors_.size() == 0) {
     // no need for shadows without directional light
     return;
@@ -1303,7 +1302,7 @@ void Viz3D::renderCubeCameras()
   GLState gl_state;
   gl_state.backup();
   for (auto cube_camera_pair : cube_cameras_) {
-    renderCubeCameraInner(cube_camera_pair.second);
+    renderCubeCamera(cube_camera_pair.second);
   }
   gl_state.restore();
   // render_message_ << "\n---------- end render cube camera --------------\n";
@@ -1317,7 +1316,7 @@ void clear(const auto& color)
   glDisable(GL_CULL_FACE);
 }
 
-bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
+bool Viz3D::renderCubeCamera(std::shared_ptr<CubeCamera> cube_camera)
 {
   if (!cube_camera->enable_) {
     return false;
@@ -1525,8 +1524,9 @@ bool Viz3D::renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera)
 }  // render cube camera
 
 // don't interleave this with regular 3d rendering imgui rendering
-void Viz3D::renderToTexture()
+void Viz3D::renderCamerasToTexture()
 {
+  render_message_.str("");
   IMGUI_DEBUG("\n############ render " << cameras_.size() << " cameras to texture:\n");
   if (cameras_.size() == 0)
     return;
@@ -1538,11 +1538,14 @@ void Viz3D::renderToTexture()
     auto camera = camera_pair.second;
     camera->skip_count_++;
     if (!camera->isReadyToRender()) {
-      IMGUI_DEBUG(" not ready to render");
+      IMGUI_DEBUG(" not ready to render\n");
       continue;
     }
 
-    IMGUI_DEBUG("fb " << camera->frame_buffer_);
+    IMGUI_DEBUG("fb: " << camera->frame_buffer_ << ", depth " << camera->depth_buffer_
+        << ", image: '" << camera->image_->name_ << "'"
+        << ", texture id " << camera->image_->texture_id_
+        << "\n");
     glBindFramebuffer(GL_FRAMEBUFFER, camera->frame_buffer_);
     clear(camera->clear_color_);
     // TODO(lucasw) if render width/height change need to update rendered_texture
@@ -1596,7 +1599,8 @@ void Viz3D::render2(
     const bool vert_flip,
     const bool use_projectors)
 {
-  IMGUI_DEBUG(shaders_name << " " << fb_width << " " << fb_height << "\n");
+  IMGUI_DEBUG(", aov " << aov_y << " " << aov_x << ", near " << near << ", far " << far << ", "
+      << vert_flip << ", " << use_projectors << "\n");
 
   if (shader_sets_.size() == 0) {
     IMGUI_DEBUG("no shaders\n");
@@ -1607,7 +1611,11 @@ void Viz3D::render2(
     return;
   }
   // TODO(lucasw) for now just use the last shader set
-  auto shaders = shader_sets_[shaders_name];
+  const auto shaders = shader_sets_[shaders_name];
+
+  IMGUI_DEBUG("using shader: '" << shaders_name << "' " << shaders->shader_handle_ << " "
+      << fb_width << " x " << fb_height << " "
+      << printTransform(transform));
 
   // TODO(lucasw) should give up if can't lock, just don't render now
   std::lock_guard<std::mutex> lock(mutex_);
@@ -1616,7 +1624,6 @@ void Viz3D::render2(
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // TODO(lucasw) later enable
     glEnable(GL_DEPTH_TEST);
     // Want to draw to whole window
     glDisable(GL_SCISSOR_TEST);
@@ -1660,6 +1667,9 @@ void Viz3D::render2(
 
     // TODO(lucasw) later a shape can use certain shaders or just default
     glUseProgram(shaders->shader_handle_);
+    if (checkGLError(__FILE__, __LINE__)) {
+      return;
+    }
     {
       glm::mat4 model, view, view_inverse, projection;
       if (!setupCamera(transform,
@@ -1718,6 +1728,7 @@ void Viz3D::render2(
     }
 
 #ifdef GL_SAMPLER_BINDING
+    IMGUI_DEBUG("gl sampler binding\n");
     glBindSampler(0, 0);
     // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
 #endif
@@ -1763,19 +1774,23 @@ void Viz3D::render2(
         // TODO(lucasw) index currently hardcoded, later make more flexible
         // render_message_ << "bind projector texture ";
         // glUniform with ProjectedTexture needs to have been set already
+        IMGUI_DEBUG(i << " projector '" << projectors[i]->name_ << "' using texture '"
+            << projectors[i]->texture_name_ << "', texture unit: "
+            << projector_texture_unit_[i] << "\n");
         bindTexture(projectors[i]->texture_name_, projector_texture_unit_[i]);
-        IMGUI_DEBUG("projector '" << projectors[i]->name_ << "' using texture '"
-            << projectors[i]->texture_name_ << "'\n");
 
         // shadows
         {
           // glActiveTexture(GL_TEXTURE1 + num_projectors + i);
-          int active_texture_ind = GL_TEXTURE0 + shadow_texture_unit_[i];
+          const int active_texture_ind = GL_TEXTURE0 + shadow_texture_unit_[i];
           // render_message_ << "bind projector shadow "
           //     << projectors[i]->shadow_depth_texture_ << ", active texture ind "
           //     << active_texture_ind << "\n";
           glActiveTexture(active_texture_ind);
           glBindTexture(GL_TEXTURE_2D, projectors[i]->shadow_depth_texture_);
+          IMGUI_DEBUG(" shadow " << active_texture_ind << " "
+              << "(" << GL_TEXTURE0 << " + " << shadow_texture_unit_[i] << ") "
+              << projectors[i]->shadow_depth_texture_ << "\n");
         }
 
         if (checkGLError(__FILE__, __LINE__))

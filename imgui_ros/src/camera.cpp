@@ -151,6 +151,8 @@ void Camera::init(const size_t width, const size_t height,
       ROS_INFO("camera '%s' framebuffer setup complete, fb %d, depth %d, tex id %d",
           name_.c_str(), frame_buffer_, depth_buffer_, image_->texture_id_);
     }
+    ROS_INFO_STREAM("### New camera " << frame_buffer_ << " " << depth_buffer_
+        << " " << image_->texture_id_);
 
     // restore default frame buffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

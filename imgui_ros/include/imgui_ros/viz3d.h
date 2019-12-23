@@ -95,9 +95,9 @@ struct Viz3D : public Window {
       const int display_size_x, const int display_size_y);
   void renderShadows();
   void renderCubeCameras();
-  bool renderCubeCameraInner(std::shared_ptr<CubeCamera> cube_camera);
+  bool renderCubeCamera(std::shared_ptr<CubeCamera> cube_camera);
   // TODO(lucasw) rename to renderCameras
-  void renderToTexture();
+  void renderCamerasToTexture();
   void render2(
       const std::string& shaders_name,
       const tf2::Transform& transform,
@@ -105,6 +105,7 @@ struct Viz3D : public Window {
       const float aov_y, const float aov_x,
       const float near, const float far,
       const bool vert_flip = false,
+      // no texture gets rendered with default shader if this is false
       const bool use_projectors = true);
 
   std::stringstream render_message_;

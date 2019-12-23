@@ -996,7 +996,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   {
     // need to do this out of the main rendering above
     viz3d->renderCubeCameras();
-    viz3d->renderToTexture();
+    viz3d->renderCamerasToTexture();
   }
 
   // update all tfs
