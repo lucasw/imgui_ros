@@ -53,9 +53,10 @@ struct BagConsole : public Sub {
   ~BagConsole() {}
   virtual void draw();
 protected:
-  // 0.0 - 1.0, the ends should be sticky and always show the first or last element
-  double position_ = 0.0;
-  size_t max_num_ = 250;
+  // TODO(lucasw) this should be derived from the current widget height
+  const size_t view_num = 32;
+  size_t position_ = 0;
+  size_t max_num_ = 255;
   // typename T::ConstPtr msg_;
   std::deque<rosgraph_msgs::Log::ConstPtr> msgs_;
   // typename

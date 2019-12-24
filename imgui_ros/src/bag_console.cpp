@@ -36,20 +36,19 @@ namespace imgui_ros
 
 void BagConsole::draw()
 {
-  const double min = 0.0;
-  const double max = 1.0;
+  const int min = 0;
+  const int max = msgs_.size();
   // TEMP before using built-in imgui console (if it actually works here)
-  ImGui::SliderScalar("scroll", ImGuiDataType_Double,
-      &position_, &min, &max, "%lf", 2);
+  int pos = position_;
+  ImGui::SliderInt("scroll", &pos, min, max, "%d");
+  position_ = pos;
 
   // TODO(lucasw) typeToString()
   // const std::string text = topic_;
   // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
   std::lock_guard<std::mutex> lock(mutex_);
 
-  // TODO(lucasw) this should be derived from the current widget height
-  const size_t view_num = 32;
-  const size_t start_ind = msgs_.size() > view_num ? position_ * (msgs_.size() - view_num) : 0;
+  const size_t start_ind = position_;
 
   // TODO(lucasw) have stamp optionally in unix time, or HH MM SS,
   // or seconds since some other timestamp
@@ -93,7 +92,7 @@ void BagConsole::draw()
     ImGui::NextColumn();
     ImGui::Text("%s", msg->function.c_str());
     ImGui::NextColumn();
-    ImGui::Text("%lu", msg->line);
+    ImGui::Text("%u", msg->line);
     ImGui::NextColumn();
   }
   ImGui::Columns(1);
@@ -106,7 +105,14 @@ void BagConsole::callback(const typename rosgraph_msgs::LogConstPtr msg)
   msgs_.push_back(msg);
   if (msgs_.size() >= max_num_) {
     msgs_.pop_front();
-    selected_--;
+    if ((selected_ >= 0) && (selected_ < max_num_)) {
+      selected_--;
+      // if the user has selected a message, keep it on screen instead
+      // of scrolling past
+      if ((position_ > 0) && (position_ < max_num_)) {
+        position_ -= 1;
+      }
+    }
   }
 }
 
