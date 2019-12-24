@@ -43,12 +43,20 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-#define IMGUI_DEBUG(msg) {std::stringstream ss; ss << __LINE__ << " " << msg; render_messages_.push_back(ss.str());}
+#define IMGUI_DEBUG(msg) {std::stringstream ss; ss << __LINE__ << " " << msg; render_messages_[debug_win_].push_back(ss.str());}
 #define IMGUI_DEBUG_DISABLE(msg)
 
 namespace imgui_ros
 {
-// TODO(lucasw) move to utility file
+// TODO(lucasw) move functions below to utility file
+void clear(const auto& color)
+{
+  glClearColor(color.x, color.y, color.z, color.w);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  // TODO(lucasw) later enable or make optional, for now want to see back of geometry
+  glDisable(GL_CULL_FACE);
+}
+
 // TODO(lucasw) is there a glm double to float conversion function?
 void dmat4Todmat(const glm::dmat4& dmat, glm::mat4& mat)
 {
@@ -100,7 +108,11 @@ std::string printTransform(const tf2::Transform& tf)
   std::stringstream ss;
   ss << "[" << std::setw(4) << tf.getOrigin().x() << " "
     << std::setw(4) << tf.getOrigin().y() << " "
-    << std::setw(4) << tf.getOrigin().z() << "]";
+    << std::setw(4) << tf.getOrigin().z() << "]\n[";
+  ss << std::setw(3) << tf.getRotation().x() << " ";
+  ss << std::setw(3) << tf.getRotation().y() << " ";
+  ss << std::setw(3) << tf.getRotation().z() << " ";
+  ss << std::setw(3) << tf.getRotation().w() << "]";
   return ss.str();
 }
 
@@ -291,7 +303,8 @@ Viz3D::Viz3D(const std::string name,
   if (!image_transfer) {
     throw std::runtime_error("uninitialized image transfer");
   }
-  ROS_INFO_STREAM(__FUNCTION__);
+  glsl_version_string_ = renderer->GlslVersionString;
+  ROS_INFO_STREAM(__FUNCTION__ << " " << glsl_version_string_);
   setSettings(ImVec2(0, 200), ImVec2(400, 400), false, 0.0, false);
   // render_message_.precision(2);
   // render_message_.fill('0');
@@ -299,7 +312,6 @@ Viz3D::Viz3D(const std::string name,
   nh->getParam("frame_id", frame_id_);
   nh->getParam("viewer_frame_id", main_window_frame_id_);
 
-  glsl_version_string_ = renderer->GlslVersionString;
 
   // TODO(lucasw) set via service all
   nh->getParam("ambient_red", ambient_[0]);
@@ -1020,16 +1032,19 @@ void Viz3D::draw(const int outer_window_width, const int outer_window_height)
       }
       ImGui::EndTabItem();
     }
-    if (ImGui::BeginTabItem("Debug")) {
-      for (const auto& ss : render_messages_) {
-        ImGui::Text("%s", ss.c_str());
-      }
-      render_messages_.resize(0);
-      ImGui::EndTabItem();
-    }
     ImGui::EndTabBar();
   }
   ImGui::End();
+
+  // display all render messages
+  for (const auto& debug_win : render_messages_) {
+    ImGui::Begin(debug_win.first.c_str());
+    for (const auto& ss : debug_win.second) {
+      ImGui::Text("%s", ss.c_str());
+    }
+    ImGui::End();
+  }
+  render_messages_.clear();
 }
 
 void Viz3D::addTF(tf2_msgs::TFMessage& tfm, const ros::Time& now)
@@ -1165,11 +1180,12 @@ bool Viz3D::bindTexture(const std::string& pre_name, const int active_ind)
   return true;
 }
 
-void Viz3D::render(const int fb_width, const int fb_height,
+void Viz3D::renderMain(const int fb_width, const int fb_height,
   const int display_pos_x, const int display_pos_y,
   const int display_size_x, const int display_size_y)
 {
-  IMGUI_DEBUG("\n############# rendering main\n");
+  debug_win_ = "main_render";
+  IMGUI_DEBUG("\n############ rendering main\n");
   (void)display_pos_x;
   (void)display_pos_y;
   (void)display_size_x;
@@ -1199,6 +1215,7 @@ void Viz3D::render(const int fb_width, const int fb_height,
     GLState gl_state;
     gl_state.backup();
 
+    clear(clear_color_);
     glLineWidth(line_width_);
     glPointSize(point_size_);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1232,11 +1249,13 @@ void Viz3D::render(const int fb_width, const int fb_height,
 
     gl_state.restore();
     checkGLError(__FILE__, __LINE__);
+  IMGUI_DEBUG("done main render\n");
 }
 
 void Viz3D::renderShadows()
 {
-  IMGUI_DEBUG("\n############# rendering shadows with " << projectors_.size() << " projector lights\n");
+  debug_win_ = "shadow render";
+  IMGUI_DEBUG("\n############ rendering shadows with " << projectors_.size() << " projector lights\n");
   if (projectors_.size() == 0) {
     // no need for shadows without directional light
     return;
@@ -1309,14 +1328,6 @@ void Viz3D::renderCubeCameras()
   }
   gl_state.restore();
   // render_message_ << "\n---------- end render cube camera --------------\n";
-}
-
-void clear(const auto& color)
-{
-  glClearColor(color.x, color.y, color.z, color.w);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  // TODO(lucasw) later enable or make optional, for now want to see back of geometry
-  glDisable(GL_CULL_FACE);
 }
 
 bool Viz3D::renderCubeCamera(std::shared_ptr<CubeCamera> cube_camera)
@@ -1529,6 +1540,7 @@ bool Viz3D::renderCubeCamera(std::shared_ptr<CubeCamera> cube_camera)
 // don't interleave this with regular 3d rendering imgui rendering
 void Viz3D::renderCamerasToTexture()
 {
+  debug_win_ = "cameras render";
   IMGUI_DEBUG("\n############ render " << cameras_.size() << " cameras to texture:\n");
   if (cameras_.size() == 0)
     return;

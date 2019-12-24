@@ -960,15 +960,6 @@ void ImguiRos::update(const ros::TimerEvent& ev)
 
   glViewport(0, 0, (int)display_size_x, (int)display_size_y);
   checkGLError(__FILE__, __LINE__);
-  glClearColor(0.1, 0.2, 0.3, 1.0);
-#if 1
-  glClearColor(
-      viz3d->clear_color_.x,
-      viz3d->clear_color_.y,
-      viz3d->clear_color_.z,
-      viz3d->clear_color_.w);
-#endif
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   // TODO(lucasw) render anything else into the background here,
   // and the ui will appear over it?
   // bgfx does the 3D render after imgui render
@@ -978,7 +969,7 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   if (true) {
     const int fb_width = display_size_x * ImGui::GetIO().DisplayFramebufferScale.x;
     const int fb_height = display_size_y * ImGui::GetIO().DisplayFramebufferScale.y;
-    viz3d->render(fb_width, fb_height,
+    viz3d->renderMain(fb_width, fb_height,
         ImGui::GetDrawData()->DisplayPos.x, ImGui::GetDrawData()->DisplayPos.y,
         ImGui::GetDrawData()->DisplaySize.x, ImGui::GetDrawData()->DisplaySize.y
         );

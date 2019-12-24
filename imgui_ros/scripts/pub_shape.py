@@ -78,7 +78,7 @@ class PubShape:
         req.projector.quadratic_attenuation = 0.004
         self.projector_cli(req)
 
-        if True:
+        if False:
             req = AddProjectorRequest()
             # req.projector.remove = False
             req.projector.camera.header.frame_id = 'bar2'

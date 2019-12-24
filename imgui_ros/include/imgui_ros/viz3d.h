@@ -49,6 +49,7 @@
 #include <imgui_ros_msgs/AddTexture.h>
 #include <imgui_ros_msgs/TexturedShape.h>
 // #include <imgui_ros/window.h>
+#include <map>
 #include <mutex>
 #include <opencv2/core.hpp>
 #include <ros/ros.h>
@@ -90,7 +91,7 @@ struct Viz3D : public Window {
     );
   ~Viz3D();
 
-  void render(const int fb_width, const int fb_height,
+  void renderMain(const int fb_width, const int fb_height,
       const int display_pos_x, const int display_pos_y,
       const int display_size_x, const int display_size_y);
   void renderShadows();
@@ -108,7 +109,8 @@ struct Viz3D : public Window {
       // no texture gets rendered with default shader if this is false
       const bool use_projectors = true);
 
-  std::vector<std::string> render_messages_;
+  std::string debug_win_ = "main_render";
+  std::map<std::string, std::vector<std::string>> render_messages_;
   ImVec4 clear_color_ = ImVec4(0.4, 0.3, 0.5, 1.0);
   // TODO(lucasw) should this go somewhere else?
   glm::vec3 ambient_ = glm::vec3(0.3, 0.3, 0.3);
