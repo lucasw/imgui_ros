@@ -43,7 +43,7 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-#define IMGUI_DEBUG(msg) (render_message_ << __LINE__ << " " << msg)
+#define IMGUI_DEBUG(msg) {std::stringstream ss; ss << __LINE__ << " " << msg; render_messages_.push_back(ss.str());}
 #define IMGUI_DEBUG_DISABLE(msg)
 
 namespace imgui_ros
@@ -1021,7 +1021,10 @@ void Viz3D::draw(const int outer_window_width, const int outer_window_height)
       ImGui::EndTabItem();
     }
     if (ImGui::BeginTabItem("Debug")) {
-      ImGui::Text("%s", render_message_.str().c_str());
+      for (const auto& ss : render_messages_) {
+        ImGui::Text("%s", ss.c_str());
+      }
+      render_messages_.resize(0);
       ImGui::EndTabItem();
     }
     ImGui::EndTabBar();
@@ -1526,7 +1529,6 @@ bool Viz3D::renderCubeCamera(std::shared_ptr<CubeCamera> cube_camera)
 // don't interleave this with regular 3d rendering imgui rendering
 void Viz3D::renderCamerasToTexture()
 {
-  render_message_.str("");
   IMGUI_DEBUG("\n############ render " << cameras_.size() << " cameras to texture:\n");
   if (cameras_.size() == 0)
     return;

@@ -948,7 +948,6 @@ void ImguiRos::update(const ros::TimerEvent& ev)
   }
 
 #if 1
-  viz3d->render_message_.str("");
   // Need to render these before using them in the regular viz3d render below
   viz3d->renderShadows();
 #endif

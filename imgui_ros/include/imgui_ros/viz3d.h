@@ -108,7 +108,7 @@ struct Viz3D : public Window {
       // no texture gets rendered with default shader if this is false
       const bool use_projectors = true);
 
-  std::stringstream render_message_;
+  std::vector<std::string> render_messages_;
   ImVec4 clear_color_ = ImVec4(0.4, 0.3, 0.5, 1.0);
   // TODO(lucasw) should this go somewhere else?
   glm::vec3 ambient_ = glm::vec3(0.3, 0.3, 0.3);
