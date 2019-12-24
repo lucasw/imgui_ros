@@ -51,11 +51,45 @@ void BagConsole::draw()
   const size_t view_num = 20;
   const size_t start_ind = msgs_.size() > view_num ? position_ * (msgs_.size() - view_num) : 0;
 
-  for (size_t i = start_ind; (i < start_ind + view_num) && (i < msgs_.size()); ++i) {
-    ImGui::Text("%s", msgs_[i]->msg.c_str());
-  }
+  // TODO(lucasw) have stamp optionally in unix time, or HH MM SS,
+  // or seconds since some other timestamp
+  //
+  // Optionally have name, file, function, line, and topics in columns
+  // Color code according to level: green, white, yellow, red, dark red (or black on red background)
+  ImGui::Text("%zu / %zu log messages", start_ind, msgs_.size());
 
-  ImGui::Text("%zu log messages", msgs_.size());
+  size_t num_columns = 6;
+  ImGui::Columns(num_columns);
+  ImGui::Text("Time");
+  ImGui::NextColumn();
+  ImGui::Text("msg");
+  ImGui::NextColumn();
+  ImGui::Text("name");
+  ImGui::NextColumn();
+  ImGui::Text("file");
+  ImGui::NextColumn();
+  ImGui::Text("function");
+  ImGui::NextColumn();
+  ImGui::Text("line");
+  ImGui::NextColumn();
+
+  for (size_t i = start_ind; (i < start_ind + view_num) && (i < msgs_.size()); ++i) {
+    const auto& msg = msgs_[i];
+    ImGui::Text("%f", msg->header.stamp.toSec());
+    ImGui::NextColumn();
+    ImGui::Text("%s", msg->msg.c_str());
+    ImGui::NextColumn();
+    ImGui::Text("%s", msg->name.c_str());
+    ImGui::NextColumn();
+    ImGui::Text("%s", msg->file.c_str());
+    ImGui::NextColumn();
+    ImGui::Text("%s", msg->function.c_str());
+    ImGui::NextColumn();
+    ImGui::Text("%lu", msg->line);
+    ImGui::NextColumn();
+  }
+  ImGui::Columns(1);
+
 }
 
 }  // namespace imgui_ros

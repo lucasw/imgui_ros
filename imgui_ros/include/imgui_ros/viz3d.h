@@ -76,6 +76,7 @@
 
 namespace imgui_ros
 {
+
 // TODO(lucasw) need to support covering the entire background,
 // and being within a widget, possibly with subclassing.
 // For now just do entire background.

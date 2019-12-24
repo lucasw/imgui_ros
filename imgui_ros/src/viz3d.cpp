@@ -1194,6 +1194,11 @@ void Viz3D::renderMain(const int fb_width, const int fb_height,
   (void)display_size_x;
   (void)display_size_y;
 
+  GLState gl_state;
+  gl_state.backup();
+
+  clear(clear_color_);
+
   if (shapes_.size() == 0) {
     IMGUI_DEBUG("no shapes to render");
     return;
@@ -1215,10 +1220,6 @@ void Viz3D::renderMain(const int fb_width, const int fb_height,
   }
   ImGui::End();
 #endif
-    GLState gl_state;
-    gl_state.backup();
-
-    clear(clear_color_);
     glLineWidth(line_width_);
     glPointSize(point_size_);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
