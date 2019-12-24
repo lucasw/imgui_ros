@@ -35,6 +35,7 @@
 #include <imgui.h>
 #include <imgui_impl_sdl.h>
 #pragma GCC diagnostic pop
+#include <imgui_ros/bag_console.h>
 #include <imgui_ros/dynamic_reconfigure.h>
 #include <imgui_ros/image.h>
 #include <imgui_ros/imgui_impl_opengl3.h>
@@ -544,7 +545,6 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
               widget.min, widget.max,
               tf_buffer_,
               nh_));
-          imgui_widget = pub;
           return true;
         }
         default: {
@@ -555,7 +555,20 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
           return false;
         }
       }  // switch on widget sub_type
+      imgui_widget = pub;
     }  // case PUB
+    case imgui_ros_msgs::Widget::SUB: {
+      std::shared_ptr<Sub> sub;
+      int64_t value_int = widget.value;
+      int64_t min = widget.min;
+      int64_t max = widget.max;
+      switch (widget.sub_type) {
+        case imgui_ros_msgs::Widget::ROSOUT: {
+          sub = std::make_shared<BagConsole>(widget.name, widget.topic, nh_);
+        }
+      }
+      imgui_widget = sub;
+    }  // SUB
     default: {
       ROS_WARN_STREAM("unsupported type: " << widgetTypeToString(widget.type)
           << " " << widget.name);

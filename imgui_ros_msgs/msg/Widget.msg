@@ -23,6 +23,7 @@ uint8 VIZ2D=14
 uint8 VIZ3D=15
 uint8 POINTCLOUD=16
 uint8 IMAGE=17
+uint8 ROSOUT=18
 # uint8 TODO(lucasw)
 string name  # ""
 # TODO(lucasw) maybe window_name belongs here too?

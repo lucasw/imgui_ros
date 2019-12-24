@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node pkg="imgui_ros" type="imgui_ros_node"
+    name="imgui_ros" output="screen" >
+  </node>
+
+  <node pkg="imgui_ros" type="console.py" name="setup_console" output="screen">
+  </node>
+
+</launch>

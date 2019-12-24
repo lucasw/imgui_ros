@@ -71,6 +71,7 @@ add_library(imgui SHARED
 set_source_files_properties(imgui/examples/libs/gl3w/GL/gl3w.c PROPERTIES COMPILE_FLAGS -Wno-pedantic)
 
 add_library(imguiros SHARED
+  src/bag_console.cpp
   src/camera.cpp
   src/cube_camera.cpp
   src/projector.cpp
