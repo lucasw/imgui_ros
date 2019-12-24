@@ -74,6 +74,8 @@ class PubShape:
         req.projector.camera.texture_name = 'gradient_radial'
         req.projector.camera.aov_y = 130.0
         req.projector.camera.aov_x = 130.0
+        req.projector.camera.near = 0.05
+        req.projector.camera.far = 200.0
         req.projector.constant_attenuation = 0.2
         req.projector.quadratic_attenuation = 0.004
         self.projector_cli(req)

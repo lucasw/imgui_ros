@@ -122,6 +122,8 @@ class Cameras:
             req.camera.width = 256
             req.camera.height = 256
             req.camera.aov_y = 120.0
+            req.camera.near = 0.02
+            req.camera.far = 100.0
             req.camera.skip = 0
             req.camera.ros_pub = True
 
@@ -149,6 +151,8 @@ class Cameras:
             req.camera.width = int(height * aspect)
             req.camera.height = height
             req.camera.aov_y = 90.0
+            req.camera.near = 0.02
+            req.camera.far = 100.0
 
             resp = self.cube_camera_cli(req)
             rospy.loginfo(resp)

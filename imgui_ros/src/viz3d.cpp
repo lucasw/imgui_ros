@@ -43,8 +43,9 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-#define IMGUI_DEBUG(msg) {std::stringstream ss; ss << __LINE__ << " " << msg; render_messages_[debug_win_].push_back(ss.str());}
 #define IMGUI_DEBUG_DISABLE(msg)
+// #define IMGUI_DEBUG(msg) {std::stringstream ss; ss << __LINE__ << " " << msg; render_messages_[debug_win_].push_back(ss.str());}
+#define IMGUI_DEBUG(msg) IMGUI_DEBUG_DISABLE(msg)
 
 namespace imgui_ros
 {
@@ -641,9 +642,9 @@ bool Viz3D::addTexture(imgui_ros_msgs::AddTexture::Request& req,
   // texture->imageCallback(std::make_shared<sensor_msgs::Image>(req.image));
   texture->wrap_s_ind_ = req.wrap_s;
   texture->wrap_t_ind_ = req.wrap_t;
-  ImGui::Begin("debug_texture");
+  // ImGui::Begin("debug_texture");
   texture->updateTexture();
-  ImGui::End();
+  // ImGui::End();
   textures_[req.name] = texture;
   return true;
 }
@@ -835,9 +836,9 @@ void Viz3D::update(const ros::Time& stamp, const std::string dropped_file)
   }
 
   // update
-  ImGui::Begin("debug_texture");
-  ImGui::Separator();
-  ImGui::Text("cameras");
+  // ImGui::Begin("debug_texture");
+  // ImGui::Separator();
+  // ImGui::Text("cameras");
   for (auto camera_pair : cameras_) {
     auto camera = camera_pair.second;
     // TODO(lucasw) the cameras shouldn't need to updateTexture, that is for
@@ -850,8 +851,8 @@ void Viz3D::update(const ros::Time& stamp, const std::string dropped_file)
     camera->image_->publish(stamp);
     camera->publishCameraInfo(stamp);
   }
-  ImGui::Separator();
-  ImGui::Text("cube cameras:");
+  // ImGui::Separator();
+  // ImGui::Text("cube cameras:");
   for (auto camera_pair : cube_cameras_) {
     auto cube_camera = camera_pair.second;
     // TODO(lucasw) are all these textures also in the texture list below?
@@ -859,12 +860,12 @@ void Viz3D::update(const ros::Time& stamp, const std::string dropped_file)
     cube_camera->image_->publish(stamp);
     cube_camera->publishCameraInfo(stamp);
   }
-  ImGui::Separator();
-  ImGui::Text("regular:");
+  // ImGui::Separator();
+  // ImGui::Text("regular:");
   for (auto texture_pair : textures_) {
     texture_pair.second->updateTexture();
   }
-  ImGui::End();
+  // ImGui::End();
 }
 
 void Viz3D::drawMain()
@@ -1037,12 +1038,14 @@ void Viz3D::draw(const int outer_window_width, const int outer_window_height)
   ImGui::End();
 
   // display all render messages
-  for (const auto& debug_win : render_messages_) {
-    ImGui::Begin(debug_win.first.c_str());
-    for (const auto& ss : debug_win.second) {
-      ImGui::Text("%s", ss.c_str());
+  if (false) {
+    for (const auto& debug_win : render_messages_) {
+      ImGui::Begin(debug_win.first.c_str());
+      for (const auto& ss : debug_win.second) {
+        ImGui::Text("%s", ss.c_str());
+      }
+      ImGui::End();
     }
-    ImGui::End();
   }
   render_messages_.clear();
 }
