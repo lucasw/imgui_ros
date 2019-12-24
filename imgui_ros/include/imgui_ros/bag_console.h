@@ -55,20 +55,14 @@ struct BagConsole : public Sub {
 protected:
   // 0.0 - 1.0, the ends should be sticky and always show the first or last element
   double position_ = 0.0;
-  size_t max_num_ = 1000;
+  size_t max_num_ = 250;
   // typename T::ConstPtr msg_;
   std::deque<rosgraph_msgs::Log::ConstPtr> msgs_;
   // typename
   ros::Subscriber sub_;
+  size_t selected_ = 0;
   // virtual void callback(const typename T::ConstPtr msg)
-  void callback(const typename rosgraph_msgs::LogConstPtr msg)
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    msgs_.push_back(msg);
-    if (msgs_.size() >= max_num_) {
-      msgs_.pop_front();
-    }
-  }
+  void callback(const typename rosgraph_msgs::LogConstPtr msg);
 };
 
 }  // namespace imgui_ros

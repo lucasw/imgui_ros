@@ -48,7 +48,7 @@ void BagConsole::draw()
   std::lock_guard<std::mutex> lock(mutex_);
 
   // TODO(lucasw) this should be derived from the current widget height
-  const size_t view_num = 20;
+  const size_t view_num = 32;
   const size_t start_ind = msgs_.size() > view_num ? position_ * (msgs_.size() - view_num) : 0;
 
   // TODO(lucasw) have stamp optionally in unix time, or HH MM SS,
@@ -75,9 +75,17 @@ void BagConsole::draw()
 
   for (size_t i = start_ind; (i < start_ind + view_num) && (i < msgs_.size()); ++i) {
     const auto& msg = msgs_[i];
-    ImGui::Text("%f", msg->header.stamp.toSec());
+    // ImGui::Text("%s", msg->msg.c_str());
+
+    if (ImGui::Selectable((msg->msg + "##unique").c_str(), i == selected_,
+                          ImGuiSelectableFlags_SpanAllColumns)) {
+      if (i != selected_) {
+        ROS_INFO_STREAM(i << " " << msg->msg);
+        selected_ = i;
+      }
+    }
     ImGui::NextColumn();
-    ImGui::Text("%s", msg->msg.c_str());
+    ImGui::Text("%f", msg->header.stamp.toSec());
     ImGui::NextColumn();
     ImGui::Text("%s", msg->name.c_str());
     ImGui::NextColumn();
@@ -90,6 +98,16 @@ void BagConsole::draw()
   }
   ImGui::Columns(1);
 
+}
+
+void BagConsole::callback(const typename rosgraph_msgs::LogConstPtr msg)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  msgs_.push_back(msg);
+  if (msgs_.size() >= max_num_) {
+    msgs_.pop_front();
+    selected_--;
+  }
 }
 
 }  // namespace imgui_ros

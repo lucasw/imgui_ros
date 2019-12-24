@@ -11,7 +11,7 @@ class TestRosout:
             rospy.loginfo("test {}".format(i))
             if i % 10 == 0:
                 rospy.loginfo("foo {}".format(i))
-            rospy.sleep(0.2)
+            rospy.sleep(0.05)
             i += 1
 
 if __name__ == '__main__':
