@@ -28,7 +28,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+// #define IMGUI_DEFINE_MATH_OPERATORS
+
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_ros/bag_console.h>
 
 namespace imgui_ros
@@ -41,8 +44,10 @@ void BagConsole::draw()
   // TEMP before using built-in imgui console (if it actually works here)
   int pos = position_;
   ImGui::SliderInt("scroll", &pos, min, max, "%d");
+  ImGui::Checkbox("pause", &pause_);  // this causes messages to get lost
   position_ = pos;
 
+	const auto win_width = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
   // TODO(lucasw) typeToString()
   // const std::string text = topic_;
   // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
@@ -72,35 +77,54 @@ void BagConsole::draw()
   ImGui::Text("line");
   ImGui::NextColumn();
 
+  const float msg_width = win_width * 0.5;
+  if (count_ < 1) {
+      ImGui::SetColumnWidth(0, win_width * 0.11);
+      ImGui::SetColumnWidth(1, msg_width);
+      ImGui::SetColumnWidth(2, win_width * 0.11);
+      ImGui::SetColumnWidth(3, win_width * 0.12);
+      ImGui::SetColumnWidth(4, win_width * 0.12);
+      ImGui::SetColumnWidth(5, win_width * 0.04);
+  }
+
   for (size_t i = start_ind; (i < start_ind + view_num) && (i < msgs_.size()); ++i) {
     const auto& msg = msgs_[i];
     // ImGui::Text("%s", msg->msg.c_str());
 
-    if (ImGui::Selectable((msg->msg + "##unique").c_str(), i == selected_,
-                          ImGuiSelectableFlags_SpanAllColumns)) {
-      if (i != selected_) {
-        ROS_INFO_STREAM(i << " " << msg->msg);
-        selected_ = i;
-      }
+    if (count_ < 1) {
+      ImGui::SetColumnWidth(1, msg_width);
+    }
+
+    const auto sel_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_PressedOnClick;
+    const std::string stamp = std::to_string(msg->header.stamp.toSec());
+    if (ImGui::Selectable((stamp + "##unique").c_str(), i == selected_, sel_flags)) {
+      ROS_INFO_STREAM("selection " << i << " " << msg->msg);
+      selected_ = i;
     }
     ImGui::NextColumn();
-    ImGui::Text("%f", msg->header.stamp.toSec());
+    ImGui::Text(msg->msg.c_str());
     ImGui::NextColumn();
-    ImGui::Text("%s", msg->name.c_str());
+    ImGui::Text(msg->name.c_str());
     ImGui::NextColumn();
-    ImGui::Text("%s", msg->file.c_str());
+    ImGui::Text(msg->file.c_str());
     ImGui::NextColumn();
-    ImGui::Text("%s", msg->function.c_str());
+    ImGui::Text(msg->function.c_str());
     ImGui::NextColumn();
     ImGui::Text("%u", msg->line);
     ImGui::NextColumn();
   }
   ImGui::Columns(1);
 
+  ++count_;
 }
 
 void BagConsole::callback(const typename rosgraph_msgs::LogConstPtr msg)
 {
+  // have mode where pause still pauses the screen but still records
+  // new messages, but have to watch buffer fill levels.
+  if (pause_) {
+    return;
+  }
   std::lock_guard<std::mutex> lock(mutex_);
   msgs_.push_back(msg);
   if (msgs_.size() >= max_num_) {

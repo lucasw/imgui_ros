@@ -57,6 +57,8 @@ protected:
   const size_t view_num = 32;
   size_t position_ = 0;
   size_t max_num_ = 255;
+  size_t count_ = 0;
+  bool pause_ = false;
   // typename T::ConstPtr msg_;
   std::deque<rosgraph_msgs::Log::ConstPtr> msgs_;
   // typename
