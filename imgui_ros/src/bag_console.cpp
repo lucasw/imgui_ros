@@ -42,10 +42,23 @@ void BagConsole::draw()
   const int min = 0;
   const int max = msgs_.size();
   // TEMP before using built-in imgui console (if it actually works here)
-  int pos = position_;
-  ImGui::SliderInt("scroll", &pos, min, max, "%d");
+
+  {
+    int pos = position_;
+    ImGui::SliderInt("scroll", &pos, min, max, "%d");
+    position_ = pos;
+  }
+
   ImGui::Checkbox("pause", &pause_);  // this causes messages to get lost
-  position_ = pos;
+  ImGui::SameLine();
+  size_t num_columns = 0;
+  for (auto& pair : show_columns_) {
+    ImGui::Checkbox(pair.first.c_str(), &pair.second);  // this causes messages to get lost
+    ImGui::SameLine();
+    if (pair.second) {
+      ++num_columns;
+    }
+  }
 
 	const auto win_width = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
   // TODO(lucasw) typeToString()
@@ -62,56 +75,50 @@ void BagConsole::draw()
   // Color code according to level: green, white, yellow, red, dark red (or black on red background)
   ImGui::Text("%zu / %zu log messages", start_ind, msgs_.size());
 
-  size_t num_columns = 6;
   ImGui::Columns(num_columns);
-  ImGui::Text("Time");
-  ImGui::NextColumn();
-  ImGui::Text("msg");
-  ImGui::NextColumn();
-  ImGui::Text("name");
-  ImGui::NextColumn();
-  ImGui::Text("file");
-  ImGui::NextColumn();
-  ImGui::Text("function");
-  ImGui::NextColumn();
-  ImGui::Text("line");
-  ImGui::NextColumn();
-
-  const float msg_width = win_width * 0.5;
-  if (count_ < 1) {
-      ImGui::SetColumnWidth(0, win_width * 0.11);
-      ImGui::SetColumnWidth(1, msg_width);
-      ImGui::SetColumnWidth(2, win_width * 0.11);
-      ImGui::SetColumnWidth(3, win_width * 0.12);
-      ImGui::SetColumnWidth(4, win_width * 0.12);
-      ImGui::SetColumnWidth(5, win_width * 0.04);
+  size_t ind = 0;
+  for (const auto& pair : show_columns_) {
+    if (pair.second) {
+      ImGui::Text(pair.first.c_str());  // this causes messages to get lost
+      ImGui::NextColumn();
+      ImGui::SetColumnWidth(ind, win_width * column_widths_[pair.first]);
+      ++ind;
+    }
   }
 
   for (size_t i = start_ind; (i < start_ind + view_num) && (i < msgs_.size()); ++i) {
     const auto& msg = msgs_[i];
     // ImGui::Text("%s", msg->msg.c_str());
 
-    if (count_ < 1) {
-      ImGui::SetColumnWidth(1, msg_width);
+    {
+      const auto sel_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_PressedOnClick;
+      const std::string stamp = std::to_string(msg->header.stamp.toSec());
+      if (ImGui::Selectable((stamp + "##unique").c_str(), i == selected_, sel_flags)) {
+        ROS_INFO_STREAM("selection " << i << " " << msg->msg);
+        selected_ = i;
+      }
+      ImGui::NextColumn();
     }
-
-    const auto sel_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_PressedOnClick;
-    const std::string stamp = std::to_string(msg->header.stamp.toSec());
-    if (ImGui::Selectable((stamp + "##unique").c_str(), i == selected_, sel_flags)) {
-      ROS_INFO_STREAM("selection " << i << " " << msg->msg);
-      selected_ = i;
+    if (show_columns_["msg"]) {
+      ImGui::Text(msg->msg.c_str());
+      ImGui::NextColumn();
     }
-    ImGui::NextColumn();
-    ImGui::Text(msg->msg.c_str());
-    ImGui::NextColumn();
-    ImGui::Text(msg->name.c_str());
-    ImGui::NextColumn();
-    ImGui::Text(msg->file.c_str());
-    ImGui::NextColumn();
-    ImGui::Text(msg->function.c_str());
-    ImGui::NextColumn();
-    ImGui::Text("%u", msg->line);
-    ImGui::NextColumn();
+    if (show_columns_["name"]) {
+      ImGui::Text(msg->name.c_str());
+      ImGui::NextColumn();
+    }
+    if (show_columns_["file"]) {
+      ImGui::Text(msg->file.c_str());
+      ImGui::NextColumn();
+    }
+    if (show_columns_["function"]) {
+      ImGui::Text(msg->function.c_str());
+      ImGui::NextColumn();
+    }
+    if (show_columns_["line"]) {
+      ImGui::Text("%u", msg->line);
+      ImGui::NextColumn();
+    }
   }
   ImGui::Columns(1);
 

@@ -59,6 +59,26 @@ protected:
   size_t max_num_ = 255;
   size_t count_ = 0;
   bool pause_ = false;
+
+  // std::vector<std::string> column_names = {"time", "msg", "name", "file", "function", "line"};
+  std::map<std::string, bool> show_columns_ {
+    {"time", true},
+    {"msg", true},
+    {"name", true},
+    {"file", true},
+    {"function", true},
+    {"line", true}
+  };
+
+  std::map<std::string, float> column_widths_ {
+    {"time", 0.11},
+    {"msg", 0.5},
+    {"name", 0.11},
+    {"file", 0.12},
+    {"function", 0.11},
+    {"line", 0.05}
+  };
+
   // typename T::ConstPtr msg_;
   std::deque<rosgraph_msgs::Log::ConstPtr> msgs_;
   // typename
