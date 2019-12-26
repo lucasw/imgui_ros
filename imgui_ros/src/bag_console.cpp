@@ -118,7 +118,8 @@ void BagConsole::Column::draw(const rosgraph_msgs::Log::ConstPtr& msg,
       const std::string stamp = std::to_string(msg->header.stamp.toSec());
       // TODO(lucasw) how to make any column selectable if time is disabled
       if (ImGui::Selectable((stamp + "##unique").c_str(), i == selected, sel_flags)) {
-        ROS_INFO_STREAM("selection " << i << " " << msg->msg);
+        // Don't add to rosout here
+        std::cout << "selection " << i << " " << *msg << "\n";
         selected = i;
       }
       ImGui::NextColumn();
