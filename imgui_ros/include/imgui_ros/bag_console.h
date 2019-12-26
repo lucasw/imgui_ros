@@ -73,6 +73,7 @@ protected:
     const std::string name_;
     bool enable_ = true;
     float width_ = 0.1;
+    bool hhmmss_ = false;
   };
   // TODO(lucasw) want to support dragging to re-order
   std::vector<Column> columns_ {

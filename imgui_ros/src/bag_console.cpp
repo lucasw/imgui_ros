@@ -31,6 +31,7 @@
 // #define IMGUI_DEFINE_MATH_OPERATORS
 
 #include <SDL2/SDL_scancode.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imgui_ros/bag_console.h>
@@ -64,6 +65,8 @@ void BagConsole::draw()
   }
 
   ImGui::Checkbox("pause", &pause_);  // this causes messages to get lost
+  ImGui::SameLine();
+  ImGui::Checkbox("hhmmss", &columns_[0].hhmmss_);  // this causes messages to get lost
   ImGui::SameLine();
   size_t num_columns = 0;
   bool changed_columns = false;
@@ -132,9 +135,18 @@ void BagConsole::Column::draw(const rosgraph_msgs::Log::ConstPtr& msg,
   const std::unordered_map<std::string, std::function<void()>> draw_ops{
     {"time", [&]() {
       const auto sel_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_PressedOnClick;
-      const std::string stamp = std::to_string(msg->header.stamp.toSec());
+      const auto stamp = msg->header.stamp;
+      std::string text;
+      if (hhmmss_) {
+        // TODO(lucasw) need to set time in timezone of system
+        boost::posix_time::ptime my_posix_time = stamp.toBoost();
+        text = boost::posix_time::to_iso_extended_string(my_posix_time);
+      } else {
+        text = std::to_string(stamp.toSec());
+      }
+
       // TODO(lucasw) how to make any column selectable if time is disabled
-      if (ImGui::Selectable((stamp + "##unique").c_str(), i == selected, sel_flags)) {
+      if (ImGui::Selectable((text + "##unique").c_str(), i == selected, sel_flags)) {
         // Don't add to rosout here
         selected = i;
       }
