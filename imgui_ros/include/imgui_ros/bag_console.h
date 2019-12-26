@@ -60,23 +60,28 @@ protected:
   size_t count_ = 0;
   bool pause_ = false;
 
-  // std::vector<std::string> column_names = {"time", "msg", "name", "file", "function", "line"};
-  std::map<std::string, bool> show_columns_ {
-    {"time", true},
-    {"msg", true},
-    {"name", true},
-    {"file", true},
-    {"function", true},
-    {"line", true}
-  };
+  struct Column {
+    Column(const std::string& name, const bool enable, const float width) :
+        name_(name),
+        enable_(enable),
+        width_(width)
+    {
+    }
 
-  std::map<std::string, float> column_widths_ {
-    {"time", 0.11},
-    {"msg", 0.5},
-    {"name", 0.11},
-    {"file", 0.12},
-    {"function", 0.11},
-    {"line", 0.05}
+    void draw(const rosgraph_msgs::Log::ConstPtr& msg,
+        size_t& selected, size_t& i) const;
+    const std::string name_;
+    bool enable_ = true;
+    float width_ = 0.1;
+  };
+  // TODO(lucasw) want to support dragging to re-order
+  std::vector<Column> columns_ {
+    Column("time", true, 0.11),
+    Column("msg", true, 0.5),
+    Column("name", true, 0.11),
+    Column("file", true, 0.11),
+    Column("function", true, 0.12),
+    Column("line", true, 0.05)
   };
 
   // typename T::ConstPtr msg_;

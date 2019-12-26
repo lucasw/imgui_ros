@@ -52,10 +52,15 @@ void BagConsole::draw()
   ImGui::Checkbox("pause", &pause_);  // this causes messages to get lost
   ImGui::SameLine();
   size_t num_columns = 0;
-  for (auto& pair : show_columns_) {
-    ImGui::Checkbox(pair.first.c_str(), &pair.second);  // this causes messages to get lost
-    ImGui::SameLine();
-    if (pair.second) {
+  bool changed_columns = false;
+  for (auto& column : columns_) {
+    if (column.name_ != "time") {
+      if (ImGui::Checkbox(column.name_.c_str(), &column.enable_)) {  // this causes messages to get lost
+        changed_columns = true;
+      }
+      ImGui::SameLine();
+    }
+    if (column.enable_) {
       ++num_columns;
     }
   }
@@ -77,52 +82,70 @@ void BagConsole::draw()
 
   ImGui::Columns(num_columns);
   size_t ind = 0;
-  for (const auto& pair : show_columns_) {
-    if (pair.second) {
-      ImGui::Text(pair.first.c_str());  // this causes messages to get lost
+  for (const auto& column : columns_) {
+    if (column.enable_) {
+      ImGui::Text("%s", column.name_.c_str());  // this causes messages to get lost
       ImGui::NextColumn();
-      ImGui::SetColumnWidth(ind, win_width * column_widths_[pair.first]);
+      if (changed_columns || (count_ == 0)) {
+        // TODO(lucasw) need to store live width and restore that
+        // on changed_columns instead of going back to default.
+        ImGui::SetColumnWidth(ind, win_width * column.width_);
+      }
       ++ind;
     }
   }
 
   for (size_t i = start_ind; (i < start_ind + view_num) && (i < msgs_.size()); ++i) {
     const auto& msg = msgs_[i];
-    // ImGui::Text("%s", msg->msg.c_str());
-
-    {
-      const auto sel_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_PressedOnClick;
-      const std::string stamp = std::to_string(msg->header.stamp.toSec());
-      if (ImGui::Selectable((stamp + "##unique").c_str(), i == selected_, sel_flags)) {
-        ROS_INFO_STREAM("selection " << i << " " << msg->msg);
-        selected_ = i;
-      }
-      ImGui::NextColumn();
-    }
-    if (show_columns_["msg"]) {
-      ImGui::Text(msg->msg.c_str());
-      ImGui::NextColumn();
-    }
-    if (show_columns_["name"]) {
-      ImGui::Text(msg->name.c_str());
-      ImGui::NextColumn();
-    }
-    if (show_columns_["file"]) {
-      ImGui::Text(msg->file.c_str());
-      ImGui::NextColumn();
-    }
-    if (show_columns_["function"]) {
-      ImGui::Text(msg->function.c_str());
-      ImGui::NextColumn();
-    }
-    if (show_columns_["line"]) {
-      ImGui::Text("%u", msg->line);
-      ImGui::NextColumn();
+    for (const auto& column : columns_) {
+      column.draw(msg, selected_, i);
     }
   }
   ImGui::Columns(1);
 
   ++count_;
+}
+
+void BagConsole::Column::draw(const rosgraph_msgs::Log::ConstPtr& msg,
+    size_t& selected, size_t& i) const
+{
+  if (!enable_) {
+    return;
+  }
+  const std::unordered_map<std::string, std::function<void()>> draw_ops{
+    {"time", [&]() {
+      const auto sel_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_PressedOnClick;
+      const std::string stamp = std::to_string(msg->header.stamp.toSec());
+      // TODO(lucasw) how to make any column selectable if time is disabled
+      if (ImGui::Selectable((stamp + "##unique").c_str(), i == selected, sel_flags)) {
+        ROS_INFO_STREAM("selection " << i << " " << msg->msg);
+        selected = i;
+      }
+      ImGui::NextColumn();
+    }},
+    {"msg", [&]() {
+      ImGui::Text("%s", msg->msg.c_str());
+      ImGui::NextColumn();
+    }},
+    {"name", [&]() {
+      ImGui::Text("%s", msg->name.c_str());
+      ImGui::NextColumn();
+    }},
+    {"file", [&](){
+      ImGui::Text("%s", msg->file.c_str());
+      ImGui::NextColumn();
+    }},
+    {"function", [&](){
+      ImGui::Text("%s", msg->function.c_str());
+      ImGui::NextColumn();
+    }},
+    {"line", [&](){
+      ImGui::Text("%u", msg->line);
+      ImGui::NextColumn();
+    }}
+  };
+
+  draw_ops.find(name_)->second();
 }
 
 void BagConsole::callback(const typename rosgraph_msgs::LogConstPtr msg)
@@ -136,7 +159,7 @@ void BagConsole::callback(const typename rosgraph_msgs::LogConstPtr msg)
   msgs_.push_back(msg);
   if (msgs_.size() >= max_num_) {
     msgs_.pop_front();
-    if ((selected_ >= 0) && (selected_ < max_num_)) {
+    if (selected_ < max_num_) {
       selected_--;
       // if the user has selected a message, keep it on screen instead
       // of scrolling past
