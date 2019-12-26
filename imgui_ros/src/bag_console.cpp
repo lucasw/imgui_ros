@@ -30,6 +30,7 @@
 
 // #define IMGUI_DEFINE_MATH_OPERATORS
 
+#include <SDL2/SDL_scancode.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imgui_ros/bag_console.h>
@@ -42,11 +43,24 @@ void BagConsole::draw()
   const int min = 0;
   const int max = msgs_.size();
   // TEMP before using built-in imgui console (if it actually works here)
-
   {
     int pos = position_;
     ImGui::SliderInt("scroll", &pos, min, max, "%d");
     position_ = pos;
+  }
+
+  const auto old_selected = selected_;
+  if (ImGui::IsWindowFocused()) {
+    if (ImGui::IsKeyPressed(SDL_SCANCODE_UP)) {
+      if (selected_ > 0) {
+        selected_--;
+      }
+    }
+    if (ImGui::IsKeyPressed(SDL_SCANCODE_DOWN)) {
+      if (selected_ < max) {
+        selected_++;
+      }
+    }
   }
 
   ImGui::Checkbox("pause", &pause_);  // this causes messages to get lost
@@ -103,6 +117,9 @@ void BagConsole::draw()
   }
   ImGui::Columns(1);
 
+  if ((old_selected != selected_) && (selected_ < msgs_.size())) {
+    std::cout << "selection " << selected_ << ":\n" << *msgs_[selected_] << "\n";
+  }
   ++count_;
 }
 
@@ -119,7 +136,6 @@ void BagConsole::Column::draw(const rosgraph_msgs::Log::ConstPtr& msg,
       // TODO(lucasw) how to make any column selectable if time is disabled
       if (ImGui::Selectable((stamp + "##unique").c_str(), i == selected, sel_flags)) {
         // Don't add to rosout here
-        std::cout << "selection " << i << " " << *msg << "\n";
         selected = i;
       }
       ImGui::NextColumn();
