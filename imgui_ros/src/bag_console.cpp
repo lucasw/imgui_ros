@@ -58,7 +58,7 @@ void BagConsole::draw()
       }
     }
     if (ImGui::IsKeyPressed(SDL_SCANCODE_DOWN)) {
-      if (selected_ < max) {
+      if (selected_ < static_cast<size_t>(max)) {
         selected_++;
       }
     }
@@ -126,6 +126,33 @@ void BagConsole::draw()
   ++count_;
 }
 
+// https://answers.ros.org/question/340701/convert-ros-time-to-hours-minutes-seconds-string-in-system-timezone-in-c
+std::string stampToString(const ros::Time& stamp, const std::string format="%Y-%m-%d %H:%M:%s")
+{
+#if 1
+  const auto current_time = stamp.toBoost();
+  // https://stackoverflow.com/questions/17779660/who-is-responsible-for-deleting-the-facet
+  std::stringstream ss;
+  auto facet = new boost::posix_time::time_facet(format.c_str());
+  ss.imbue(std::locale(std::cout.getloc(), facet));
+  ss << current_time;
+  return ss.str();
+#endif
+
+#if 0
+  struct timespec when;
+  when.tv_sec = stamp.sec;
+  when.tv_nsec = stamp.nsec;
+  unsigned int parse_datetime_flags = 0;
+  timezone_t tz = tzalloc(getenv("TZ"));
+  char output[100];
+  bool valid_date = parse_datetime2(&when, format.c_str(), NULL,
+      parse_datetime_flags, tz, output);
+  tzfree(tz);
+  return std::string(output);
+#endif
+}
+
 void BagConsole::Column::draw(const rosgraph_msgs::Log::ConstPtr& msg,
     size_t& selected, size_t& i) const
 {
@@ -138,9 +165,7 @@ void BagConsole::Column::draw(const rosgraph_msgs::Log::ConstPtr& msg,
       const auto stamp = msg->header.stamp;
       std::string text;
       if (hhmmss_) {
-        // TODO(lucasw) need to set time in timezone of system
-        boost::posix_time::ptime my_posix_time = stamp.toBoost();
-        text = boost::posix_time::to_iso_extended_string(my_posix_time);
+        text = stampToString(stamp);
       } else {
         text = std::to_string(stamp.toSec());
       }

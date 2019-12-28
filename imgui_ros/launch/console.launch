@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
+  <!-- launch-prefix="gdb -ex run - -args" -->
   <node pkg="imgui_ros" type="imgui_ros_node"
     name="imgui_ros" output="screen" >
   </node>
