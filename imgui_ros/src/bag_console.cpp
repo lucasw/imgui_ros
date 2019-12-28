@@ -31,7 +31,8 @@
 // #define IMGUI_DEFINE_MATH_OPERATORS
 
 #include <SDL2/SDL_scancode.h>
-#include <boost/date_time/posix_time/posix_time.hpp>
+// #include <boost/date_time/posix_time/posix_time.hpp>
+// #include <chrono>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imgui_ros/bag_console.h>
@@ -127,9 +128,10 @@ void BagConsole::draw()
 }
 
 // https://answers.ros.org/question/340701/convert-ros-time-to-hours-minutes-seconds-string-in-system-timezone-in-c
-std::string stampToString(const ros::Time& stamp, const std::string format="%Y-%m-%d %H:%M:%s")
+std::string stampToString(const ros::Time& stamp, const std::string format="%Y-%m-%d %H:%M:%S")
 {
-#if 1
+#if 0
+  // Capital S needs to be lower case here?
   const auto current_time = stamp.toBoost();
   // https://stackoverflow.com/questions/17779660/who-is-responsible-for-deleting-the-facet
   std::stringstream ss;
@@ -139,18 +141,18 @@ std::string stampToString(const ros::Time& stamp, const std::string format="%Y-%
   return ss.str();
 #endif
 
-#if 0
-  struct timespec when;
-  when.tv_sec = stamp.sec;
-  when.tv_nsec = stamp.nsec;
-  unsigned int parse_datetime_flags = 0;
-  timezone_t tz = tzalloc(getenv("TZ"));
-  char output[100];
-  bool valid_date = parse_datetime2(&when, format.c_str(), NULL,
-      parse_datetime_flags, tz, output);
-  tzfree(tz);
-  return std::string(output);
-#endif
+  // any advantage to using std chrono?
+  // std::chrono::duration dur = std::chrono::seconds{stamp.sec} + std::chrono::nanoseconds{stamp.nsec};
+  const int output_size = 100;
+  char output[output_size];
+  std::time_t raw_time = static_cast<time_t>(stamp.sec);
+  struct tm* timeinfo = localtime(&raw_time);
+  // TODO(lucasw) -1 for terminating 0?
+  std::strftime(output, output_size, format.c_str(), timeinfo);
+  std::stringstream ss;
+  ss << std::setw(9) << std::setfill('0') << stamp.nsec;
+  const size_t fractional_second_digits = 4;
+  return std::string(output) + "." + ss.str().substr(0, fractional_second_digits);
 }
 
 void BagConsole::Column::draw(const rosgraph_msgs::Log::ConstPtr& msg,
