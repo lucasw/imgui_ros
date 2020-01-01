@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node pkg="imgui_ros" type="imgui_ros_node"
+    name="imgui_ros" output="screen" >
+    <param name="name" value="imgui viz3d demo" />
+    <param name="width" value="1440" />
+    <param name="height" value="800" />
+    <param name="red" value="0.5" />
+    <param name="green" value="0.5" />
+    <param name="blue" value="0.52" />
+  </node>
+
+  <!--node pkg="imgui_ros" type="demo_viz3d.py" name="demo_viz3d_setup" output="screen">
+  </node-->
+  <group if="true">
+    <node pkg="imgui_ros" type="demo_gui.py" name="tf_setup" output="screen">
+    </node>
+    <node pkg="imgui_ros" type="cameras.py" name="cameras_setup" output="screen">
+    </node>
+    <!--node pkg="imgui_ros" type="pub_shape.py" name="add_shapes" output="screen">
+    </node-->
+    <node pkg="imgui_ros" type="add_shaders_utility.py" name="shaders_setup" output="screen">
+    </node>
+  </group>
+
+  <node pkg="imgui_ros" type="to_mesh.py" name="add_scape_tile" output="screen">
+    <param name="frame" value="map" />
+    <param name="name" value="scape" />
+    <param name="filename" value="~/Desktop/blender/cyberscape/cyberscape2.obj" />
+  </node>
+</launch>
