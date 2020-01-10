@@ -134,6 +134,8 @@ target_link_libraries(imgui_ros_node imguiros imgui)
 #   install(TARGETS usb_cam_viewer DESTINATION lib/${PROJECT_NAME})
 # endif()
 
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
+
 install(DIRECTORY data DESTINATION share/${PROJECT_NAME})
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
@@ -145,15 +147,9 @@ install(PROGRAMS
   # imgui_ros/demo_imgui_ros.py
   # imgui_ros/demo_gui.py
   # imgui_ros/pub_shape.py
-  scripts/cube_camera_fragment.glsl
-  scripts/cube_camera_vertex.glsl
   scripts/demo2.py
-  scripts/depth_fragment.glsl
-  scripts/depth_vertex.glsl
-  scripts/fragment.glsl
   # scripts/graph.py
   # scripts/usb_cam_viewer.py
-  scripts/vertex.glsl
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
