@@ -559,9 +559,10 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
     }  // case PUB
     case imgui_ros_msgs::Widget::SUB: {
       std::shared_ptr<Sub> sub;
-      int64_t value_int = widget.value;
-      int64_t min = widget.min;
-      int64_t max = widget.max;
+      // these are currently unused
+      // int64_t value_int = widget.value;
+      // int64_t min = widget.min;
+      // int64_t max = widget.max;
       switch (widget.sub_type) {
         case imgui_ros_msgs::Widget::ROSOUT: {
           sub = std::make_shared<BagConsole>(widget.name, widget.topic, nh_);
