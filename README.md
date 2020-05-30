@@ -8,6 +8,7 @@ and parameters using imgui (https://github.com/ocornut/imgui).
 
 ```
 sudo apt install libglm-dev ros-melodic-pcl-ros
+pip3 install transforms3d
 ```
 
 Run a demo:

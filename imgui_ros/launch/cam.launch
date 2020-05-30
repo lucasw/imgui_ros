@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <launch>
+  <!-- connect a usb camera to a texture in imgui_ros
+  -->
   <!--
     (remove backslashes https://stackoverflow.com/questions/10842131/xml-comments-and)
     v4l2-ctl \-\-list-formats
