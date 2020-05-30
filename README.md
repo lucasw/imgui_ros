@@ -7,7 +7,7 @@ and parameters using imgui (https://github.com/ocornut/imgui).
 
 
 ```
-sudo apt install libglm-dev ros-melodic-pcl-ros
+sudo apt install libglm-dev libsdl2-dev ros-melodic-pcl-ros libyaml-cpp-dev
 pip3 install transforms3d
 ```
 
