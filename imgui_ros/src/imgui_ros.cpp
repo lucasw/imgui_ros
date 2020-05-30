@@ -556,6 +556,7 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
         }
       }  // switch on widget sub_type
       imgui_widget = pub;
+      break;
     }  // case PUB
     case imgui_ros_msgs::Widget::SUB: {
       std::shared_ptr<Sub> sub;
@@ -569,6 +570,7 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
         }
       }
       imgui_widget = sub;
+      break;
     }  // SUB
     default: {
       ROS_WARN_STREAM("unsupported type: " << widgetTypeToString(widget.type)
