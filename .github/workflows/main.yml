@@ -46,6 +46,7 @@ jobs:
             sudo apt-get install -y ros-$ROS_DISTRO-tf2-py
             sudo apt-get install -y ros-$ROS_DISTRO-tf2-ros
             sudo apt-get install -y ros-$ROS_DISTRO-tf2-sensor-msgs
+            sudo apt-get install -y ros-$ROS_DISTRO-visualization-msgs
             source /opt/ros/$ROS_DISTRO/setup.bash
             # Prepare rosdep to install dependencies.
             sudo rosdep init
