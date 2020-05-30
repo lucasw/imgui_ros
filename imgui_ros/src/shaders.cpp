@@ -38,6 +38,7 @@
 #include <iomanip>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <string>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 using std::placeholders::_1;
 using std::placeholders::_2;

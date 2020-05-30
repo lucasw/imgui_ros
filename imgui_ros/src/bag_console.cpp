@@ -36,6 +36,8 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imgui_ros/bag_console.h>
+#include <string>
+#include <unordered_map>
 
 namespace imgui_ros
 {
@@ -83,7 +85,7 @@ void BagConsole::draw()
     }
   }
 
-	const auto win_width = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+  const auto win_width = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
   // TODO(lucasw) typeToString()
   // const std::string text = topic_;
   // ImGui::Text("%.*s", static_cast<int>(text.size()), text.data());
@@ -128,7 +130,7 @@ void BagConsole::draw()
 }
 
 // https://answers.ros.org/question/340701/convert-ros-time-to-hours-minutes-seconds-string-in-system-timezone-in-c
-std::string stampToString(const ros::Time& stamp, const std::string format="%Y-%m-%d %H:%M:%S")
+std::string stampToString(const ros::Time& stamp, const std::string format = "%Y-%m-%d %H:%M:%S")
 {
 #if 0
   // Capital S needs to be lower case here?
@@ -143,12 +145,12 @@ std::string stampToString(const ros::Time& stamp, const std::string format="%Y-%
 
   // any advantage to using std chrono?
   // std::chrono::duration dur = std::chrono::seconds{stamp.sec} + std::chrono::nanoseconds{stamp.nsec};
-  const int output_size = 100;
-  char output[output_size];
+  const int kOutputSize = 100;
+  char output[kOutputSize];
   std::time_t raw_time = static_cast<time_t>(stamp.sec);
   struct tm* timeinfo = localtime(&raw_time);
   // TODO(lucasw) -1 for terminating 0?
-  std::strftime(output, output_size, format.c_str(), timeinfo);
+  std::strftime(output, kOutputSize, format.c_str(), timeinfo);
   std::stringstream ss;
   ss << std::setw(9) << std::setfill('0') << stamp.nsec;
   const size_t fractional_second_digits = 4;

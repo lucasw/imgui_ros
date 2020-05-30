@@ -33,13 +33,16 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
-// #include "imgui_impl_sdl.h"
+#include <imgui_ros/utility.h>
 #include <imgui_ros/viz3d.h>
 #include <iomanip>
+#include <memory>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <string>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <imgui_ros/utility.h>
+#include <vector>
+// #include "imgui_impl_sdl.h"
 using std::placeholders::_1;
 using std::placeholders::_2;
 
@@ -582,7 +585,7 @@ bool Viz3D::updateShaderShapes(std::shared_ptr<ShaderSet> shaders, std::shared_p
   // std::stringstream ss;
   if (false) {
     std::cout << "updating shape shader connections '"
-        << shape->name_ << "' to '" << shaders->name_ << "'" << std::endl;  //"\n";
+        << shape->name_ << "' to '" << shaders->name_ << "'" << std::endl;  // "\n";
     std::cout << "vao handle: " << shape->vao_handle_ << ", ";
     std::cout << "vbo handle: " << shape->vbo_handle_ << ", ";
   }
@@ -1447,7 +1450,9 @@ bool Viz3D::renderCubeCamera(std::shared_ptr<CubeCamera> cube_camera)
   if (checkGLError(__FILE__, __LINE__))
     return false;
 
-  // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
+  // Our visible imgui space lies from draw_data->DisplayPos (top left) to
+  // draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is
+  // typically (0,0) for single viewport apps.
   // TODO(lucasw) need a cube_camera width and height for the full image
   const int fb_width = cube_camera->image_->width_;
   const int fb_height = cube_camera->image_->height_;
@@ -1652,7 +1657,9 @@ void Viz3D::render2(
     if (checkGLError(__FILE__, __LINE__))
       return;
 
-    // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayMin is typically (0,0) for single viewport apps.
+    // Our visible imgui space lies from draw_data->DisplayPos (top left) to
+    // draw_data->DisplayPos+data_data->DisplaySize (bottom right).
+    // DisplayMin is typically (0,0) for single viewport apps.
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
 
     // (This is to easily allow multiple GL contexts. VAO are not shared among GL contexts, and we don't track creation/deletion of windows so we don't have an obvious key to use to cache them.)
