@@ -65,8 +65,8 @@ jobs:
           catkin build
           source devel/setup.bash
           cd ~/catkin_ws/src
-          ln -s ~/work  # $CI_SOURCE_PATH
-          cd work/imgui_ros/imgui_ros
+          ln -s ~/work/imgui_ros/imgui_ros  # $CI_SOURCE_PATH
+          cd imgui_ros/imgui_ros
           git clone https://github.com/ocornut/imgui.git
           cd imgui
           git reset --hard 3f26a07ee1813cecaa87253436149e28fc11dc4e
