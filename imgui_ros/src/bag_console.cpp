@@ -163,7 +163,8 @@ void BagConsole::Column::draw(const rosgraph_msgs::Log::ConstPtr& msg,
   }
   const std::unordered_map<std::string, std::function<void()>> draw_ops{
     {"time", [&]() {
-      const auto sel_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_PressedOnClick;
+      // const auto sel_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_PressedOnClick;
+      const auto sel_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_SelectOnClick;
       const auto stamp = msg->header.stamp;
       std::string text;
       if (hhmmss_) {
