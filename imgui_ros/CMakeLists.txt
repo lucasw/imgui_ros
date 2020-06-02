@@ -29,7 +29,7 @@ geometry_msgs
 imgui_ros_msgs
 pcl_conversions
 roscpp
-roslint
+# roslint
 sensor_msgs
 shape_msgs
 std_msgs
@@ -44,32 +44,32 @@ set(
   ROSLINT_CPP_OPTS
   "--extensions=cpp,h,hpp" "--filter=-whitespace/braces,-runtime/references"
 )
-roslint_cpp(files
-  src/bag_console.cpp
-  src/camera.cpp
-  src/cube_camera.cpp
-  src/dynamic_reconfigure.cpp
-  src/graph.cpp
-  src/image.cpp
-  src/image_transfer.cpp
-  # src/imgui_impl_opengl3.cpp
-  src/imgui_ros.cpp
-  src/node.cpp
-  src/param.cpp
-  src/param_to_topic.cpp
-  src/point_cloud.cpp
-  src/projector.cpp
-  src/pub.cpp
-  src/shaders.cpp
-  src/sub.cpp
-  src/surface.cpp
-  src/tf.cpp
-  src/utility.cpp
-  src/viz2d.cpp
-  src/viz3d.cpp
-  src/window.cpp
-  )
-roslint_python()
+# roslint_cpp(
+  # # src/bag_console.cpp
+  # src/camera.cpp
+  # src/cube_camera.cpp
+  # src/dynamic_reconfigure.cpp
+  # src/graph.cpp
+  # src/image.cpp
+  # src/image_transfer.cpp
+  # # src/imgui_impl_opengl3.cpp
+  # src/imgui_ros.cpp
+  # src/node.cpp
+  # src/param.cpp
+  # src/param_to_topic.cpp
+  # src/point_cloud.cpp
+  # src/projector.cpp
+  # src/pub.cpp
+  # src/shaders.cpp
+  # src/sub.cpp
+  # src/surface.cpp
+  # src/tf.cpp
+  # src/utility.cpp
+  # src/viz2d.cpp
+  # src/viz3d.cpp
+  # src/window.cpp
+# )
+# roslint_python()
 
 catkin_package(
   INCLUDE_DIRS include
