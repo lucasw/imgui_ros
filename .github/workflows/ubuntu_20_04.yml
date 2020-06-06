@@ -28,8 +28,12 @@ jobs:
             sudo apt-get install -y libglm-dev
             # https://answers.ros.org/question/353113/catkin-build-in-ubuntu-2004-noetic/
             # sudo apt-get install -y python-catkin-tools python-catkin-pkg
-            pip3 install --user git+https://github.com/catkin/catkin_tools.git
-            sudo apt-get install -y python3-rosdep python3-wstool
+            # pip3 install --user git+https://github.com/catkin/catkin_tools.git
+            sudo apt-get install -y python3-catkin-pkg
+            sudo apt-get install -y python3-catkin-tools
+            sudo apt-get install -y python3-osrf-pycommon
+            sudo apt-get install -y python3-rosdep
+            sudo apt-get install -y python3-wstool
             sudo apt-get install -y libboost-dev
             sudo apt-get install -y libpcl-dev
             sudo apt-get install -y libsdl2-dev
