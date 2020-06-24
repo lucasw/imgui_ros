@@ -1,4 +1,4 @@
-name: ROS CI
+name: Ubuntu 18.04 ROS Melodic
 
 on: [push]
 
