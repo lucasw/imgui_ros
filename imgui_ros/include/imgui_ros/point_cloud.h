@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef IMGUI_ROS2_POINT_CLOUD_H
-#define IMGUI_ROS2_POINT_CLOUD_H
+#ifndef IMGUI_ROS_POINT_CLOUD_H
+#define IMGUI_ROS_POINT_CLOUD_H
 
 #include <imgui.h>
 #include <imgui_ros/sub.h>
@@ -39,7 +39,7 @@
 #include <mutex>
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
-#include <sensor_msgs/point_cloud2.hpp>
+#include <sensor_msgs/PointCloud2.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_msgs/TFMessage.h>
 #include <vector>
@@ -59,10 +59,10 @@ struct PointCloud : public Sub
   std::shared_ptr<Shape> shape_;
 protected:
   pcl::PointCloud<pcl::PointXYZRGB> cloud_;
-  sensor_msgs::PointCloud2::SharedPtr msg_;
-  void pointCloud2Callback(const sensor_msgs::PointCloud2::SharedPtr msg);
-  ros::Subscription<sensor_msgs::PointCloud2>::SharedPtr sub_;
+  sensor_msgs::PointCloud2::ConstPtr msg_;
+  void pointCloud2Callback(const sensor_msgs::PointCloud2::ConstPtr msg);
+  ros::Subscriber sub_;
 };
 
 }  // namespace imgui_ros
-#endif  // IMGUI_ROS2_POINT_CLOUD_H
+#endif  // IMGUI_ROS_POINT_CLOUD_H

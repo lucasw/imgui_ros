@@ -41,10 +41,10 @@
 #include <imgui_ros/imgui_impl_opengl3.h>
 #include <imgui_ros/imgui_ros.h>
 #include <imgui_ros/graph.h>
+#include <imgui_ros/point_cloud.h>
 #include <imgui_ros/tf.h>
 #if 0
 #include <imgui_ros/param.h>
-#include <imgui_ros/point_cloud.h>
 #include <imgui_ros/pub.h>
 #include <imgui_ros/sub.h>
 #include <imgui_ros/viz2d.h>
@@ -567,6 +567,26 @@ bool ImguiRos::addWidget(const imgui_ros_msgs::Widget& widget,
       switch (widget.sub_type) {
         case imgui_ros_msgs::Widget::ROSOUT: {
           sub = std::make_shared<BagConsole>(widget.name, widget.topic, nh_);
+          break;
+        }
+        case (imgui_ros_msgs::Widget::POINTCLOUD): {
+          // There won't be anything in the shape to draw yet
+          if (widget.remove) {
+            viz3d->removeShape(widget.name);
+          } else {
+            auto pc = std::make_shared<PointCloud>(widget.name,
+                widget.topic, tf_buffer_, nh_);
+            sub = pc;
+            viz3d->addOrReplaceShape(pc->shape_->name_, pc->shape_);
+          }
+          break;
+        }
+        default: {
+          std::stringstream ss;
+          ss << "unsupported type: " << widgetTypeToString(widget.sub_type)
+              << " " << widget.name;
+          message = ss.str();
+          return false;
         }
       }
       imgui_widget = sub;

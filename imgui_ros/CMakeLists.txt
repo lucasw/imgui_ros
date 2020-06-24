@@ -106,6 +106,7 @@ add_library(imguiros SHARED
   src/bag_console.cpp
   src/camera.cpp
   src/cube_camera.cpp
+  src/point_cloud.cpp
   src/projector.cpp
   src/pub.cpp
   src/shaders.cpp
@@ -127,7 +128,6 @@ add_library(imguiros SHARED
 if(false)
 add_library(imguiros SHARED
   src/param.cpp
-  src/point_cloud.cpp
   # TODO(lucasw) maybe there should be a separate test library?
   src/test/generate_pointcloud2.cpp
   src/viz2d.cpp
