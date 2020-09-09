@@ -72,8 +72,7 @@ jobs:
           source /opt/ros/$ROS_DISTRO/setup.bash
           mkdir -p ~/catkin_ws/src
           cd ~/catkin_ws
-          catkin build
-          source devel/setup.bash
+          catkin init
           cd ~/catkin_ws/src
           ln -s ~/work/imgui_ros/imgui_ros  # $CI_SOURCE_PATH
           cd imgui_ros/imgui_ros
@@ -83,6 +82,7 @@ jobs:
           # echo "::warning $CI_SOURCE_PATH"
           # echo "::warning `ls -l`"
           cd ..
+          catkin config -b ~/work/build -d ~/work/devel -i ~/work/install --install
           catkin build
       - name: lint
         run: |
