@@ -16,15 +16,6 @@ jobs:
       PYTHONPATH: $PYTHONPATH:/usr/lib/python2.7/dist-packages:/usr/local/lib/python2.7/dist-packages
       ROS_DISTRO: melodic
 
-    strategy:
-      fail-fast: false
-      matrix:
-        # Override automatic language detection by changing the below list
-        # Supported options are ['csharp', 'cpp', 'go', 'java', 'javascript', 'python']
-        language: ['cpp']
-        # Learn more...
-        # https://docs.github.com/en/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#overriding-automatic-language-detection
-
     steps:
       - uses: actions/checkout@v1
       - name: Install ROS
@@ -89,10 +80,11 @@ jobs:
           cd ~/catkin_ws
           echo "not using roslint for now, a lot of work is required to make it pass"
           # catkin build imgui_ros --no-deps --catkin-make-args roslint
+
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v1
         with:
-          languages: ${{ matrix.language }}
+          languages: cpp
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v1
