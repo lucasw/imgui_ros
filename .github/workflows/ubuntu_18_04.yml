@@ -83,7 +83,7 @@ jobs:
           # echo "::warning `ls -l`"
           cd ..
           catkin config -b ~/work/build -d ~/work/devel -i ~/work/install --install
-          catkin build
+          catkin build --no-status
       - name: lint
         run: |
           cd ~/catkin_ws
